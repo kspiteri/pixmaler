@@ -1,0 +1,20 @@
+{
+  "name": "pixmaler",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "partysocket": "^1.0.3",
+    "unique-names-generator": "^4.7.1"
+  },
+  "devDependencies": {
+    "partykit": "^0.0.111",
+    "typescript": "^5.5.3",
+    "vite": "^5.4.0"
+  }
+}

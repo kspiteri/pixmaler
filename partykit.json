@@ -1,0 +1,6 @@
+{
+  "$schema": "https://www.partykit.io/schema.json",
+  "name": "pixmaler",
+  "main": "party/server.ts",
+  "compatibilityDate": "2023-11-10"
+}
