@@ -27,6 +27,9 @@ export class PixelCanvas {
   private lastCell = -1;
   private lastCx = -1;
   private lastCy = -1;
+  // Where the cursor currently sits (for refreshing the hover preview when
+  // brush size changes mid-hover). Null when the cursor is off-canvas.
+  private cursorCell: { x: number; y: number } | null = null;
   // Cells currently shown as a hover preview, keyed by `y * gridW + x` → original
   // palette index. We restore these when the hover moves or the cursor leaves.
   private hoverCells: Map<number, number> = new Map();
@@ -47,8 +50,7 @@ export class PixelCanvas {
     this.canvas.width = opts.gridW * CELL_SIZE;
     this.canvas.height = opts.gridH * CELL_SIZE;
     this.canvas.style.imageRendering = "pixelated";
-    // editable canvas: hide the OS cursor — the hover preview *is* the cursor.
-    this.canvas.style.cursor = opts.editable ? "none" : "default";
+    this.canvas.style.cursor = opts.editable ? "crosshair" : "default";
     this.canvas.style.display = "block";
     if (opts.editable) {
       this.canvas.style.background = "#fff";
@@ -82,6 +84,11 @@ export class PixelCanvas {
 
   setBrushSize(size: number) {
     this.brushSize = Math.max(1, Math.min(8, size));
+    // Refresh the hover footprint immediately so the new size is visible
+    // without requiring a mouse move.
+    if (this.cursorCell && !this.painting) {
+      this.showHover(this.cursorCell.x, this.cursorCell.y);
+    }
   }
 
   getBrushSize(): number {
@@ -269,7 +276,8 @@ export class PixelCanvas {
       const { x, y } = this.eventCell(e.clientX, e.clientY);
       const { gridW, gridH } = this.opts;
       const inBounds = x >= 0 && y >= 0 && x < gridW && y < gridH;
-      this.opts.onHover?.(inBounds ? { x, y } : null);
+      this.cursorCell = inBounds ? { x, y } : null;
+      this.opts.onHover?.(this.cursorCell);
       if (this.painting) {
         this.paint(e);
       } else if (inBounds) {
@@ -281,6 +289,7 @@ export class PixelCanvas {
       this.painting = false;
       this.resetStroke();
       this.clearHover();
+      this.cursorCell = null;
       this.opts.onHover?.(null);
     });
 
@@ -412,23 +421,20 @@ export function buildBrushControls(pc: PixelCanvas): HTMLElement {
 
   const label = document.createElement("span");
   label.textContent = `brush: ${pc.getBrushSize()}`;
+  label.style.minWidth = "60px";
 
-  const dec = document.createElement("button");
-  dec.type = "button";
-  dec.textContent = "−";
-  dec.addEventListener("click", () => {
-    pc.setBrushSize(pc.getBrushSize() - 1);
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.min = "1";
+  slider.max = "8";
+  slider.value = String(pc.getBrushSize());
+  slider.style.cssText = "vertical-align:middle;width:140px";
+  slider.addEventListener("input", () => {
+    pc.setBrushSize(parseInt(slider.value, 10));
     label.textContent = `brush: ${pc.getBrushSize()}`;
   });
 
-  const inc = document.createElement("button");
-  inc.textContent = "+";
-  inc.addEventListener("click", () => {
-    pc.setBrushSize(pc.getBrushSize() + 1);
-    label.textContent = `brush: ${pc.getBrushSize()}`;
-  });
-
-  wrap.append(dec, label, inc);
+  wrap.append(slider, label);
   return wrap;
 }
 
