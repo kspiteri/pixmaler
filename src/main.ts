@@ -1,15 +1,9 @@
 import PartySocket from "partysocket";
-import { uniqueNamesGenerator } from "unique-names-generator";
-import { adjectives, nouns } from "./words";
-import type { ServerMsg, ClientMsg, GmConfigureMsg } from "./types";
-import {
-  processImage,
-  isMobileWarning,
-  DEFAULT_COLOR_COUNT,
-  DEFAULT_SCALE,
-  type PipelineResult,
-} from "./pipeline";
-import { PixelCanvas, buildSwatch, buildBrushControls } from "./canvas";
+import {uniqueNamesGenerator} from "unique-names-generator";
+import {adjectives, nouns} from "./words";
+import type {ClientMsg, GmConfigureMsg, ServerMsg} from "./types";
+import {DEFAULT_COLOR_COUNT, DEFAULT_SCALE, isMobileWarning, type PipelineResult, processImage,} from "./pipeline";
+import {buildBrushControls, buildSwatch, PixelCanvas} from "./canvas";
 
 const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST ?? "127.0.0.1:1999";
 
@@ -353,8 +347,7 @@ function buildPlayerLi(
   socket: PartySocket,
 ): HTMLLIElement {
   const li = document.createElement("li");
-  const label = `${p.name}${p.isGm ? " (GM)" : ""}${p.connected ? "" : " [offline]"}`;
-  li.textContent = label;
+  li.textContent = `${p.name}${p.isGm ? " (GM)" : ""}${p.connected ? "" : " [offline]"}`;
 
   if (viewerIsGm && p.connected && p.clientId !== viewerClientId && !p.isGm) {
     const btn = document.createElement("button");

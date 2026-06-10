@@ -201,7 +201,7 @@ export class PixelCanvas {
     ctx.strokeStyle = "#000";
     ctx.strokeRect(cxPx - half, cyPx - half, minSize, minSize);
     // Bright accent on top.
-    ctx.lineWidth = Math.max(1, Math.round(1 * canvasPxPerDisplayPx));
+    ctx.lineWidth = Math.max(1, Math.round(canvasPxPerDisplayPx));
     ctx.strokeStyle = "#0ff";
     ctx.strokeRect(cxPx - half, cyPx - half, minSize, minSize);
     ctx.restore();
