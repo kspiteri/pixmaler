@@ -45,6 +45,11 @@ export interface GmPlayAgainMsg {
   type: "gm:playAgain";
 }
 
+export interface GmTransferMsg {
+  type: "gm:transfer";
+  toClientId: string;
+}
+
 export type ClientMsg =
   | JoinMsg
   | GmConfigureMsg
@@ -53,7 +58,8 @@ export type ClientMsg =
   | DrawDoneMsg
   | VoteCastMsg
   | GmStopVotingMsg
-  | GmPlayAgainMsg;
+  | GmPlayAgainMsg
+  | GmTransferMsg;
 
 // ── Server → Client ──────────────────────────────────────────────────────────
 

@@ -15,6 +15,9 @@ interface RoomState {
   // Maps conn.id → clientId for fast lookup in message/close handlers.
   connMap: Map<string, string>;
   gmClientId: string;
+  // The player who first claimed GM. They reclaim the role on reconnect even
+  // if someone else has been auto-promoted in their absence (per the plan).
+  originalGmClientId: string;
   config: GmConfigureMsg | null;
   deadline: number | null;
   submissions: Map<string, number[]>; // clientId → grid
@@ -28,6 +31,7 @@ export default class PixmalerServer implements Party.Server {
     players: new Map(),
     connMap: new Map(),
     gmClientId: "",
+    originalGmClientId: "",
     config: null,
     deadline: null,
     submissions: new Map(),
@@ -49,8 +53,12 @@ export default class PixmalerServer implements Party.Server {
   }
 
   // ── Connection lifecycle ───────────────────────────────────────────────────
-  onConnect(conn: Party.Connection) {
-    conn.send(JSON.stringify(this.buildState()));
+  onConnect(_conn: Party.Connection) {
+    // Don't send `state` here — the client hasn't told us who they are yet
+    // (no `join` message processed), so the snapshot would be stale and could
+    // cause the first joiner to render an empty-lobby with no GM controls.
+    // `handleJoin` broadcasts a fresh state to everyone once the client has
+    // identified itself.
   }
 
   onClose(conn: Party.Connection) {
@@ -74,6 +82,7 @@ export default class PixmalerServer implements Party.Server {
       case "join":          return this.handleJoin(msg, sender);
       case "gm:configure":  return this.handleConfigure(msg, sender);
       case "gm:start":      return this.handleStart(sender);
+      case "gm:transfer":   return this.handleTransfer(msg, sender);
       case "draw:done":     return this.handleDrawDone(sender);
       case "draw:submit":   return this.handleSubmit(msg, sender);
       case "vote:cast":     return this.handleVote(msg, sender);
@@ -90,16 +99,25 @@ export default class PixmalerServer implements Party.Server {
     const existing = this.state.players.get(msg.clientId);
     if (existing) {
       existing.connected = true;
+      // The original GM reclaims the role on reconnect — even if an auto-promote
+      // gave it to someone else while they were gone.
+      if (msg.clientId === this.state.originalGmClientId) {
+        this.state.gmClientId = msg.clientId;
+      }
     } else {
       const isFirst = this.state.players.size === 0;
       const player: Player = {
         clientId: msg.clientId,
         name: msg.name,
-        isGm: isFirst,
+        // Derived in buildState; per-player flag here is intentionally unused.
+        isGm: false,
         connected: true,
         doneDrawing: false,
       };
-      if (isFirst) this.state.gmClientId = msg.clientId;
+      if (isFirst) {
+        this.state.gmClientId = msg.clientId;
+        this.state.originalGmClientId = msg.clientId;
+      }
       this.state.players.set(msg.clientId, player);
     }
     this.broadcastAll(this.buildState());
@@ -109,6 +127,26 @@ export default class PixmalerServer implements Party.Server {
     if (!this.isGm(conn)) return;
     if (this.state.phase !== "LOBBY") return;
     this.state.config = msg;
+    this.broadcastAll(this.buildState());
+  }
+
+  private handleTransfer(msg: Extract<ClientMsg, { type: "gm:transfer" }>, conn: Party.Connection) {
+    if (!this.isGm(conn)) return;
+    // LOBBY only — mid-game transfers complicate the FSM with no clear payoff.
+    if (this.state.phase !== "LOBBY") {
+      conn.send(JSON.stringify({ type: "error", message: "GM transfer is only allowed in the lobby." } satisfies ServerMsg));
+      return;
+    }
+    const target = this.state.players.get(msg.toClientId);
+    if (!target || !target.connected) {
+      conn.send(JSON.stringify({ type: "error", message: "Cannot transfer GM: target not present." } satisfies ServerMsg));
+      return;
+    }
+    if (target.clientId === this.state.gmClientId) return; // no-op
+    // Rewrite both — the new GM is the "real" GM now and should reclaim on
+    // disconnect, not the previous holder.
+    this.state.gmClientId = target.clientId;
+    this.state.originalGmClientId = target.clientId;
     this.broadcastAll(this.buildState());
   }
 
@@ -252,8 +290,9 @@ export default class PixmalerServer implements Party.Server {
     if (gm?.connected) return;
     const next = [...this.state.players.values()].find(p => p.connected);
     if (next) {
-      next.isGm = true;
       this.state.gmClientId = next.clientId;
+      // originalGmClientId is intentionally NOT updated — if the original GM
+      // returns later, they reclaim the role from this temporary holder.
     }
   }
 
@@ -265,10 +304,16 @@ export default class PixmalerServer implements Party.Server {
   }
 
   private buildState(): StateMsg {
+    // Derive `isGm` from `gmClientId` at broadcast time so the flag can't
+    // drift out of sync with the canonical role-holder.
+    const players = [...this.state.players.values()].map(p => ({
+      ...p,
+      isGm: p.clientId === this.state.gmClientId,
+    }));
     return {
       type: "state",
       phase: this.state.phase,
-      players: [...this.state.players.values()],
+      players,
       gmClientId: this.state.gmClientId,
       config: this.state.config,
       deadline: this.state.deadline,

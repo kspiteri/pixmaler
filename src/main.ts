@@ -137,18 +137,31 @@ function connectToRoom(roomCode: string) {
 // messages rely on it being kept up to date.
 let lastState: Extract<ServerMsg, { type: "state" }> | null = null;
 let renderedPhase: string | null = null;
+let renderedGmClientId: string | null = null;
 
 function handleServerMsg(msg: ServerMsg, socket: PartySocket, clientId: string) {
   switch (msg.type) {
     case "state": {
+      const prevConfig = lastState?.config ?? null;
       lastState = msg;
       const phaseChanged = msg.phase !== renderedPhase;
-      if (phaseChanged) {
+      // Re-render the lobby on GM changes too — when an auto-promote happens
+      // or the original GM reconnects, the new GM needs the start UI and the
+      // demoted player needs it gone.
+      const gmChanged = msg.phase === "LOBBY" && msg.gmClientId !== renderedGmClientId;
+      if (phaseChanged || gmChanged) {
         renderedPhase = msg.phase;
+        renderedGmClientId = msg.gmClientId;
         renderForPhase(socket, clientId);
       } else if (msg.phase === "LOBBY") {
         // In-place update so the GM controls don't get torn down on every join.
-        updatePlayerList(msg);
+        updatePlayerList(msg, socket, clientId);
+        // Also patch the target preview for non-GM viewers when the GM picks
+        // or changes the image. (For the GM, the preview lives inside their
+        // controls panel and is updated there.)
+        if (msg.gmClientId !== clientId && msg.config !== prevConfig) {
+          updateLobbyTargetPreview(msg.config);
+        }
       }
       break;
     }
@@ -212,14 +225,43 @@ function updateDoneStatus(done: number, total: number) {
   if (el) el.textContent = `${done} of ${total} done`;
 }
 
-function updatePlayerList(state: Extract<ServerMsg, { type: "state" }>) {
+// Build a single `<li>` for the player list, with an optional "Make GM" button
+// when the viewer is the current GM and the row is for a connected non-self.
+function buildPlayerLi(
+  p: Extract<ServerMsg, { type: "state" }>["players"][number],
+  viewerClientId: string,
+  viewerIsGm: boolean,
+  socket: PartySocket,
+): HTMLLIElement {
+  const li = document.createElement("li");
+  const label = `${p.name}${p.isGm ? " (GM)" : ""}${p.connected ? "" : " [offline]"}`;
+  li.textContent = label;
+
+  if (viewerIsGm && p.connected && p.clientId !== viewerClientId && !p.isGm) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = "Make GM";
+    btn.style.marginLeft = "8px";
+    btn.addEventListener("click", () => {
+      if (!confirm(`Transfer GM to ${p.name}?`)) return;
+      socket.send(JSON.stringify({ type: "gm:transfer", toClientId: p.clientId } satisfies ClientMsg));
+    });
+    li.appendChild(btn);
+  }
+  return li;
+}
+
+function updatePlayerList(
+  state: Extract<ServerMsg, { type: "state" }>,
+  socket: PartySocket,
+  viewerClientId: string,
+) {
   const list = document.getElementById("player-list");
   if (!list) return;
+  const viewerIsGm = state.gmClientId === viewerClientId;
   list.innerHTML = "";
   for (const p of state.players) {
-    const li = document.createElement("li");
-    li.textContent = `${p.name}${p.isGm ? " (GM)" : ""}${p.connected ? "" : " [offline]"}`;
-    list.appendChild(li);
+    list.appendChild(buildPlayerLi(p, viewerClientId, viewerIsGm, socket));
   }
 }
 
@@ -239,9 +281,7 @@ function renderLobby(
   const h2 = el("h2"); h2.textContent = `Room: ${roomCode}`;
   const playerList = el("ul"); playerList.id = "player-list";
   for (const p of state.players) {
-    const li = document.createElement("li");
-    li.textContent = `${p.name}${p.isGm ? " (GM)" : ""}${p.connected ? "" : " [offline]"}`;
-    playerList.appendChild(li);
+    playerList.appendChild(buildPlayerLi(p, clientId, isGm, socket));
   }
 
   wrap.append(h2, playerList);
@@ -250,10 +290,39 @@ function renderLobby(
     wrap.appendChild(renderGmControls(socket, clientId));
   } else {
     const waiting = el("p"); waiting.textContent = "Waiting for GM to start…";
-    wrap.appendChild(waiting);
+    // Slot for the target preview — populated when the GM picks an image.
+    // Patched in place by updateLobbyTargetPreview so it stays in sync as the
+    // GM tweaks scale/colors.
+    const previewSlot = el("div"); previewSlot.id = "lobby-target-preview"; previewSlot.style.marginTop = "1rem";
+    wrap.append(waiting, previewSlot);
+    if (state.config) renderLobbyPreviewInto(previewSlot, state.config);
   }
 
   app.appendChild(wrap);
+}
+
+function renderLobbyPreviewInto(
+  slot: HTMLElement,
+  config: Extract<ServerMsg, { type: "state" }>["config"],
+) {
+  slot.innerHTML = "";
+  if (!config) return;
+  const label = el("p"); label.textContent = `Target image (${config.gridW}×${config.gridH}):`;
+  const pc = new PixelCanvas({
+    gridW: config.gridW,
+    gridH: config.gridH,
+    palette: config.palette,
+    targetGrid: config.targetGrid,
+    editable: false,
+  });
+  pc.canvas.style.maxWidth = "300px";
+  pc.canvas.style.height = "auto";
+  slot.append(label, pc.canvas);
+}
+
+function updateLobbyTargetPreview(config: Extract<ServerMsg, { type: "state" }>["config"]) {
+  const slot = document.getElementById("lobby-target-preview");
+  if (slot) renderLobbyPreviewInto(slot, config);
 }
 
 // ── GM controls ───────────────────────────────────────────────────────────────
