@@ -86,6 +86,39 @@ function derivePalette(pixels: [number, number, number][], colorCount: number): 
     });
 }
 
+// Merge any palette pair within `threshold` RGB units (squared distance).
+// Real-photo median-cut tends to produce clusters of nearly-identical browns
+// or greys in shadow regions; humans can't pick them apart on a swatch, and
+// players just want fewer-but-distinct choices. We greedily collapse pairs
+// (mean colour) until no two entries are within the threshold. Threshold of
+// 20 RGB units ≈ 400 squared, which is "barely distinguishable" by eye.
+function mergeNearDuplicates(
+  palette: [number, number, number][],
+  thresholdSquared = 400,
+): [number, number, number][] {
+  const out = [...palette];
+  let merged = true;
+  while (merged) {
+    merged = false;
+    outer: for (let i = 0; i < out.length; i++) {
+      for (let j = i + 1; j < out.length; j++) {
+        if (colorDist(out[i], out[j]) < thresholdSquared) {
+          // Replace i with the mean of i and j; remove j.
+          out[i] = [
+            Math.round((out[i][0] + out[j][0]) / 2),
+            Math.round((out[i][1] + out[j][1]) / 2),
+            Math.round((out[i][2] + out[j][2]) / 2),
+          ];
+          out.splice(j, 1);
+          merged = true;
+          break outer;
+        }
+      }
+    }
+  }
+  return out;
+}
+
 // ── Main pipeline ─────────────────────────────────────────────────────────────
 
 export async function processImage(
@@ -125,7 +158,7 @@ export async function processImage(
   for (let i = 0; i < sampleData.length; i += 4) {
     samplePixels.push([sampleData[i], sampleData[i + 1], sampleData[i + 2]]);
   }
-  const derived = derivePalette(samplePixels, colorCount);
+  const derived = mergeNearDuplicates(derivePalette(samplePixels, colorCount));
 
   // ── Step 2: run pixelit using ONLY the derived palette.
   // Classics are added afterwards for the player's swatch but the target itself
