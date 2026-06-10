@@ -36,6 +36,9 @@ export class PixelCanvas {
   // Cell currently highlighted by an outline marker (used on read-only canvases
   // so a cursor over the reference shows which cell it's pointing at).
   private markerCell: { x: number; y: number } | null = null;
+  // Snapshots of the grid pushed at the start of each stroke. `undo()` pops.
+  private undoStack: number[][] = [];
+  private static UNDO_DEPTH = 30;
 
   constructor(opts: CanvasOptions) {
     this.opts = opts;
@@ -105,6 +108,37 @@ export class PixelCanvas {
 
   isLocked(): boolean {
     return this.locked;
+  }
+
+  // ── Undo ────────────────────────────────────────────────────────────────────
+
+  // Push the current grid onto the undo stack. Called automatically at the
+  // start of each paint stroke; can be called explicitly by callers before
+  // destructive operations like Clear so they're undoable too.
+  pushUndoSnapshot() {
+    this.undoStack.push([...this.grid]);
+    if (this.undoStack.length > PixelCanvas.UNDO_DEPTH) this.undoStack.shift();
+  }
+
+  canUndo(): boolean {
+    return this.undoStack.length > 0;
+  }
+
+  // Pop the most recent snapshot and restore it. Returns true if anything
+  // happened. Notifies via `onUpdate` so the wire-side state catches up.
+  undo(): boolean {
+    if (this.locked) return false;
+    const prev = this.undoStack.pop();
+    if (!prev) return false;
+    this.grid = prev;
+    this.clearHover();
+    this.render();
+    this.opts.onUpdate?.(this.getGrid());
+    return true;
+  }
+
+  clearUndo() {
+    this.undoStack.length = 0;
   }
 
   // ── Rendering ──────────────────────────────────────────────────────────────
@@ -266,6 +300,7 @@ export class PixelCanvas {
 
     el.addEventListener("mousedown", e => {
       if (this.locked) return;
+      this.pushUndoSnapshot();
       this.painting = true;
       this.resetStroke();
       // Promote the hover preview into a real paint at the same cell.
@@ -294,7 +329,7 @@ export class PixelCanvas {
       this.opts.onHover?.(null);
     });
 
-    el.addEventListener("touchstart", e => { if (this.locked) return; e.preventDefault(); this.painting = true; this.resetStroke(); this.paintTouch(e); }, { passive: false });
+    el.addEventListener("touchstart", e => { if (this.locked) return; e.preventDefault(); this.pushUndoSnapshot(); this.painting = true; this.resetStroke(); this.paintTouch(e); }, { passive: false });
     el.addEventListener("touchmove", e => { if (this.locked) return; e.preventDefault(); if (this.painting) this.paintTouch(e); }, { passive: false });
     el.addEventListener("touchend", () => { this.painting = false; this.resetStroke(); });
   }

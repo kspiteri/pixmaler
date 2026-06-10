@@ -151,6 +151,14 @@ function renderPaintSandbox() {
 
   let currentPc: PixelCanvas | null = null;
 
+  // Cmd/Ctrl+Z → undo on whichever canvas is active in the sandbox.
+  window.addEventListener("keydown", e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+      e.preventDefault();
+      currentPc?.undo();
+    }
+  });
+
   const picker = buildImagePicker({
     autoLoadSample: "monalisa",
     showMobileWarn: false,
@@ -196,13 +204,21 @@ function renderPaintSandbox() {
 
       const brushCtrl = buildBrushControls(pc);
       brushCtrl.style.marginTop = "8px";
+
+      const undoBtn = el("button"); undoBtn.type = "button"; undoBtn.textContent = "Undo";
+      undoBtn.style.marginTop = "8px";
+      undoBtn.addEventListener("click", () => currentPc?.undo());
+
       const clearBtn = el("button"); clearBtn.type = "button"; clearBtn.textContent = "Clear";
-      clearBtn.style.marginTop = "8px";
+      clearBtn.style.cssText = "margin-top:8px;margin-left:8px";
       clearBtn.addEventListener("click", () => {
         if (!currentPc) return;
-        currentPc.setGrid(new Array(result.gridW * result.gridH).fill(0));
+        // Push a snapshot first so Clear is undoable.
+        currentPc.pushUndoSnapshot();
+        // Reset to all-untouched (-1) so the white backdrop shows again.
+        currentPc.setGrid(new Array(result.gridW * result.gridH).fill(-1));
       });
-      toolsSlot.append(swatch.element, brushCtrl, el("br"), clearBtn);
+      toolsSlot.append(swatch.element, brushCtrl, el("br"), undoBtn, clearBtn);
     },
   });
 
@@ -251,6 +267,21 @@ function connectToRoom(roomCode: string) {
 let lastState: Extract<ServerMsg, { type: "state" }> | null = null;
 let renderedPhase: string | null = null;
 let renderedGmClientId: string | null = null;
+// Cleanups registered by the current view (e.g. window keydown listeners).
+// Run them before re-rendering so the old view's listeners don't leak.
+let viewCleanups: (() => void)[] = [];
+
+function registerViewCleanup(fn: () => void) {
+  viewCleanups.push(fn);
+}
+
+function runViewCleanups() {
+  const cleanups = viewCleanups;
+  viewCleanups = [];
+  for (const fn of cleanups) {
+    try { fn(); } catch (e) { console.warn("[pixmaler] cleanup failed", e); }
+  }
+}
 
 function handleServerMsg(msg: ServerMsg, socket: PartySocket, clientId: string) {
   switch (msg.type) {
@@ -314,6 +345,8 @@ let cachedResults: Extract<ServerMsg, { type: "results" }> | null = null;
 
 function renderForPhase(socket: PartySocket, clientId: string) {
   if (!lastState) return;
+  // Tear down listeners from the previous view before swapping the DOM out.
+  runViewCleanups();
   switch (lastState.phase) {
     case "LOBBY":
       renderLobby(lastState, socket, clientId);
@@ -713,9 +746,15 @@ function renderDrawing(
   const brushCtrl = buildBrushControls(playerPc);
   brushCtrl.style.marginTop = "8px";
 
+  // Undo button — undoes the last stroke. Cmd/Ctrl+Z works too (below).
+  const undoBtn = el("button"); undoBtn.type = "button"; undoBtn.textContent = "Undo";
+  undoBtn.style.marginTop = "8px";
+  undoBtn.addEventListener("click", () => playerPc.undo());
+
   // Done button
   const doneBtn = el("button"); doneBtn.textContent = "Done";
   doneBtn.style.marginTop = "12px";
+  doneBtn.style.marginLeft = "8px";
 
   let submitted = false;
   function submit(reason: "manual" | "deadline") {
@@ -755,7 +794,19 @@ function renderDrawing(
   // Best-effort: also cancel on socket close so we don't try to send after disconnect.
   socket.addEventListener("close", cancelAuto, { once: true });
 
-  wrap.append(statusBar, canvasRow, swatch.element, brushCtrl, doneBtn);
+  // Cmd/Ctrl+Z → undo while drawing. Disabled once the canvas locks.
+  const onKeyDown = (e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+      if (playerPc.isLocked()) return;
+      e.preventDefault();
+      playerPc.undo();
+    }
+  };
+  window.addEventListener("keydown", onKeyDown);
+  // Remove the listener when the view is replaced (next renderForPhase).
+  registerViewCleanup(() => window.removeEventListener("keydown", onKeyDown));
+
+  wrap.append(statusBar, canvasRow, swatch.element, brushCtrl, undoBtn, doneBtn);
   app.appendChild(wrap);
 }
 
