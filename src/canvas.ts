@@ -20,6 +20,7 @@ export class PixelCanvas {
   private selectedColor = 0;
   private brushSize = 1;
   private painting = false;
+  private locked = false;
   private lastCell = -1;
   private lastCx = -1;
   private lastCy = -1;
@@ -64,6 +65,16 @@ export class PixelCanvas {
     return this.brushSize;
   }
 
+  lock() {
+    this.locked = true;
+    this.painting = false;
+    this.canvas.style.cursor = "default";
+  }
+
+  isLocked(): boolean {
+    return this.locked;
+  }
+
   // ── Rendering ──────────────────────────────────────────────────────────────
 
   render() {
@@ -83,13 +94,13 @@ export class PixelCanvas {
   private attachInput() {
     const el = this.canvas;
 
-    el.addEventListener("mousedown", e => { this.painting = true; this.resetStroke(); this.paint(e); });
-    el.addEventListener("mousemove", e => { if (this.painting) this.paint(e); });
+    el.addEventListener("mousedown", e => { if (this.locked) return; this.painting = true; this.resetStroke(); this.paint(e); });
+    el.addEventListener("mousemove", e => { if (this.painting && !this.locked) this.paint(e); });
     el.addEventListener("mouseup", () => { this.painting = false; this.resetStroke(); });
     el.addEventListener("mouseleave", () => { this.painting = false; this.resetStroke(); });
 
-    el.addEventListener("touchstart", e => { e.preventDefault(); this.painting = true; this.resetStroke(); this.paintTouch(e); }, { passive: false });
-    el.addEventListener("touchmove", e => { e.preventDefault(); if (this.painting) this.paintTouch(e); }, { passive: false });
+    el.addEventListener("touchstart", e => { if (this.locked) return; e.preventDefault(); this.painting = true; this.resetStroke(); this.paintTouch(e); }, { passive: false });
+    el.addEventListener("touchmove", e => { if (this.locked) return; e.preventDefault(); if (this.painting) this.paintTouch(e); }, { passive: false });
     el.addEventListener("touchend", () => { this.painting = false; this.resetStroke(); });
   }
 

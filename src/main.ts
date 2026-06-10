@@ -132,29 +132,84 @@ function connectToRoom(roomCode: string) {
 
 // ── Server message dispatch ───────────────────────────────────────────────────
 
-let currentPhase: string | null = null;
+// Last-seen state from the server. We render off this snapshot rather than
+// passing args through every dispatch path; reconnects and `phase`-only
+// messages rely on it being kept up to date.
+let lastState: Extract<ServerMsg, { type: "state" }> | null = null;
+let renderedPhase: string | null = null;
 
 function handleServerMsg(msg: ServerMsg, socket: PartySocket, clientId: string) {
   switch (msg.type) {
     case "state": {
-      const phaseChanged = msg.phase !== currentPhase;
-      currentPhase = msg.phase;
-      if (msg.phase === "LOBBY") {
-        // Only rebuild the DOM on first render; after that update player list in place.
-        if (phaseChanged) {
-          renderLobby(msg, socket, clientId);
-        } else {
-          updatePlayerList(msg);
-        }
+      lastState = msg;
+      const phaseChanged = msg.phase !== renderedPhase;
+      if (phaseChanged) {
+        renderedPhase = msg.phase;
+        renderForPhase(socket, clientId);
+      } else if (msg.phase === "LOBBY") {
+        // In-place update so the GM controls don't get torn down on every join.
+        updatePlayerList(msg);
       }
       break;
     }
-    case "phase":
-      // Full re-render happens on the next "state" message.
+    case "phase": {
+      // `phase` doesn't carry config/players — patch what it does carry into
+      // the cached state and re-render.
+      if (lastState) {
+        lastState = { ...lastState, phase: msg.phase, deadline: msg.deadline };
+      }
+      renderedPhase = msg.phase;
+      renderForPhase(socket, clientId);
       break;
-    default:
-      console.log("[pixmaler]", msg);
+    }
+    case "done-status": {
+      updateDoneStatus(msg.doneCount, msg.totalDrawing);
+      break;
+    }
+    case "gallery": {
+      // Stash on the cached state so VOTING render can read it.
+      cachedGallery = msg;
+      break;
+    }
+    case "results": {
+      cachedResults = msg;
+      break;
+    }
+    case "error": {
+      console.warn("[pixmaler] server error:", msg.message);
+      alert(msg.message);
+      break;
+    }
   }
+}
+
+let cachedGallery: Extract<ServerMsg, { type: "gallery" }> | null = null;
+let cachedResults: Extract<ServerMsg, { type: "results" }> | null = null;
+
+function renderForPhase(socket: PartySocket, clientId: string) {
+  if (!lastState) return;
+  switch (lastState.phase) {
+    case "LOBBY":
+      renderLobby(lastState, socket, clientId);
+      break;
+    case "DRAWING":
+      if (lastState.config) {
+        renderDrawing(lastState.config, socket, clientId, lastState.deadline);
+      }
+      break;
+    case "VOTING":
+      renderVoting(socket, clientId);
+      break;
+    case "RESULTS":
+      renderResults(socket, clientId);
+      break;
+  }
+}
+
+// Updated by `done-status` messages while DRAWING is on screen.
+function updateDoneStatus(done: number, total: number) {
+  const el = document.getElementById("done-status");
+  if (el) el.textContent = `${done} of ${total} done`;
 }
 
 function updatePlayerList(state: Extract<ServerMsg, { type: "state" }>) {
@@ -353,24 +408,20 @@ function renderGmControls(socket: PartySocket, _clientId: string): HTMLElement {
 
 // ── Drawing phase ─────────────────────────────────────────────────────────────
 
-export function renderDrawing(
+function renderDrawing(
   config: GmConfigureMsg,
   socket: PartySocket,
+  _clientId: string,
   deadline: number | null,
 ): void {
   app.innerHTML = "";
   const wrap = el("div", "font-family:monospace;padding:1rem");
 
-  // Countdown
-  const timer = el("p"); timer.style.fontWeight = "bold";
-  if (deadline) {
-    const tick = () => {
-      const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
-      timer.textContent = `Time left: ${left}s`;
-      if (left > 0) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }
+  // Countdown + done status
+  const statusBar = el("div", "display:flex;gap:1.5rem;align-items:center;margin-bottom:8px");
+  const timer = el("p"); timer.style.fontWeight = "bold"; timer.style.margin = "0";
+  const doneStatus = el("p"); doneStatus.id = "done-status"; doneStatus.style.margin = "0"; doneStatus.style.color = "#888";
+  statusBar.append(timer, doneStatus);
 
   // Side-by-side layout
   const canvasRow = el("div", "display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start");
@@ -413,15 +464,84 @@ export function renderDrawing(
   // Done button
   const doneBtn = el("button"); doneBtn.textContent = "Done";
   doneBtn.style.marginTop = "12px";
-  doneBtn.addEventListener("click", () => {
+
+  let submitted = false;
+  function submit(reason: "manual" | "deadline") {
+    if (submitted) return;
+    submitted = true;
     const grid = playerPc.getGrid();
     socket.send(JSON.stringify({ type: "draw:submit", grid } satisfies ClientMsg));
-    socket.send(JSON.stringify({ type: "draw:done" } satisfies ClientMsg));
+    if (reason === "manual") {
+      socket.send(JSON.stringify({ type: "draw:done" } satisfies ClientMsg));
+    }
+    playerPc.lock();
     doneBtn.disabled = true;
-    doneBtn.textContent = "Submitted ✓";
-  });
+    doneBtn.textContent = reason === "manual" ? "Submitted ✓" : "Time's up — submitted";
+  }
 
-  wrap.append(timer, canvasRow, swatch, brushCtrl, doneBtn);
+  doneBtn.addEventListener("click", () => submit("manual"));
+
+  // Countdown tick + auto-submit at deadline. We submit on the local clock; the
+  // server's authoritative timer ends DRAWING regardless, and any post-deadline
+  // submit gets dropped by the phase guard.
+  let autoTimer: ReturnType<typeof setTimeout> | null = null;
+  if (deadline) {
+    const tick = () => {
+      const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      timer.textContent = `Time left: ${left}s`;
+      if (left > 0 && !submitted) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    const remaining = Math.max(0, deadline - Date.now());
+    autoTimer = setTimeout(() => submit("deadline"), remaining);
+  } else {
+    timer.textContent = "Drawing…";
+  }
+
+  // If the page tears down or the phase changes mid-flight, cancel the auto-submit.
+  const cancelAuto = () => { if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; } };
+  // Best-effort: also cancel on socket close so we don't try to send after disconnect.
+  socket.addEventListener("close", cancelAuto, { once: true });
+
+  wrap.append(statusBar, canvasRow, swatch, brushCtrl, doneBtn);
+  app.appendChild(wrap);
+}
+
+// ── Voting phase ──────────────────────────────────────────────────────────────
+
+function renderVoting(_socket: PartySocket, _clientId: string): void {
+  app.innerHTML = "";
+  const wrap = el("div", "font-family:monospace;padding:2rem");
+  const h2 = el("h2"); h2.textContent = "Voting";
+  const p = el("p"); p.textContent = "Voting screen — TODO (Step 6).";
+  if (cachedGallery) {
+    const summary = el("p");
+    summary.textContent = `Got ${cachedGallery.submissions.length} submissions on a ${cachedGallery.gridW}×${cachedGallery.gridH} grid.`;
+    wrap.append(h2, p, summary);
+  } else {
+    wrap.append(h2, p);
+  }
+  app.appendChild(wrap);
+}
+
+// ── Results phase ─────────────────────────────────────────────────────────────
+
+function renderResults(_socket: PartySocket, _clientId: string): void {
+  app.innerHTML = "";
+  const wrap = el("div", "font-family:monospace;padding:2rem");
+  const h2 = el("h2"); h2.textContent = "Results";
+  const p = el("p"); p.textContent = "Results screen — TODO (Step 7).";
+  if (cachedResults) {
+    const list = el("ol");
+    for (const r of cachedResults.ranked) {
+      const li = document.createElement("li");
+      li.textContent = `${r.name}: ${r.votes} vote${r.votes === 1 ? "" : "s"}`;
+      list.appendChild(li);
+    }
+    wrap.append(h2, p, list);
+  } else {
+    wrap.append(h2, p);
+  }
   app.appendChild(wrap);
 }
 
