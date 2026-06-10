@@ -1,7 +1,14 @@
 import PartySocket from "partysocket";
 import { uniqueNamesGenerator } from "unique-names-generator";
 import { adjectives, nouns } from "./words";
-import type { ServerMsg, ClientMsg } from "./types";
+import type { ServerMsg, ClientMsg, GmConfigureMsg } from "./types";
+import {
+  processImage,
+  isMobileWarning,
+  DEFAULT_COLOR_COUNT,
+  DEFAULT_SCALE,
+} from "./pipeline";
+import { PixelCanvas, buildSwatch, buildBrushControls } from "./canvas";
 
 const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST ?? "127.0.0.1:1999";
 
@@ -34,63 +41,76 @@ function getRoomFromUrl(): string | null {
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 const app = document.getElementById("app")!;
-
 const roomCode = getRoomFromUrl();
 
 if (!roomCode) {
-  // No room in URL — show lobby entry UI
-  app.innerHTML = `
-    <div style="font-family:monospace;padding:2rem;max-width:400px">
-      <h1>Pixmaler</h1>
-      <p>pixel + <em>maler</em> (Norwegian: painter)</p>
-      <hr/>
-      <label>Your name<br/><input id="name-input" type="text" placeholder="e.g. Keith" /></label>
-      <br/><br/>
-      <button id="create-btn">Create room (GM)</button>
-      <hr/>
-      <label>Room code<br/><input id="room-input" type="text" placeholder="e.g. feral-crayon" /></label>
-      <br/><br/>
-      <button id="join-btn">Join room</button>
-    </div>
-  `;
+  renderEntry();
+} else {
+  connectToRoom(roomCode);
+}
 
-  const nameInput = document.getElementById("name-input") as HTMLInputElement;
+// ── Entry screen ──────────────────────────────────────────────────────────────
+
+function renderEntry() {
+  app.innerHTML = "";
+  const wrap = el("div", "font-family:monospace;padding:2rem;max-width:420px");
+
+  const h1 = el("h1"); h1.textContent = "Pixmaler";
+  const sub = el("p"); sub.innerHTML = "pixel + <em>maler</em> (Norwegian: painter)";
+
+  const nameLabel = el("label"); nameLabel.textContent = "Your name";
+  const nameInput = el("input") as HTMLInputElement;
+  nameInput.type = "text"; nameInput.placeholder = "e.g. Keith";
   nameInput.value = getOrCreateName();
+  nameInput.style.cssText = "display:block;margin-top:4px;font-family:monospace";
+  nameLabel.appendChild(nameInput);
 
-  document.getElementById("create-btn")!.addEventListener("click", () => {
+  const createBtn = el("button"); createBtn.textContent = "Create room (GM)";
+  createBtn.style.marginTop = "12px";
+
+  const hr = document.createElement("hr");
+
+  const codeLabel = el("label"); codeLabel.textContent = "Room code";
+  const codeInput = el("input") as HTMLInputElement;
+  codeInput.type = "text"; codeInput.placeholder = "e.g. feral-crayon";
+  codeInput.style.cssText = "display:block;margin-top:4px;font-family:monospace";
+  codeLabel.appendChild(codeInput);
+
+  const joinBtn = el("button"); joinBtn.textContent = "Join room";
+  joinBtn.style.marginTop = "12px";
+
+  createBtn.addEventListener("click", () => {
     const name = nameInput.value.trim();
     if (!name) { alert("Enter your name first."); return; }
     localStorage.setItem("pixmaler:name", name);
-    const code = generateRoomCode();
-    location.href = `${location.pathname}?room=${code}`;
+    location.href = `${location.pathname}?room=${generateRoomCode()}`;
   });
 
-  document.getElementById("join-btn")!.addEventListener("click", () => {
+  joinBtn.addEventListener("click", () => {
     const name = nameInput.value.trim();
-    const code = (document.getElementById("room-input") as HTMLInputElement).value.trim().toLowerCase();
+    const code = codeInput.value.trim().toLowerCase();
     if (!name) { alert("Enter your name first."); return; }
     if (!code) { alert("Enter a room code."); return; }
     localStorage.setItem("pixmaler:name", name);
     location.href = `${location.pathname}?room=${code}`;
   });
-} else {
-  // Room code in URL — connect
+
+  wrap.append(h1, sub, nameLabel, createBtn, hr, codeLabel, joinBtn);
+  app.appendChild(wrap);
+}
+
+// ── Room connection ───────────────────────────────────────────────────────────
+
+function connectToRoom(roomCode: string) {
   const clientId = getOrCreateClientId();
   const name = getOrCreateName() || clientId.slice(0, 6);
 
-  const connectingDiv = document.createElement("div");
-  connectingDiv.style.cssText = "font-family:monospace;padding:2rem";
-  const connectingP = document.createElement("p");
-  const strong = document.createElement("strong");
-  strong.textContent = roomCode;
-  connectingP.append("Connecting to ", strong, "…");
-  connectingDiv.appendChild(connectingP);
-  app.replaceChildren(connectingDiv);
+  const status = el("p"); status.textContent = `Connecting to ${roomCode}…`;
+  const wrap = el("div", "font-family:monospace;padding:2rem");
+  wrap.appendChild(status);
+  app.replaceChildren(wrap);
 
-  const socket = new PartySocket({
-    host: PARTYKIT_HOST,
-    room: roomCode,
-  });
+  const socket = new PartySocket({ host: PARTYKIT_HOST, room: roomCode });
 
   socket.addEventListener("open", () => {
     const msg: ClientMsg = { type: "join", clientId, name };
@@ -101,15 +121,314 @@ if (!roomCode) {
     let msg: ServerMsg;
     try { msg = JSON.parse(ev.data as string) as ServerMsg; }
     catch { console.error("[pixmaler] bad message", ev.data); return; }
-    console.log("[pixmaler]", msg);
-    // Phase-specific UI will be wired up in subsequent build steps.
-    const pre = document.createElement("pre");
-    pre.style.cssText = "font-family:monospace;padding:2rem";
-    pre.textContent = JSON.stringify(msg, null, 2);
-    app.replaceChildren(pre);
+
+    handleServerMsg(msg, socket, clientId);
   });
 
   socket.addEventListener("close", () => {
     console.warn("[pixmaler] socket closed");
   });
+}
+
+// ── Server message dispatch ───────────────────────────────────────────────────
+
+let currentPhase: string | null = null;
+
+function handleServerMsg(msg: ServerMsg, socket: PartySocket, clientId: string) {
+  switch (msg.type) {
+    case "state": {
+      const phaseChanged = msg.phase !== currentPhase;
+      currentPhase = msg.phase;
+      if (msg.phase === "LOBBY") {
+        // Only rebuild the DOM on first render; after that update player list in place.
+        if (phaseChanged) {
+          renderLobby(msg, socket, clientId);
+        } else {
+          updatePlayerList(msg);
+        }
+      }
+      break;
+    }
+    case "phase":
+      // Full re-render happens on the next "state" message.
+      break;
+    default:
+      console.log("[pixmaler]", msg);
+  }
+}
+
+function updatePlayerList(state: Extract<ServerMsg, { type: "state" }>) {
+  const list = document.getElementById("player-list");
+  if (!list) return;
+  list.innerHTML = "";
+  for (const p of state.players) {
+    const li = document.createElement("li");
+    li.textContent = `${p.name}${p.isGm ? " (GM)" : ""}${p.connected ? "" : " [offline]"}`;
+    list.appendChild(li);
+  }
+}
+
+// ── Lobby screen ──────────────────────────────────────────────────────────────
+
+function renderLobby(
+  state: Extract<ServerMsg, { type: "state" }>,
+  socket: PartySocket,
+  clientId: string,
+) {
+  const isGm = state.gmClientId === clientId;
+  const roomCode = new URLSearchParams(location.search).get("room") ?? "";
+
+  app.innerHTML = "";
+  const wrap = el("div", "font-family:monospace;padding:2rem;max-width:600px");
+
+  const h2 = el("h2"); h2.textContent = `Room: ${roomCode}`;
+  const playerList = el("ul"); playerList.id = "player-list";
+  for (const p of state.players) {
+    const li = document.createElement("li");
+    li.textContent = `${p.name}${p.isGm ? " (GM)" : ""}${p.connected ? "" : " [offline]"}`;
+    playerList.appendChild(li);
+  }
+
+  wrap.append(h2, playerList);
+
+  if (isGm) {
+    wrap.appendChild(renderGmControls(socket, clientId));
+  } else {
+    const waiting = el("p"); waiting.textContent = "Waiting for GM to start…";
+    wrap.appendChild(waiting);
+  }
+
+  app.appendChild(wrap);
+}
+
+// ── GM controls ───────────────────────────────────────────────────────────────
+
+function renderGmControls(socket: PartySocket, _clientId: string): HTMLElement {
+  const section = el("div", "margin-top:1rem");
+
+  // Scale (pixelit native, 0–50). Higher = bigger grid = more detail.
+  const scaleLabel = el("label"); scaleLabel.textContent = "Scale: ";
+  const scaleInput = el("input") as HTMLInputElement;
+  scaleInput.type = "range"; scaleInput.min = "1"; scaleInput.max = "50"; scaleInput.value = String(DEFAULT_SCALE);
+  scaleInput.style.cssText = "vertical-align:middle;width:160px";
+  const scaleVal = el("span"); scaleVal.textContent = String(DEFAULT_SCALE); scaleVal.style.marginLeft = "8px";
+  scaleLabel.append(scaleInput, scaleVal);
+
+  // Color count
+  const colorLabel = el("label"); colorLabel.textContent = " Colors: ";
+  const colorCount = el("input") as HTMLInputElement;
+  colorCount.type = "number"; colorCount.value = String(DEFAULT_COLOR_COUNT); colorCount.min = "4"; colorCount.max = "32"; colorCount.style.width = "50px";
+  colorLabel.appendChild(colorCount);
+
+  // Draw time
+  const timeLabel = el("label"); timeLabel.textContent = " Draw seconds: ";
+  const drawSecs = el("input") as HTMLInputElement;
+  drawSecs.type = "number"; drawSecs.value = "120"; drawSecs.min = "30"; drawSecs.max = "600"; drawSecs.style.width = "60px";
+  timeLabel.appendChild(drawSecs);
+
+  // Upload
+  const uploadLabel = el("label"); uploadLabel.textContent = "Upload image: ";
+  const fileInput = el("input") as HTMLInputElement;
+  fileInput.type = "file"; fileInput.accept = "image/*";
+  uploadLabel.appendChild(fileInput);
+
+  const mobileWarn = el("p");
+  mobileWarn.style.cssText = "color:orange;display:none";
+  mobileWarn.textContent = "⚠ Grid exceeds 64px on its longest side — mobile players may struggle.";
+
+  const preview = el("div", "margin-top:1rem");
+  const startBtn = el("button"); startBtn.textContent = "Start game";
+  startBtn.disabled = true;
+  startBtn.style.marginTop = "1rem";
+
+  let cachedFile: File | null = null;
+  let lastConfig: GmConfigureMsg | null = null;
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  // Used to discard out-of-order processImage results when the user changes
+  // inputs faster than processing finishes.
+  let runId = 0;
+
+  async function reprocess() {
+    if (!cachedFile) return;
+    const myRun = ++runId;
+    const scale = parseInt(scaleInput.value) || DEFAULT_SCALE;
+    const count = parseInt(colorCount.value) || DEFAULT_COLOR_COUNT;
+
+    preview.textContent = "Processing…";
+    startBtn.disabled = true;
+    mobileWarn.style.display = "none";
+
+    try {
+      const result = await processImage(cachedFile, scale, count);
+      if (myRun !== runId) return; // stale; a newer run has started
+
+      lastConfig = {
+        type: "gm:configure",
+        gridW: result.gridW,
+        gridH: result.gridH,
+        palette: result.palette,
+        targetGrid: result.targetGrid,
+        drawSeconds: parseInt(drawSecs.value) || 120,
+      };
+
+      mobileWarn.style.display = isMobileWarning(Math.max(result.gridW, result.gridH)) ? "block" : "none";
+
+      preview.innerHTML = "";
+      const label = el("p"); label.textContent = `Target image (${result.gridW}×${result.gridH}):`;
+      const pc = new PixelCanvas({
+        gridW: result.gridW,
+        gridH: result.gridH,
+        palette: result.palette,
+        targetGrid: result.targetGrid,
+        editable: false,
+      });
+      pc.canvas.style.maxWidth = "300px";
+      pc.canvas.style.height = "auto";
+      preview.append(label, pc.canvas);
+
+      socket.send(JSON.stringify(lastConfig));
+      startBtn.disabled = false;
+    } catch (err) {
+      if (myRun !== runId) return;
+      preview.textContent = `Error: ${err}`;
+    }
+  }
+
+  function scheduleReprocess() {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(reprocess, 150);
+  }
+
+  scaleInput.addEventListener("input", () => {
+    scaleVal.textContent = scaleInput.value;
+    scheduleReprocess();
+  });
+  colorCount.addEventListener("input", scheduleReprocess);
+
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    cachedFile = file;
+    reprocess();
+  });
+
+  // Sample images — quick-pick for GMs without an image to hand.
+  const samples = ["monalisa", "scream", "pearls"] as const;
+  const samplesWrap = el("div", "display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap");
+  const samplesLabel = el("span"); samplesLabel.textContent = "Or try a sample:";
+  samplesWrap.appendChild(samplesLabel);
+  for (const name of samples) {
+    const btn = el("button"); btn.type = "button"; btn.textContent = name;
+    btn.addEventListener("click", async () => {
+      try {
+        const url = `${import.meta.env.BASE_URL}assets/${name}.png`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        const blob = await res.blob();
+        cachedFile = new File([blob], `${name}.png`, { type: blob.type || "image/png" });
+        // Clear the file input so re-clicking the same sample after picking a file still works.
+        fileInput.value = "";
+        reprocess();
+      } catch (err) {
+        preview.textContent = `Could not load sample "${name}": ${err}`;
+      }
+    });
+    samplesWrap.appendChild(btn);
+  }
+
+  startBtn.addEventListener("click", () => {
+    if (!lastConfig) return;
+    // Read drawSeconds fresh in case the GM edited it after upload.
+    const finalConfig: GmConfigureMsg = {
+      ...lastConfig,
+      drawSeconds: parseInt(drawSecs.value) || 120,
+    };
+    socket.send(JSON.stringify(finalConfig));
+    socket.send(JSON.stringify({ type: "gm:start" } satisfies ClientMsg));
+  });
+
+  section.append(scaleLabel, el("br"), colorLabel, timeLabel, el("br"), el("br"), uploadLabel, samplesWrap, mobileWarn, preview, startBtn);
+  return section;
+}
+
+// ── Drawing phase ─────────────────────────────────────────────────────────────
+
+export function renderDrawing(
+  config: GmConfigureMsg,
+  socket: PartySocket,
+  deadline: number | null,
+): void {
+  app.innerHTML = "";
+  const wrap = el("div", "font-family:monospace;padding:1rem");
+
+  // Countdown
+  const timer = el("p"); timer.style.fontWeight = "bold";
+  if (deadline) {
+    const tick = () => {
+      const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+      timer.textContent = `Time left: ${left}s`;
+      if (left > 0) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  // Side-by-side layout
+  const canvasRow = el("div", "display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start");
+
+  // Target (read-only)
+  const targetWrap = el("div");
+  const targetLabel = el("p"); targetLabel.textContent = "Target";
+  const targetPc = new PixelCanvas({
+    gridW: config.gridW,
+    gridH: config.gridH,
+    palette: config.palette,
+    targetGrid: config.targetGrid,
+    editable: false,
+  });
+  targetPc.canvas.style.cssText = "max-width:300px;height:auto;border:1px solid #444";
+  targetWrap.append(targetLabel, targetPc.canvas);
+
+  // Player canvas (editable)
+  const drawWrap = el("div");
+  const drawLabel = el("p"); drawLabel.textContent = "Your drawing";
+  const playerPc = new PixelCanvas({
+    gridW: config.gridW,
+    gridH: config.gridH,
+    palette: config.palette,
+    editable: true,
+  });
+  playerPc.canvas.style.cssText = "max-width:300px;height:auto;border:1px solid #444";
+  drawWrap.append(drawLabel, playerPc.canvas);
+
+  canvasRow.append(targetWrap, drawWrap);
+
+  // Swatch
+  const swatch = buildSwatch(config.palette, i => playerPc.selectColor(i));
+  swatch.style.marginTop = "1rem";
+
+  // Brush controls
+  const brushCtrl = buildBrushControls(playerPc);
+  brushCtrl.style.marginTop = "8px";
+
+  // Done button
+  const doneBtn = el("button"); doneBtn.textContent = "Done";
+  doneBtn.style.marginTop = "12px";
+  doneBtn.addEventListener("click", () => {
+    const grid = playerPc.getGrid();
+    socket.send(JSON.stringify({ type: "draw:submit", grid } satisfies ClientMsg));
+    socket.send(JSON.stringify({ type: "draw:done" } satisfies ClientMsg));
+    doneBtn.disabled = true;
+    doneBtn.textContent = "Submitted ✓";
+  });
+
+  wrap.append(timer, canvasRow, swatch, brushCtrl, doneBtn);
+  app.appendChild(wrap);
+}
+
+// ── Utility ───────────────────────────────────────────────────────────────────
+
+function el<K extends keyof HTMLElementTagNameMap>(tag: K, cssText?: string): HTMLElementTagNameMap[K] {
+  const e = document.createElement(tag);
+  if (cssText) (e as HTMLElement).style.cssText = cssText;
+  return e;
 }
