@@ -163,6 +163,10 @@ function renderPaintSandbox() {
     showDrawSeconds: false,
     showPreview: false,
     onResult: (result) => {
+      // Build swatch first so the canvases' onHover handlers can highlight it.
+      toolsSlot.innerHTML = "";
+      const swatch = buildSwatch(result.palette, i => currentPc?.selectColor(i));
+
       // Reference: small read-only canvas of the pixelated target.
       targetSlot.innerHTML = "";
       const refPc = new PixelCanvas({
@@ -171,6 +175,9 @@ function renderPaintSandbox() {
         palette: result.palette,
         targetGrid: result.targetGrid,
         editable: false,
+        // Hovering the reference highlights the matching swatch — useful for
+        // "I want to know exactly which colour this cell is".
+        onHover: cell => swatch.highlight(cell ? result.targetGrid[cell.y * result.gridW + cell.x] : null),
       });
       Object.assign(refPc.canvas.style, { width: "100%", maxWidth: "200px", height: "auto", border: "1px solid #444" });
       targetSlot.appendChild(refPc.canvas);
@@ -182,15 +189,17 @@ function renderPaintSandbox() {
         gridH: result.gridH,
         palette: result.palette,
         editable: true,
-        // Mirror the cursor cell to the reference image as a small dot.
-        onHover: cell => refPc.showMarker(cell),
+        // Mirror cursor cell to the reference (marker box) and to the swatch
+        // (highlight the colour at that cell on the target image).
+        onHover: cell => {
+          refPc.showMarker(cell);
+          swatch.highlight(cell ? result.targetGrid[cell.y * result.gridW + cell.x] : null);
+        },
       });
       Object.assign(pc.canvas.style, { width: "100%", maxWidth: "900px", height: "auto", border: "1px solid #444" });
       canvasSlot.appendChild(pc.canvas);
       currentPc = pc;
 
-      toolsSlot.innerHTML = "";
-      const swatch = buildSwatch(result.palette, i => currentPc?.selectColor(i));
       const brushCtrl = buildBrushControls(pc);
       brushCtrl.style.marginTop = "8px";
       const clearBtn = el("button"); clearBtn.type = "button"; clearBtn.textContent = "Clear";
@@ -199,7 +208,7 @@ function renderPaintSandbox() {
         if (!currentPc) return;
         currentPc.setGrid(new Array(result.gridW * result.gridH).fill(0));
       });
-      toolsSlot.append(swatch, brushCtrl, el("br"), clearBtn);
+      toolsSlot.append(swatch.element, brushCtrl, el("br"), clearBtn);
     },
   });
 
@@ -666,12 +675,21 @@ function renderDrawing(
   // Target (read-only) — small reference, doesn't grow.
   const targetWrap = el("div", "flex:0 0 240px;min-width:0");
   const targetLabel = el("p"); targetLabel.textContent = "Target";
+
+  // Build the swatch first so the canvases' onHover handlers can highlight it.
+  // `playerPc` is referenced in the swatch's onSelect, but that fires on click,
+  // by which time `playerPc` will be defined.
+  let playerPc: PixelCanvas;
+  const swatch = buildSwatch(config.palette, i => playerPc.selectColor(i));
+
   const targetPc = new PixelCanvas({
     gridW: config.gridW,
     gridH: config.gridH,
     palette: config.palette,
     targetGrid: config.targetGrid,
     editable: false,
+    // Hovering the reference highlights the matching swatch.
+    onHover: cell => swatch.highlight(cell ? config.targetGrid[cell.y * config.gridW + cell.x] : null),
   });
   Object.assign(targetPc.canvas.style, { width: "100%", maxWidth: "240px", height: "auto", border: "1px solid #444" });
   targetWrap.append(targetLabel, targetPc.canvas);
@@ -679,22 +697,24 @@ function renderDrawing(
   // Player canvas (editable) — gets the lion's share of the space.
   const drawWrap = el("div", "flex:1 1 480px;min-width:0");
   const drawLabel = el("p"); drawLabel.textContent = "Your drawing";
-  const playerPc = new PixelCanvas({
+  playerPc = new PixelCanvas({
     gridW: config.gridW,
     gridH: config.gridH,
     palette: config.palette,
     editable: true,
-    // Mirror the cursor cell to the reference target as a small dot.
-    onHover: cell => targetPc.showMarker(cell),
+    // Mirror cursor cell to the reference (marker box) and to the swatch
+    // (highlight the colour at that cell on the target image).
+    onHover: cell => {
+      targetPc.showMarker(cell);
+      swatch.highlight(cell ? config.targetGrid[cell.y * config.gridW + cell.x] : null);
+    },
   });
   Object.assign(playerPc.canvas.style, { width: "100%", maxWidth: "900px", height: "auto", border: "1px solid #444" });
   drawWrap.append(drawLabel, playerPc.canvas);
 
   canvasRow.append(targetWrap, drawWrap);
 
-  // Swatch
-  const swatch = buildSwatch(config.palette, i => playerPc.selectColor(i));
-  swatch.style.marginTop = "1rem";
+  swatch.element.style.marginTop = "1rem";
 
   // Brush controls
   const brushCtrl = buildBrushControls(playerPc);
@@ -742,7 +762,7 @@ function renderDrawing(
   // Best-effort: also cancel on socket close so we don't try to send after disconnect.
   socket.addEventListener("close", cancelAuto, { once: true });
 
-  wrap.append(statusBar, canvasRow, swatch, brushCtrl, doneBtn);
+  wrap.append(statusBar, canvasRow, swatch.element, brushCtrl, doneBtn);
   app.appendChild(wrap);
 }
 

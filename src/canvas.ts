@@ -63,6 +63,7 @@ export class PixelCanvas {
     this.render();
 
     if (opts.editable) this.attachInput();
+    else this.attachReadOnlyHover();
   }
 
   // ── Public API ─────────────────────────────────────────────────────────────
@@ -298,6 +299,20 @@ export class PixelCanvas {
     el.addEventListener("touchend", () => { this.painting = false; this.resetStroke(); });
   }
 
+  // Lightweight hover tracking for read-only canvases — fires `onHover` only,
+  // no preview/marker (read-only canvases are typically the destination of a
+  // marker driven by the editable canvas, not the source of one).
+  private attachReadOnlyHover() {
+    const el = this.canvas;
+    el.addEventListener("mousemove", e => {
+      const { x, y } = this.eventCell(e.clientX, e.clientY);
+      const { gridW, gridH } = this.opts;
+      const inBounds = x >= 0 && y >= 0 && x < gridW && y < gridH;
+      this.opts.onHover?.(inBounds ? { x, y } : null);
+    });
+    el.addEventListener("mouseleave", () => this.opts.onHover?.(null));
+  }
+
   private resetStroke() {
     this.lastCell = -1;
     this.lastCx = -1;
@@ -384,33 +399,71 @@ export class PixelCanvas {
 
 // ── Swatch UI ─────────────────────────────────────────────────────────────────
 
+export interface SwatchHandle {
+  element: HTMLElement;
+  // Outline the swatch matching `index` to indicate "this is the colour at the
+  // cell currently under the cursor". Pass null to clear.
+  highlight: (index: number | null) => void;
+}
+
 export function buildSwatch(
   palette: string[],
   onSelect: (index: number) => void,
-): HTMLElement {
+): SwatchHandle {
   const wrap = document.createElement("div");
-  wrap.style.cssText = "display:flex;flex-wrap:wrap;gap:4px;max-width:300px";
+  wrap.style.cssText = "display:flex;flex-wrap:wrap;gap:4px;max-width:300px;align-items:center";
 
   const swatches: HTMLElement[] = [];
+  let selectedIndex = 0;
+  let highlightedIndex: number | null = null;
+
+  const HIGHLIGHT_BORDER = "#ff0";
+  const SELECTED_BORDER = "#fff";
+  const DEFAULT_BORDER = "#555";
+  const BASE_SIZE = 28;
+  const SELECTED_SIZE = 40;
+
+  function colourFor(i: number): string {
+    if (i === selectedIndex) return SELECTED_BORDER;
+    if (i === highlightedIndex) return HIGHLIGHT_BORDER;
+    return DEFAULT_BORDER;
+  }
+
+  function applyState() {
+    swatches.forEach((s, i) => {
+      s.style.borderColor = colourFor(i);
+      s.style.borderWidth = i === selectedIndex ? "3px" : "2px";
+      const size = i === selectedIndex ? SELECTED_SIZE : BASE_SIZE;
+      s.style.width = `${size}px`;
+      s.style.height = `${size}px`;
+    });
+  }
 
   palette.forEach((hex, i) => {
     const swatch = document.createElement("button");
     swatch.type = "button";
-    swatch.style.cssText = `width:28px;height:28px;background:${hex};border:2px solid #555;cursor:pointer;padding:0`;
+    swatch.style.cssText = `width:${BASE_SIZE}px;height:${BASE_SIZE}px;background:${hex};border:2px solid ${DEFAULT_BORDER};cursor:pointer;padding:0;transition:width 80ms,height 80ms`;
     swatch.title = hex;
     swatch.addEventListener("click", () => {
-      swatches.forEach(s => s.style.borderColor = "#555");
-      swatch.style.borderColor = "#fff";
+      selectedIndex = i;
+      applyState();
       onSelect(i);
     });
     swatches.push(swatch);
     wrap.appendChild(swatch);
   });
 
-  // Select first color by default.
-  if (swatches[0]) swatches[0].style.borderColor = "#fff";
+  // Apply initial state (first swatch selected by default).
+  applyState();
 
-  return wrap;
+  return {
+    element: wrap,
+    highlight: (index: number | null) => {
+      if (index === highlightedIndex) return;
+      highlightedIndex = index;
+      applyState();
+    },
+  };
 }
 
 // ── Brush size controls ───────────────────────────────────────────────────────
