@@ -7,6 +7,7 @@ import {
   isMobileWarning,
   DEFAULT_COLOR_COUNT,
   DEFAULT_SCALE,
+  type PipelineResult,
 } from "./pipeline";
 import { PixelCanvas, buildSwatch, buildBrushControls } from "./canvas";
 
@@ -42,8 +43,11 @@ function getRoomFromUrl(): string | null {
 
 const app = document.getElementById("app")!;
 const roomCode = getRoomFromUrl();
+const isPaintRoute = location.pathname.replace(/\/+$/, "").endsWith("/paint");
 
-if (!roomCode) {
+if (isPaintRoute) {
+  renderPaintSandbox();
+} else if (!roomCode) {
   renderEntry();
 } else {
   connectToRoom(roomCode);
@@ -95,7 +99,113 @@ function renderEntry() {
     location.href = `${location.pathname}?room=${code}`;
   });
 
-  wrap.append(h1, sub, nameLabel, createBtn, hr, codeLabel, joinBtn);
+  // Paint sandbox link — solo canvas without the lobby/multiplayer bits.
+  const sandboxLink = el("a") as HTMLAnchorElement;
+  // Strip any trailing "index.html" then append "paint" — keeps the BASE_URL
+  // ("/pixmaler/") as the prefix so this works in both dev and prod.
+  const base = import.meta.env.BASE_URL.replace(/\/+$/, "");
+  sandboxLink.href = `${base}/paint`;
+  sandboxLink.textContent = "Or open the Paint sandbox →";
+  sandboxLink.style.cssText = "display:block;margin-top:1.5rem;color:#888";
+
+  wrap.append(h1, sub, nameLabel, createBtn, hr, codeLabel, joinBtn, sandboxLink);
+  app.appendChild(wrap);
+}
+
+// ── Paint sandbox (/paint) ────────────────────────────────────────────────────
+
+function renderPaintSandbox() {
+  app.innerHTML = "";
+  const wrap = el("div", "font-family:monospace;padding:1rem;max-width:1280px;margin:0 auto");
+
+  const h1 = el("h1"); h1.textContent = "Paint sandbox";
+  const sub = el("p"); sub.style.color = "#888";
+  sub.textContent = "Solo canvas — pick an image, then paint. No lobby, no timer.";
+
+  const backLink = el("a") as HTMLAnchorElement;
+  const base = import.meta.env.BASE_URL.replace(/\/+$/, "");
+  backLink.href = `${base}/`;
+  backLink.textContent = "← Back to lobby entry";
+  backLink.style.cssText = "display:inline-block;margin-bottom:1rem;color:#888";
+
+  // Layout: picker on the left, target ref + canvas + tools on the right.
+  const row = el("div", "display:flex;gap:1.5rem;flex-wrap:wrap;align-items:flex-start");
+
+  const left = el("div", "flex:0 0 320px");
+  const right = el("div", "flex:1 1 480px;min-width:0");
+
+  // Inside `right`: target reference + editable canvas, side by side, same
+  // flex pattern as the drawing screen.
+  const canvasRow = el("div", "display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start");
+
+  const targetWrap = el("div", "flex:0 0 200px;min-width:0");
+  const targetLabel = el("p"); targetLabel.textContent = "Reference";
+  targetWrap.appendChild(targetLabel);
+  const targetSlot = el("div"); targetWrap.appendChild(targetSlot);
+
+  const canvasWrap = el("div", "flex:1 1 360px;min-width:0");
+  const canvasLabel = el("p"); canvasLabel.textContent = "Your canvas";
+  canvasWrap.appendChild(canvasLabel);
+  const canvasSlot = el("div"); canvasWrap.appendChild(canvasSlot);
+
+  canvasRow.append(targetWrap, canvasWrap);
+
+  // Slot for the swatch + brush controls; rebuilt with each new palette.
+  const toolsSlot = el("div", "margin-top:12px");
+
+  right.append(canvasRow, toolsSlot);
+
+  let currentPc: PixelCanvas | null = null;
+
+  const picker = buildImagePicker({
+    autoLoadSample: "monalisa",
+    showMobileWarn: false,
+    showDrawSeconds: false,
+    showPreview: false,
+    onResult: (result) => {
+      // Reference: small read-only canvas of the pixelated target.
+      targetSlot.innerHTML = "";
+      const refPc = new PixelCanvas({
+        gridW: result.gridW,
+        gridH: result.gridH,
+        palette: result.palette,
+        targetGrid: result.targetGrid,
+        editable: false,
+      });
+      Object.assign(refPc.canvas.style, { width: "100%", maxWidth: "200px", height: "auto", border: "1px solid #444" });
+      targetSlot.appendChild(refPc.canvas);
+
+      // Editable canvas, fresh blank grid with the image's palette as swatch.
+      canvasSlot.innerHTML = "";
+      const pc = new PixelCanvas({
+        gridW: result.gridW,
+        gridH: result.gridH,
+        palette: result.palette,
+        editable: true,
+        // Mirror the cursor cell to the reference image as a small dot.
+        onHover: cell => refPc.showMarker(cell),
+      });
+      Object.assign(pc.canvas.style, { width: "100%", maxWidth: "900px", height: "auto", border: "1px solid #444" });
+      canvasSlot.appendChild(pc.canvas);
+      currentPc = pc;
+
+      toolsSlot.innerHTML = "";
+      const swatch = buildSwatch(result.palette, i => currentPc?.selectColor(i));
+      const brushCtrl = buildBrushControls(pc);
+      brushCtrl.style.marginTop = "8px";
+      const clearBtn = el("button"); clearBtn.type = "button"; clearBtn.textContent = "Clear";
+      clearBtn.style.marginTop = "8px";
+      clearBtn.addEventListener("click", () => {
+        if (!currentPc) return;
+        currentPc.setGrid(new Array(result.gridW * result.gridH).fill(0));
+      });
+      toolsSlot.append(swatch, brushCtrl, el("br"), clearBtn);
+    },
+  });
+
+  left.appendChild(picker.element);
+  row.append(left, right);
+  wrap.append(backLink, h1, sub, row);
   app.appendChild(wrap);
 }
 
@@ -325,12 +435,30 @@ function updateLobbyTargetPreview(config: Extract<ServerMsg, { type: "state" }>[
   if (slot) renderLobbyPreviewInto(slot, config);
 }
 
-// ── GM controls ───────────────────────────────────────────────────────────────
+// ── Image picker (shared by GM controls and the /paint sandbox) ──────────────
 
-function renderGmControls(socket: PartySocket, _clientId: string): HTMLElement {
+interface ImagePickerOpts {
+  onResult: (result: PipelineResult) => void;
+  // Fire when the input changes but before processing finishes — caller can use
+  // this to disable a Start button etc.
+  onProcessing?: () => void;
+  showMobileWarn?: boolean;
+  showDrawSeconds?: boolean;
+  showPreview?: boolean;
+  // Auto-load a sample on first render. Useful for the sandbox where an image
+  // is required.
+  autoLoadSample?: "monalisa" | "scream" | "pearls";
+}
+
+interface ImagePickerHandle {
+  element: HTMLElement;
+  getDrawSeconds: () => number;
+}
+
+function buildImagePicker(opts: ImagePickerOpts): ImagePickerHandle {
   const section = el("div", "margin-top:1rem");
 
-  // Scale (pixelit native, 0–50). Higher = bigger grid = more detail.
+  // Scale (pixelit native, 0–50)
   const scaleLabel = el("label"); scaleLabel.textContent = "Scale: ";
   const scaleInput = el("input") as HTMLInputElement;
   scaleInput.type = "range"; scaleInput.min = "1"; scaleInput.max = "50"; scaleInput.value = String(DEFAULT_SCALE);
@@ -344,7 +472,7 @@ function renderGmControls(socket: PartySocket, _clientId: string): HTMLElement {
   colorCount.type = "number"; colorCount.value = String(DEFAULT_COLOR_COUNT); colorCount.min = "4"; colorCount.max = "32"; colorCount.style.width = "50px";
   colorLabel.appendChild(colorCount);
 
-  // Draw time
+  // Draw time (GM only)
   const timeLabel = el("label"); timeLabel.textContent = " Draw seconds: ";
   const drawSecs = el("input") as HTMLInputElement;
   drawSecs.type = "number"; drawSecs.value = "120"; drawSecs.min = "30"; drawSecs.max = "600"; drawSecs.style.width = "60px";
@@ -361,15 +489,10 @@ function renderGmControls(socket: PartySocket, _clientId: string): HTMLElement {
   mobileWarn.textContent = "⚠ Grid exceeds 64px on its longest side — mobile players may struggle.";
 
   const preview = el("div", "margin-top:1rem");
-  const startBtn = el("button"); startBtn.textContent = "Start game";
-  startBtn.disabled = true;
-  startBtn.style.marginTop = "1rem";
+  const status = el("p"); status.style.cssText = "margin:0;color:#888";
 
   let cachedFile: File | null = null;
-  let lastConfig: GmConfigureMsg | null = null;
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-  // Used to discard out-of-order processImage results when the user changes
-  // inputs faster than processing finishes.
   let runId = 0;
 
   async function reprocess() {
@@ -378,43 +501,39 @@ function renderGmControls(socket: PartySocket, _clientId: string): HTMLElement {
     const scale = parseInt(scaleInput.value) || DEFAULT_SCALE;
     const count = parseInt(colorCount.value) || DEFAULT_COLOR_COUNT;
 
-    preview.textContent = "Processing…";
-    startBtn.disabled = true;
+    status.textContent = "Processing…";
+    if (opts.showPreview) preview.textContent = "";
     mobileWarn.style.display = "none";
+    opts.onProcessing?.();
 
     try {
       const result = await processImage(cachedFile, scale, count);
-      if (myRun !== runId) return; // stale; a newer run has started
+      if (myRun !== runId) return; // stale
 
-      lastConfig = {
-        type: "gm:configure",
-        gridW: result.gridW,
-        gridH: result.gridH,
-        palette: result.palette,
-        targetGrid: result.targetGrid,
-        drawSeconds: parseInt(drawSecs.value) || 120,
-      };
+      status.textContent = "";
+      if (opts.showMobileWarn) {
+        mobileWarn.style.display = isMobileWarning(Math.max(result.gridW, result.gridH)) ? "block" : "none";
+      }
 
-      mobileWarn.style.display = isMobileWarning(Math.max(result.gridW, result.gridH)) ? "block" : "none";
+      if (opts.showPreview) {
+        preview.innerHTML = "";
+        const label = el("p"); label.textContent = `Target image (${result.gridW}×${result.gridH}):`;
+        const pc = new PixelCanvas({
+          gridW: result.gridW,
+          gridH: result.gridH,
+          palette: result.palette,
+          targetGrid: result.targetGrid,
+          editable: false,
+        });
+        pc.canvas.style.maxWidth = "300px";
+        pc.canvas.style.height = "auto";
+        preview.append(label, pc.canvas);
+      }
 
-      preview.innerHTML = "";
-      const label = el("p"); label.textContent = `Target image (${result.gridW}×${result.gridH}):`;
-      const pc = new PixelCanvas({
-        gridW: result.gridW,
-        gridH: result.gridH,
-        palette: result.palette,
-        targetGrid: result.targetGrid,
-        editable: false,
-      });
-      pc.canvas.style.maxWidth = "300px";
-      pc.canvas.style.height = "auto";
-      preview.append(label, pc.canvas);
-
-      socket.send(JSON.stringify(lastConfig));
-      startBtn.disabled = false;
+      opts.onResult(result);
     } catch (err) {
       if (myRun !== runId) return;
-      preview.textContent = `Error: ${err}`;
+      status.textContent = `Error: ${err}`;
     }
   }
 
@@ -436,43 +555,91 @@ function renderGmControls(socket: PartySocket, _clientId: string): HTMLElement {
     reprocess();
   });
 
-  // Sample images — quick-pick for GMs without an image to hand.
+  // Sample images
   const samples = ["monalisa", "scream", "pearls"] as const;
   const samplesWrap = el("div", "display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap");
   const samplesLabel = el("span"); samplesLabel.textContent = "Or try a sample:";
   samplesWrap.appendChild(samplesLabel);
+
+  async function loadSample(name: typeof samples[number]) {
+    try {
+      const url = `${import.meta.env.BASE_URL}assets/${name}.png`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const blob = await res.blob();
+      cachedFile = new File([blob], `${name}.png`, { type: blob.type || "image/png" });
+      fileInput.value = "";
+      reprocess();
+    } catch (err) {
+      status.textContent = `Could not load sample "${name}": ${err}`;
+    }
+  }
+
   for (const name of samples) {
     const btn = el("button"); btn.type = "button"; btn.textContent = name;
-    btn.addEventListener("click", async () => {
-      try {
-        const url = `${import.meta.env.BASE_URL}assets/${name}.png`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        const blob = await res.blob();
-        cachedFile = new File([blob], `${name}.png`, { type: blob.type || "image/png" });
-        // Clear the file input so re-clicking the same sample after picking a file still works.
-        fileInput.value = "";
-        reprocess();
-      } catch (err) {
-        preview.textContent = `Could not load sample "${name}": ${err}`;
-      }
-    });
+    btn.addEventListener("click", () => loadSample(name));
     samplesWrap.appendChild(btn);
   }
 
+  // Layout
+  const children: HTMLElement[] = [scaleLabel, el("br"), colorLabel];
+  if (opts.showDrawSeconds) children.push(timeLabel);
+  children.push(el("br"), el("br"), uploadLabel, samplesWrap);
+  if (opts.showMobileWarn) children.push(mobileWarn);
+  children.push(status);
+  if (opts.showPreview) children.push(preview);
+  section.append(...children);
+
+  if (opts.autoLoadSample) loadSample(opts.autoLoadSample);
+
+  return {
+    element: section,
+    getDrawSeconds: () => parseInt(drawSecs.value) || 120,
+  };
+}
+
+// ── GM controls ───────────────────────────────────────────────────────────────
+
+function renderGmControls(socket: PartySocket, _clientId: string): HTMLElement {
+  const wrap = el("div");
+  const startBtn = el("button"); startBtn.textContent = "Start game";
+  startBtn.disabled = true;
+  startBtn.style.marginTop = "1rem";
+
+  let lastConfig: GmConfigureMsg | null = null;
+
+  const picker = buildImagePicker({
+    showMobileWarn: true,
+    showDrawSeconds: true,
+    showPreview: true,
+    onProcessing: () => { startBtn.disabled = true; },
+    onResult: (result) => {
+      lastConfig = {
+        type: "gm:configure",
+        gridW: result.gridW,
+        gridH: result.gridH,
+        palette: result.palette,
+        targetGrid: result.targetGrid,
+        drawSeconds: picker.getDrawSeconds(),
+      };
+      socket.send(JSON.stringify(lastConfig));
+      startBtn.disabled = false;
+    },
+  });
+
   startBtn.addEventListener("click", () => {
     if (!lastConfig) return;
-    // Read drawSeconds fresh in case the GM edited it after upload.
+    // Read drawSeconds fresh in case the GM edited it after the last reprocess.
     const finalConfig: GmConfigureMsg = {
       ...lastConfig,
-      drawSeconds: parseInt(drawSecs.value) || 120,
+      drawSeconds: picker.getDrawSeconds(),
     };
     socket.send(JSON.stringify(finalConfig));
     socket.send(JSON.stringify({ type: "gm:start" } satisfies ClientMsg));
   });
 
-  section.append(scaleLabel, el("br"), colorLabel, timeLabel, el("br"), el("br"), uploadLabel, samplesWrap, mobileWarn, preview, startBtn);
-  return section;
+  wrap.append(picker.element, startBtn);
+  return wrap;
 }
 
 // ── Drawing phase ─────────────────────────────────────────────────────────────
@@ -484,7 +651,7 @@ function renderDrawing(
   deadline: number | null,
 ): void {
   app.innerHTML = "";
-  const wrap = el("div", "font-family:monospace;padding:1rem");
+  const wrap = el("div", "font-family:monospace;padding:1rem;max-width:1280px;margin:0 auto");
 
   // Countdown + done status
   const statusBar = el("div", "display:flex;gap:1.5rem;align-items:center;margin-bottom:8px");
@@ -492,11 +659,12 @@ function renderDrawing(
   const doneStatus = el("p"); doneStatus.id = "done-status"; doneStatus.style.margin = "0"; doneStatus.style.color = "#888";
   statusBar.append(timer, doneStatus);
 
-  // Side-by-side layout
+  // Side-by-side layout. Each canvas grows to fill its column up to ~600px.
+  // On narrow screens they stack via flex-wrap.
   const canvasRow = el("div", "display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-start");
 
-  // Target (read-only)
-  const targetWrap = el("div");
+  // Target (read-only) — small reference, doesn't grow.
+  const targetWrap = el("div", "flex:0 0 240px;min-width:0");
   const targetLabel = el("p"); targetLabel.textContent = "Target";
   const targetPc = new PixelCanvas({
     gridW: config.gridW,
@@ -505,19 +673,21 @@ function renderDrawing(
     targetGrid: config.targetGrid,
     editable: false,
   });
-  targetPc.canvas.style.cssText = "max-width:300px;height:auto;border:1px solid #444";
+  Object.assign(targetPc.canvas.style, { width: "100%", maxWidth: "240px", height: "auto", border: "1px solid #444" });
   targetWrap.append(targetLabel, targetPc.canvas);
 
-  // Player canvas (editable)
-  const drawWrap = el("div");
+  // Player canvas (editable) — gets the lion's share of the space.
+  const drawWrap = el("div", "flex:1 1 480px;min-width:0");
   const drawLabel = el("p"); drawLabel.textContent = "Your drawing";
   const playerPc = new PixelCanvas({
     gridW: config.gridW,
     gridH: config.gridH,
     palette: config.palette,
     editable: true,
+    // Mirror the cursor cell to the reference target as a small dot.
+    onHover: cell => targetPc.showMarker(cell),
   });
-  playerPc.canvas.style.cssText = "max-width:300px;height:auto;border:1px solid #444";
+  Object.assign(playerPc.canvas.style, { width: "100%", maxWidth: "900px", height: "auto", border: "1px solid #444" });
   drawWrap.append(drawLabel, playerPc.canvas);
 
   canvasRow.append(targetWrap, drawWrap);

@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pixmaler</title>
+    <script>
+      // GitHub Pages SPA fallback. 404.html stashes the originally-requested
+      // path in sessionStorage and redirects here; we restore it so the SPA
+      // routing (e.g. /paint) sees the right URL.
+      (function () {
+        var saved = sessionStorage.getItem("pixmalerSpaRedirect");
+        if (saved) {
+          sessionStorage.removeItem("pixmalerSpaRedirect");
+          history.replaceState(null, "", saved);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="app"></div>
