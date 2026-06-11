@@ -1,0 +1,32 @@
+@use "tokens" as *;
+@use "index";
+@use "paint";
+@use "components";
+@use "phases/lobby";
+@use "phases/drawing";
+@use "phases/voting";
+@use "phases/results";
+
+// Page-wide. Everything else is class-scoped.
+body {
+  margin: 0;
+  font-family: $font-mono;
+  color: $fg;
+  background: $bg;
+}
+
+// Generic page wrapper used by most views.
+.page {
+  padding: $page-pad;
+  max-width: $page-max;
+  margin: 0 auto;
+
+  &--narrow { max-width: $col-narrow; }
+  &--mid    { max-width: $col-mid; }
+}
+
+// Muted helper text.
+.muted { color: $muted; margin: 0; }
+
+// Buttons sitting on the same line.
+.btn-row > * + * { margin-left: $gap-2; }

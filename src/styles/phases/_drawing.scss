@@ -1,0 +1,19 @@
+@use "../tokens" as *;
+
+.drawing {
+  padding: $gap-4;
+  max-width: $page-max;
+  margin: 0 auto;
+
+  &__status {
+    display: flex;
+    gap: $gap-5;
+    align-items: center;
+    margin-bottom: $gap-2;
+  }
+  &__timer { font-weight: bold; margin: 0; }
+  &__done  { margin: 0; color: $muted; }
+
+  &__swatch { margin-top: $gap-4; }
+  &__done-btn { margin-top: $gap-3; margin-left: $gap-2; }
+}

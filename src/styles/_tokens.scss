@@ -1,0 +1,28 @@
+// Design tokens — colours, spacing, typography. One place to tweak the look.
+
+$font-mono: monospace;
+
+// Surface
+$bg: #fff;
+$fg: #111;
+$muted: #888;
+$rule: #444;
+$rule-soft: #ccc;
+
+// Status
+$warn: orange;
+$accent: #0ff;
+
+// Spacing scale (rem)
+$gap-1: 0.25rem;
+$gap-2: 0.5rem;
+$gap-3: 0.75rem;
+$gap-4: 1rem;
+$gap-5: 1.5rem;
+$gap-6: 2rem;
+
+// Layout
+$page-pad: 2rem;
+$page-max: 1280px;
+$col-narrow: 420px;
+$col-mid: 600px;

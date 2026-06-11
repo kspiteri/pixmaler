@@ -1,0 +1,13 @@
+@use "../tokens" as *;
+
+.lobby {
+  &__list { padding-left: 1.25rem; }
+  &__waiting { margin-top: $gap-4; }
+  &__preview {
+    margin-top: $gap-4;
+    canvas { max-width: 300px; height: auto; }
+  }
+  &__make-gm-btn { margin-left: $gap-2; }
+  &__start-btn { margin-top: $gap-4; }
+  &__gm-controls { margin-top: $gap-4; }
+}

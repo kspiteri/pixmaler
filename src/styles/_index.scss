@@ -1,0 +1,13 @@
+@use "tokens" as *;
+
+.entry {
+  &__sub { color: $muted; }
+  &__field { display: block; margin-top: $gap-4; }
+  &__field-input { display: block; margin-top: $gap-1; font-family: $font-mono; }
+  &__btn { margin-top: $gap-3; }
+  &__sandbox-link {
+    display: block;
+    margin-top: $gap-5;
+    color: $muted;
+  }
+}

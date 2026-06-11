@@ -1,0 +1,63 @@
+@use "tokens" as *;
+
+// ── Image picker ─────────────────────────────────────────────────────────────
+
+.picker {
+  margin-top: $gap-4;
+
+  &__scale-input { vertical-align: middle; width: 160px; }
+  &__scale-val { margin-left: $gap-2; }
+  &__count-input { width: 50px; }
+  &__time-input { width: 60px; }
+
+  &__samples {
+    display: flex;
+    gap: $gap-2;
+    margin-top: $gap-2;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  &__warn { color: $warn; }
+  &__status { margin: 0; color: $muted; }
+
+  &__preview {
+    margin-top: $gap-4;
+    canvas { max-width: 300px; height: auto; }
+  }
+}
+
+// ── Pixel canvas pair (target + editable + tools) ────────────────────────────
+
+.canvas-pair {
+  &__row {
+    display: flex;
+    gap: $gap-4;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  &__target { flex: 0 0 240px; min-width: 0; }
+  &__draw   { flex: 1 1 480px; min-width: 0; }
+
+  &__target-canvas {
+    width: 100%;
+    max-width: 240px;
+    height: auto;
+    border: 1px solid $rule;
+  }
+  &__draw-canvas {
+    width: 100%;
+    max-width: 900px;
+    height: auto;
+    border: 1px solid $rule;
+  }
+
+  // Smaller variant for the paint sandbox reference.
+  &--paint &__target-canvas { max-width: 200px; }
+  &--paint &__target { flex: 0 0 200px; }
+  &--paint &__draw   { flex: 1 1 360px; }
+
+  &__tools { margin-top: $gap-3; }
+  &__brush { margin-top: $gap-2; }
+  &__btns  { margin-top: $gap-2; }
+}
