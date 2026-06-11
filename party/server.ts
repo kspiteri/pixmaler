@@ -6,7 +6,7 @@ import type {
   GmConfigureMsg,
   StateMsg,
   ServerMsg,
-} from "../src/types";
+} from "../src/lib/types";
 
 interface RoomState {
   phase: Phase;

@@ -1,13 +1,6 @@
 @use "tokens" as *;
-@use "index";
-@use "paint";
-@use "components";
-@use "phases/lobby";
-@use "phases/drawing";
-@use "phases/voting";
-@use "phases/results";
 
-// Page-wide. Everything else is class-scoped.
+// Page-wide. Per-component styles live inside each .vue file's <style scoped>.
 body {
   margin: 0;
   font-family: $font-mono;
@@ -25,8 +18,6 @@ body {
   &--mid    { max-width: $col-mid; }
 }
 
-// Muted helper text.
 .muted { color: $muted; margin: 0; }
 
-// Buttons sitting on the same line.
 .btn-row > * + * { margin-left: $gap-2; }
