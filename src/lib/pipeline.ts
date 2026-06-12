@@ -5,7 +5,7 @@ import { Pixelit } from "./vendor/pixelit";
 export interface PipelineResult {
   gridW: number;
   gridH: number;
-  palette: string[]; // hex colors
+  palette: string[]; // hex colours
   targetGrid: number[]; // palette indices, length gridW*gridH
 }
 
@@ -22,7 +22,7 @@ const CLASSICS: [number, number, number][] = [
 export const DEFAULT_COLOR_COUNT = 16;
 export const DEFAULT_SCALE = 8; // pixelit's default; range 0-50
 export const MOBILE_WARN_GRID = 64; // warn if computed grid longest side exceeds this
-export const SOURCE_MAX_SIDE = 768; // normalize uploads so the slider behaves consistently
+export const SOURCE_MAX_SIDE = 768; // normalise uploads so the slider behaves consistently
 
 // ── Colour math ───────────────────────────────────────────────────────────────
 
@@ -128,14 +128,14 @@ export async function processImage(
 ): Promise<PipelineResult> {
   const bitmap = await createImageBitmap(file);
 
-  // Normalize source so the slider behaves consistently regardless of upload size.
+  // Normalise source so the slider behaves consistently regardless of upload size.
   // Only ever shrink — small uploads pass through untouched.
   const longest = Math.max(bitmap.width, bitmap.height);
   const shrinkFactor = longest > SOURCE_MAX_SIDE ? SOURCE_MAX_SIDE / longest : 1;
   const sourceW = Math.round(bitmap.width * shrinkFactor);
   const sourceH = Math.round(bitmap.height * shrinkFactor);
 
-  // Source canvas at the (normalized) size — pixelit reads from this.
+  // Source canvas at the (normalised) size — pixelit reads from this.
   const sourceCanvas = document.createElement("canvas");
   sourceCanvas.width = sourceW;
   sourceCanvas.height = sourceH;
@@ -143,7 +143,7 @@ export async function processImage(
   bitmap.close();
 
   // ── Step 1: derive palette from a downscaled copy at pixelit's small-grid size.
-  // Pixelit's small-grid is natW × scale*0.01. Source is normalized to ≤768px
+  // Pixelit's small-grid is natW × scale*0.01. Source is normalised to ≤768px
   // (see SOURCE_MAX_SIDE) so pixelit's >900 halving branch never triggers — the
   // small-grid math is just scale × 0.01 of the source dimensions.
   const smallW = Math.max(1, Math.round(sourceCanvas.width * scale * 0.01));

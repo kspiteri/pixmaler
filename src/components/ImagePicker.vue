@@ -189,7 +189,8 @@ onMounted(() => {
 
   &__scale     { vertical-align: middle; width: 160px; }
   &__scale-val { margin-left: $gap-2; }
-  &__count     { width: 50px; }
+  // Native select sizes to its widest option — let the browser handle it.
+  &__count     { font-family: $font-mono; }
   &__time      { width: 60px; }
 
   &__samples {

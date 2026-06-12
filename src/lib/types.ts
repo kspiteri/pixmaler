@@ -14,7 +14,7 @@ export interface GmConfigureMsg {
   type: "gm:configure";
   gridW: number;
   gridH: number;
-  palette: string[]; // hex colors
+  palette: string[]; // hex colours
   targetGrid: number[]; // palette indices, length gridW*gridH
   drawSeconds: number;
 }
