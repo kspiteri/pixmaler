@@ -17,7 +17,7 @@ A game master uploads any image. It's quantized in the browser into chunky, limi
 
 ## Stack
 
-- Vite + TypeScript, vanilla DOM (no framework), canvas-based drawing
+- Vite + Vue 3 (Composition API, `<script setup>`) + TypeScript, canvas-based drawing
 - [PartyKit](https://www.partykit.io/) on Cloudflare Durable Objects for realtime rooms
 - `partysocket` WebSocket client (auto-reconnect)
 - `unique-names-generator` for memorable room codes (custom curated word list)
