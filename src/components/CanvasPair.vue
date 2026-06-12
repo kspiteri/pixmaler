@@ -1,18 +1,24 @@
 <script setup lang="ts">
-// Pixel canvas pair — target reference + editable canvas + swatch + brush + undo.
+// Pixel canvas pair — target reference + editable canvas + floating tools panel.
 // Shared by the DRAWING phase and the /paint sandbox.
 //
 // `PixelCanvas` is an imperative class (canvas + ctx + mouse handlers + undo
 // stack), so we instantiate it in onMounted and append its <canvas> into a
 // template slot. Vue handles the layout; PixelCanvas handles its own pixels.
+//
+// The swatch + brush controls live in a `<Teleport to="body">` panel so they
+// can be dragged anywhere on the page. Default position: just below the target
+// reference. Resizing the window snaps the panel back to its default — by
+// design (we don't persist position; clearer behaviour for first-time players).
 
-import { onBeforeUnmount, onMounted, useTemplateRef } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue";
 import {
   buildBrushControls,
   buildSwatch,
   PixelCanvas,
   type SwatchHandle,
 } from "../lib/canvas";
+import { useDraggable } from "../lib/useDraggable";
 
 interface Props {
   gridW: number;
@@ -25,8 +31,12 @@ interface Props {
 }
 const props = defineProps<Props>();
 
+// Layout slots
 const targetSlot = useTemplateRef<HTMLDivElement>("targetSlot");
 const drawSlot = useTemplateRef<HTMLDivElement>("drawSlot");
+const targetWrap = useTemplateRef<HTMLDivElement>("targetWrap");
+
+// Floating panel slots
 const swatchSlot = useTemplateRef<HTMLDivElement>("swatchSlot");
 const brushSlot = useTemplateRef<HTMLDivElement>("brushSlot");
 
@@ -34,8 +44,38 @@ let target: PixelCanvas | null = null;
 let player: PixelCanvas | null = null;
 let swatch: SwatchHandle | null = null;
 
-// Expose the editable canvas so parents (Drawing, Paint) can call lock(),
-// getGrid(), undo(), isLocked() etc.
+// Floating tools panel position. We use a ref instead of inlining into
+// useDraggable so we can update it from the resize handler.
+const panelVisible = ref(false);
+// Destructure the refs so they unwrap automatically in the template; the
+// returned object's `x`/`y` are nested refs and wouldn't auto-unwrap.
+const {
+  x: panelX,
+  y: panelY,
+  start: startDrag,
+  setPosition: setPanelPosition,
+} = useDraggable({ initialX: 16, initialY: 16, desktopOnly: true });
+
+function defaultPosition(): { x: number; y: number } {
+  // Sit just below the target reference, aligned to its left edge. Falls back
+  // to a sensible viewport spot if the target hasn't laid out yet.
+  const rect = targetWrap.value?.getBoundingClientRect();
+  if (!rect) return { x: 16, y: 16 };
+  return { x: Math.round(rect.left), y: Math.round(rect.bottom + 12) };
+}
+
+function snapToDefault() {
+  const { x, y } = defaultPosition();
+  setPanelPosition(x, y);
+}
+
+function onResize() {
+  // Reset to default on resize so the panel never floats off-screen after a
+  // viewport change — simpler than clamping, and matches the "no persistence"
+  // decision.
+  snapToDefault();
+}
+
 defineExpose({
   player: () => player,
   clear() {
@@ -45,7 +85,7 @@ defineExpose({
   },
 });
 
-onMounted(() => {
+onMounted(async () => {
   // Build the swatch first so the canvases' onHover handlers can highlight it.
   // `player` is referenced in onSelect, but that fires on click, by which time
   // it's defined.
@@ -82,11 +122,19 @@ onMounted(() => {
   player.canvas.style.border = "1px solid #444";
   drawSlot.value!.appendChild(player.canvas);
 
+  // Reveal the floating panel only after we know where to put it. Without
+  // this guard the panel flashes at (16, 16) for one frame before snapping.
+  await nextTick();
   swatchSlot.value!.appendChild(swatch.element);
   brushSlot.value!.appendChild(buildBrushControls(player));
+  snapToDefault();
+  panelVisible.value = true;
+
+  window.addEventListener("resize", onResize);
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener("resize", onResize);
   // Drop references so PixelCanvas's listeners fall away with the DOM nodes.
   target = null;
   player = null;
@@ -104,7 +152,7 @@ function clear() {
 <template>
   <div class="canvas-pair" :class="`canvas-pair--${variant}`">
     <div class="canvas-pair__row">
-      <div class="canvas-pair__target">
+      <div ref="targetWrap" class="canvas-pair__target">
         <p>{{ variant === "paint" ? "Reference" : "Target" }}</p>
         <div ref="targetSlot" />
       </div>
@@ -114,17 +162,34 @@ function clear() {
       </div>
     </div>
 
-    <div class="canvas-pair__tools">
-      <div ref="swatchSlot" />
-      <div ref="brushSlot" class="canvas-pair__brush" />
-      <div class="canvas-pair__btns btn-row">
-        <button type="button" @click="undo">Undo</button>
-        <button v-if="variant === 'paint'" type="button" @click="clear">
-          Clear
-        </button>
-      </div>
+    <div class="canvas-pair__btns btn-row">
+      <button type="button" @click="undo">Undo</button>
+      <button v-if="variant === 'paint'" type="button" @click="clear">
+        Clear
+      </button>
     </div>
   </div>
+
+  <Teleport to="body">
+    <div
+      v-show="panelVisible"
+      class="tools-panel"
+      :style="{ transform: `translate(${panelX}px, ${panelY}px)` }"
+    >
+      <div
+        class="tools-panel__handle"
+        title="Drag to move"
+        @pointerdown="startDrag"
+      >
+        <span class="tools-panel__grip">⋮⋮</span>
+        <span class="tools-panel__label">colour palette</span>
+      </div>
+      <div class="tools-panel__body">
+        <div ref="swatchSlot" />
+        <div ref="brushSlot" class="tools-panel__brush" />
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped lang="scss">
@@ -158,8 +223,47 @@ function clear() {
   }
   &--paint :deep(.canvas-pair__target-canvas) { max-width: 200px; }
 
-  &__tools { margin-top: $gap-3; }
-  &__brush { margin-top: $gap-2; }
-  &__btns  { margin-top: $gap-2; }
+  &__btns { margin-top: $gap-3; }
+}
+
+// Floating tools panel — teleported into <body>, so :deep() isn't needed.
+// Scoped styles still apply because Vue tags the root with a data attribute.
+.tools-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  background: $bg;
+  border: 1px solid $rule;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  user-select: none;
+  // `transform` for movement is faster than animating left/top.
+  will-change: transform;
+
+  &__handle {
+    display: flex;
+    align-items: center;
+    gap: $gap-2;
+    padding: $gap-1 $gap-2;
+    background: $rule;
+    color: $bg;
+    cursor: grab;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+
+    &:active { cursor: grabbing; }
+  }
+
+  &__grip { font-weight: bold; letter-spacing: -0.1em; }
+  &__label { flex: 1; }
+
+  &__body {
+    padding: $gap-3;
+  }
+
+  &__brush {
+    margin-top: $gap-2;
+  }
 }
 </style>
