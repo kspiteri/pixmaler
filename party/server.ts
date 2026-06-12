@@ -200,10 +200,8 @@ export default class PixmalerServer implements Party.Server {
       conn.send(JSON.stringify({ type: "error", message: "Cannot vote for yourself." } satisfies ServerMsg));
       return;
     }
-    if (this.state.votes.has(voter.clientId)) {
-      conn.send(JSON.stringify({ type: "error", message: "Already voted." } satisfies ServerMsg));
-      return;
-    }
+    // Voters can change their mind — `set` overwrites any previous vote.
+    // The auto-end check still uses `votes.size`, which counts each voter once.
     this.state.votes.set(voter.clientId, msg.submissionId);
 
     const connectedCount = [...this.state.players.values()].filter(p => p.connected).length;

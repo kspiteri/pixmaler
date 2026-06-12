@@ -71,10 +71,12 @@ export class PixelCanvas {
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
-  // Returns the current grid. Untouched cells (-1) are translated to 0 so
-  // the wire format stays a valid `number[]` of palette indices.
+  // Returns the current grid. Untouched cells remain `-1` on the wire so
+  // read-only renderers can draw them as transparent (showing the canvas's
+  // white background through), keeping submitted drawings looking like
+  // strokes on paper rather than filled onto palette[0].
   getGrid(): number[] {
-    return this.grid.map(v => v < 0 ? 0 : v);
+    return [...this.grid];
   }
 
   setGrid(grid: number[]) {
