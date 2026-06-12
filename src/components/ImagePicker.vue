@@ -134,12 +134,13 @@ onMounted(() => {
     <br />
 
     <label>
-      Colors:
-      <input
-        v-model.number="colorCount"
-        class="picker__count"
-        type="number" min="4" max="32"
-      />
+      Colours:
+      <select v-model.number="colorCount" class="picker__count">
+        <option :value="8">Very few</option>
+        <option :value="16">Normal</option>
+        <option :value="24">A bit more</option>
+        <option :value="32">A lot more</option>
+      </select>
     </label>
 
     <label v-if="showDrawSeconds">
