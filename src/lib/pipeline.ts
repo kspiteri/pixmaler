@@ -49,6 +49,57 @@ function nearestIndex(color: [number, number, number], palette: [number, number,
   return best;
 }
 
+// ── Palette ordering ──────────────────────────────────────────────────────────
+//
+// The wire palette starts in median-cut output order, which looks scattered to
+// a human. We reorder so the swatch reads like a paint tray: achromatic
+// colours (greys, black, white) first, sorted dark→light, followed by
+// chromatic colours sorted by hue.
+//
+// `SAT_THRESHOLD` is the saturation cutoff for "this counts as chromatic" —
+// anything below is treated as a grey. 0.15 was picked empirically: muted
+// browns and dusty blues stay in the chromatic bucket, near-greys don't.
+
+const SAT_THRESHOLD = 0.15;
+
+interface RgbHsl {
+  rgb: [number, number, number];
+  h: number; // 0..360
+  s: number; // 0..1
+  l: number; // 0..1
+}
+
+function rgbToHsl([r, g, b]: [number, number, number]): { h: number; s: number; l: number } {
+  const rn = r / 255, gn = g / 255, bn = b / 255;
+  const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
+  const l = (max + min) / 2;
+  if (max === min) return { h: 0, s: 0, l };
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h: number;
+  switch (max) {
+    case rn: h = ((gn - bn) / d + (gn < bn ? 6 : 0)); break;
+    case gn: h = ((bn - rn) / d + 2); break;
+    default: h = ((rn - gn) / d + 4);
+  }
+  return { h: h * 60, s, l };
+}
+
+// Returns the indices of `palette` in the desired display order.
+// Used to reorder both the palette itself and `targetGrid`'s index references.
+function paletteSortOrder(palette: [number, number, number][]): number[] {
+  const decorated: (RgbHsl & { idx: number })[] = palette.map((rgb, idx) => ({
+    rgb, idx, ...rgbToHsl(rgb),
+  }));
+
+  const achromatic = decorated.filter(c => c.s < SAT_THRESHOLD)
+    .sort((a, b) => a.l - b.l);
+  const chromatic = decorated.filter(c => c.s >= SAT_THRESHOLD)
+    .sort((a, b) => a.h - b.h || a.l - b.l);
+
+  return [...achromatic, ...chromatic].map(c => c.idx);
+}
+
 // ── Median-cut quantisation (palette derivation) ──────────────────────────────
 
 function medianCut(pixels: [number, number, number][], depth: number): [number, number, number][][] {
@@ -202,8 +253,18 @@ export async function processImage(
     const tooClose = fullPalette.some(c => colorDist(c, classic) < 30 * 30);
     if (!tooClose) fullPalette.push(classic);
   }
-  const palette = fullPalette.map(([r, g, b]) => rgbToHex(r, g, b));
-  return { gridW, gridH, palette, targetGrid };
+
+  // Reorder the palette so the swatch reads like a paint tray (greys first
+  // dark→light, then chromatic colours by hue). targetGrid indices are
+  // remapped to point at the same colours in their new positions.
+  const order = paletteSortOrder(fullPalette);
+  const indexMap = new Array<number>(fullPalette.length);
+  order.forEach((oldIdx, newIdx) => { indexMap[oldIdx] = newIdx; });
+  const sortedPalette = order.map(i => fullPalette[i]);
+  const remappedTargetGrid = targetGrid.map(idx => indexMap[idx]);
+
+  const palette = sortedPalette.map(([r, g, b]) => rgbToHex(r, g, b));
+  return { gridW, gridH, palette, targetGrid: remappedTargetGrid };
 }
 
 // ── Helpers for callers ───────────────────────────────────────────────────────

@@ -446,7 +446,10 @@ export function buildSwatch(
   onSelect: (index: number) => void,
 ): SwatchHandle {
   const wrap = document.createElement("div");
-  wrap.style.cssText = "display:flex;flex-wrap:wrap;gap:4px;max-width:300px;align-items:center";
+  // 4-column grid keeps the swatch narrow enough to dock in the floating
+  // tools panel. Each cell is one swatch wide; the selected swatch grows
+  // slightly but stays centred in its cell so the layout doesn't shift.
+  wrap.style.cssText = "display:grid;grid-template-columns:repeat(4,32px);gap:6px;justify-content:start;align-items:center";
 
   const swatches: HTMLElement[] = [];
   let selectedIndex = 0;
@@ -455,8 +458,8 @@ export function buildSwatch(
   const HIGHLIGHT_BORDER = "#ff0";
   const SELECTED_BORDER = "#fff";
   const DEFAULT_BORDER = "#555";
-  const BASE_SIZE = 28;
-  const SELECTED_SIZE = 40;
+  const BASE_SIZE = 26;
+  const SELECTED_SIZE = 32;
 
   function colourFor(i: number): string {
     if (i === selectedIndex) return SELECTED_BORDER;
@@ -477,7 +480,9 @@ export function buildSwatch(
   palette.forEach((hex, i) => {
     const swatch = document.createElement("button");
     swatch.type = "button";
-    swatch.style.cssText = `width:${BASE_SIZE}px;height:${BASE_SIZE}px;background:${hex};border:2px solid ${DEFAULT_BORDER};cursor:pointer;padding:0;transition:width 80ms,height 80ms`;
+    // `justify-self:center` so the swatch sits centred within its grid cell —
+    // matters when the selected swatch is bigger than its siblings.
+    swatch.style.cssText = `width:${BASE_SIZE}px;height:${BASE_SIZE}px;background:${hex};border:2px solid ${DEFAULT_BORDER};cursor:pointer;padding:0;justify-self:center;transition:width 80ms,height 80ms`;
     swatch.title = hex;
     swatch.addEventListener("click", () => {
       selectedIndex = i;
@@ -516,7 +521,7 @@ export function buildBrushControls(pc: PixelCanvas): HTMLElement {
   slider.min = "1";
   slider.max = "8";
   slider.value = String(pc.getBrushSize());
-  slider.style.cssText = "vertical-align:middle;width:140px";
+  slider.style.cssText = "vertical-align:middle;width:70px";
   slider.addEventListener("input", () => {
     pc.setBrushSize(parseInt(slider.value, 10));
     label.textContent = `brush: ${pc.getBrushSize()}`;
