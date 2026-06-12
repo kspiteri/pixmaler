@@ -265,5 +265,55 @@ function clear() {
   &__brush {
     margin-top: $gap-2;
   }
+
+  // Swatch + brush controls are imperative DOM (built in lib/canvas.ts and
+  // appended into refs); `:deep()` lets scoped styles reach them.
+  :deep(.swatch) {
+    display: grid;
+    grid-template-columns: repeat(4, 32px);
+    gap: 6px;
+    justify-content: start;
+    align-items: center;
+  }
+
+  :deep(.swatch__cell) {
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: 2px solid #555;
+    cursor: pointer;
+    // Centre within the grid cell — matters when --selected makes one cell
+    // larger than its neighbours.
+    justify-self: center;
+    transition: width 80ms, height 80ms;
+  }
+
+  :deep(.swatch__cell--selected) {
+    width: 32px;
+    height: 32px;
+    border-width: 3px;
+  }
+
+  // Highlight is set on hover-over via `swatch.highlight()` from canvas
+  // hover handlers; --selected wins when both apply.
+  :deep(.swatch__cell--highlighted) {
+    border-color: #ff0;
+  }
+
+  :deep(.brush) {
+    display: flex;
+    align-items: center;
+    gap: $gap-2;
+    font-family: $font-mono;
+  }
+
+  :deep(.brush__slider) {
+    vertical-align: middle;
+    width: 70px;
+  }
+
+  :deep(.brush__label) {
+    min-width: 60px;
+  }
 }
 </style>

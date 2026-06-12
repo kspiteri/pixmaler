@@ -445,52 +445,42 @@ export function buildSwatch(
   palette: string[],
   onSelect: (index: number) => void,
 ): SwatchHandle {
-  const wrap = document.createElement("div");
-  // 4-column grid keeps the swatch narrow enough to dock in the floating
-  // tools panel. Each cell is one swatch wide; the selected swatch grows
-  // slightly but stays centred in its cell so the layout doesn't shift.
-  wrap.style.cssText = "display:grid;grid-template-columns:repeat(4,32px);gap:6px;justify-content:start;align-items:center";
+  // Builds a 4-column grid of clickable colour buttons. Behaviour lives
+  // here; appearance (sizes, gaps, borders) lives in the consuming Vue
+  // component's scoped CSS via :deep(.swatch__cell) etc.
 
-  const swatches: HTMLElement[] = [];
+  const wrap = document.createElement("div");
+  wrap.className = "swatch";
+
+  const cells: HTMLElement[] = [];
   let selectedIndex = 0;
   let highlightedIndex: number | null = null;
 
-  const HIGHLIGHT_BORDER = "#ff0";
-  const SELECTED_BORDER = "#fff";
-  const DEFAULT_BORDER = "#555";
-  const BASE_SIZE = 26;
-  const SELECTED_SIZE = 32;
-
-  function colourFor(i: number): string {
-    if (i === selectedIndex) return SELECTED_BORDER;
-    if (i === highlightedIndex) return HIGHLIGHT_BORDER;
-    return DEFAULT_BORDER;
-  }
-
   function applyState() {
-    swatches.forEach((s, i) => {
-      s.style.borderColor = colourFor(i);
-      s.style.borderWidth = i === selectedIndex ? "3px" : "2px";
-      const size = i === selectedIndex ? SELECTED_SIZE : BASE_SIZE;
-      s.style.width = `${size}px`;
-      s.style.height = `${size}px`;
+    cells.forEach((cell, i) => {
+      cell.classList.toggle("swatch__cell--selected", i === selectedIndex);
+      cell.classList.toggle(
+        "swatch__cell--highlighted",
+        i !== selectedIndex && i === highlightedIndex,
+      );
     });
   }
 
   palette.forEach((hex, i) => {
-    const swatch = document.createElement("button");
-    swatch.type = "button";
-    // `justify-self:center` so the swatch sits centred within its grid cell —
-    // matters when the selected swatch is bigger than its siblings.
-    swatch.style.cssText = `width:${BASE_SIZE}px;height:${BASE_SIZE}px;background:${hex};border:2px solid ${DEFAULT_BORDER};cursor:pointer;padding:0;justify-self:center;transition:width 80ms,height 80ms`;
-    swatch.title = hex;
-    swatch.addEventListener("click", () => {
+    const cell = document.createElement("button");
+    cell.type = "button";
+    cell.className = "swatch__cell";
+    // Background colour is per-instance and not stylable from CSS without
+    // CSS custom properties — inline is the right escape hatch here.
+    cell.style.background = hex;
+    cell.title = hex;
+    cell.addEventListener("click", () => {
       selectedIndex = i;
       applyState();
       onSelect(i);
     });
-    swatches.push(swatch);
-    wrap.appendChild(swatch);
+    cells.push(cell);
+    wrap.appendChild(cell);
   });
 
   // Apply initial state (first swatch selected by default).
@@ -509,19 +499,21 @@ export function buildSwatch(
 // ── Brush size controls ───────────────────────────────────────────────────────
 
 export function buildBrushControls(pc: PixelCanvas): HTMLElement {
+  // Behaviour only — appearance lives in the consuming Vue component's CSS.
   const wrap = document.createElement("div");
-  wrap.style.cssText = "display:flex;align-items:center;gap:8px;font-family:monospace";
-
-  const label = document.createElement("span");
-  label.textContent = `brush: ${pc.getBrushSize()}`;
-  label.style.minWidth = "60px";
+  wrap.className = "brush";
 
   const slider = document.createElement("input");
+  slider.className = "brush__slider";
   slider.type = "range";
   slider.min = "1";
   slider.max = "8";
   slider.value = String(pc.getBrushSize());
-  slider.style.cssText = "vertical-align:middle;width:70px";
+
+  const label = document.createElement("span");
+  label.className = "brush__label";
+  label.textContent = `brush: ${pc.getBrushSize()}`;
+
   slider.addEventListener("input", () => {
     pc.setBrushSize(parseInt(slider.value, 10));
     label.textContent = `brush: ${pc.getBrushSize()}`;
