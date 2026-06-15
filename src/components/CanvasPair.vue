@@ -31,6 +31,12 @@ interface Props {
 }
 const props = defineProps<Props>();
 
+// Bubble up grid changes so parents (e.g. Drawing.vue) can debounce-resubmit
+// while the player keeps painting after their first "Done" click.
+const emit = defineEmits<{
+  update: [grid: number[]];
+}>();
+
 // Layout slots
 const targetSlot = useTemplateRef<HTMLDivElement>("targetSlot");
 const drawSlot = useTemplateRef<HTMLDivElement>("drawSlot");
@@ -117,6 +123,7 @@ onMounted(async () => {
       target!.showMarker(cell);
       swatch!.highlight(cell ? props.targetGrid[cell.y * props.gridW + cell.x] : null);
     },
+    onUpdate: grid => emit("update", grid),
   });
   player.canvas.classList.add("canvas-pair__draw-canvas");
   player.canvas.style.border = "1px solid #444";

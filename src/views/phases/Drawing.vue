@@ -1,5 +1,16 @@
 <script setup lang="ts">
-// DRAWING phase — countdown + done tally + canvas pair + Done button.
+// DRAWING phase — countdown + done tally + canvas pair + Done social signal.
+//
+// Submit semantics (plan 04, item 2):
+//   - Submission is automatic. Every stroke triggers a debounced
+//     `draw:submit`; what's on the canvas at the deadline is what counts.
+//   - The canvas is NEVER locked from this view — only the server's phase
+//     transition to VOTING ends the round, at which point this whole view
+//     unmounts.
+//   - "Done" is a *social signal*, not a submit action. Clicking it fires
+//     `draw:done` so the GM and the room see "Aida is done" via the
+//     "X of Y done" tally. Submission already happens automatically, so
+//     this button doesn't gate it.
 
 import {
   computed,
@@ -27,57 +38,93 @@ const doneText = computed(() =>
 
 const pairRef = useTemplateRef<InstanceType<typeof CanvasPair>>("pair");
 const timerText = ref("");
-const submitted = ref(false);
-const doneLabel = ref("Done");
+const flaggedDone = ref(false); // has the player clicked Done — purely social
 
-let autoTimer: ReturnType<typeof setTimeout> | null = null;
+let autoSubmitTimer: ReturnType<typeof setTimeout> | null = null;
+let resubmitTimer: ReturnType<typeof setTimeout> | null = null;
 let rafId: number | null = null;
+// Latest grid from the @update event — the deadline auto-submit reads it.
+let latestGrid: number[] | null = null;
+// Last grid we actually sent over the wire. Used to skip no-op resubmits
+// (e.g. paint → undo → paint identical, or hover-click on the same colour).
+let lastSentGrid: number[] | null = null;
 
-function submit(reason: "manual" | "deadline") {
-  if (submitted.value) return;
-  const player = pairRef.value?.player();
-  if (!player) return;
-  submitted.value = true;
+const RESUBMIT_DEBOUNCE_MS = 500;
 
-  const grid = player.getGrid();
-  socket.send(JSON.stringify({ type: "draw:submit", grid } satisfies ClientMsg));
-  if (reason === "manual") {
-    socket.send(JSON.stringify({ type: "draw:done" } satisfies ClientMsg));
-  }
-  player.lock();
-  doneLabel.value = reason === "manual" ? "Submitted ✓" : "Time's up — submitted";
+function gridsEqual(a: number[], b: number[]): boolean {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
 }
 
-function cancelAuto() {
-  if (autoTimer) { clearTimeout(autoTimer); autoTimer = null; }
+function sendSubmit(grid: number[]) {
+  if (lastSentGrid && gridsEqual(grid, lastSentGrid)) return;
+  // Snapshot the array — `latestGrid` may keep mutating as more strokes
+  // land. (`getGrid()` already returns a copy, so this is belt-and-braces.)
+  lastSentGrid = [...grid];
+  socket.send(JSON.stringify({ type: "draw:submit", grid } satisfies ClientMsg));
+}
+
+function onCanvasUpdate(grid: number[]) {
+  latestGrid = grid;
+  if (resubmitTimer) clearTimeout(resubmitTimer);
+  resubmitTimer = setTimeout(() => {
+    if (latestGrid) sendSubmit(latestGrid);
+  }, RESUBMIT_DEBOUNCE_MS);
+}
+
+function flagDone() {
+  if (flaggedDone.value) return;
+  flaggedDone.value = true;
+  // Pure social ping — no `draw:submit` here. Auto-submit handles the wire
+  // state; this just tells the room "I think I'm finished".
+  socket.send(JSON.stringify({ type: "draw:done" } satisfies ClientMsg));
+}
+
+function autoSubmitAtDeadline() {
+  // Whatever's on the canvas at the deadline is what gets locked in. The
+  // server transitions to VOTING immediately after, dropping any further
+  // submits via its phase guard.
+  const player = pairRef.value?.player();
+  if (!player) return;
+  const grid = latestGrid ?? player.getGrid();
+  sendSubmit(grid);
+}
+
+function cancelTimers() {
+  if (autoSubmitTimer) { clearTimeout(autoSubmitTimer); autoSubmitTimer = null; }
+  if (resubmitTimer) { clearTimeout(resubmitTimer); resubmitTimer = null; }
   if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
 }
 
 onMounted(() => {
   const dl = deadline.value;
   if (dl) {
+    // Tick unconditionally until 0 — the countdown reflects wall-clock time,
+    // independent of submit state.
     const tick = () => {
       const left = Math.max(0, Math.ceil((dl - Date.now()) / 1000));
       timerText.value = `Time left: ${left}s`;
-      if (left > 0 && !submitted.value) rafId = requestAnimationFrame(tick);
+      if (left > 0) rafId = requestAnimationFrame(tick);
     };
     rafId = requestAnimationFrame(tick);
     const remaining = Math.max(0, dl - Date.now());
-    autoTimer = setTimeout(() => submit("deadline"), remaining);
+    autoSubmitTimer = setTimeout(autoSubmitAtDeadline, remaining);
   } else {
     timerText.value = "Drawing…";
   }
 
-  // Best-effort: also cancel on socket close so we don't try to send after
-  // disconnect. The phase-change unmount path is handled by onBeforeUnmount.
-  socket.addEventListener("close", cancelAuto, { once: true });
+  // Cancel pending sends if the socket goes away. Phase change is handled by
+  // onBeforeUnmount.
+  socket.addEventListener("close", cancelTimers, { once: true });
 });
 
-// Cmd/Ctrl+Z → undo while drawing. Disabled once the canvas locks.
+// Cmd/Ctrl+Z → undo. Always available — the canvas never locks during DRAWING.
 const onKeyDown = (e: KeyboardEvent) => {
   if ((e.metaKey || e.ctrlKey) && e.key === "z") {
     const player = pairRef.value?.player();
-    if (!player || player.isLocked()) return;
+    if (!player) return;
     e.preventDefault();
     player.undo();
   }
@@ -86,7 +133,7 @@ const onKeyDown = (e: KeyboardEvent) => {
 onMounted(() => window.addEventListener("keydown", onKeyDown));
 onBeforeUnmount(() => {
   window.removeEventListener("keydown", onKeyDown);
-  cancelAuto();
+  cancelTimers();
 });
 </script>
 
@@ -104,15 +151,16 @@ onBeforeUnmount(() => {
       :palette="config.palette"
       :target-grid="config.targetGrid"
       variant="drawing"
+      @update="onCanvasUpdate"
     />
 
     <button
       class="drawing__done-btn"
       type="button"
-      :disabled="submitted"
-      @click="submit('manual')"
+      :disabled="flaggedDone"
+      @click="flagDone"
     >
-      {{ doneLabel }}
+      {{ flaggedDone ? "Flagged as done ✓" : "I'm done" }}
     </button>
   </div>
 </template>

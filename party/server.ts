@@ -187,9 +187,11 @@ export default class PixmalerServer implements Party.Server {
     const player = this.playerByConn(conn);
     if (!player || this.state.phase !== "DRAWING") return;
     // submissionId === clientId — the vote self-check in handleVote relies on this.
+    // Note: we do NOT set `doneDrawing` here. Submission is automatic and
+    // high-frequency now (debounced on every stroke); `doneDrawing` is a
+    // social signal driven only by the player clicking "I'm done", which
+    // sends a separate `draw:done` message.
     this.state.submissions.set(player.clientId, msg.grid);
-    player.doneDrawing = true;
-    this.broadcastDoneStatus();
   }
 
   private handleVote(msg: Extract<ClientMsg, { type: "vote:cast" }>, conn: Party.Connection) {
@@ -315,7 +317,10 @@ export default class PixmalerServer implements Party.Server {
       gmClientId: this.state.gmClientId,
       config: this.state.config,
       deadline: this.state.deadline,
-      doneCount: this.state.submissions.size,
+      // `doneCount` reflects players who have flagged themselves as done via
+      // the "I'm done" social ping. Submission is now automatic on every
+      // stroke, so `submissions.size` no longer corresponds to "done".
+      doneCount: [...this.state.players.values()].filter(p => p.doneDrawing).length,
       // Exclude GM — they don't submit a drawing.
       totalDrawing: [...this.state.players.values()].filter(
         p => p.connected && p.clientId !== this.state.gmClientId
@@ -330,7 +335,7 @@ export default class PixmalerServer implements Party.Server {
   private broadcastDoneStatus() {
     this.broadcastAll({
       type: "done-status",
-      doneCount: this.state.submissions.size,
+      doneCount: [...this.state.players.values()].filter(p => p.doneDrawing).length,
       totalDrawing: [...this.state.players.values()].filter(
         p => p.connected && p.clientId !== this.state.gmClientId
       ).length,
