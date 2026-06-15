@@ -3,7 +3,7 @@
 // share the top rank when their votes tie. The GM gets a "Play again"
 // button that returns the room to LOBBY.
 
-import { computed, inject, onBeforeUnmount, watch } from "vue";
+import { computed, inject, nextTick, onBeforeUnmount, watch } from "vue";
 import type { ClientMsg, ServerMsg } from "../../lib/types";
 import { socketKey, clientIdKey } from "../../lib/keys";
 import { PixelCanvas } from "../../lib/canvas";
@@ -66,7 +66,14 @@ function mountCanvases() {
   }
 }
 
-watch(() => props.results, mountCanvases, { immediate: true, flush: "post" });
+watch(() => props.results, async () => {
+  // See Voting.vue's note: `flush: "post"` doesn't strictly guarantee that
+  // function-form :ref callbacks have fired before the watcher runs.
+  // nextTick() twice is the public, supported way to wait for the patch.
+  await nextTick();
+  await nextTick();
+  mountCanvases();
+}, { immediate: true });
 
 onBeforeUnmount(() => { canvases = []; });
 
