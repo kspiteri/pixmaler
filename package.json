@@ -1,24 +1,39 @@
 {
   "name": "pixmaler",
+  "type": "module",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "prepare": "simple-git-hooks"
   },
   "dependencies": {
-    "partysocket": "^1.0.3",
-    "unique-names-generator": "^4.7.1",
-    "vue": "^3.5.35"
+    "partysocket": "catalog:prod",
+    "unique-names-generator": "catalog:prod",
+    "vue": "catalog:prod"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.7",
-    "partykit": "^0.0.111",
-    "sass": "^1.100.0",
-    "typescript": "^5.5.3",
-    "vite": "^5.4.0",
-    "vue-tsc": "^3.3.4"
+    "@antfu/eslint-config": "catalog:dev",
+    "@vitejs/plugin-vue": "catalog:dev",
+    "eslint": "catalog:dev",
+    "eslint-plugin-format": "catalog:dev",
+    "lint-staged": "catalog:dev",
+    "partykit": "catalog:dev",
+    "sass": "catalog:dev",
+    "simple-git-hooks": "catalog:dev",
+    "typescript": "catalog:dev",
+    "vite": "catalog:dev",
+    "vue-tsc": "catalog:dev"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged"
+  },
+  "lint-staged": {
+    "*": "eslint --fix"
   }
 }
