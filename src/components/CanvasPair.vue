@@ -11,48 +11,49 @@
 // reference. Resizing the window snaps the panel back to its default — by
 // design (we don't persist position; clearer behaviour for first-time players).
 
-import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from "vue";
+import type { SwatchHandle } from '../lib/canvas'
+import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 import {
   buildBrushControls,
   buildSwatch,
   PixelCanvas,
-  type SwatchHandle,
-} from "../lib/canvas";
-import { useDraggable } from "../lib/useDraggable";
+
+} from '../lib/canvas'
+import { useDraggable } from '../lib/useDraggable'
 
 interface Props {
-  gridW: number;
-  gridH: number;
-  palette: string[];
-  targetGrid: number[];
+  gridW: number
+  gridH: number
+  palette: string[]
+  targetGrid: number[]
   // "drawing" → wider editable canvas, no Clear button (committed strokes only).
   // "paint"   → narrower target reference, Clear button included (sandbox toy).
-  variant: "drawing" | "paint";
+  variant: 'drawing' | 'paint'
 }
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 
 // Bubble up grid changes so parents (e.g. Drawing.vue) can debounce-resubmit
 // while the player keeps painting after their first "Done" click.
 const emit = defineEmits<{
-  update: [grid: number[]];
-}>();
+  update: [grid: number[]]
+}>()
 
 // Layout slots
-const targetSlot = useTemplateRef<HTMLDivElement>("targetSlot");
-const drawSlot = useTemplateRef<HTMLDivElement>("drawSlot");
-const targetWrap = useTemplateRef<HTMLDivElement>("targetWrap");
+const targetSlot = useTemplateRef<HTMLDivElement>('targetSlot')
+const drawSlot = useTemplateRef<HTMLDivElement>('drawSlot')
+const targetWrap = useTemplateRef<HTMLDivElement>('targetWrap')
 
 // Floating panel slots
-const swatchSlot = useTemplateRef<HTMLDivElement>("swatchSlot");
-const brushSlot = useTemplateRef<HTMLDivElement>("brushSlot");
+const swatchSlot = useTemplateRef<HTMLDivElement>('swatchSlot')
+const brushSlot = useTemplateRef<HTMLDivElement>('brushSlot')
 
-let target: PixelCanvas | null = null;
-let player: PixelCanvas | null = null;
-let swatch: SwatchHandle | null = null;
+let target: PixelCanvas | null = null
+let player: PixelCanvas | null = null
+let swatch: SwatchHandle | null = null
 
 // Floating tools panel position. We use a ref instead of inlining into
 // useDraggable so we can update it from the resize handler.
-const panelVisible = ref(false);
+const panelVisible = ref(false)
 // Destructure the refs so they unwrap automatically in the template; the
 // returned object's `x`/`y` are nested refs and wouldn't auto-unwrap.
 const {
@@ -60,42 +61,44 @@ const {
   y: panelY,
   start: startDrag,
   setPosition: setPanelPosition,
-} = useDraggable({ initialX: 16, initialY: 16, desktopOnly: true });
+} = useDraggable({ initialX: 16, initialY: 16, desktopOnly: true })
 
-function defaultPosition(): { x: number; y: number } {
+function defaultPosition(): { x: number, y: number } {
   // Sit just below the target reference, aligned to its left edge. Falls back
   // to a sensible viewport spot if the target hasn't laid out yet.
-  const rect = targetWrap.value?.getBoundingClientRect();
-  if (!rect) return { x: 16, y: 16 };
-  return { x: Math.round(rect.left), y: Math.round(rect.bottom + 12) };
+  const rect = targetWrap.value?.getBoundingClientRect()
+  if (!rect)
+    return { x: 16, y: 16 }
+  return { x: Math.round(rect.left), y: Math.round(rect.bottom + 12) }
 }
 
 function snapToDefault() {
-  const { x, y } = defaultPosition();
-  setPanelPosition(x, y);
+  const { x, y } = defaultPosition()
+  setPanelPosition(x, y)
 }
 
 function onResize() {
   // Reset to default on resize so the panel never floats off-screen after a
   // viewport change — simpler than clamping, and matches the "no persistence"
   // decision.
-  snapToDefault();
+  snapToDefault()
 }
 
 defineExpose({
   player: () => player,
   clear() {
-    if (!player) return;
-    player.pushUndoSnapshot();
-    player.setGrid(new Array(props.gridW * props.gridH).fill(-1));
+    if (!player)
+      return
+    player.pushUndoSnapshot()
+    player.setGrid(new Array(props.gridW * props.gridH).fill(-1))
   },
-});
+})
 
 onMounted(async () => {
   // Build the swatch first so the canvases' onHover handlers can highlight it.
   // `player` is referenced in onSelect, but that fires on click, by which time
   // it's defined.
-  swatch = buildSwatch(props.palette, i => player?.selectColor(i));
+  swatch = buildSwatch(props.palette, i => player?.selectColor(i))
 
   target = new PixelCanvas({
     gridW: props.gridW,
@@ -106,53 +109,54 @@ onMounted(async () => {
     onHover: cell => swatch!.highlight(
       cell ? props.targetGrid[cell.y * props.gridW + cell.x] : null,
     ),
-  });
-  target.canvas.classList.add("canvas-pair__target-canvas");
+  })
+  target.canvas.classList.add('canvas-pair__target-canvas')
   // PixelCanvas defaults editable canvases to a soft `#ccc` border, applied
   // inline by the constructor. Force the darker `#444` here — inline beats
   // any class-based rule.
-  target.canvas.style.border = "1px solid #444";
-  targetSlot.value!.appendChild(target.canvas);
+  target.canvas.style.border = '1px solid #444'
+  targetSlot.value!.appendChild(target.canvas)
 
   player = new PixelCanvas({
     gridW: props.gridW,
     gridH: props.gridH,
     palette: props.palette,
     editable: true,
-    onHover: cell => {
-      target!.showMarker(cell);
-      swatch!.highlight(cell ? props.targetGrid[cell.y * props.gridW + cell.x] : null);
+    onHover: (cell) => {
+      target!.showMarker(cell)
+      swatch!.highlight(cell ? props.targetGrid[cell.y * props.gridW + cell.x] : null)
     },
-    onUpdate: grid => emit("update", grid),
-  });
-  player.canvas.classList.add("canvas-pair__draw-canvas");
-  player.canvas.style.border = "1px solid #444";
-  drawSlot.value!.appendChild(player.canvas);
+    onUpdate: grid => emit('update', grid),
+  })
+  player.canvas.classList.add('canvas-pair__draw-canvas')
+  player.canvas.style.border = '1px solid #444'
+  drawSlot.value!.appendChild(player.canvas)
 
   // Reveal the floating panel only after we know where to put it. Without
   // this guard the panel flashes at (16, 16) for one frame before snapping.
-  await nextTick();
-  swatchSlot.value!.appendChild(swatch.element);
-  brushSlot.value!.appendChild(buildBrushControls(player));
-  snapToDefault();
-  panelVisible.value = true;
+  await nextTick()
+  swatchSlot.value!.appendChild(swatch.element)
+  brushSlot.value!.appendChild(buildBrushControls(player))
+  snapToDefault()
+  panelVisible.value = true
 
-  window.addEventListener("resize", onResize);
-});
+  window.addEventListener('resize', onResize)
+})
 
 onBeforeUnmount(() => {
-  window.removeEventListener("resize", onResize);
+  window.removeEventListener('resize', onResize)
   // Drop references so PixelCanvas's listeners fall away with the DOM nodes.
-  target = null;
-  player = null;
-  swatch = null;
-});
+  target = null
+  player = null
+  swatch = null
+})
 
-function undo() { player?.undo(); }
+function undo() { player?.undo() }
 function clear() {
-  if (!player) return;
-  player.pushUndoSnapshot();
-  player.setGrid(new Array(props.gridW * props.gridH).fill(-1));
+  if (!player)
+    return
+  player.pushUndoSnapshot()
+  player.setGrid(new Array(props.gridW * props.gridH).fill(-1))
 }
 </script>
 
@@ -170,7 +174,9 @@ function clear() {
     </div>
 
     <div class="canvas-pair__btns btn-row">
-      <button type="button" @click="undo">Undo</button>
+      <button type="button" @click="undo">
+        Undo
+      </button>
       <button v-if="variant === 'paint'" type="button" @click="clear">
         Clear
       </button>
@@ -200,7 +206,7 @@ function clear() {
 </template>
 
 <style scoped lang="scss">
-@use "../styles/tokens" as *;
+@use '../styles/tokens' as *;
 
 .canvas-pair {
   &__row {
@@ -209,12 +215,22 @@ function clear() {
     flex-wrap: wrap;
     align-items: flex-start;
   }
-  &__target { flex: 0 0 240px; min-width: 0; }
-  &__draw   { flex: 1 1 480px; min-width: 0; }
+  &__target {
+    flex: 0 0 240px;
+    min-width: 0;
+  }
+  &__draw {
+    flex: 1 1 480px;
+    min-width: 0;
+  }
 
   // Smaller variant for the paint sandbox reference.
-  &--paint &__target { flex: 0 0 200px; }
-  &--paint &__draw   { flex: 1 1 360px; }
+  &--paint &__target {
+    flex: 0 0 200px;
+  }
+  &--paint &__draw {
+    flex: 1 1 360px;
+  }
 
   // PixelCanvas's <canvas> is appended into the slot; size it via :deep so
   // the scoped CSS reaches it.
@@ -228,9 +244,13 @@ function clear() {
     max-width: 900px;
     height: auto;
   }
-  &--paint :deep(.canvas-pair__target-canvas) { max-width: 200px; }
+  &--paint :deep(.canvas-pair__target-canvas) {
+    max-width: 200px;
+  }
 
-  &__btns { margin-top: $gap-3; }
+  &__btns {
+    margin-top: $gap-3;
+  }
 }
 
 // Floating tools panel — teleported into <body>, so :deep() isn't needed.
@@ -259,11 +279,18 @@ function clear() {
     text-transform: uppercase;
     letter-spacing: 0.05em;
 
-    &:active { cursor: grabbing; }
+    &:active {
+      cursor: grabbing;
+    }
   }
 
-  &__grip { font-weight: bold; letter-spacing: -0.1em; }
-  &__label { flex: 1; }
+  &__grip {
+    font-weight: bold;
+    letter-spacing: -0.1em;
+  }
+  &__label {
+    flex: 1;
+  }
 
   &__body {
     padding: $gap-3;
@@ -292,7 +319,9 @@ function clear() {
     // Centre within the grid cell — matters when --selected makes one cell
     // larger than its neighbours.
     justify-self: center;
-    transition: width 80ms, height 80ms;
+    transition:
+      width 80ms,
+      height 80ms;
   }
 
   :deep(.swatch__cell--selected) {

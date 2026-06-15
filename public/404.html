@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -9,19 +9,16 @@
       root preserving the original path so the in-app router can handle it.
     -->
     <script>
-      (function () {
-        var pathname = window.location.pathname;
-        var search = window.location.search;
-        var hash = window.location.hash;
+      ;(function () {
+        var pathname = window.location.pathname
+        var search = window.location.search
+        var hash = window.location.hash
         // Preserve the requested path as a query param so the SPA can read it
         // back via the redirect handler in index.html.
-        sessionStorage.setItem(
-          "pixmalerSpaRedirect",
-          pathname + search + hash
-        );
+        sessionStorage.setItem('pixmalerSpaRedirect', pathname + search + hash)
         // Always redirect to the project root (the Vite `base`).
-        window.location.replace("/pixmaler/");
-      })();
+        window.location.replace('/pixmaler/')
+      })()
     </script>
   </head>
   <body></body>

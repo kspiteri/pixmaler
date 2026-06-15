@@ -1,4 +1,4 @@
-@use "tokens" as *;
+@use 'tokens' as *;
 
 // Page-wide. Per-component styles live inside each .vue file's <style scoped>.
 body {
@@ -14,10 +14,19 @@ body {
   max-width: $page-max;
   margin: 0 auto;
 
-  &--narrow { max-width: $col-narrow; }
-  &--mid    { max-width: $col-mid; }
+  &--narrow {
+    max-width: $col-narrow;
+  }
+  &--mid {
+    max-width: $col-mid;
+  }
 }
 
-.muted { color: $muted; margin: 0; }
+.muted {
+  color: $muted;
+  margin: 0;
+}
 
-.btn-row > * + * { margin-left: $gap-2; }
+.btn-row > * + * {
+  margin-left: $gap-2;
+}

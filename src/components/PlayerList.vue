@@ -2,31 +2,32 @@
 // Player list — single <li> per player, with optional "Make GM" button when
 // the viewer is the GM and the row is for a connected non-self player.
 
-import { inject } from "vue";
-import type { ClientMsg, Player } from "../lib/types";
-import { socketKey, clientIdKey } from "../lib/keys";
+import type { ClientMsg, Player } from '../lib/types'
+import { inject } from 'vue'
+import { clientIdKey, socketKey } from '../lib/keys'
 
 interface Props {
-  players: Player[];
+  players: Player[]
   // The GM as recorded in server state. Compared to viewer's clientId to gate
   // the "Make GM" button.
-  gmClientId: string;
+  gmClientId: string
 }
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 
-const socket = inject(socketKey)!;
-const viewerClientId = inject(clientIdKey)!;
+const socket = inject(socketKey)!
+const viewerClientId = inject(clientIdKey)!
 
-const viewerIsGm = () => props.gmClientId === viewerClientId;
+const viewerIsGm = () => props.gmClientId === viewerClientId
 
 function canTransfer(p: Player): boolean {
-  return viewerIsGm() && p.connected && p.clientId !== viewerClientId && !p.isGm;
+  return viewerIsGm() && p.connected && p.clientId !== viewerClientId && !p.isGm
 }
 
 function transferGm(p: Player) {
-  if (!confirm(`Transfer GM to ${p.name}?`)) return;
-  const msg: ClientMsg = { type: "gm:transfer", toClientId: p.clientId };
-  socket.send(JSON.stringify(msg));
+  if (!confirm(`Transfer GM to ${p.name}?`))
+    return
+  const msg: ClientMsg = { type: 'gm:transfer', toClientId: p.clientId }
+  socket.send(JSON.stringify(msg))
 }
 </script>
 
@@ -47,11 +48,13 @@ function transferGm(p: Player) {
 </template>
 
 <style scoped lang="scss">
-@use "../styles/tokens" as *;
+@use '../styles/tokens' as *;
 
 .player-list {
   padding-left: 1.25rem;
 
-  &__make-gm { margin-left: $gap-2; }
+  &__make-gm {
+    margin-left: $gap-2;
+  }
 }
 </style>

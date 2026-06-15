@@ -5,93 +5,97 @@
 // Tallies are intentionally hidden until RESULTS — broadcasting running
 // counts would influence later voters and ruin the social tension.
 
-import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from "vue";
-import type { ClientMsg, ServerMsg } from "../../lib/types";
-import { socketKey, clientIdKey } from "../../lib/keys";
-import { PixelCanvas } from "../../lib/canvas";
+import type { ClientMsg, ServerMsg } from '../../lib/types'
+import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { PixelCanvas } from '../../lib/canvas'
+import { clientIdKey, socketKey } from '../../lib/keys'
 
-type Gallery = Extract<ServerMsg, { type: "gallery" }>;
+type Gallery = Extract<ServerMsg, { type: 'gallery' }>
 
 const props = defineProps<{
-  gallery: Gallery | null;
-  gmClientId: string;
-}>();
+  gallery: Gallery | null
+  gmClientId: string
+}>()
 
-const socket = inject(socketKey)!;
-const clientId = inject(clientIdKey)!;
+const socket = inject(socketKey)!
+const clientId = inject(clientIdKey)!
 
-const isGm = computed(() => props.gmClientId === clientId);
+const isGm = computed(() => props.gmClientId === clientId)
 
 function stopVoting() {
-  const msg: ClientMsg = { type: "gm:stopVoting" };
-  socket.send(JSON.stringify(msg));
+  const msg: ClientMsg = { type: 'gm:stopVoting' }
+  socket.send(JSON.stringify(msg))
 }
 
 // Local-only — not echoed by the server during VOTING. The submissionId
 // stored is set after the server accepts the vote (we trust our own
 // optimistic update because the server only rejects self-votes/wrong-phase).
-const myVote = ref<string | null>(null);
+const myVote = ref<string | null>(null)
 
 // Track PixelCanvas instances so we can dispose them when the gallery changes
 // or this view unmounts. Each instance owns mouse handlers; orphaning them
 // without cleanup leaks listeners on the canvas elements.
-let canvases: PixelCanvas[] = [];
+let canvases: PixelCanvas[] = []
 
 function disposeCanvases() {
   // PixelCanvas listeners are attached to the canvas element it owns; once
   // the element is removed from the DOM the listeners can't fire anyway.
   // Dropping references is enough.
-  canvases = [];
+  canvases = []
 }
 
 // Mount each submission's canvas into its slot. Re-runs whenever the gallery
 // reference changes (new round = different submissions).
 function mountCanvases(slots: Map<string, HTMLElement>) {
-  if (!props.gallery) return;
-  disposeCanvases();
+  if (!props.gallery)
+    return
+  disposeCanvases()
   for (const sub of props.gallery.submissions) {
-    const slot = slots.get(sub.submissionId);
-    if (!slot) continue;
+    const slot = slots.get(sub.submissionId)
+    if (!slot)
+      continue
     const pc = new PixelCanvas({
       gridW: props.gallery.gridW,
       gridH: props.gallery.gridH,
       palette: props.gallery.palette,
       targetGrid: sub.grid,
       editable: false,
-    });
-    pc.canvas.classList.add("voting__canvas");
-    slot.replaceChildren(pc.canvas);
-    canvases.push(pc);
+    })
+    pc.canvas.classList.add('voting__canvas')
+    slot.replaceChildren(pc.canvas)
+    canvases.push(pc)
   }
 }
 
 // Slots keyed by submissionId — bound via the :ref function-form below so
 // Vue calls back with each <div> as it mounts.
-const slotMap = new Map<string, HTMLElement>();
+const slotMap = new Map<string, HTMLElement>()
 function setSlot(submissionId: string, el: unknown) {
-  if (el instanceof HTMLElement) slotMap.set(submissionId, el);
-  else slotMap.delete(submissionId);
+  if (el instanceof HTMLElement)
+    slotMap.set(submissionId, el)
+  else slotMap.delete(submissionId)
 }
 
 watch(() => props.gallery, async () => {
-  myVote.value = null;
+  myVote.value = null
   // Wait two ticks: the first lets Vue patch the DOM (including :ref
   // callbacks that populate slotMap), the second is belt-and-braces in
   // case the v-if="gallery" gate causes a second patch pass.
-  await nextTick();
-  await nextTick();
-  mountCanvases(slotMap);
-}, { immediate: true });
+  await nextTick()
+  await nextTick()
+  mountCanvases(slotMap)
+}, { immediate: true })
 
-onBeforeUnmount(disposeCanvases);
+onBeforeUnmount(disposeCanvases)
 
 function castVote(submissionId: string) {
   // Self-vote guard mirrors the server's; let the click do nothing rather
   // than triggering a server "Cannot vote for yourself" error.
-  if (submissionId === clientId) return;
-  myVote.value = submissionId;
-  const msg: ClientMsg = { type: "vote:cast", submissionId };
-  socket.send(JSON.stringify(msg));
+  if (submissionId === clientId)
+    return
+  myVote.value = submissionId
+  const msg: ClientMsg = { type: 'vote:cast', submissionId }
+  socket.send(JSON.stringify(msg))
 }
 </script>
 
@@ -133,7 +137,9 @@ function castVote(submissionId: string) {
       </div>
     </div>
 
-    <p v-else class="muted">Waiting for the gallery…</p>
+    <p v-else class="muted">
+      Waiting for the gallery…
+    </p>
 
     <button
       v-if="isGm && gallery"
@@ -147,7 +153,7 @@ function castVote(submissionId: string) {
 </template>
 
 <style scoped lang="scss">
-@use "../../styles/tokens" as *;
+@use '../../styles/tokens' as *;
 
 .voting {
   &__grid {
@@ -165,7 +171,9 @@ function castVote(submissionId: string) {
     padding: $gap-2;
     cursor: pointer;
     font-family: $font-mono;
-    transition: border-color 80ms, transform 80ms;
+    transition:
+      border-color 80ms,
+      transform 80ms;
     position: relative;
 
     &:focus-visible {
