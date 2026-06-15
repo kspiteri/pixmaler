@@ -2,7 +2,7 @@
 
 A real-time pixel-art party game.
 
-> **In progress.** Lobby, image pipeline, drawing phase, and a solo paint sandbox are wired. Voting and results currently land on placeholder screens — see [`docs/.plans/01-pixmaler.md`](./docs/.plans/01-pixmaler.md) for the build plan, [`docs/.plans/02-image-rendering.md`](./docs/.plans/02-image-rendering.md) for the image pipeline, and [`docs/.plans/03-scoring.md`](./docs/.plans/03-scoring.md) for the deferred scoring/multi-round design.
+> **Gameplay loop complete.** Lobby, image pipeline, drawing phase, anonymised voting, ranked-reveal results, and a solo paint sandbox are all wired. What's left is mobile polish, reconnection edge cases, and the GitHub Pages deploy workflow — see [`docs/.plans/01-pixmaler.md`](./docs/.plans/01-pixmaler.md) Step 8. The image pipeline lives in [`docs/.plans/02-image-rendering.md`](./docs/.plans/02-image-rendering.md); the deferred scoring/multi-round design is in [`docs/.plans/03-scoring.md`](./docs/.plans/03-scoring.md).
 
 ## What it does
 
