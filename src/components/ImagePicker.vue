@@ -31,13 +31,13 @@ const emit = defineEmits<{
   processing: []
 }>()
 
-defineExpose({ getDrawSeconds: () => drawSecs.value })
-
 const scale = ref(DEFAULT_SCALE)
 const colorCount = ref(DEFAULT_COLOR_COUNT)
 const drawSecs = ref(120)
 const status = ref('')
 const showWarn = ref(false)
+
+defineExpose({ getDrawSeconds: () => drawSecs.value })
 
 const fileInput = useTemplateRef<HTMLInputElement>('fileInput')
 const previewSlot = useTemplateRef<HTMLDivElement>('previewSlot')

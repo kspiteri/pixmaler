@@ -90,7 +90,7 @@ defineExpose({
     if (!player)
       return
     player.pushUndoSnapshot()
-    player.setGrid(new Array(props.gridW * props.gridH).fill(-1))
+    player.setGrid(Array.from<number>({ length: props.gridW * props.gridH }).fill(-1))
   },
 })
 
@@ -156,7 +156,7 @@ function clear() {
   if (!player)
     return
   player.pushUndoSnapshot()
-  player.setGrid(new Array(props.gridW * props.gridH).fill(-1))
+  player.setGrid(Array.from<number>({ length: props.gridW * props.gridH }).fill(-1))
 }
 </script>
 

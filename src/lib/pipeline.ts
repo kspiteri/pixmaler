@@ -159,6 +159,8 @@ function mergeNearDuplicates(
 ): [number, number, number][] {
   const out = [...palette]
   let merged = true
+  /* eslint-disable no-labels -- labelled break keeps the restart-from-the-top
+     semantics readable in this O(n²) merge loop. */
   while (merged) {
     merged = false
     outer: for (let i = 0; i < out.length; i++) {
@@ -177,6 +179,7 @@ function mergeNearDuplicates(
       }
     }
   }
+  /* eslint-enable no-labels */
   return out
 }
 
@@ -244,7 +247,7 @@ export async function processImage(
   const blockH = outCanvas.height / gridH
 
   // Indices map into `derived` (which is the prefix of the wire palette below).
-  const targetGrid: number[] = new Array(gridW * gridH)
+  const targetGrid: number[] = Array.from<number>({ length: gridW * gridH })
   for (let y = 0; y < gridH; y++) {
     for (let x = 0; x < gridW; x++) {
       const sx = Math.min(outCanvas.width - 1, Math.floor((x + 0.5) * blockW))
@@ -269,7 +272,7 @@ export async function processImage(
   // dark→light, then chromatic colours by hue). targetGrid indices are
   // remapped to point at the same colours in their new positions.
   const order = paletteSortOrder(fullPalette)
-  const indexMap = Array.from({ length: fullPalette.length })
+  const indexMap = Array.from<number>({ length: fullPalette.length })
   order.forEach((oldIdx, newIdx) => { indexMap[oldIdx] = newIdx })
   const sortedPalette = order.map(i => fullPalette[i])
   const remappedTargetGrid = targetGrid.map(idx => indexMap[idx])

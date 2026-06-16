@@ -47,7 +47,7 @@ export class PixelCanvas {
     // render transparent so the canvas's white background shows through.
     this.grid = opts.targetGrid
       ? [...opts.targetGrid]
-      : new Array(opts.gridW * opts.gridH).fill(opts.editable ? -1 : 0)
+      : Array.from<number>({ length: opts.gridW * opts.gridH }).fill(opts.editable ? -1 : 0)
 
     this.canvas = document.createElement('canvas')
     this.canvas.width = opts.gridW * CELL_SIZE
