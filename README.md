@@ -2,7 +2,7 @@
 
 A real-time pixel-art party game.
 
-> **Gameplay loop complete.** Lobby, image pipeline, drawing phase, anonymised voting, ranked-reveal results, and a solo paint sandbox are all wired. What's left is mobile polish, reconnection edge cases, and the GitHub Pages deploy workflow — see [`docs/.plans/01-pixmaler.md`](./docs/.plans/01-pixmaler.md) Step 8. The image pipeline lives in [`docs/.plans/02-image-rendering.md`](./docs/.plans/02-image-rendering.md); the deferred scoring/multi-round design is in [`docs/.plans/03-scoring.md`](./docs/.plans/03-scoring.md).
+> **Gameplay loop complete.** Lobby, image pipeline, drawing phase, anonymised voting, ranked-reveal results, and a solo paint sandbox are all wired. What's left is mobile polish, reconnection edge cases, and the GitHub Pages deploy workflow.
 
 ## What it does
 
@@ -31,21 +31,8 @@ pnpm dev               # Vite frontend
 pnpm dlx partykit dev  # realtime server on :1999 (separate terminal)
 ```
 
-Set `VITE_PARTYKIT_HOST` (`127.0.0.1:1999` in dev).
+Set `VITE_PARTYKIT_HOST` (`127.0.0.1:1999` in dev). See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the full developer guide — tooling, conventions, and deploy.
 
 ## Paint sandbox
 
 `/pixmaler/paint` opens a solo canvas — pick a sample (Mona Lisa / The Scream / Pearl Earring) or upload your own image, tweak the scale and colour count, then paint. No lobby, no timer, no socket. Linked from the entry screen.
-
-A `404.html` SPA fallback ships in `public/` so the route resolves on GitHub Pages.
-
-## Deploy
-
-Two targets:
-
-```bash
-pnpm build                 # → dist/, GitHub Pages serves under /pixmaler/
-pnpm dlx partykit deploy   # realtime server → Cloudflare
-```
-
-The frontend deploys via a GitHub Actions workflow (TODO: `.github/workflows/deploy-pages.yml` not yet committed — see Step 8 of the build plan). The PartyKit server deploys separately — GitHub Pages can't host it.
