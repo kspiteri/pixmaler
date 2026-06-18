@@ -6,7 +6,7 @@ Small, single-package project. The workflow is light. This covers setup, tooling
 
 ```bash
 pnpm install               # installs deps + wires git hooks
-pnpm dev                   # Vite frontend
+pnpm dev                   # Vite frontend on :7965
 pnpm dlx partykit dev      # realtime server on :1999 (separate terminal)
 ```
 
