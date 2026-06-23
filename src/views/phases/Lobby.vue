@@ -10,6 +10,7 @@ import type {
 } from '../../lib/types'
 import { computed, inject, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 import ImagePicker from '../../components/ImagePicker.vue'
+import Logo from '../../components/Logo.vue'
 import PlayerList from '../../components/PlayerList.vue'
 import { PixelCanvas } from '../../lib/canvas'
 import { clientIdKey, socketKey } from '../../lib/keys'
@@ -23,6 +24,52 @@ const clientId = inject(clientIdKey)!
 
 const isGm = computed(() => props.state.gmClientId === clientId)
 const roomCode = new URLSearchParams(location.search).get('room') ?? ''
+
+// ── Name editing ─────────────────────────────────────────────────────────────
+// Everyone can set their display name here. The server seeds a random word-pair
+// (App.vue) when none was chosen, so this field is pre-filled and editable.
+
+const myName = computed(() =>
+  props.state.players.find(p => p.clientId === clientId)?.name ?? '',
+)
+const nameDraft = ref(myName.value)
+const nameInput = useTemplateRef<HTMLInputElement>('nameInput')
+
+// Keep the draft in sync if the server echoes a different name (e.g. another
+// tab renamed us) — but don't clobber what the user is actively typing.
+watch(myName, (name) => {
+  if (document.activeElement !== nameInput.value)
+    nameDraft.value = name
+})
+
+function commitName() {
+  const next = nameDraft.value.trim()
+  if (!next || next === myName.value) {
+    nameDraft.value = myName.value // revert empty edits
+    return
+  }
+  localStorage.setItem('pixmaler:name', next)
+  socket.send(JSON.stringify({ type: 'rename', name: next } satisfies ClientMsg))
+}
+
+// ── Copy room link ───────────────────────────────────────────────────────────
+
+const copied = ref(false)
+let copyTimer: ReturnType<typeof setTimeout> | null = null
+
+async function copyLink() {
+  try {
+    await navigator.clipboard.writeText(location.href)
+    copied.value = true
+    if (copyTimer)
+      clearTimeout(copyTimer)
+    copyTimer = setTimeout(() => { copied.value = false }, 2000)
+  }
+  catch {
+    // Clipboard API can fail (insecure context / denied) — no-op, the code is
+    // still visible for manual copying.
+  }
+}
 
 // ── GM controls ──────────────────────────────────────────────────────────────
 
@@ -83,7 +130,7 @@ function renderPreview(config: State['config']) {
     targetGrid: config.targetGrid,
     editable: false,
   })
-  previewPc.canvas.style.maxWidth = '300px'
+  previewPc.canvas.style.maxWidth = '280px'
   previewPc.canvas.style.height = 'auto'
   previewSlot.value.append(label, previewPc.canvas)
 }
@@ -97,65 +144,77 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
-onBeforeUnmount(() => { previewPc = null })
+onBeforeUnmount(() => {
+  previewPc = null
+  if (copyTimer)
+    clearTimeout(copyTimer)
+})
 </script>
 
 <template>
-  <div class="page page--mid lobby">
-    <h2>Room: {{ roomCode }}</h2>
+  <div class="lobby">
+    <header class="lobby__head">
+      <Logo size="sm" />
+      <button class="lobby__room" type="button" :title="copied ? 'Copied!' : 'Click to copy the room link'" @click="copyLink">
+        Room: <span class="lobby__code">{{ roomCode }}</span>
+        <span class="lobby__copy">{{ copied ? "✓ copied!" : "copy link" }}</span>
+      </button>
+      <span class="lobby__brand" />
+    </header>
 
-    <PlayerList :players="state.players" :gm-client-id="state.gmClientId" />
+    <div class="lobby__body">
+      <aside class="lobby__players">
+        <label class="field lobby__name">
+          <span class="label">Your name</span>
+          <input
+            ref="nameInput"
+            v-model="nameDraft"
+            class="input"
+            type="text"
+            maxlength="24"
+            placeholder="choose a name"
+            @keydown.enter="nameInput?.blur()"
+            @blur="commitName"
+          >
+        </label>
+        <PlayerList :players="state.players" :gm-client-id="state.gmClientId" />
+      </aside>
 
-    <template v-if="isGm">
-      <div class="lobby__gm">
-        <ImagePicker
-          ref="picker"
-          show-mobile-warn
-          show-draw-seconds
-          show-preview
-          @processing="onProcessing"
-          @result="onResult"
-        />
-        <button
-          class="lobby__start"
-          type="button"
-          :disabled="startDisabled"
-          @click="startGame"
-        >
-          Start game
-        </button>
-      </div>
-    </template>
+      <section class="lobby__settings">
+        <template v-if="isGm">
+          <p class="label label--eyebrow">
+            game settings
+          </p>
+          <ImagePicker
+            ref="picker"
+            show-mobile-warn
+            show-draw-seconds
+            show-preview
+            @processing="onProcessing"
+            @result="onResult"
+          />
+          <div>
+            <button
+              class="btn btn--primary lobby__start"
+              type="button"
+              :disabled="startDisabled"
+              @click="startGame"
+            >
+              {{ startDisabled ? "Start game" : "Start game →" }}
+            </button>
+            <p v-if="startDisabled" class="lobby__start-hint">
+              choose an image to start
+            </p>
+          </div>
+        </template>
 
-    <template v-else>
-      <p class="lobby__waiting">
-        Waiting for GM to start…
-      </p>
-      <div ref="previewSlot" class="lobby__preview" />
-    </template>
+        <template v-else>
+          <p class="lobby__waiting">
+            Waiting for GM to start…
+          </p>
+          <div ref="previewSlot" class="lobby__preview" />
+        </template>
+      </section>
+    </div>
   </div>
 </template>
-
-<style scoped lang="scss">
-@use '../../styles/tokens' as *;
-
-.lobby {
-  &__gm {
-    margin-top: $gap-4;
-  }
-  &__start {
-    margin-top: $gap-4;
-  }
-  &__waiting {
-    margin-top: $gap-4;
-  }
-
-  &__preview {
-    margin-top: $gap-4;
-    :deep(canvas) {
-      max-width: 300px;
-      height: auto;
-    }
-  }
-}
-</style>

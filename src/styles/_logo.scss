@@ -6,8 +6,14 @@
 .wordmark {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: $gap-3;
+
+  &--lg {
+    justify-content: center;
+  }
+  &--sm {
+    justify-content: flex-start;
+  }
 }
 
 .logo {
@@ -22,6 +28,12 @@
   }
   &__maler {
     color: $fg;
+  }
+
+  // Compact inline wordmark for phase header bars.
+  &--sm {
+    font-size: 1rem;
+    letter-spacing: 0.02em;
   }
 }
 
