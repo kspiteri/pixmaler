@@ -1,11 +1,28 @@
 @use 'tokens' as *;
 
+// Shared primitives — reused across screens.
+@use 'buttons';
+@use 'forms';
+@use 'logo';
+
+// Page partials — per-screen static layout.
+@use 'entry';
+@use 'lobby';
+
 // Page-wide. Per-component styles live inside each .vue file's <style scoped>.
 body {
   margin: 0;
-  font-family: $font-mono;
+  font-family: $font-body;
   color: $fg;
   background: $bg;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: $font-display;
+  font-weight: 700;
 }
 
 // Generic page wrapper used by most views.

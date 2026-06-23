@@ -1,0 +1,78 @@
+@use 'tokens' as *;
+
+// Entry screen — page-specific layout only. Buttons, fields, and the logo
+// come from the shared partials (_buttons, _forms, _logo).
+
+.entry {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: $gap-6;
+  overflow: hidden;
+
+  &__grid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.03;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 1) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  &__brand {
+    position: relative;
+    z-index: 1;
+    text-align: center;
+    margin-bottom: $gap-6;
+  }
+
+  &__sub {
+    margin: $gap-2 0 0;
+    color: $fg-35;
+    font-size: 0.875rem;
+  }
+
+  &__form {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: $col-narrow;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-4;
+  }
+
+  &__divider {
+    display: flex;
+    align-items: center;
+    gap: $gap-3;
+  }
+  &__rule {
+    flex: 1;
+    height: 1px;
+    background: $border;
+  }
+  &__divider-text {
+    color: $fg-25;
+    font-size: 0.75rem;
+  }
+
+  &__sandbox {
+    align-self: center;
+    margin-top: $gap-1;
+    color: $fg-25;
+    font-size: 0.875rem;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    transition: color 0.15s;
+
+    &:hover {
+      color: $fg-50;
+    }
+  }
+}

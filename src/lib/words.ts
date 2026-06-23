@@ -2,6 +2,8 @@
 // ~60 adjectives × ~60 nouns ≈ 3,600 combos — enough for coworker scale.
 // Doubles as a profanity filter (nothing gross in here).
 
+import { uniqueNamesGenerator } from 'unique-names-generator'
+
 export const adjectives = [
   'abstract',
   'ancient',
@@ -133,3 +135,14 @@ export const nouns = [
   'wash',
   'watercolor',
 ]
+
+// A random adjective-noun pair, e.g. "feral-crayon". Shared by the room-code
+// generator (Entry) and the random-name fallback (App / Lobby).
+export function wordPair(): string {
+  return uniqueNamesGenerator({
+    dictionaries: [adjectives, nouns],
+    separator: '-',
+    length: 2,
+    style: 'lowerCase',
+  })
+}

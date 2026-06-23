@@ -1,0 +1,32 @@
+@use 'tokens' as *;
+
+// Wordmark + pixel mark. The big PIX/MALER logo on Entry and the small
+// "PIXMALER" label in phase headers both draw from here.
+
+.wordmark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $gap-3;
+}
+
+.logo {
+  margin: 0;
+  font-family: $font-display;
+  font-weight: 700;
+  line-height: 1;
+  font-size: clamp(3rem, 10vw, 5.5rem);
+
+  &__pix {
+    color: $accent;
+  }
+  &__maler {
+    color: $fg;
+  }
+}
+
+// The 4-square pixel mark beside the logo.
+.mark {
+  image-rendering: pixelated;
+  margin-bottom: 4px;
+}

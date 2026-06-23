@@ -10,6 +10,11 @@ export interface JoinMsg {
   name: string
 }
 
+export interface RenameMsg {
+  type: 'rename'
+  name: string
+}
+
 export interface GmConfigureMsg {
   type: 'gm:configure'
   gridW: number
@@ -52,6 +57,7 @@ export interface GmTransferMsg {
 
 export type ClientMsg
   = | JoinMsg
+    | RenameMsg
     | GmConfigureMsg
     | GmStartMsg
     | DrawSubmitMsg

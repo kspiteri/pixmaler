@@ -1,0 +1,43 @@
+@use 'tokens' as *;
+
+// Form primitives — labelled fields and dark inputs.
+
+.field {
+  display: block;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.375rem;
+  color: $fg-50;
+  font-size: 0.875rem;
+
+  // Uppercase section header ("PLAYERS", "GAME SETTINGS", "TARGET"…).
+  &--eyebrow {
+    color: $fg-35;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+  }
+}
+
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 1rem;
+  border-radius: $radius;
+  background: $surface;
+  border: 1px solid $border;
+  color: $fg;
+  font-family: $font-body;
+  font-size: 1rem;
+  transition: border-color 0.15s;
+
+  &::placeholder {
+    color: $fg-20;
+  }
+  &:focus {
+    outline: none;
+    border-color: $primary;
+  }
+}

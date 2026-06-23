@@ -1,17 +1,42 @@
 // Design tokens — colours, spacing, typography. One place to tweak the look.
+// Dark "party game" theme translated from the Figma Make design.
 
-$font-mono: monospace;
+// Fonts — Fredoka for display/headings/buttons, Nunito for body.
+$font-display: 'Fredoka', sans-serif;
+$font-body: 'Nunito', sans-serif;
 
 // Surface
-$bg: #fff;
-$fg: #111;
-$muted: #888;
-$rule: #444;
-$rule-soft: #ccc;
+$bg: #0e0e12; // page background
+$surface: #1a1a24; // cards, inputs, panels
+$surface-2: #111118; // slightly-off panel (drawing sidebar)
+$fg: #ffffff;
+
+// Text on dark — opacity ramp
+$fg-80: rgba(255, 255, 255, 0.8);
+$fg-60: rgba(255, 255, 255, 0.6);
+$fg-50: rgba(255, 255, 255, 0.5);
+$fg-40: rgba(255, 255, 255, 0.4);
+$fg-35: rgba(255, 255, 255, 0.35);
+$fg-30: rgba(255, 255, 255, 0.3);
+$fg-25: rgba(255, 255, 255, 0.25);
+$fg-20: rgba(255, 255, 255, 0.2);
+$muted: $fg-40;
+
+// Borders / rules
+$border: rgba(255, 255, 255, 0.1);
+$border-soft: rgba(255, 255, 255, 0.07);
+
+// Accents
+$accent: #c8ff2d; // lime — primary CTA
+$accent-fg: #0e0e12; // text on lime
+$primary: #7c5cff; // purple — secondary / GM
+$pink: #ff5ca8;
+$orange: #ff8c00;
+$green: #00cc00;
 
 // Status
-$warn: orange;
-$accent: #0ff;
+$warn: $orange;
+$danger: #ef130b;
 
 // Spacing scale (rem)
 $gap-1: 0.25rem;
@@ -21,8 +46,21 @@ $gap-4: 1rem;
 $gap-5: 1.5rem;
 $gap-6: 2rem;
 
+// Radius scale
+$radius-sm: 0.5rem;
+$radius: 0.75rem;
+$radius-lg: 1rem;
+$radius-xl: 1.25rem;
+
 // Layout
-$page-pad: 2rem;
+$page-pad: 1.5rem;
 $page-max: 1280px;
-$col-narrow: 420px;
+$col-narrow: 22rem;
 $col-mid: 600px;
+
+// ── Back-compat aliases ──────────────────────────────────────────────────────
+// Old token names still referenced by not-yet-restyled screens (Lobby, Drawing,
+// Voting, Results, Paint, components). Remove each as its screen is redone.
+$font-mono: $font-body;
+$rule: $border;
+$rule-soft: $border-soft;

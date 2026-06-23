@@ -1,9 +1,8 @@
 <script setup lang="ts">
 // Entry screen — pre-room landing. Create / join / open the paint sandbox.
 
-import { uniqueNamesGenerator } from 'unique-names-generator'
 import { ref } from 'vue'
-import { adjectives, nouns } from '../lib/words'
+import { wordPair } from '../lib/words'
 
 const name = ref(localStorage.getItem('pixmaler:name') ?? '')
 const code = ref('')
@@ -13,20 +12,11 @@ const code = ref('')
 const base = import.meta.env.BASE_URL.replace(/\/+$/, '')
 const sandboxHref = `${base}/paint`
 
-function generateRoomCode(): string {
-  return uniqueNamesGenerator({
-    dictionaries: [adjectives, nouns],
-    separator: '-',
-    length: 2,
-    style: 'lowerCase',
-  })
-}
-
 function createRoom() {
   const trimmed = name.value.trim()
   if (!trimmed) { alert('Enter your name first.'); return }
   localStorage.setItem('pixmaler:name', trimmed)
-  location.href = `${location.pathname}?room=${generateRoomCode()}`
+  location.href = `${location.pathname}?room=${wordPair()}`
 }
 
 function joinRoom() {
@@ -40,69 +30,72 @@ function joinRoom() {
 </script>
 
 <template>
-  <div class="page page--narrow entry">
-    <h1>Pixmaler</h1>
-    <p class="entry__sub">
-      pixel + <em>maler</em> (Norwegian: painter)
-    </p>
+  <div class="entry">
+    <!-- Subtle pixel-grid background texture -->
+    <div class="entry__grid" aria-hidden="true" />
 
-    <label class="entry__field">
-      Your name
-      <input
-        v-model="name"
-        class="entry__input"
-        type="text"
-        placeholder="e.g. Keith"
+    <!-- Wordmark -->
+    <header class="entry__brand">
+      <div class="wordmark">
+        <h1 class="logo">
+          <span class="logo__pix">PIX</span><span class="logo__maler">MALER</span>
+        </h1>
+        <svg class="mark" width="32" height="32" viewBox="0 0 4 4">
+          <rect x="0" y="0" width="2" height="2" fill="#c8ff2d" />
+          <rect x="2" y="0" width="2" height="2" fill="#7c5cff" />
+          <rect x="0" y="2" width="2" height="2" fill="#ff5ca8" />
+          <rect x="2" y="2" width="2" height="2" fill="#ff8c00" />
+        </svg>
+      </div>
+    </header>
+
+    <!-- Form -->
+    <div class="entry__form">
+      <label class="field">
+        <span class="label">Your name</span>
+        <input
+          v-model="name"
+          class="input"
+          type="text"
+          placeholder="e.g. Keith"
+        >
+      </label>
+
+      <button
+        class="btn btn--primary"
+        type="button"
+        :disabled="!name.trim()"
+        @click="createRoom"
       >
-    </label>
+        Create room (GM)
+      </button>
 
-    <button class="entry__btn" type="button" @click="createRoom">
-      Create room (GM)
-    </button>
+      <div class="entry__divider">
+        <span class="entry__rule" />
+        <span class="entry__divider-text">or join existing</span>
+        <span class="entry__rule" />
+      </div>
 
-    <hr>
+      <label class="field">
+        <span class="label">Room code</span>
+        <input
+          v-model="code"
+          class="input"
+          type="text"
+          placeholder="e.g. feral-crayon"
+        >
+      </label>
 
-    <label class="entry__field">
-      Room code
-      <input
-        v-model="code"
-        class="entry__input"
-        type="text"
-        placeholder="e.g. feral-crayon"
+      <button
+        class="btn btn--ghost"
+        type="button"
+        :disabled="!name.trim() || !code.trim()"
+        @click="joinRoom"
       >
-    </label>
+        Join room
+      </button>
 
-    <button class="entry__btn" type="button" @click="joinRoom">
-      Join room
-    </button>
-
-    <a class="entry__sandbox" :href="sandboxHref">Or open the Paint sandbox →</a>
+      <a class="entry__sandbox" :href="sandboxHref">Or open the Paint sandbox →</a>
+    </div>
   </div>
 </template>
-
-<style scoped lang="scss">
-@use '../styles/tokens' as *;
-
-.entry {
-  &__sub {
-    color: $muted;
-  }
-  &__field {
-    display: block;
-    margin-top: $gap-4;
-  }
-  &__input {
-    display: block;
-    margin-top: $gap-1;
-    font-family: $font-mono;
-  }
-  &__btn {
-    margin-top: $gap-3;
-  }
-  &__sandbox {
-    display: block;
-    margin-top: $gap-5;
-    color: $muted;
-  }
-}
-</style>

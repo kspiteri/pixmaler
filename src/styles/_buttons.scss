@@ -1,0 +1,65 @@
+@use 'tokens' as *;
+
+// Buttons — display font, rounded, with press/hover micro-interactions.
+// Variants: --primary (lime CTA), --ghost (purple outline), --plain (surface).
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $gap-2;
+  padding: 0.875rem 1rem;
+  border-radius: $radius;
+  border: none;
+  font-family: $font-display;
+  font-weight: 700;
+  font-size: 1.125rem;
+  cursor: pointer;
+  transition:
+    transform 0.1s,
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  &--primary {
+    background: $accent;
+    color: $accent-fg;
+
+    &:not(:disabled):hover {
+      transform: scale(1.02);
+    }
+    &:not(:disabled):active {
+      transform: scale(0.95);
+    }
+  }
+
+  &--ghost {
+    background: transparent;
+    border: 2px solid $primary;
+    color: $primary;
+
+    &:not(:disabled):hover {
+      background: $primary;
+      color: $fg;
+    }
+  }
+
+  // Subdued surface button — Undo / Clear / Stop voting.
+  &--plain {
+    background: $surface;
+    border: 1px solid $border;
+    color: $fg-60;
+    font-size: 0.875rem;
+    padding: 0.625rem 1rem;
+
+    &:not(:disabled):hover {
+      color: $fg;
+      border-color: $fg-25;
+    }
+  }
+}

@@ -1,0 +1,124 @@
+@use 'tokens' as *;
+
+// Lobby screen — two-column layout: players sidebar + game settings.
+// (The header bar is extracted to PhaseLayout once Drawing shares it.)
+
+.lobby {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $gap-3;
+    padding: $gap-4 $gap-5;
+    border-bottom: 1px solid $border-soft;
+  }
+  &__brand {
+    color: $fg-30;
+    font-size: 0.875rem;
+  }
+  &__room {
+    display: inline-flex;
+    align-items: baseline;
+    gap: $gap-2;
+    margin: 0;
+    padding: 0.375rem 0.625rem;
+    border-radius: $radius;
+    background: transparent;
+    border: 1px solid transparent;
+    font-family: $font-display;
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: $fg;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      border-color 0.15s;
+
+    &:hover {
+      background: $surface;
+      border-color: $border-soft;
+    }
+  }
+  &__code {
+    color: $accent;
+  }
+  &__copy {
+    font-family: $font-body;
+    font-weight: 600;
+    font-size: 0.6875rem;
+    color: $fg-35;
+  }
+
+  &__name {
+    margin-bottom: $gap-4;
+  }
+
+  &__body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    overflow: auto;
+  }
+
+  &__players {
+    border-right: 1px solid $border-soft;
+    padding: $gap-5;
+  }
+
+  &__settings {
+    padding: $gap-5;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-5;
+  }
+
+  &__start {
+    width: 100%;
+    margin-top: auto;
+    font-size: 1.25rem;
+    padding: 1rem;
+    border-radius: $radius-lg;
+  }
+  &__start-hint {
+    margin: $gap-2 0 0;
+    text-align: center;
+    color: $fg-25;
+    font-size: 0.75rem;
+  }
+
+  // Non-GM waiting state
+  &__waiting {
+    margin: $gap-4 0 0;
+    color: $fg-50;
+  }
+  &__preview {
+    margin-top: $gap-4;
+
+    :deep(p) {
+      margin: 0 0 $gap-2;
+      color: $fg-40;
+      font-size: 0.75rem;
+    }
+    :deep(canvas) {
+      max-width: 280px;
+      height: auto;
+      border-radius: $radius-sm;
+      border: 1px solid $border;
+    }
+  }
+
+  // Stack on narrow screens.
+  @media (max-width: 640px) {
+    &__body {
+      grid-template-columns: 1fr;
+    }
+    &__players {
+      border-right: none;
+      border-bottom: 1px solid $border-soft;
+    }
+  }
+}

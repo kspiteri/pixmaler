@@ -7,6 +7,7 @@ import type { ClientMsg, ServerMsg } from './lib/types'
 import PartySocket from 'partysocket'
 import { onMounted, provide, ref, shallowRef } from 'vue'
 import { clientIdKey, socketKey } from './lib/keys'
+import { wordPair } from './lib/words'
 
 import Entry from './views/Entry.vue'
 import Paint from './views/Paint.vue'
@@ -35,7 +36,14 @@ function getOrCreateClientId(): string {
 }
 
 function getOrCreateName(): string {
-  return localStorage.getItem('pixmaler:name') ?? ''
+  let name = localStorage.getItem('pixmaler:name')?.trim()
+  if (!name) {
+    // No name chosen yet (e.g. arrived via a shared room link) — assign a
+    // friendly random word-pair and persist it so it sticks across reconnects.
+    name = wordPair()
+    localStorage.setItem('pixmaler:name', name)
+  }
+  return name
 }
 
 // ── Reactive room state ──────────────────────────────────────────────────────
@@ -56,7 +64,7 @@ const connectionStatus = ref<'connecting' | 'connected' | 'closed'>('connecting'
 
 if (route === 'room' && roomCode) {
   const clientId = getOrCreateClientId()
-  const name = getOrCreateName() || clientId.slice(0, 6)
+  const name = getOrCreateName()
 
   const socket = new PartySocket({ host: PARTYKIT_HOST, room: roomCode })
 
