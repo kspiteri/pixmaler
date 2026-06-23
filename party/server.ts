@@ -82,6 +82,7 @@ export default class PixmalerServer implements Party.Server {
 
     switch (msg.type) {
       case 'join': return this.handleJoin(msg, sender)
+      case 'rename': return this.handleRename(msg, sender)
       case 'gm:configure': return this.handleConfigure(msg, sender)
       case 'gm:start': return this.handleStart(sender)
       case 'gm:transfer': return this.handleTransfer(msg, sender)
@@ -123,6 +124,24 @@ export default class PixmalerServer implements Party.Server {
       }
       this.state.players.set(msg.clientId, player)
     }
+    this.broadcastAll(this.buildState())
+  }
+
+  private handleRename(msg: Extract<ClientMsg, { type: 'rename' }>, conn: Party.Connection) {
+    // Renaming is only meaningful before the game starts; names are revealed in
+    // RESULTS, so locking them at LOBBY keeps the reveal honest.
+    if (this.state.phase !== 'LOBBY')
+      return
+    const clientId = this.state.connMap.get(conn.id)
+    if (!clientId)
+      return
+    const player = this.state.players.get(clientId)
+    if (!player)
+      return
+    const name = msg.name.trim().slice(0, 24)
+    if (!name)
+      return
+    player.name = name
     this.broadcastAll(this.buildState())
   }
 
