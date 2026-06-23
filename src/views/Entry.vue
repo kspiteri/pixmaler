@@ -2,6 +2,7 @@
 // Entry screen — pre-room landing. Create / join / open the paint sandbox.
 
 import { ref } from 'vue'
+import Logo from '../components/Logo.vue'
 import { wordPair } from '../lib/words'
 
 const name = ref(localStorage.getItem('pixmaler:name') ?? '')
@@ -36,17 +37,7 @@ function joinRoom() {
 
     <!-- Wordmark -->
     <header class="entry__brand">
-      <div class="wordmark">
-        <h1 class="logo">
-          <span class="logo__pix">PIX</span><span class="logo__maler">MALER</span>
-        </h1>
-        <svg class="mark" width="32" height="32" viewBox="0 0 4 4">
-          <rect x="0" y="0" width="2" height="2" fill="#c8ff2d" />
-          <rect x="2" y="0" width="2" height="2" fill="#7c5cff" />
-          <rect x="0" y="2" width="2" height="2" fill="#ff5ca8" />
-          <rect x="2" y="2" width="2" height="2" fill="#ff8c00" />
-        </svg>
-      </div>
+      <Logo size="lg" />
     </header>
 
     <!-- Form -->
