@@ -79,7 +79,7 @@ async function reprocess() {
         targetGrid: result.targetGrid,
         editable: false,
       })
-      pc.canvas.style.maxWidth = '300px'
+      pc.canvas.style.maxWidth = '160px'
       pc.canvas.style.height = 'auto'
       previewSlot.value.replaceChildren(label, pc.canvas)
     }
@@ -134,64 +134,73 @@ onMounted(() => {
 
 <template>
   <div class="picker">
-    <label>
-      Scale:
-      <input
-        v-model.number="scale"
-        class="picker__scale"
-        type="range" min="1" max="50"
-      >
-      <span class="picker__scale-val">{{ scale }}</span>
-    </label>
-    <br>
+    <!-- Settings card: scale + colours + draw seconds -->
+    <div class="picker__card">
+      <label class="picker__setting">
+        <span class="picker__setting-label">Scale</span>
+        <input
+          v-model.number="scale"
+          class="picker__scale"
+          type="range" min="1" max="50"
+        >
+        <span class="picker__scale-val">{{ scale }}</span>
+      </label>
 
-    <label>
-      Colours:
-      <select v-model.number="colorCount" class="picker__count">
-        <option :value="8">Very few</option>
-        <option :value="16">Normal</option>
-        <option :value="24">A bit more</option>
-        <option :value="32">A lot more</option>
-      </select>
-    </label>
+      <div class="picker__setting-row">
+        <label class="picker__setting picker__setting--inline">
+          <span class="picker__setting-label">Colours</span>
+          <select v-model.number="colorCount" class="picker__select">
+            <option :value="8">Very few</option>
+            <option :value="16">Normal</option>
+            <option :value="24">A bit more</option>
+            <option :value="32">A lot more</option>
+          </select>
+        </label>
 
-    <label v-if="showDrawSeconds">
-      Draw seconds:
-      <input
-        v-model.number="drawSecs"
-        class="picker__time"
-        type="number" min="30" max="600"
-      >
-    </label>
-
-    <br><br>
-
-    <label>
-      Upload image:
-      <input ref="fileInput" type="file" accept="image/*" @change="onFileChange">
-    </label>
-
-    <div class="picker__samples">
-      <span>Or try a sample:</span>
-      <button
-        v-for="name in samples"
-        :key="name"
-        type="button"
-        @click="loadSample(name)"
-      >
-        {{ name }}
-      </button>
+        <label v-if="showDrawSeconds" class="picker__setting picker__setting--inline">
+          <span class="picker__setting-label">Draw seconds</span>
+          <input
+            v-model.number="drawSecs"
+            class="picker__time"
+            type="number" min="30" max="600"
+          >
+        </label>
+      </div>
     </div>
 
-    <p v-if="showWarnNode" class="picker__warn">
-      ⚠ Grid exceeds 64px on its longest side — mobile players may struggle.
-    </p>
+    <!-- Image card: upload + samples + preview -->
+    <div class="picker__card">
+      <div class="picker__upload-row">
+        <span class="picker__setting-label">Upload image</span>
+        <label class="picker__browse">
+          Browse…
+          <input ref="fileInput" type="file" accept="image/*" hidden @change="onFileChange">
+        </label>
+      </div>
 
-    <p class="picker__status">
-      {{ status }}
-    </p>
+      <div class="picker__samples">
+        <span class="picker__samples-label">Or try a sample:</span>
+        <button
+          v-for="name in samples"
+          :key="name"
+          class="picker__sample"
+          type="button"
+          @click="loadSample(name)"
+        >
+          {{ name }}
+        </button>
+      </div>
 
-    <div v-if="showPreview" ref="previewSlot" class="picker__preview" />
+      <p v-if="showWarnNode" class="picker__warn">
+        ⚠ Grid exceeds 64px on its longest side — mobile players may struggle.
+      </p>
+
+      <p v-if="status" class="picker__status">
+        {{ status }}
+      </p>
+
+      <div v-if="showPreview" ref="previewSlot" class="picker__preview" />
+    </div>
   </div>
 </template>
 
@@ -199,44 +208,143 @@ onMounted(() => {
 @use '../styles/tokens' as *;
 
 .picker {
-  margin-top: $gap-4;
+  display: flex;
+  flex-direction: column;
+  gap: $gap-5;
+
+  &__card {
+    background: $surface;
+    border: 1px solid $border-soft;
+    border-radius: $radius-lg;
+    padding: $gap-4;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-4;
+  }
+
+  &__setting {
+    display: flex;
+    align-items: center;
+    gap: $gap-4;
+
+    &--inline {
+      gap: $gap-2;
+    }
+  }
+  &__setting-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $gap-4;
+    align-items: center;
+  }
+  &__setting-label {
+    color: $fg-60;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+  }
 
   &__scale {
-    vertical-align: middle;
-    width: 160px;
+    flex: 1;
+    accent-color: $primary;
   }
   &__scale-val {
-    margin-left: $gap-2;
+    font-family: $font-display;
+    font-weight: 700;
+    width: 1.5rem;
+    text-align: center;
   }
-  // Native select sizes to its widest option — let the browser handle it.
-  &__count {
-    font-family: $font-mono;
+
+  &__select,
+  &__time {
+    padding: 0.5rem 0.75rem;
+    border-radius: $radius;
+    background: $bg;
+    border: 1px solid $border;
+    color: $fg;
+    font-family: $font-body;
+    font-size: 0.875rem;
+
+    &:focus {
+      outline: none;
+      border-color: $primary;
+    }
   }
   &__time {
-    width: 60px;
+    width: 5rem;
+    text-align: center;
+  }
+
+  &__upload-row {
+    display: flex;
+    align-items: center;
+    gap: $gap-3;
+  }
+  &__browse {
+    padding: 0.375rem 0.75rem;
+    border-radius: $radius-sm;
+    background: $bg;
+    border: 1px solid $border;
+    color: $fg-60;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition:
+      color 0.15s,
+      border-color 0.15s;
+
+    &:hover {
+      color: $fg;
+      border-color: $fg-25;
+    }
   }
 
   &__samples {
     display: flex;
     gap: $gap-2;
-    margin-top: $gap-2;
     align-items: center;
     flex-wrap: wrap;
   }
+  &__samples-label {
+    color: $fg-40;
+    font-size: 0.875rem;
+  }
+  &__sample {
+    padding: 0.375rem 0.75rem;
+    border-radius: $radius-sm;
+    background: transparent;
+    border: 1px solid $border;
+    color: $fg-50;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover {
+      color: $fg;
+      border-color: $fg-25;
+    }
+  }
 
   &__warn {
+    margin: 0;
     color: $warn;
+    font-size: 0.875rem;
   }
   &__status {
     margin: 0;
     color: $muted;
+    font-size: 0.875rem;
   }
 
   &__preview {
-    margin-top: $gap-4;
+    :deep(p) {
+      margin: 0 0 $gap-2;
+      color: $fg-40;
+      font-size: 0.75rem;
+    }
     :deep(canvas) {
-      max-width: 300px;
+      max-width: 160px;
       height: auto;
+      border-radius: $radius-sm;
+      border: 1px solid $border;
     }
   }
 }
