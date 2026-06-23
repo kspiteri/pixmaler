@@ -31,6 +31,12 @@
     margin-bottom: $gap-6;
   }
 
+  &__sub {
+    margin: $gap-2 0 0;
+    color: $fg-35;
+    font-size: 0.875rem;
+  }
+
   &__form {
     position: relative;
     z-index: 1;
