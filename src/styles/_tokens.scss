@@ -58,6 +58,9 @@ $page-max: 1280px;
 $col-narrow: 22rem;
 $col-mid: 600px;
 
+// Breakpoints
+$bp-mobile: 640px;
+
 // ── Back-compat aliases ──────────────────────────────────────────────────────
 // Old token names still referenced by not-yet-restyled screens (Lobby, Drawing,
 // Voting, Results, Paint, components). Remove each as its screen is redone.

@@ -63,6 +63,26 @@ const {
   setPosition: setPanelPosition,
 } = useDraggable({ initialX: 16, initialY: 16, desktopOnly: true })
 
+// Below $bp-mobile the panel docks to the bottom full-width and dragging is
+// disabled — so we skip the free-floating transform and hide the drag handle.
+// Kept in sync via matchMedia. Mirror of $bp-mobile in _tokens.scss.
+const MOBILE_BP = 640
+const isMobile = ref(false)
+let mql: MediaQueryList | null = null
+function onMobileChange(e: MediaQueryListEvent | MediaQueryList) {
+  isMobile.value = e.matches
+}
+
+// Swatch + brush size — S / M / L. Drives a CSS var on the panel; the swatch
+// grid reflows to fit. Kept on mobile, where bigger taps help most.
+type SwatchSize = 'sm' | 'md' | 'lg'
+const swatchSize = ref<SwatchSize>('md')
+const SWATCH_SIZES: { id: SwatchSize, label: string }[] = [
+  { id: 'sm', label: 'S' },
+  { id: 'md', label: 'M' },
+  { id: 'lg', label: 'L' },
+]
+
 function defaultPosition(): { x: number, y: number } {
   // Sit just below the target reference, aligned to its left edge. Falls back
   // to a sensible viewport spot if the target hasn't laid out yet.
@@ -141,10 +161,15 @@ onMounted(async () => {
   panelVisible.value = true
 
   window.addEventListener('resize', onResize)
+
+  mql = window.matchMedia(`(max-width: ${MOBILE_BP}px)`)
+  onMobileChange(mql)
+  mql.addEventListener('change', onMobileChange)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
+  mql?.removeEventListener('change', onMobileChange)
   // Drop references so PixelCanvas's listeners fall away with the DOM nodes.
   target = null
   player = null
@@ -182,9 +207,11 @@ function clear() {
     <div
       v-show="panelVisible"
       class="tools-panel"
-      :style="{ transform: `translate(${panelX}px, ${panelY}px)` }"
+      :class="[`tools-panel--${swatchSize}`, { 'tools-panel--docked': isMobile }]"
+      :style="isMobile ? undefined : { transform: `translate(${panelX}px, ${panelY}px)` }"
     >
       <div
+        v-if="!isMobile"
         class="tools-panel__handle"
         title="Drag to move"
         @pointerdown="startDrag"
@@ -195,13 +222,48 @@ function clear() {
       <div class="tools-panel__body">
         <div ref="swatchSlot" />
         <div ref="brushSlot" class="tools-panel__brush" />
-        <div class="tools-panel__actions">
-          <button class="btn btn--plain tools-panel__btn" type="button" @click="undo">
-            Undo
-          </button>
-          <button v-if="variant === 'paint'" class="btn btn--plain tools-panel__btn" type="button" @click="clear">
-            Clear
-          </button>
+        <div class="tools-panel__row">
+          <div class="tools-panel__sizes" role="group" aria-label="Swatch size">
+            <button
+              v-for="s in SWATCH_SIZES"
+              :key="s.id"
+              class="tools-panel__size"
+              :class="{ 'tools-panel__size--active': swatchSize === s.id }"
+              type="button"
+              :aria-pressed="swatchSize === s.id"
+              @click="swatchSize = s.id"
+            >
+              {{ s.label }}
+            </button>
+          </div>
+          <div class="tools-panel__actions">
+            <button
+              class="btn btn--plain tools-panel__btn"
+              type="button"
+              title="Undo"
+              aria-label="Undo"
+              @click="undo"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7v6h6" />
+                <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+              </svg>
+            </button>
+            <button
+              v-if="variant === 'paint'"
+              class="btn btn--plain tools-panel__btn"
+              type="button"
+              title="Clear"
+              aria-label="Clear canvas"
+              @click="clear"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18" />
+                <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+                <path d="M6 6l1 14a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-14" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -250,6 +312,13 @@ function clear() {
   &--paint :deep(.canvas-pair__target-canvas) {
     max-width: 200px;
   }
+
+  // On mobile the tools panel docks to the bottom (fixed, full-width), so it
+  // overlaps page content. Reserve space below the canvas so its bottom rows
+  // aren't hidden behind the panel.
+  @media (max-width: $bp-mobile) {
+    padding-bottom: 48vh;
+  }
 }
 
 // Floating tools panel — teleported into <body>, so :deep() isn't needed.
@@ -259,6 +328,7 @@ function clear() {
   top: 0;
   left: 0;
   z-index: 100;
+  width: 13rem;
   background: $surface;
   border: 1px solid $border;
   border-radius: $radius-lg;
@@ -267,6 +337,15 @@ function clear() {
   user-select: none;
   // `transform` for movement is faster than animating left/top.
   will-change: transform;
+
+  // Swatch cell size, driven by the S / M / L control.
+  --sw: 26px;
+  &--sm {
+    --sw: 20px;
+  }
+  &--lg {
+    --sw: 34px;
+  }
 
   &__handle {
     display: flex;
@@ -300,9 +379,49 @@ function clear() {
     gap: $gap-3;
   }
 
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: $gap-2;
+  }
+
+  &__sizes {
+    display: flex;
+    border: 1px solid $border;
+    border-radius: $radius-sm;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  &__size {
+    width: 1.75rem;
+    padding: 0.375rem 0;
+    background: transparent;
+    border: none;
+    color: $fg-40;
+    font-family: $font-display;
+    font-weight: 700;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      color 0.15s;
+
+    & + & {
+      border-left: 1px solid $border;
+    }
+    &:hover {
+      color: $fg;
+    }
+    &--active {
+      background: $primary;
+      color: $fg;
+    }
+  }
+
   &__actions {
     display: flex;
     gap: $gap-2;
+    flex: 1;
   }
   &__btn {
     flex: 1;
@@ -313,33 +432,27 @@ function clear() {
   // Swatch + brush controls are imperative DOM (built in lib/canvas.ts and
   // appended into refs); `:deep()` lets scoped styles reach them.
   :deep(.swatch) {
-    display: grid;
-    grid-template-columns: repeat(4, 32px);
+    display: flex;
+    flex-wrap: wrap;
     gap: 6px;
-    justify-content: start;
-    align-items: center;
   }
 
   :deep(.swatch__cell) {
-    width: 26px;
-    height: 26px;
+    // Fixed-size circular swatches that wrap across rows. aspect-ratio keeps
+    // them round; size tracks the S/M/L var.
+    flex: 0 0 var(--sw);
+    width: var(--sw);
+    aspect-ratio: 1;
     padding: 0;
     border: 2px solid rgba(255, 255, 255, 0.15);
-    border-radius: $radius-sm;
+    border-radius: 50%;
     cursor: pointer;
-    // Centre within the grid cell — matters when --selected makes one cell
-    // larger than its neighbours.
-    justify-self: center;
-    transition:
-      width 80ms,
-      height 80ms;
+    transition: transform 80ms;
   }
 
   :deep(.swatch__cell--selected) {
-    width: 32px;
-    height: 32px;
     border-color: #fff;
-    border-width: 2px;
+    transform: scale(1.12);
   }
 
   // Highlight is set on hover-over via `swatch.highlight()` from canvas
@@ -364,6 +477,23 @@ function clear() {
 
   :deep(.brush__label) {
     min-width: 56px;
+  }
+
+  // ── Mobile: dock to the bottom, full-width ──────────────────────────────────
+  &--docked {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    border-radius: $radius-lg $radius-lg 0 0;
+    border-bottom: none;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.5);
+
+    .tools-panel__body {
+      max-height: 45vh;
+      overflow-y: auto;
+    }
   }
 }
 </style>
