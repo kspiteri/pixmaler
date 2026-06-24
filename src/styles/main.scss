@@ -10,6 +10,7 @@
 @use 'entry';
 @use 'lobby';
 @use 'paint';
+@use 'voting';
 
 // Page-wide. Per-component styles live inside each .vue file's <style scoped>.
 body {

@@ -1,0 +1,111 @@
+@use 'tokens' as *;
+
+// Voting screen — anonymised gallery of submissions, tap to vote. The
+// :deep(.voting__canvas) rule (reaching the imperatively-mounted PixelCanvas)
+// stays in the component's scoped <style> since :deep only works there.
+
+.voting {
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: $gap-6 $gap-5;
+
+  &__head {
+    text-align: center;
+    margin-bottom: $gap-5;
+  }
+  &__eyebrow {
+    margin: 0;
+    font-family: $font-display;
+    font-weight: 700;
+    font-size: clamp(1.4rem, 4vw, 2rem);
+  }
+  &__hint {
+    margin: $gap-2 0 0;
+    color: $fg-35;
+    font-size: 0.875rem;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: $gap-4;
+  }
+
+  &__card {
+    position: relative;
+    background: $surface;
+    border: 2px solid $border-soft;
+    border-radius: $radius-lg;
+    padding: $gap-3;
+    cursor: pointer;
+    transition:
+      border-color 120ms,
+      transform 120ms,
+      box-shadow 120ms;
+
+    &:focus-visible {
+      outline: 2px solid $primary;
+      outline-offset: 2px;
+    }
+
+    &:hover:not(.voting__card--disabled) {
+      border-color: $fg-25;
+      transform: translateY(-2px);
+    }
+
+    &--disabled {
+      cursor: not-allowed;
+    }
+
+    &--voted {
+      border-color: $accent;
+      box-shadow: 0 0 24px rgba(200, 255, 45, 0.2);
+    }
+  }
+
+  &__slot {
+    // The PixelCanvas is appended here. White background so untouched cells
+    // (-1 in submitted grids) read as paper rather than bleeding into the card.
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background: #fff;
+    border-radius: $radius-sm;
+    overflow: hidden;
+  }
+
+  // Lime tick badge on the voted card.
+  &__check {
+    position: absolute;
+    top: $gap-3;
+    right: $gap-3;
+    width: 1.75rem;
+    height: 1.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: $accent;
+    color: $accent-fg;
+    font-weight: 700;
+    font-size: 0.875rem;
+  }
+
+  // "Yours" tag on the player's own (unvotable) submission.
+  &__tag {
+    position: absolute;
+    top: $gap-3;
+    left: $gap-3;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.5);
+    color: $fg-60;
+    font-size: 0.625rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  &__waiting {
+    text-align: center;
+    color: $fg-40;
+  }
+}
