@@ -209,10 +209,11 @@ onMounted(() => {
 
 .picker {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: $gap-5;
 
   &__card {
+    flex: 1 1 320px;
     background: $surface;
     border: 1px solid $border-soft;
     border-radius: $radius-lg;
