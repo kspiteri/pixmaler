@@ -184,11 +184,14 @@ export default class PixmalerServer implements Party.Server {
     if (!this.state.config)
       return
 
-    // Require at least 2 non-GM connected players so there are meaningful submissions.
+    // Require at least 2 non-GM connected players so there are meaningful
+    // submissions — relaxed in local dev (PIXMALER_DEV) so the whole flow can
+    // be tested solo across a couple of browsers. Never set in production.
+    const devMode = this.room.env.PIXMALER_DEV === '1'
     const nonGmConnected = [...this.state.players.values()].filter(
       p => p.connected && p.clientId !== this.state.gmClientId,
     )
-    if (nonGmConnected.length < 2) {
+    if (!devMode && nonGmConnected.length < 2) {
       conn.send(JSON.stringify({ type: 'error', message: 'Need at least 2 players (plus GM) to start.' } satisfies ServerMsg))
       return
     }
