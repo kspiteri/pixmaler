@@ -22,6 +22,7 @@ import {
   useTemplateRef,
 } from 'vue'
 import CanvasPair from '../../components/CanvasPair.vue'
+import PhaseLayout from '../../components/PhaseLayout.vue'
 import { socketKey } from '../../lib/keys'
 
 type State = Extract<ServerMsg, { type: 'state' }>
@@ -37,8 +38,29 @@ const doneText = computed(() =>
 )
 
 const pairRef = useTemplateRef<InstanceType<typeof CanvasPair>>('pair')
-const timerText = ref('')
+// Seconds remaining on the countdown (null until we know the deadline).
+const secondsLeft = ref<number | null>(null)
+const totalSeconds = computed(() => config.value.drawSeconds)
 const flaggedDone = ref(false) // has the player clicked Done — purely social
+
+// Derived timer presentation. Bar shrinks as time runs out and shifts
+// lime → orange → red in the final stretch for urgency.
+const timerText = computed(() =>
+  secondsLeft.value === null ? 'Drawing…' : `Time left: ${secondsLeft.value}s`,
+)
+const timerPct = computed(() => {
+  if (secondsLeft.value === null || totalSeconds.value <= 0)
+    return 100
+  return Math.max(0, Math.min(100, (secondsLeft.value / totalSeconds.value) * 100))
+})
+const timerColour = computed(() => {
+  const s = secondsLeft.value
+  if (s === null || s > 40)
+    return '#c8ff2d' // accent
+  if (s > 20)
+    return '#ff8c00' // orange
+  return '#ef130b' // danger
+})
 
 let autoSubmitTimer: ReturnType<typeof setTimeout> | null = null
 let resubmitTimer: ReturnType<typeof setTimeout> | null = null
@@ -115,7 +137,7 @@ onMounted(() => {
     // independent of submit state.
     const tick = () => {
       const left = Math.max(0, Math.ceil((dl - Date.now()) / 1000))
-      timerText.value = `Time left: ${left}s`
+      secondsLeft.value = left
       if (left > 0)
         rafId = requestAnimationFrame(tick)
     }
@@ -123,9 +145,8 @@ onMounted(() => {
     const remaining = Math.max(0, dl - Date.now())
     autoSubmitTimer = setTimeout(autoSubmitAtDeadline, remaining)
   }
-  else {
-    timerText.value = 'Drawing…'
-  }
+
+  // No deadline → secondsLeft stays null; timerText shows "Drawing…".
 
   // Cancel pending sends if the socket goes away. Phase change is handled by
   // onBeforeUnmount.
@@ -151,62 +172,67 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="drawing">
-    <div class="drawing__status">
-      <p class="drawing__timer">
+  <PhaseLayout :progress="timerPct" :progress-colour="timerColour">
+    <template #status>
+      <span class="drawing__timer" :style="{ color: timerColour }">
         {{ timerText }}
-      </p>
-      <p class="drawing__done">
-        {{ doneText }}
-      </p>
+      </span>
+      <span class="drawing__done">{{ doneText }}</span>
+    </template>
+
+    <div class="drawing__body">
+      <CanvasPair
+        ref="pair"
+        :grid-w="config.gridW"
+        :grid-h="config.gridH"
+        :palette="config.palette"
+        :target-grid="config.targetGrid"
+        variant="drawing"
+        @update="onCanvasUpdate"
+      />
+
+      <button
+        class="btn btn--primary drawing__done-btn"
+        :class="{ 'drawing__done-btn--flagged': flaggedDone }"
+        type="button"
+        :disabled="flaggedDone"
+        @click="flagDone"
+      >
+        {{ flaggedDone ? "Flagged as done ✓" : "I'm done →" }}
+      </button>
     </div>
-
-    <CanvasPair
-      ref="pair"
-      :grid-w="config.gridW"
-      :grid-h="config.gridH"
-      :palette="config.palette"
-      :target-grid="config.targetGrid"
-      variant="drawing"
-      @update="onCanvasUpdate"
-    />
-
-    <button
-      class="drawing__done-btn"
-      type="button"
-      :disabled="flaggedDone"
-      @click="flagDone"
-    >
-      {{ flaggedDone ? "Flagged as done ✓" : "I'm done" }}
-    </button>
-  </div>
+  </PhaseLayout>
 </template>
 
 <style scoped lang="scss">
 @use '../../styles/tokens' as *;
 
 .drawing {
-  padding: $gap-4;
-  max-width: $page-max;
-  margin: 0 auto;
-
-  &__status {
-    display: flex;
-    gap: $gap-5;
-    align-items: center;
-    margin-bottom: $gap-2;
-  }
   &__timer {
-    font-weight: bold;
-    margin: 0;
+    font-family: $font-display;
+    font-weight: 700;
+    font-size: 1.05rem;
   }
   &__done {
-    margin: 0;
-    color: $muted;
+    color: $fg-35;
+    font-size: 0.875rem;
   }
 
+  &__body {
+    padding: $gap-4;
+    max-width: $page-max;
+    margin: 0 auto;
+  }
+
+  // Keep the "done" button readable in its disabled state rather than faded
+  // out. Combined selector beats `.btn:disabled`'s opacity rule.
   &__done-btn {
-    margin-top: $gap-3;
+    margin-top: $gap-4;
+  }
+  &__done-btn.drawing__done-btn--flagged:disabled {
+    opacity: 1;
+    background: $surface;
+    color: $accent;
   }
 }
 </style>
