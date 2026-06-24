@@ -425,8 +425,12 @@ function clear() {
   }
   &__btn {
     flex: 1;
-    font-size: 0.8125rem;
     padding: 0.5rem;
+
+    svg {
+      width: 1.05rem;
+      height: 1.05rem;
+    }
   }
 
   // Swatch + brush controls are imperative DOM (built in lib/canvas.ts and
