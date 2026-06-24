@@ -1,0 +1,76 @@
+@use 'tokens' as *;
+
+// Paint sandbox — solo canvas page. Picker left, canvas pair right.
+
+.paint {
+  min-height: 100vh;
+  padding: $page-pad;
+  max-width: $page-max;
+  margin: 0 auto;
+
+  &__back {
+    display: inline-block;
+    margin-bottom: $gap-4;
+    color: $fg-40;
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: color 0.15s;
+
+    &:hover {
+      color: $fg-80;
+    }
+  }
+
+  &__title {
+    margin: 0;
+    font-family: $font-display;
+    font-weight: 700;
+    font-size: 1.75rem;
+  }
+  &__sub {
+    margin: $gap-1 0 $gap-5;
+    color: $fg-40;
+    font-size: 0.875rem;
+  }
+
+  &__row {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-5;
+    align-items: stretch;
+  }
+
+  &__settings {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-4;
+  }
+
+  &__toggle {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-2;
+    padding: 0.5rem 0.875rem;
+    border-radius: $radius;
+    background: $surface;
+    border: 1px solid $border;
+    color: $fg-60;
+    font-family: $font-body;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition:
+      color 0.15s,
+      border-color 0.15s;
+
+    &:hover {
+      color: $fg;
+      border-color: $fg-25;
+    }
+  }
+  &__chevron {
+    color: $fg-35;
+    font-size: 0.75rem;
+  }
+}

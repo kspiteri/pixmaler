@@ -8,6 +8,7 @@
 // Page partials — per-screen static layout.
 @use 'entry';
 @use 'lobby';
+@use 'paint';
 
 // Page-wide. Per-component styles live inside each .vue file's <style scoped>.
 body {
