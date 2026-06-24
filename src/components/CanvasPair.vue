@@ -111,10 +111,9 @@ onMounted(async () => {
     ),
   })
   target.canvas.classList.add('canvas-pair__target-canvas')
-  // PixelCanvas defaults editable canvases to a soft `#ccc` border, applied
-  // inline by the constructor. Force the darker `#444` here — inline beats
-  // any class-based rule.
-  target.canvas.style.border = '1px solid #444'
+  // PixelCanvas defaults editable canvases to a soft border, applied inline by
+  // the constructor. Force the theme border here — inline beats class rules.
+  target.canvas.style.border = '1px solid rgba(255,255,255,0.1)'
   targetSlot.value!.appendChild(target.canvas)
 
   player = new PixelCanvas({
@@ -129,7 +128,8 @@ onMounted(async () => {
     onUpdate: grid => emit('update', grid),
   })
   player.canvas.classList.add('canvas-pair__draw-canvas')
-  player.canvas.style.border = '1px solid #444'
+  player.canvas.style.border = '1px solid rgba(255,255,255,0.1)'
+  player.canvas.style.background = '#fff'
   drawSlot.value!.appendChild(player.canvas)
 
   // Reveal the floating panel only after we know where to put it. Without
@@ -164,22 +164,17 @@ function clear() {
   <div class="canvas-pair" :class="`canvas-pair--${variant}`">
     <div class="canvas-pair__row">
       <div ref="targetWrap" class="canvas-pair__target">
-        <p>{{ variant === "paint" ? "Reference" : "Target" }}</p>
+        <p class="label label--eyebrow">
+          {{ variant === "paint" ? "Reference" : "Target" }}
+        </p>
         <div ref="targetSlot" />
       </div>
       <div class="canvas-pair__draw">
-        <p>{{ variant === "paint" ? "Your canvas" : "Your drawing" }}</p>
+        <p class="label label--eyebrow">
+          {{ variant === "paint" ? "Your canvas" : "Your drawing" }}
+        </p>
         <div ref="drawSlot" />
       </div>
-    </div>
-
-    <div class="canvas-pair__btns btn-row">
-      <button type="button" @click="undo">
-        Undo
-      </button>
-      <button v-if="variant === 'paint'" type="button" @click="clear">
-        Clear
-      </button>
     </div>
   </div>
 
@@ -200,6 +195,14 @@ function clear() {
       <div class="tools-panel__body">
         <div ref="swatchSlot" />
         <div ref="brushSlot" class="tools-panel__brush" />
+        <div class="tools-panel__actions">
+          <button class="btn btn--plain tools-panel__btn" type="button" @click="undo">
+            Undo
+          </button>
+          <button v-if="variant === 'paint'" class="btn btn--plain tools-panel__btn" type="button" @click="clear">
+            Clear
+          </button>
+        </div>
       </div>
     </div>
   </Teleport>
@@ -247,10 +250,6 @@ function clear() {
   &--paint :deep(.canvas-pair__target-canvas) {
     max-width: 200px;
   }
-
-  &__btns {
-    margin-top: $gap-3;
-  }
 }
 
 // Floating tools panel — teleported into <body>, so :deep() isn't needed.
@@ -260,9 +259,11 @@ function clear() {
   top: 0;
   left: 0;
   z-index: 100;
-  background: $bg;
-  border: 1px solid $rule;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   user-select: none;
   // `transform` for movement is faster than animating left/top.
   will-change: transform;
@@ -271,13 +272,13 @@ function clear() {
     display: flex;
     align-items: center;
     gap: $gap-2;
-    padding: $gap-1 $gap-2;
-    background: $rule;
-    color: $bg;
+    padding: $gap-2 $gap-3;
+    border-bottom: 1px solid $border-soft;
+    color: $fg-40;
     cursor: grab;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.15em;
 
     &:active {
       cursor: grabbing;
@@ -285,7 +286,7 @@ function clear() {
   }
 
   &__grip {
-    font-weight: bold;
+    color: $fg-30;
     letter-spacing: -0.1em;
   }
   &__label {
@@ -294,10 +295,19 @@ function clear() {
 
   &__body {
     padding: $gap-3;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-3;
   }
 
-  &__brush {
-    margin-top: $gap-2;
+  &__actions {
+    display: flex;
+    gap: $gap-2;
+  }
+  &__btn {
+    flex: 1;
+    font-size: 0.8125rem;
+    padding: 0.5rem;
   }
 
   // Swatch + brush controls are imperative DOM (built in lib/canvas.ts and
@@ -314,7 +324,8 @@ function clear() {
     width: 26px;
     height: 26px;
     padding: 0;
-    border: 2px solid #555;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-radius: $radius-sm;
     cursor: pointer;
     // Centre within the grid cell — matters when --selected makes one cell
     // larger than its neighbours.
@@ -327,29 +338,32 @@ function clear() {
   :deep(.swatch__cell--selected) {
     width: 32px;
     height: 32px;
-    border-width: 3px;
+    border-color: #fff;
+    border-width: 2px;
   }
 
   // Highlight is set on hover-over via `swatch.highlight()` from canvas
   // hover handlers; --selected wins when both apply.
   :deep(.swatch__cell--highlighted) {
-    border-color: #ff0;
+    border-color: $accent;
   }
 
   :deep(.brush) {
     display: flex;
     align-items: center;
     gap: $gap-2;
-    font-family: $font-mono;
+    font-family: $font-body;
+    font-size: 0.75rem;
+    color: $fg-40;
   }
 
   :deep(.brush__slider) {
-    vertical-align: middle;
-    width: 70px;
+    flex: 1;
+    accent-color: $primary;
   }
 
   :deep(.brush__label) {
-    min-width: 60px;
+    min-width: 56px;
   }
 }
 </style>
