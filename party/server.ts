@@ -6,6 +6,7 @@ import type {
   Player,
   ServerMsg,
   StateMsg,
+  Submission,
 } from '../src/lib/types'
 
 interface RoomState {
@@ -22,6 +23,9 @@ interface RoomState {
   deadline: number | null
   submissions: Map<string, number[]> // clientId → grid
   votes: Map<string, string> // voterClientId → submissionId (= clientId of submitter)
+  // Frozen gallery for the current VOTING round — filtered (blanks dropped) and
+  // shuffled once at endDrawing so the order is stable across re-sends (rejoins).
+  gallery: Submission[] | null
   drawTimer: ReturnType<typeof setTimeout> | null
 }
 
@@ -36,6 +40,7 @@ export default class PixmalerServer implements Party.Server {
     deadline: null,
     submissions: new Map(),
     votes: new Map(),
+    gallery: null,
     drawTimer: null,
   }
 
@@ -124,6 +129,20 @@ export default class PixmalerServer implements Party.Server {
       }
       this.state.players.set(msg.clientId, player)
     }
+
+    // A player rejoining mid-VOTING needs the gallery to vote — it's only
+    // broadcast once at endDrawing, so re-send the frozen copy to this client.
+    if (this.state.phase === 'VOTING' && this.state.gallery && this.state.config) {
+      const cfg = this.state.config
+      conn.send(JSON.stringify({
+        type: 'gallery',
+        submissions: this.state.gallery,
+        palette: cfg.palette,
+        gridW: cfg.gridW,
+        gridH: cfg.gridH,
+      } satisfies ServerMsg))
+    }
+
     this.broadcastAll(this.buildState())
   }
 
@@ -202,6 +221,7 @@ export default class PixmalerServer implements Party.Server {
     this.state.deadline = deadline
     this.state.submissions.clear()
     this.state.votes.clear()
+    this.state.gallery = null
     for (const p of this.state.players.values()) p.doneDrawing = false
 
     this.broadcastAll({ type: 'phase', phase: 'DRAWING', deadline } satisfies ServerMsg)
@@ -263,6 +283,7 @@ export default class PixmalerServer implements Party.Server {
     this.state.deadline = null
     this.state.submissions.clear()
     this.state.votes.clear()
+    this.state.gallery = null
     for (const p of this.state.players.values()) p.doneDrawing = false
     this.broadcastAll(this.buildState())
   }
@@ -277,12 +298,17 @@ export default class PixmalerServer implements Party.Server {
     this.state.deadline = null
     const cfg = this.state.config!
 
+    // Build the gallery once: drop blank submissions (a player who never drew
+    // leaves an all-`-1` grid — nothing to vote on). Order is left as-is;
+    // anonymising the display order is done per-client in Voting.vue. Frozen
+    // for the round so rejoins and results read a consistent set.
+    this.state.gallery = [...this.state.submissions.entries()]
+      .filter(([, grid]) => grid.some(cell => cell !== -1))
+      .map(([clientId, grid]): Submission => ({ submissionId: clientId, grid }))
+
     this.broadcastAll({
       type: 'gallery',
-      submissions: [...this.state.submissions.entries()].map(([clientId, grid]) => ({
-        submissionId: clientId,
-        grid,
-      })),
+      submissions: this.state.gallery,
       palette: cfg.palette,
       gridW: cfg.gridW,
       gridH: cfg.gridH,
@@ -296,17 +322,24 @@ export default class PixmalerServer implements Party.Server {
     this.state.phase = 'RESULTS'
     const cfg = this.state.config!
 
+    // Tally and rank from the frozen gallery (blanks already filtered out) so
+    // a non-drawer can't appear in results. Falls back to an empty list if
+    // voting somehow ended before a gallery was built.
+    const gallery = this.state.gallery ?? []
     const tally = new Map<string, number>()
-    for (const clientId of this.state.submissions.keys()) tally.set(clientId, 0)
-    for (const subId of this.state.votes.values()) tally.set(subId, (tally.get(subId) ?? 0) + 1)
+    for (const sub of gallery) tally.set(sub.submissionId, 0)
+    for (const subId of this.state.votes.values()) {
+      if (tally.has(subId))
+        tally.set(subId, (tally.get(subId) ?? 0) + 1)
+    }
 
-    const ranked = [...this.state.submissions.entries()]
-      .map(([clientId, grid]) => ({
-        submissionId: clientId,
-        clientId,
-        name: this.state.players.get(clientId)?.name ?? 'Unknown',
-        votes: tally.get(clientId) ?? 0,
-        grid,
+    const ranked = gallery
+      .map(sub => ({
+        submissionId: sub.submissionId,
+        clientId: sub.submissionId,
+        name: this.state.players.get(sub.submissionId)?.name ?? 'Unknown',
+        votes: tally.get(sub.submissionId) ?? 0,
+        grid: sub.grid,
       }))
       .sort((a, b) => b.votes - a.votes)
 
