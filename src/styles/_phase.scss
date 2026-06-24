@@ -1,0 +1,42 @@
+@use 'tokens' as *;
+
+// Shared in-room phase shell — top progress bar + status bar + body.
+
+.phase {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+
+  &__progress {
+    height: 5px;
+    background: $surface;
+    flex-shrink: 0;
+  }
+  &__progress-fill {
+    height: 100%;
+    transition:
+      width 1s linear,
+      background 0.4s;
+  }
+
+  &__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $gap-3;
+    padding: $gap-3 $gap-5;
+    border-bottom: 1px solid $border-soft;
+    flex-shrink: 0;
+  }
+
+  &__status {
+    display: flex;
+    align-items: center;
+    gap: $gap-4;
+  }
+
+  &__body {
+    flex: 1;
+    min-height: 0;
+  }
+}

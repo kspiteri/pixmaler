@@ -1,36 +1,10 @@
 @use 'tokens' as *;
 
-// Lobby screen — two-column layout: players sidebar + game settings.
-// (The header bar is extracted to PhaseLayout once Drawing shares it.)
+// Lobby screen — two-column body (players sidebar + game settings). The header
+// bar / logo come from PhaseLayout; the room copy-link button sits in its
+// status slot.
 
 .lobby {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-
-  &__head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: $gap-3;
-    padding: $gap-4 $gap-5;
-    border-bottom: 1px solid $border-soft;
-
-    // Logo (left) and spacer (right) flex-equal so the room button stays
-    // centred. .wordmark is the root element rendered by <Logo>.
-    > :first-child,
-    > :last-child {
-      flex: 1 1 0;
-    }
-    > :last-child {
-      display: flex;
-      justify-content: flex-end;
-    }
-  }
-  &__brand {
-    color: $fg-30;
-    font-size: 0.875rem;
-  }
   &__room {
     display: inline-flex;
     align-items: baseline;

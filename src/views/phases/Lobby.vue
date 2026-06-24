@@ -10,7 +10,7 @@ import type {
 } from '../../lib/types'
 import { computed, inject, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 import ImagePicker from '../../components/ImagePicker.vue'
-import Logo from '../../components/Logo.vue'
+import PhaseLayout from '../../components/PhaseLayout.vue'
 import PlayerList from '../../components/PlayerList.vue'
 import { PixelCanvas } from '../../lib/canvas'
 import { clientIdKey, socketKey } from '../../lib/keys'
@@ -152,15 +152,18 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="lobby">
-    <header class="lobby__head">
-      <Logo size="sm" />
-      <button class="lobby__room" type="button" :title="copied ? 'Copied!' : 'Click to copy the room link'" @click="copyLink">
+  <PhaseLayout>
+    <template #status>
+      <button
+        class="lobby__room"
+        type="button"
+        :title="copied ? 'Copied!' : 'Click to copy the room link'"
+        @click="copyLink"
+      >
         Room: <span class="lobby__code">{{ roomCode }}</span>
         <span class="lobby__copy">{{ copied ? "✓ copied!" : "copy link" }}</span>
       </button>
-      <span class="lobby__brand" />
-    </header>
+    </template>
 
     <div class="lobby__body">
       <aside class="lobby__players">
@@ -216,5 +219,5 @@ onBeforeUnmount(() => {
         </template>
       </section>
     </div>
-  </div>
+  </PhaseLayout>
 </template>
