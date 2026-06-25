@@ -2,11 +2,11 @@
 
 A real-time pixel-art party game.
 
-> **Gameplay loop complete.** Lobby, image pipeline, drawing phase, anonymised voting, ranked-reveal results, and a solo paint sandbox are all wired. What's left is mobile polish, reconnection edge cases, and the GitHub Pages deploy workflow.
+> **Gameplay loop complete.** Lobby → Drawing → Voting → Results → Play again all work end-to-end. What's left is the responsive/mobile pass, reconnection edge cases, and CI/deploy wiring (GitHub Pages Action + `partykit deploy`).
 
 ## What it does
 
-A game master uploads any image. It's quantized in the browser into chunky, limited-palette pixel art — that's the **target**. Everyone in the room then races a countdown to redraw the target by hand on a matching pixel canvas, using only the swatch of allowed colours. No eraser: you paint over your mistakes. When the timer runs out, every drawing is shown side-by-side and **anonymous**, and the room votes for its favourite. Then the ranked reveal: scores, authors, and the gloriously bad results.
+A game master uploads any image. It's quantized in the browser into chunky, limited-palette pixel art — that's the **target**. Everyone in the room then races a countdown to redraw the target by hand on a matching pixel canvas, using only the swatch of allowed colours. No eraser: you paint over your mistakes. When the timer runs out, every drawing is shown side-by-side and **anonymous**, and the room votes in two categories — 😂 **funniest** and ⭐ **best**. Then the chaotic reveal: an **overall winner** (most votes across both categories), with everyone else ranked behind in a gallery.
 
 - **Memorable room codes** — join a game with a word-pair eg: `feral-crayon`
 - **Server-authoritative** — phase, timer, submissions, and vote tallying all live on the server. No Cheating!
@@ -28,7 +28,7 @@ A game master uploads any image. It's quantized in the browser into chunky, limi
 ```bash
 pnpm install
 pnpm dev               # Vite frontend
-pnpm dlx partykit dev  # realtime server on :1999 (separate terminal)
+pnpm exec partykit dev  # realtime server on :1999 (separate terminal)
 ```
 
 Set `VITE_PARTYKIT_HOST` (`127.0.0.1:1999` in dev). See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the full developer guide — tooling, conventions, and deploy.
