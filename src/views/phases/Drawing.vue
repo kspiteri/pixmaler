@@ -222,6 +222,14 @@ onBeforeUnmount(() => {
     padding: $gap-4;
     max-width: $page-max;
     margin: 0 auto;
+
+    // On mobile the tools panel docks fixed to the bottom (up to ~45vh tall,
+    // z-index 100). CanvasPair reserves space for *its* canvas, but the Done
+    // button is a sibling below it — so reserve clearance here too, otherwise
+    // the panel overlays the button and it can't be tapped.
+    @media (max-width: $bp-mobile) {
+      padding-bottom: 50vh;
+    }
   }
 
   // Keep the "done" button readable in its disabled state rather than faded

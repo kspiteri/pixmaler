@@ -315,9 +315,13 @@ function clear() {
 
   // On mobile the tools panel docks to the bottom (fixed, full-width), so it
   // overlaps page content. Reserve space below the canvas so its bottom rows
-  // aren't hidden behind the panel.
-  @media (max-width: $bp-mobile) {
-    padding-bottom: 48vh;
+  // aren't hidden behind the panel. The DRAWING phase has a sibling Done button
+  // below this component and reserves its own clearance on `.drawing__body`, so
+  // only the standalone `paint` sandbox needs the padding here.
+  &--paint {
+    @media (max-width: $bp-mobile) {
+      padding-bottom: 48vh;
+    }
   }
 }
 
