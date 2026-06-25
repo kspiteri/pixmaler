@@ -7,7 +7,18 @@ import type {
   ServerMsg,
   StateMsg,
   Submission,
+  VoteCategory,
 } from '../src/lib/types'
+import { VOTE_CATEGORIES } from '../src/lib/types'
+
+// Votes are keyed by voter + category so each player gets one vote per
+// category. `voteKey` builds the composite key; `categoryOf` reads it back.
+function voteKey(clientId: string, category: VoteCategory): string {
+  return `${clientId}:${category}`
+}
+function categoryOf(key: string): VoteCategory {
+  return key.slice(key.lastIndexOf(':') + 1) as VoteCategory
+}
 
 interface RoomState {
   phase: Phase
@@ -22,7 +33,7 @@ interface RoomState {
   config: GmConfigureMsg | null
   deadline: number | null
   submissions: Map<string, number[]> // clientId → grid
-  votes: Map<string, string> // voterClientId → submissionId (= clientId of submitter)
+  votes: Map<string, string> // `${voterClientId}:${category}` → submissionId
   // Frozen gallery for the current VOTING round — filtered (blanks dropped) and
   // shuffled once at endDrawing so the order is stable across re-sends (rejoins).
   gallery: Submission[] | null
@@ -252,18 +263,23 @@ export default class PixmalerServer implements Party.Server {
     const voter = this.playerByConn(conn)
     if (!voter || this.state.phase !== 'VOTING')
       return
+    // Ignore unknown categories (protocol drift / tampering).
+    if (!VOTE_CATEGORIES.some(c => c.id === msg.category))
+      return
     // submissionId is the clientId of the submitter (see handleSubmit).
     if (msg.submissionId === voter.clientId) {
       conn.send(JSON.stringify({ type: 'error', message: 'Cannot vote for yourself.' } satisfies ServerMsg))
       return
     }
-    // Voters can change their mind — `set` overwrites any previous vote.
-    // The auto-end check still uses `votes.size`, which counts each voter once.
-    this.state.votes.set(voter.clientId, msg.submissionId)
+    // One vote per voter per category — `set` overwrites the previous pick in
+    // that category, so voters can change their mind.
+    this.state.votes.set(voteKey(voter.clientId, msg.category), msg.submissionId)
 
-    const connectedCount = [...this.state.players.values()].filter(p => p.connected).length
-    if (this.state.votes.size >= connectedCount)
-      this.endVoting()
+    // No auto-end: the GM decides when to stop (they watch the "X of Y voted"
+    // tally). Re-broadcast state so that tally updates live for everyone.
+    // Vote *targets* are never broadcast — only the progress count — so running
+    // tallies can't sway later voters.
+    this.broadcastAll(this.buildState())
   }
 
   private handleStopVoting(conn: Party.Connection) {
@@ -322,25 +338,32 @@ export default class PixmalerServer implements Party.Server {
     this.state.phase = 'RESULTS'
     const cfg = this.state.config!
 
-    // Tally and rank from the frozen gallery (blanks already filtered out) so
-    // a non-drawer can't appear in results. Falls back to an empty list if
-    // voting somehow ended before a gallery was built.
+    // Tally per category from the frozen gallery (blanks already filtered out)
+    // so a non-drawer can't appear in results. `votes` is keyed
+    // "voterClientId:category"; we read the category back off each key.
     const gallery = this.state.gallery ?? []
-    const tally = new Map<string, number>()
-    for (const sub of gallery) tally.set(sub.submissionId, 0)
-    for (const subId of this.state.votes.values()) {
-      if (tally.has(subId))
-        tally.set(subId, (tally.get(subId) ?? 0) + 1)
+    const breakdowns = new Map<string, Record<VoteCategory, number>>()
+    for (const sub of gallery) {
+      breakdowns.set(sub.submissionId, { funniest: 0, best: 0 })
+    }
+    for (const [key, subId] of this.state.votes.entries()) {
+      const bd = breakdowns.get(subId)
+      if (bd)
+        bd[categoryOf(key)]++
     }
 
     const ranked = gallery
-      .map(sub => ({
-        submissionId: sub.submissionId,
-        clientId: sub.submissionId,
-        name: this.state.players.get(sub.submissionId)?.name ?? 'Unknown',
-        votes: tally.get(sub.submissionId) ?? 0,
-        grid: sub.grid,
-      }))
+      .map((sub) => {
+        const breakdown = breakdowns.get(sub.submissionId)!
+        return {
+          submissionId: sub.submissionId,
+          clientId: sub.submissionId,
+          name: this.state.players.get(sub.submissionId)?.name ?? 'Unknown',
+          votes: breakdown.funniest + breakdown.best,
+          breakdown,
+          grid: sub.grid,
+        }
+      })
       .sort((a, b) => b.votes - a.votes)
 
     this.broadcastAll({ type: 'phase', phase: 'RESULTS', deadline: null } satisfies ServerMsg)
@@ -400,7 +423,24 @@ export default class PixmalerServer implements Party.Server {
       totalDrawing: [...this.state.players.values()].filter(
         p => p.connected && p.clientId !== this.state.gmClientId,
       ).length,
+      ...this.votingProgress(),
     }
+  }
+
+  // VOTING progress: how many connected players have cast a vote in *every*
+  // category (= finished voting), out of all present. Broadcast (not the
+  // tallies) so the GM can decide when to stop.
+  private votingProgress(): { votedCount: number, totalVoters: number } {
+    const perVoter = new Map<string, number>()
+    for (const key of this.state.votes.keys()) {
+      const voterId = key.slice(0, key.lastIndexOf(':'))
+      perVoter.set(voterId, (perVoter.get(voterId) ?? 0) + 1)
+    }
+    const present = [...this.state.players.values()].filter(p => p.connected)
+    const votedCount = present.filter(
+      p => (perVoter.get(p.clientId) ?? 0) >= VOTE_CATEGORIES.length,
+    ).length
+    return { votedCount, totalVoters: present.length }
   }
 
   private broadcastAll(msg: ServerMsg) {
