@@ -7,10 +7,12 @@ Small, single-package project. The workflow is light. This covers setup, tooling
 ```bash
 pnpm install               # installs deps + wires git hooks
 pnpm dev                   # Vite frontend on :7965
-pnpm dlx partykit dev      # realtime server on :1999 (separate terminal)
+pnpm exec partykit dev     # realtime server on :1999 (separate terminal)
 ```
 
-You need **both** servers to play — the frontend talks to PartyKit over a WebSocket. Set `VITE_PARTYKIT_HOST=127.0.0.1:1999` in dev.
+You need **both** servers to play — the frontend talks to PartyKit over a WebSocket. Set `VITE_PARTYKIT_HOST=127.0.0.1:1999` in dev (already in the gitignored `.env.local`).
+
+> Use `pnpm exec partykit` (the pinned local devDependency), **not** `pnpm dlx partykit`. `dlx` re-resolves a fresh copy each run and can leave a stale server bound to :1999 in the background while a new one quietly grabs another port — so the client keeps talking to old code and changes appear to do nothing. If a round won't pick up server edits, check for a leftover process with `lsof -nP -iTCP:1999 -sTCP:LISTEN` and kill it.
 
 The solo `/pixmaler/paint` sandbox needs only `pnpm dev` — no socket.
 
@@ -55,17 +57,19 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 ## Conventions
 
 - **British English** in user-facing strings, comments, and docs (`colour`, `behaviour`, `centre`). Identifiers mirroring DOM/web APIs stay as-is (`color` in CSS, `fillStyle` on canvas).
-- **Vue 3 Composition API** with `<script setup>`. SCSS via `<style scoped lang="scss">` per component; shared tokens in `src/styles/_tokens.scss`, non-scoped rules only in `main.scss`.
+- **Vue 3 Composition API** with `<script setup>`. **Styling convention:** static, non-reactive styles live in per-screen partials (`src/styles/_<screen>.scss`) and shared primitives (`_buttons`, `_forms`, `_logo`, `_phase`), all `@use`d into `main.scss`; tokens in `_tokens.scss`. A component's scoped `<style>` is reserved for genuinely reactive or component-local rules — chiefly `:deep()` reaching imperatively-mounted `PixelCanvas` elements, which only works in a scoped block.
 - **Inject infrastructure, prop data.** `socket` and `clientId` are `provide`/`inject`ed once at connection; reactive game state flows down as props. No Pinia.
 - **`PixelCanvas` is imperative** — it owns its `<canvas>` and is instantiated in `onMounted`/watchers, not driven by reactivity.
 - **The server is authoritative** for phase, timer, submissions, and votes. Client state is a view of the server's truth — derive from the latest `state` message rather than holding local state that can drift.
+- **antfu gotcha:** `ts/no-use-before-define` — declare `useTemplateRef`/`ref`s *above* any `watch`/`computed` that references them.
 
 ## Structure
 
 ```
-src/lib/        # canvas, image pipeline, shared types, composables
-src/components/ # reusable UI (ImagePicker, CanvasPair, PlayerList)
+src/lib/        # canvas, image pipeline, shared types, taglines, composables
+src/components/ # reusable UI (ImagePicker, CanvasPair, PlayerList, PhaseLayout, Logo)
 src/views/      # Entry, Paint, and the phase screens
+src/styles/     # _tokens + shared primitives + per-screen partials, all via main.scss
 party/          # PartyKit Durable Object (server.ts)
 ```
 
@@ -87,7 +91,7 @@ Two independent targets:
 
 ```bash
 pnpm build                 # → dist/, GitHub Pages serves under /pixmaler/
-pnpm dlx partykit deploy   # realtime server → Cloudflare
+pnpm exec partykit deploy  # realtime server → Cloudflare
 ```
 
 GitHub Pages is static-only and can't host the PartyKit server. Set `VITE_PARTYKIT_HOST` at build time to the production PartyKit host so the deployed frontend talks to the deployed server.

@@ -2,16 +2,17 @@
 
 A real-time pixel-art party game.
 
-> **Gameplay loop complete.** Lobby → Drawing → Voting → Results → Play again all work end-to-end. What's left is the responsive/mobile pass, reconnection edge cases, and CI/deploy wiring (GitHub Pages Action + `partykit deploy`).
+> **Gameplay loop complete + restyled.** Lobby → Drawing → Voting → Results → Play again all work end-to-end, with a dark "party game" visual theme and two-category voting. What's left is finer responsive/mobile polish, reconnection edge cases, and CI/deploy wiring (GitHub Pages Action + `partykit deploy`).
 
 ## What it does
 
 A game master uploads any image. It's quantized in the browser into chunky, limited-palette pixel art — that's the **target**. Everyone in the room then races a countdown to redraw the target by hand on a matching pixel canvas, using only the swatch of allowed colours. No eraser: you paint over your mistakes. When the timer runs out, every drawing is shown side-by-side and **anonymous**, and the room votes in two categories — 😂 **funniest** and ⭐ **best**. Then the chaotic reveal: an **overall winner** (most votes across both categories), with everyone else ranked behind in a gallery.
 
 - **Memorable room codes** — join a game with a word-pair eg: `feral-crayon`
+- **Two-category voting** — vote 😂 funniest and ⭐ best on the anonymised, per-client-shuffled gallery; the GM watches a live "X of Y voted" tally and ends the round when ready. Results rank by overall points (chaotic — a drawing 2nd in everything can pip a category winner).
 - **Server-authoritative** — phase, timer, submissions, and vote tallying all live on the server. No Cheating!
-- **Blind reveal** — nobody sees anyone else's drawing until voting; you only see a live "X of Y finished" tally during the round.
-- **Reconnect-safe** — drop and rejoin with the same identity; your slot (and your vote) survive. The original GM reclaims their role on re-connect; if absent, the longest-present player is auto-promoted. The GM can also explicitly transfer the role.
+- **Blind reveal** — nobody sees anyone else's drawing until voting; during the round you only see a live "X of Y finished" tally, and vote *targets* stay hidden until the reveal.
+- **Reconnect-safe** — drop and rejoin with the same identity; your slot (and your votes) survive. The original GM reclaims their role on re-connect; if absent, the longest-present player is auto-promoted. The GM can also explicitly transfer the role.
 - **Cross-canvas hover marker** — hovering your canvas lights up a marker on the reference and highlights the matching swatch, so you don't have to squint at six near-identical browns.
 - **Solo paint sandbox** — the [`/paint`](#paint-sandbox) route opens a single-player canvas with the same pipeline; useful for testing brushes and palettes, or just goofing around.
 
