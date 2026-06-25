@@ -7,28 +7,32 @@
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
-    "typecheck": "vue-tsc --noEmit",
+    "typecheck": "vue-tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "wr:dev": "wrangler dev",
+    "wr:deploy": "wrangler deploy",
     "prepare": "simple-git-hooks"
   },
   "dependencies": {
+    "partyserver": "catalog:prod",
     "partysocket": "catalog:prod",
     "unique-names-generator": "catalog:prod",
     "vue": "catalog:prod"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:dev",
+    "@cloudflare/workers-types": "catalog:dev",
     "@vitejs/plugin-vue": "catalog:dev",
     "eslint": "catalog:dev",
     "eslint-plugin-format": "catalog:dev",
     "lint-staged": "catalog:dev",
-    "partykit": "catalog:dev",
     "sass": "catalog:dev",
     "simple-git-hooks": "catalog:dev",
     "typescript": "catalog:dev",
     "vite": "catalog:dev",
-    "vue-tsc": "catalog:dev"
+    "vue-tsc": "catalog:dev",
+    "wrangler": "catalog:dev"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm lint-staged"

@@ -5,11 +5,13 @@ node_modules/
 dist/
 .parcel-cache/
 .partykit/state
+.wrangler/
 
 # Environment
 .env
 .env.local
 .env.*.local
+.dev.vars
 
 # Logs
 *.log

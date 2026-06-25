@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pixmaler",
+  "main": "party/server.ts",
+  "compatibility_date": "2026-06-25",
+  "durable_objects": {
+    "bindings": [
+      { "name": "PixmalerServer", "class_name": "PixmalerServer" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["PixmalerServer"] }
+  ],
+  "dev": {
+    "port": 1999
+  }
+}

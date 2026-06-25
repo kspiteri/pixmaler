@@ -4,24 +4,27 @@ trustPolicy: no-downgrade
 
 allowBuilds:
   '@parcel/watcher': set this to true or false
-  esbuild: set this to true or false
+  esbuild: true
+  sharp: true
   simple-git-hooks: set this to true or false
-  workerd: set this to true or false
+  workerd: true
 
 catalogs:
   dev:
     '@antfu/eslint-config': ^9.0.0
+    '@cloudflare/workers-types': ^4.20260625.1
     '@vitejs/plugin-vue': ^6.0.7
     eslint: ^10.5.0
     eslint-plugin-format: ^2.0.1
     lint-staged: ^17.0.7
-    partykit: ^0.0.111
     sass: ^1.100.0
     simple-git-hooks: ^2.13.1
     typescript: ^5.5.3
     vite: ^7.3.5
     vue-tsc: ^3.3.4
+    wrangler: ^4.105.0
   prod:
+    partyserver: ^0.5.8
     partysocket: ^1.0.3
     unique-names-generator: ^4.7.1
     vue: ^3.5.35

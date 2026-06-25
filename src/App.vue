@@ -66,7 +66,9 @@ if (route === 'room' && roomCode) {
   const clientId = getOrCreateClientId()
   const name = getOrCreateName()
 
-  const socket = new PartySocket({ host: PARTYKIT_HOST, room: roomCode })
+  // `party` matches the kebab-cased Durable Object binding name
+  // (PixmalerServer → "pixmaler-server"); routePartykitRequest routes on it.
+  const socket = new PartySocket({ host: PARTYKIT_HOST, party: 'pixmaler-server', room: roomCode })
 
   // `socket` and `clientId` never change for the lifetime of the page, so
   // descendants inject them rather than receiving them through every prop list.

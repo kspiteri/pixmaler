@@ -1,4 +1,4 @@
-import type * as Party from 'partykit/server'
+import type { Connection, ConnectionContext } from 'partyserver'
 import type {
   ClientMsg,
   GmConfigureMsg,
@@ -9,7 +9,17 @@ import type {
   Submission,
   VoteCategory,
 } from '../src/lib/types'
+import { routePartykitRequest, Server } from 'partyserver'
 import { VOTE_CATEGORIES } from '../src/lib/types'
+
+// Bindings available on `this.env`. `PIXMALER_DEV=1` (local only, via .dev.vars)
+// relaxes the lobby start gate so the whole flow can be tested solo.
+interface Env {
+  PIXMALER_DEV?: string
+  // The Durable Object namespace bound in wrangler.jsonc — used by
+  // routePartykitRequest in the Worker entry to address rooms.
+  PixmalerServer: DurableObjectNamespace
+}
 
 // Votes are keyed by voter + category so each player gets one vote per
 // category. `voteKey` builds the composite key; `categoryOf` reads it back.
@@ -40,7 +50,13 @@ interface RoomState {
   drawTimer: ReturnType<typeof setTimeout> | null
 }
 
-export default class PixmalerServer implements Party.Server {
+// Ported from PartyKit to PartyServer (standard Durable Object, deployed via
+// wrangler). State is in-memory: the DO stays warm while anyone is connected,
+// so this behaves exactly as before. NOTE: not hibernation-safe — if we ever
+// enable `static options = { hibernate: true }`, this state must be persisted
+// to `this.ctx.storage` (reload in onStart) and the setTimeout draw timer
+// replaced with a DO alarm. See docs/.plans/07-partyserver-port.md.
+export class PixmalerServer extends Server<Env> {
   private state: RoomState = {
     phase: 'LOBBY',
     players: new Map(),
@@ -55,10 +71,8 @@ export default class PixmalerServer implements Party.Server {
     drawTimer: null,
   }
 
-  constructor(readonly room: Party.Room) {}
-
   // ── HTTP existence check ───────────────────────────────────────────────────
-  async onRequest(req: Party.Request): Promise<Response> {
+  async onRequest(req: Request): Promise<Response> {
     if (req.method === 'GET') {
       const exists = [...this.state.players.values()].some(p => p.connected)
       return new Response(JSON.stringify({ exists }), {
@@ -69,7 +83,7 @@ export default class PixmalerServer implements Party.Server {
   }
 
   // ── Connection lifecycle ───────────────────────────────────────────────────
-  onConnect(_conn: Party.Connection) {
+  onConnect(_conn: Connection, _ctx: ConnectionContext) {
     // Don't send `state` here — the client hasn't told us who they are yet
     // (no `join` message processed), so the snapshot would be stale and could
     // cause the first joiner to render an empty-lobby with no GM controls.
@@ -77,7 +91,7 @@ export default class PixmalerServer implements Party.Server {
     // identified itself.
   }
 
-  onClose(conn: Party.Connection) {
+  onClose(conn: Connection) {
     const clientId = this.state.connMap.get(conn.id)
     this.state.connMap.delete(conn.id)
     if (!clientId)
@@ -91,7 +105,7 @@ export default class PixmalerServer implements Party.Server {
   }
 
   // ── Message handler ────────────────────────────────────────────────────────
-  onMessage(raw: string, sender: Party.Connection) {
+  onMessage(sender: Connection, raw: string) {
     let msg: ClientMsg
     try { msg = JSON.parse(raw) as ClientMsg }
     catch { return }
@@ -112,7 +126,7 @@ export default class PixmalerServer implements Party.Server {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  private handleJoin(msg: Extract<ClientMsg, { type: 'join' }>, conn: Party.Connection) {
+  private handleJoin(msg: Extract<ClientMsg, { type: 'join' }>, conn: Connection) {
     this.state.connMap.set(conn.id, msg.clientId)
 
     const existing = this.state.players.get(msg.clientId)
@@ -157,7 +171,7 @@ export default class PixmalerServer implements Party.Server {
     this.broadcastAll(this.buildState())
   }
 
-  private handleRename(msg: Extract<ClientMsg, { type: 'rename' }>, conn: Party.Connection) {
+  private handleRename(msg: Extract<ClientMsg, { type: 'rename' }>, conn: Connection) {
     // Renaming is only meaningful before the game starts; names are revealed in
     // RESULTS, so locking them at LOBBY keeps the reveal honest.
     if (this.state.phase !== 'LOBBY')
@@ -175,7 +189,7 @@ export default class PixmalerServer implements Party.Server {
     this.broadcastAll(this.buildState())
   }
 
-  private handleConfigure(msg: Extract<ClientMsg, { type: 'gm:configure' }>, conn: Party.Connection) {
+  private handleConfigure(msg: Extract<ClientMsg, { type: 'gm:configure' }>, conn: Connection) {
     if (!this.isGm(conn))
       return
     if (this.state.phase !== 'LOBBY')
@@ -184,7 +198,7 @@ export default class PixmalerServer implements Party.Server {
     this.broadcastAll(this.buildState())
   }
 
-  private handleTransfer(msg: Extract<ClientMsg, { type: 'gm:transfer' }>, conn: Party.Connection) {
+  private handleTransfer(msg: Extract<ClientMsg, { type: 'gm:transfer' }>, conn: Connection) {
     if (!this.isGm(conn))
       return
     // LOBBY only — mid-game transfers complicate the FSM with no clear payoff.
@@ -206,7 +220,7 @@ export default class PixmalerServer implements Party.Server {
     this.broadcastAll(this.buildState())
   }
 
-  private handleStart(conn: Party.Connection) {
+  private handleStart(conn: Connection) {
     if (!this.isGm(conn))
       return
     if (this.state.phase !== 'LOBBY')
@@ -217,7 +231,7 @@ export default class PixmalerServer implements Party.Server {
     // Require at least 2 non-GM connected players so there are meaningful
     // submissions — relaxed in local dev (PIXMALER_DEV) so the whole flow can
     // be tested solo across a couple of browsers. Never set in production.
-    const devMode = this.room.env.PIXMALER_DEV === '1'
+    const devMode = this.env.PIXMALER_DEV === '1'
     const nonGmConnected = [...this.state.players.values()].filter(
       p => p.connected && p.clientId !== this.state.gmClientId,
     )
@@ -239,7 +253,7 @@ export default class PixmalerServer implements Party.Server {
     this.state.drawTimer = setTimeout(() => this.endDrawing(), this.state.config.drawSeconds * 1000)
   }
 
-  private handleDrawDone(conn: Party.Connection) {
+  private handleDrawDone(conn: Connection) {
     const player = this.playerByConn(conn)
     if (!player || this.state.phase !== 'DRAWING')
       return
@@ -247,7 +261,7 @@ export default class PixmalerServer implements Party.Server {
     this.broadcastDoneStatus()
   }
 
-  private handleSubmit(msg: Extract<ClientMsg, { type: 'draw:submit' }>, conn: Party.Connection) {
+  private handleSubmit(msg: Extract<ClientMsg, { type: 'draw:submit' }>, conn: Connection) {
     const player = this.playerByConn(conn)
     if (!player || this.state.phase !== 'DRAWING')
       return
@@ -259,7 +273,7 @@ export default class PixmalerServer implements Party.Server {
     this.state.submissions.set(player.clientId, msg.grid)
   }
 
-  private handleVote(msg: Extract<ClientMsg, { type: 'vote:cast' }>, conn: Party.Connection) {
+  private handleVote(msg: Extract<ClientMsg, { type: 'vote:cast' }>, conn: Connection) {
     const voter = this.playerByConn(conn)
     if (!voter || this.state.phase !== 'VOTING')
       return
@@ -282,7 +296,7 @@ export default class PixmalerServer implements Party.Server {
     this.broadcastAll(this.buildState())
   }
 
-  private handleStopVoting(conn: Party.Connection) {
+  private handleStopVoting(conn: Connection) {
     if (!this.isGm(conn))
       return
     if (this.state.phase !== 'VOTING')
@@ -290,7 +304,7 @@ export default class PixmalerServer implements Party.Server {
     this.endVoting()
   }
 
-  private handlePlayAgain(conn: Party.Connection) {
+  private handlePlayAgain(conn: Connection) {
     if (!this.isGm(conn))
       return
     this.clearDrawTimer()
@@ -372,12 +386,12 @@ export default class PixmalerServer implements Party.Server {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
-  private playerByConn(conn: Party.Connection): Player | undefined {
+  private playerByConn(conn: Connection): Player | undefined {
     const clientId = this.state.connMap.get(conn.id)
     return clientId ? this.state.players.get(clientId) : undefined
   }
 
-  private isGm(conn: Party.Connection): boolean {
+  private isGm(conn: Connection): boolean {
     const clientId = this.state.connMap.get(conn.id)
     return clientId === this.state.gmClientId
   }
@@ -444,7 +458,7 @@ export default class PixmalerServer implements Party.Server {
   }
 
   private broadcastAll(msg: ServerMsg) {
-    this.room.broadcast(JSON.stringify(msg))
+    this.broadcast(JSON.stringify(msg))
   }
 
   private broadcastDoneStatus() {
@@ -456,4 +470,18 @@ export default class PixmalerServer implements Party.Server {
       ).length,
     })
   }
+}
+
+// ── Worker entry ───────────────────────────────────────────────────────────
+// Routes /parties/:server/:room WebSocket + HTTP requests to the Durable
+// Object. `routePartykitRequest` kebab-cases the binding class name, so
+// PixmalerServer is reachable as the party name "pixmaler-server" (see the
+// client's PartySocket `party` option in src/App.vue).
+export default {
+  async fetch(request: Request, env: Env): Promise<Response> {
+    return (
+      (await routePartykitRequest(request, env))
+      || new Response('Not Found', { status: 404 })
+    )
+  },
 }
