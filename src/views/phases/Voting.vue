@@ -5,17 +5,20 @@
 // Tallies are intentionally hidden until RESULTS — broadcasting running
 // counts would influence later voters and ruin the social tension.
 
-import type { ClientMsg, ServerMsg, Submission } from '../../lib/types'
+import type { ClientMsg, ServerMsg, Submission, VoteCategory } from '../../lib/types'
 import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import { PixelCanvas } from '../../lib/canvas'
 import { clientIdKey, socketKey } from '../../lib/keys'
+import { VOTE_CATEGORIES } from '../../lib/types'
 
 type Gallery = Extract<ServerMsg, { type: 'gallery' }>
 
 const props = defineProps<{
   gallery: Gallery | null
   gmClientId: string
+  votedCount: number
+  totalVoters: number
 }>()
 
 const socket = inject(socketKey)!
@@ -51,10 +54,23 @@ function stopVoting() {
   socket.send(JSON.stringify(msg))
 }
 
-// Local-only — not echoed by the server during VOTING. The submissionId
-// stored is set after the server accepts the vote (we trust our own
-// optimistic update because the server only rejects self-votes/wrong-phase).
-const myVote = ref<string | null>(null)
+// Local-only — not echoed by the server during VOTING. One submissionId per
+// category (null until cast). We trust our own optimistic update because the
+// server only rejects self-votes / wrong-phase / unknown categories.
+const myVotes = ref<Record<VoteCategory, string | null>>({ funniest: null, best: null })
+
+function emptyVotes(): Record<VoteCategory, string | null> {
+  return { funniest: null, best: null }
+}
+
+// Which of my category votes have landed on a given submission — drives the
+// stickers shown on that card.
+function votedCategoriesFor(submissionId: string) {
+  return VOTE_CATEGORIES.filter(c => myVotes.value[c.id] === submissionId)
+}
+
+// True once every category has a vote — players know they're done.
+const allCast = computed(() => VOTE_CATEGORIES.every(c => myVotes.value[c.id] !== null))
 
 // Track PixelCanvas instances so we can dispose them when the gallery changes
 // or this view unmounts. Each instance owns mouse handlers; orphaning them
@@ -106,7 +122,7 @@ watch(() => props.gallery, async () => {
   // re-send of the same set keeps the existing order so cards don't jump.
   if (!sameSet(ordered.value, subs)) {
     ordered.value = shuffle(subs)
-    myVote.value = null
+    myVotes.value = emptyVotes()
   }
   // Wait two ticks: the first lets Vue patch the DOM (including :ref
   // callbacks that populate slotMap), the second is belt-and-braces in
@@ -118,13 +134,18 @@ watch(() => props.gallery, async () => {
 
 onBeforeUnmount(disposeCanvases)
 
-function castVote(submissionId: string) {
+function castVote(category: VoteCategory, submissionId: string) {
   // Self-vote guard mirrors the server's; let the click do nothing rather
   // than triggering a server "Cannot vote for yourself" error.
   if (submissionId === clientId)
     return
-  myVote.value = submissionId
-  const msg: ClientMsg = { type: 'vote:cast', submissionId }
+  // No-op if this category already points here (avoids a redundant send).
+  if (myVotes.value[category] === submissionId)
+    return
+  // A category vote can move between cards but isn't withdrawable — the server
+  // has no "unvote" and auto-end counts each cast category once.
+  myVotes.value = { ...myVotes.value, [category]: submissionId }
+  const msg: ClientMsg = { type: 'vote:cast', category, submissionId }
   socket.send(JSON.stringify(msg))
 }
 </script>
@@ -132,54 +153,76 @@ function castVote(submissionId: string) {
 <template>
   <PhaseLayout>
     <template #status>
+      <span class="voting__tally">{{ votedCount }} of {{ totalVoters }} voted</span>
       <button
         v-if="isGm && gallery"
-        class="btn btn--plain voting__stop"
+        class="btn btn--primary voting__stop"
         type="button"
         @click="stopVoting"
       >
-        Stop voting (GM)
+        End voting →
       </button>
     </template>
 
     <div class="voting">
       <header class="voting__head">
         <p class="voting__eyebrow">
-          which is the funniest recreation?
+          vote for the funniest and the best
         </p>
         <p class="voting__hint">
-          tap a drawing to vote · you can change your mind
+          <template v-if="allCast">
+            all votes in — waiting for the others…
+          </template>
+          <template v-else>
+            you've voted:
+            <span
+              v-for="c in VOTE_CATEGORIES"
+              :key="c.id"
+              class="voting__hint-cat"
+              :class="{ 'voting__hint-cat--done': myVotes[c.id] }"
+            >{{ c.emoji }}</span>
+          </template>
         </p>
       </header>
 
       <div v-if="gallery" class="voting__grid">
-        <!--
-          Using <div role="button"> rather than <button> because the HTML spec
-          only allows phrasing content inside <button>, and browsers render
-          block descendants (our slot with aspect-ratio: 1/1) with collapsed
-          sizing — the canvas ends up 0px tall. role="button" + tabindex + a
-          keyboard handler give us the same a11y without the layout quirk.
-        -->
         <div
           v-for="sub in ordered"
           :key="sub.submissionId"
           class="voting__card"
-          :class="{
-            'voting__card--mine': sub.submissionId === clientId,
-            'voting__card--voted': sub.submissionId === myVote,
-            'voting__card--disabled': sub.submissionId === clientId,
-          }"
-          :role="sub.submissionId === clientId ? undefined : 'button'"
-          :tabindex="sub.submissionId === clientId ? -1 : 0"
-          :aria-pressed="sub.submissionId === myVote"
-          :title="sub.submissionId === clientId ? 'You can\'t vote for yourself' : 'Click to vote'"
-          @click="castVote(sub.submissionId)"
-          @keydown.enter.prevent="castVote(sub.submissionId)"
-          @keydown.space.prevent="castVote(sub.submissionId)"
+          :class="{ 'voting__card--mine': sub.submissionId === clientId }"
         >
-          <div :ref="el => setSlot(sub.submissionId, el)" class="voting__slot" />
-          <span v-if="sub.submissionId === myVote" class="voting__check">✓</span>
-          <span v-if="sub.submissionId === clientId" class="voting__tag">Yours</span>
+          <div class="voting__art">
+            <div :ref="el => setSlot(sub.submissionId, el)" class="voting__slot" />
+            <!-- Your votes' stickers, top-anchored, side by side. -->
+            <div v-if="votedCategoriesFor(sub.submissionId).length" class="voting__stickers">
+              <span
+                v-for="c in votedCategoriesFor(sub.submissionId)"
+                :key="c.id"
+                class="voting__sticker"
+              >{{ c.emoji }}</span>
+            </div>
+            <span v-if="sub.submissionId === clientId" class="voting__tag">Yours</span>
+          </div>
+
+          <div v-if="sub.submissionId !== clientId" class="voting__cats">
+            <button
+              v-for="c in VOTE_CATEGORIES"
+              :key="c.id"
+              class="voting__cat"
+              :class="{ 'voting__cat--active': myVotes[c.id] === sub.submissionId }"
+              type="button"
+              :aria-pressed="myVotes[c.id] === sub.submissionId"
+              :title="`Vote ${c.label}`"
+              @click="castVote(c.id, sub.submissionId)"
+            >
+              <span class="voting__cat-emoji">{{ c.emoji }}</span>
+              {{ c.label }}
+            </button>
+          </div>
+          <p v-else class="voting__cats voting__cats--mine">
+            can't vote for your own
+          </p>
         </div>
       </div>
 

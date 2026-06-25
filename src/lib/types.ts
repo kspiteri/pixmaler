@@ -37,8 +37,18 @@ export interface DrawDoneMsg {
   type: 'draw:done'
 }
 
+export type VoteCategory = 'funniest' | 'best'
+
+// Vote categories in display order. Shared by client (buttons, stickers) and
+// server (tally) so they can't drift apart.
+export const VOTE_CATEGORIES: { id: VoteCategory, label: string, emoji: string }[] = [
+  { id: 'funniest', label: 'Funniest', emoji: '😂' },
+  { id: 'best', label: 'Best', emoji: '⭐' },
+]
+
 export interface VoteCastMsg {
   type: 'vote:cast'
+  category: VoteCategory
   submissionId: string
 }
 
@@ -86,6 +96,9 @@ export interface StateMsg {
   deadline: number | null // unix ms
   doneCount: number
   totalDrawing: number
+  // VOTING progress — voters who've cast all categories, out of those present.
+  votedCount: number
+  totalVoters: number
 }
 
 export interface PhaseMsg {
@@ -111,7 +124,8 @@ export interface RankedResult {
   submissionId: string
   clientId: string
   name: string
-  votes: number
+  votes: number // overall = funniest + best
+  breakdown: Record<VoteCategory, number>
   grid: number[]
 }
 

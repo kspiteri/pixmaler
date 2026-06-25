@@ -1,14 +1,18 @@
 <script setup lang="ts">
-// RESULTS phase — ranked reveal with authors + vote counts. Joint winners
-// share the top rank when their votes tie. The GM gets a "Play again"
-// button that returns the room to LOBBY.
+// RESULTS phase — chaotic overall reveal. The winner(s) (most total votes,
+// joint on a tie) take the hero card; everyone else falls into a gallery
+// ordered by overall points. Each drawing appears exactly once. The GM gets a
+// "Play again" button that returns the room to LOBBY.
 
 import type { ClientMsg, ServerMsg } from '../../lib/types'
 import { computed, inject, nextTick, onBeforeUnmount, watch } from 'vue'
+import PhaseLayout from '../../components/PhaseLayout.vue'
 import { PixelCanvas } from '../../lib/canvas'
 import { clientIdKey, socketKey } from '../../lib/keys'
+import { VOTE_CATEGORIES } from '../../lib/types'
 
 type Results = Extract<ServerMsg, { type: 'results' }>
+type Entry = Results['ranked'][number]
 
 const props = defineProps<{
   results: Results | null
@@ -20,23 +24,27 @@ const clientId = inject(clientIdKey)!
 
 const isGm = computed(() => props.gmClientId === clientId)
 
-// Walk the ranked list and assign each entry its 1-based rank, with ties
-// sharing a rank ("1, 1, 3" — standard competition ranking).
-const rankedWithPlace = computed(() => {
-  if (!props.results)
+// Top scorers (joint on a tie) become the hero; the rest form the gallery,
+// still in overall-points order. `ranked` arrives pre-sorted descending.
+const winners = computed<Entry[]>(() => {
+  const ranked = props.results?.ranked ?? []
+  if (ranked.length === 0)
     return []
-  const ranked = props.results.ranked
-  const out: { place: number, isWinner: boolean, entry: Results['ranked'][number] }[] = []
-  let lastVotes = -1
-  let lastPlace = 0
-  ranked.forEach((entry, i) => {
-    const place = entry.votes === lastVotes ? lastPlace : i + 1
-    lastVotes = entry.votes
-    lastPlace = place
-    out.push({ place, isWinner: place === 1, entry })
-  })
-  return out
+  const top = ranked[0].votes
+  return ranked.filter(e => e.votes === top)
 })
+const rest = computed<Entry[]>(() => {
+  const ranked = props.results?.ranked ?? []
+  return ranked.slice(winners.value.length)
+})
+
+// "5 😂 · 6 ⭐" breakdown line for the hero. Falls back to 0 for any missing
+// category so a stale/old-shape results payload can't crash the reveal.
+function breakdownText(entry: Entry): string {
+  return VOTE_CATEGORIES
+    .map(c => `${entry.breakdown?.[c.id] ?? 0} ${c.emoji}`)
+    .join(' · ')
+}
 
 // PixelCanvas instances mounted into the per-row slots. Re-built whenever
 // the results object changes (Play again → new round).
@@ -88,125 +96,82 @@ function playAgain() {
 </script>
 
 <template>
-  <div class="page results">
-    <h2>Results</h2>
-
-    <p v-if="!results" class="muted">
-      Waiting for results…
-    </p>
-
-    <div v-else class="results__list">
-      <div
-        v-for="row in rankedWithPlace"
-        :key="row.entry.submissionId"
-        class="results__row"
-        :class="{
-          'results__row--winner': row.isWinner,
-          'results__row--mine': row.entry.clientId === clientId,
-        }"
+  <PhaseLayout>
+    <template #status>
+      <button
+        v-if="results && isGm"
+        class="btn btn--primary results__again"
+        type="button"
+        @click="playAgain"
       >
-        <div class="results__place">
-          {{ row.isWinner ? "🏆" : `#${row.place}` }}
-        </div>
-        <div :ref="el => setSlot(row.entry.submissionId, el)" class="results__slot" />
-        <div class="results__meta">
-          <p class="results__name">
-            {{ row.entry.name }}
-          </p>
-          <p class="results__votes">
-            {{ row.entry.votes }} vote{{ row.entry.votes === 1 ? "" : "s" }}
-          </p>
-        </div>
-      </div>
-    </div>
+        Play again →
+      </button>
+      <span v-else-if="results" class="results__hint">waiting for the GM…</span>
+    </template>
 
-    <button
-      v-if="results && isGm"
-      class="results__again"
-      type="button"
-      @click="playAgain"
-    >
-      Play again
-    </button>
-    <p v-if="results && !isGm" class="muted results__hint">
-      Waiting for the GM to start a new round.
-    </p>
-  </div>
+    <div class="results">
+      <p v-if="!results" class="results__waiting">
+        Waiting for results…
+      </p>
+
+      <template v-else>
+        <!-- Hero: overall winner(s) -->
+        <div class="results__hero">
+          <p class="results__crown">
+            👑 {{ winners.length > 1 ? "joint winners" : "overall winner" }}
+          </p>
+          <div class="results__winners">
+            <div
+              v-for="w in winners"
+              :key="w.submissionId"
+              class="results__winner"
+              :class="{ 'results__winner--mine': w.clientId === clientId }"
+            >
+              <div :ref="el => setSlot(w.submissionId, el)" class="results__winner-art" />
+              <div class="results__winner-meta">
+                <p class="results__winner-name">
+                  {{ w.name }}
+                </p>
+                <p class="results__winner-votes">
+                  {{ w.votes }} vote{{ w.votes === 1 ? "" : "s" }}
+                </p>
+                <p class="results__winner-breakdown">
+                  {{ breakdownText(w) }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gallery: everyone else, ordered by overall points -->
+        <div v-if="rest.length" class="results__gallery">
+          <div
+            v-for="entry in rest"
+            :key="entry.submissionId"
+            class="results__item"
+            :class="{ 'results__item--mine': entry.clientId === clientId }"
+          >
+            <div :ref="el => setSlot(entry.submissionId, el)" class="results__item-art" />
+            <p class="results__item-name">
+              {{ entry.name }}
+            </p>
+            <p class="results__item-votes">
+              {{ entry.votes }} pt{{ entry.votes === 1 ? "" : "s" }}
+            </p>
+          </div>
+        </div>
+      </template>
+    </div>
+  </PhaseLayout>
 </template>
 
 <style scoped lang="scss">
-@use '../../styles/tokens' as *;
-
-.results {
-  &__list {
-    display: flex;
-    flex-direction: column;
-    gap: $gap-3;
-    margin-top: $gap-4;
-  }
-
-  &__row {
-    display: flex;
-    align-items: center;
-    gap: $gap-4;
-    padding: $gap-3;
-    border: 1px solid $rule-soft;
-    border-radius: 4px;
-    background: $bg;
-
-    &--winner {
-      border-color: $accent;
-      border-width: 2px;
-    }
-
-    &--mine {
-      background: rgba(0, 0, 0, 0.03);
-    }
-  }
-
-  &__place {
-    flex: 0 0 56px;
-    font-size: 1.5rem;
-    font-weight: bold;
-    text-align: center;
-  }
-
-  &__slot {
-    flex: 0 0 160px;
-    aspect-ratio: 1 / 1;
-    // White background so untouched cells (palette[0] in submitted grids)
-    // don't visually merge with dark palette colours.
-    background: #fff;
-  }
-
-  :deep(.results__canvas) {
-    display: block;
-    width: 100%;
-    height: 100%;
-    border: 1px solid $rule;
-    background: #fff;
-  }
-
-  &__meta {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  &__name {
-    margin: 0;
-    font-weight: bold;
-  }
-  &__votes {
-    margin: 0;
-    color: $muted;
-  }
-
-  &__again {
-    margin-top: $gap-5;
-  }
-  &__hint {
-    margin-top: $gap-2;
-    font-size: 0.75rem;
-  }
+// Static layout lives in styles/_results.scss. Only the :deep rule reaching the
+// imperatively-mounted PixelCanvas stays here — :deep needs the scoped context.
+.results :deep(.results__canvas) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #fff;
 }
 </style>
