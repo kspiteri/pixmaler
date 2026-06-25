@@ -3,10 +3,10 @@ shellEmulator: true
 trustPolicy: no-downgrade
 
 allowBuilds:
-  '@parcel/watcher': set this to true or false
+  '@parcel/watcher': false
   esbuild: true
   sharp: true
-  simple-git-hooks: set this to true or false
+  simple-git-hooks: false
   workerd: true
 
 catalogs:
