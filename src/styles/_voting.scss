@@ -1,6 +1,7 @@
 @use 'tokens' as *;
 
-// Voting screen — anonymised gallery of submissions, tap to vote. The
+// Voting screen — anonymised gallery. Each card has the drawing (with the
+// voter's emoji stickers on top) and a row of category vote buttons below. The
 // :deep(.voting__canvas) rule (reaching the imperatively-mounted PixelCanvas)
 // stays in the component's scoped <style> since :deep only works there.
 
@@ -24,43 +25,36 @@
     color: $fg-35;
     font-size: 0.875rem;
   }
+  &__hint-cat {
+    margin-left: 0.25rem;
+    opacity: 0.3;
+    filter: grayscale(1);
+
+    &--done {
+      opacity: 1;
+      filter: none;
+    }
+  }
 
   &__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: $gap-4;
   }
 
   &__card {
     position: relative;
     background: $surface;
-    border: 2px solid $border-soft;
+    border: 1px solid $border-soft;
     border-radius: $radius-lg;
     padding: $gap-3;
-    cursor: pointer;
-    transition:
-      border-color 120ms,
-      transform 120ms,
-      box-shadow 120ms;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-3;
+  }
 
-    &:focus-visible {
-      outline: 2px solid $primary;
-      outline-offset: 2px;
-    }
-
-    &:hover:not(.voting__card--disabled) {
-      border-color: $fg-25;
-      transform: translateY(-2px);
-    }
-
-    &--disabled {
-      cursor: not-allowed;
-    }
-
-    &--voted {
-      border-color: $accent;
-      box-shadow: 0 0 24px rgba(200, 255, 45, 0.2);
-    }
+  &__art {
+    position: relative;
   }
 
   &__slot {
@@ -73,28 +67,28 @@
     overflow: hidden;
   }
 
-  // Lime tick badge on the voted card.
-  &__check {
+  // Emoji stickers for the voter's own picks — top of the drawing, side by side.
+  &__stickers {
     position: absolute;
-    top: $gap-3;
-    right: $gap-3;
-    width: 1.75rem;
-    height: 1.75rem;
+    top: $gap-2;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    background: $accent;
-    color: $accent-fg;
-    font-weight: 700;
-    font-size: 0.875rem;
+    gap: $gap-1;
+    pointer-events: none;
+  }
+  &__sticker {
+    font-size: 1.5rem;
+    line-height: 1;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+    animation: voting-pop 160ms ease-out;
   }
 
   // "Yours" tag on the player's own (unvotable) submission.
   &__tag {
     position: absolute;
-    top: $gap-3;
-    left: $gap-3;
+    top: $gap-2;
+    left: $gap-2;
     padding: 0.125rem 0.5rem;
     border-radius: 999px;
     background: rgba(0, 0, 0, 0.5);
@@ -104,8 +98,77 @@
     letter-spacing: 0.1em;
   }
 
+  // Category vote buttons.
+  &__cats {
+    display: flex;
+    gap: $gap-2;
+
+    &--mine {
+      margin: 0;
+      justify-content: center;
+      color: $fg-25;
+      font-size: 0.75rem;
+      font-style: italic;
+    }
+  }
+  &__cat {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.25rem;
+    border-radius: $radius;
+    background: $bg;
+    border: 1px solid $border;
+    color: $fg-50;
+    font-family: $font-body;
+    font-weight: 600;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition:
+      border-color 120ms,
+      color 120ms,
+      background 120ms;
+
+    &:hover {
+      color: $fg;
+      border-color: $fg-25;
+    }
+    &--active {
+      border-color: $accent;
+      background: rgba(200, 255, 45, 0.1);
+      color: $accent;
+    }
+  }
+  &__cat-emoji {
+    font-size: 0.95rem;
+    filter: grayscale(0);
+  }
+
   &__waiting {
     text-align: center;
     color: $fg-40;
+  }
+
+  // Status-bar tally + end button.
+  &__tally {
+    color: $fg-50;
+    font-size: 0.875rem;
+  }
+  &__stop {
+    font-size: 0.875rem;
+    padding: 0.5rem 0.875rem;
+  }
+}
+
+@keyframes voting-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
   }
 }
