@@ -132,7 +132,13 @@ if (route === 'room' && roomCode) {
 
     <Lobby v-else-if="state.phase === 'LOBBY'" :state="state" />
     <Drawing v-else-if="state.phase === 'DRAWING' && state.config" :state="state" />
-    <Voting v-else-if="state.phase === 'VOTING'" :gallery="gallery" :gm-client-id="state.gmClientId" />
+    <Voting
+      v-else-if="state.phase === 'VOTING'"
+      :gallery="gallery"
+      :gm-client-id="state.gmClientId"
+      :voted-count="state.votedCount"
+      :total-voters="state.totalVoters"
+    />
     <Results v-else-if="state.phase === 'RESULTS'" :results="results" :gm-client-id="state.gmClientId" />
   </template>
 </template>
