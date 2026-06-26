@@ -11,6 +11,12 @@
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["PixmalerServer"] }
   ],
+  // Public (non-secret) config: web origins allowed to connect in prod.
+  // Comma-separated. Read by guardOrigin in party/server.ts. PIXMALER_DEV
+  // (local .dev.vars only) bypasses this for dev.
+  "vars": {
+    "ALLOWED_ORIGINS": "https://kspiteri.github.io"
+  },
   "dev": {
     "port": 1999
   }

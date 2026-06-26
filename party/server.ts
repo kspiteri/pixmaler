@@ -16,9 +16,39 @@ import { VOTE_CATEGORIES } from '../src/lib/types'
 // relaxes the lobby start gate so the whole flow can be tested solo.
 interface Env {
   PIXMALER_DEV?: string
+  // Comma-separated list of web origins allowed to open a connection (prod).
+  // Public config, not a secret — it's just the frontend's URL. Defaults to the
+  // GitHub Pages origin if unset. See guardOrigin + docs/.plans/09-server-hardening.md.
+  ALLOWED_ORIGINS?: string
   // The Durable Object namespace bound in wrangler.jsonc — used by
   // routePartykitRequest in the Worker entry to address rooms.
   PixmalerServer: DurableObjectNamespace
+}
+
+// Origin allowlist for incoming connections / requests. This is CSWSH / casual-
+// abuse hygiene — NOT authentication (a non-browser client can forge or omit
+// `Origin`). Browsers can't forge it, so it blocks other websites and stray
+// frontends. See docs/.plans/09-server-hardening.md.
+//
+// In dev (PIXMALER_DEV) everything is allowed so `wr:dev` + local smoke-tests
+// work. In prod we require `Origin` to match the allowlist (a missing Origin is
+// rejected). Returns a 403 Response to block, or undefined to allow.
+const DEFAULT_ALLOWED_ORIGIN = 'https://kspiteri.github.io'
+
+function guardOrigin(req: Request, env: Env): Response | undefined {
+  if (env.PIXMALER_DEV === '1')
+    return undefined // dev bypass — localhost + header-less smoke-tests
+
+  const origin = req.headers.get('Origin')
+  const allowed = (env.ALLOWED_ORIGINS ?? DEFAULT_ALLOWED_ORIGIN)
+    .split(',')
+    .map(o => o.trim())
+    .filter(Boolean)
+
+  if (origin && allowed.includes(origin))
+    return undefined // allowed
+
+  return new Response('Forbidden origin', { status: 403 })
 }
 
 // Votes are keyed by voter + category so each player gets one vote per
@@ -477,10 +507,17 @@ export class PixmalerServer extends Server<Env> {
 // Object. `routePartykitRequest` kebab-cases the binding class name, so
 // PixmalerServer is reachable as the party name "pixmaler-server" (see the
 // client's PartySocket `party` option in src/App.vue).
+//
+// onBeforeConnect guards WebSocket upgrades; onBeforeRequest guards plain HTTP
+// (the room existence check). Both run the same origin allowlist so neither
+// door is left open. Returning a Response short-circuits with that status.
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     return (
-      (await routePartykitRequest(request, env))
+      (await routePartykitRequest(request, env, {
+        onBeforeConnect: req => guardOrigin(req, env),
+        onBeforeRequest: req => guardOrigin(req, env),
+      }))
       || new Response('Not Found', { status: 404 })
     )
   },
