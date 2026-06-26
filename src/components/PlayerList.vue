@@ -31,7 +31,7 @@ interface Props {
   // the "Make GM" button.
   gmClientId: string
 }
-const socket = inject(socketKey)!
+const socket = inject(socketKey)!.value!
 const viewerClientId = inject(clientIdKey)!
 
 const viewerIsGm = () => props.gmClientId === viewerClientId

@@ -29,7 +29,7 @@ type State = Extract<ServerMsg, { type: 'state' }>
 
 const props = defineProps<{ state: State }>()
 
-const socket = inject(socketKey)!
+const socket = inject(socketKey)!.value!
 // `state.config` is checked non-null in App.vue's v-if, so this assertion is safe.
 const config = computed(() => props.state.config!)
 const deadline = computed(() => props.state.deadline)

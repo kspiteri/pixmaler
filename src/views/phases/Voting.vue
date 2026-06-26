@@ -21,7 +21,7 @@ const props = defineProps<{
   totalVoters: number
 }>()
 
-const socket = inject(socketKey)!
+const socket = inject(socketKey)!.value!
 const clientId = inject(clientIdKey)!
 
 const isGm = computed(() => props.gmClientId === clientId)

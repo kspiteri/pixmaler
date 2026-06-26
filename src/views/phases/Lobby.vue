@@ -19,7 +19,7 @@ type State = Extract<ServerMsg, { type: 'state' }>
 
 const props = defineProps<{ state: State }>()
 
-const socket = inject(socketKey)!
+const socket = inject(socketKey)!.value!
 const clientId = inject(clientIdKey)!
 
 const isGm = computed(() => props.state.gmClientId === clientId)

@@ -19,7 +19,7 @@ const props = defineProps<{
   gmClientId: string
 }>()
 
-const socket = inject(socketKey)!
+const socket = inject(socketKey)!.value!
 const clientId = inject(clientIdKey)!
 
 const isGm = computed(() => props.gmClientId === clientId)
