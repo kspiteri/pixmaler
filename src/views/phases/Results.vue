@@ -24,6 +24,12 @@ const clientId = inject(clientIdKey)!
 
 const isGm = computed(() => props.gmClientId === clientId)
 
+// All drawings share the GM's image dimensions — one ratio drives every art
+// slot (hero + gallery) via `--art-ratio`, so non-square images keep shape.
+const artRatio = computed(() =>
+  props.results ? `${props.results.gridW} / ${props.results.gridH}` : '1 / 1',
+)
+
 // Top scorers (joint on a tie) become the hero; the rest form the gallery,
 // still in overall-points order. `ranked` arrives pre-sorted descending.
 const winners = computed<Entry[]>(() => {
@@ -109,7 +115,7 @@ function playAgain() {
       <span v-else-if="results" class="results__hint">waiting for the GM…</span>
     </template>
 
-    <div class="results">
+    <div class="results" :style="{ '--art-ratio': artRatio }">
       <p v-if="!results" class="results__waiting">
         Waiting for results…
       </p>
@@ -171,7 +177,7 @@ function playAgain() {
 .results :deep(.results__canvas) {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
   background: #fff;
 }
 </style>

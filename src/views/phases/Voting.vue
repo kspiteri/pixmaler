@@ -26,6 +26,14 @@ const clientId = inject(clientIdKey)!
 
 const isGm = computed(() => props.gmClientId === clientId)
 
+// Every submission in a room shares the GM's single image dimensions, so one
+// aspect ratio drives all the thumbnail slots. Falls back to 1 (square) until
+// the gallery lands. Drives `--art-ratio` on the root; slots read it via
+// `aspect-ratio` so non-square images aren't squished.
+const artRatio = computed(() =>
+  props.gallery ? `${props.gallery.gridW} / ${props.gallery.gridH}` : '1 / 1',
+)
+
 // Per-client gallery order. The drawings are shuffled locally so no two players
 // see the same arrangement (purely cosmetic — votes carry the submissionId, so
 // order is irrelevant to the server). Frozen per round: we only reshuffle when
@@ -164,7 +172,7 @@ function castVote(category: VoteCategory, submissionId: string) {
       </button>
     </template>
 
-    <div class="voting">
+    <div class="voting" :style="{ '--art-ratio': artRatio }">
       <header class="voting__head">
         <p class="voting__eyebrow">
           vote for the funniest and the best
@@ -239,7 +247,7 @@ function castVote(category: VoteCategory, submissionId: string) {
 .voting :deep(.voting__canvas) {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
   background: #fff;
 }
 </style>

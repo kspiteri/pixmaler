@@ -48,7 +48,7 @@
   &__winner-art {
     width: 220px;
     max-width: 60vw;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: var(--art-ratio, 1 / 1);
     background: #fff;
     border-radius: $radius;
     overflow: hidden;
@@ -93,7 +93,7 @@
   }
   &__item-art {
     width: 100%;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: var(--art-ratio, 1 / 1);
     background: #fff;
     border-radius: $radius-sm;
     overflow: hidden;

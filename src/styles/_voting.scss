@@ -60,8 +60,10 @@
   &__slot {
     // The PixelCanvas is appended here. White background so untouched cells
     // (-1 in submitted grids) read as paper rather than bleeding into the card.
+    // Ratio tracks the actual image (--art-ratio, set per-room on .voting) so
+    // non-square drawings aren't squished; defaults square until it's set.
     width: 100%;
-    aspect-ratio: 1 / 1;
+    aspect-ratio: var(--art-ratio, 1 / 1);
     background: #fff;
     border-radius: $radius-sm;
     overflow: hidden;
