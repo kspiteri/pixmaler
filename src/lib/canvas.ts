@@ -15,6 +15,20 @@ export interface CanvasOptions {
 
 const CELL_SIZE = 14 // px per grid cell at 1× scale — scales up on large screens
 
+// Brush sizing scales with grid resolution: a fixed 1–8 range felt tiny on a
+// high-res image where one cell is a sliver of the picture. We derive a max (and
+// a sensible default) from the longest grid side so the brush stays proportional.
+// Small grids still get a 1px brush; large ones get a usefully chunky one.
+function brushMaxFor(gridW: number, gridH: number): number {
+  // ~1 brush step per 8 cells of the longest side, clamped to a usable range.
+  return Math.max(8, Math.min(40, Math.round(Math.max(gridW, gridH) / 8)))
+}
+function defaultBrushFor(gridW: number, gridH: number): number {
+  // Default to a brush ~1/64 of the longest side (min 1) — a single cell on
+  // small grids, a few cells on big ones.
+  return Math.max(1, Math.round(Math.max(gridW, gridH) / 64))
+}
+
 export class PixelCanvas {
   readonly canvas: HTMLCanvasElement
   private ctx: CanvasRenderingContext2D
@@ -22,6 +36,7 @@ export class PixelCanvas {
   private opts: CanvasOptions
   private selectedColor = 0
   private brushSize = 1
+  private brushMax = 8
   private painting = false
   private locked = false
   private lastCell = -1
@@ -42,6 +57,9 @@ export class PixelCanvas {
 
   constructor(opts: CanvasOptions) {
     this.opts = opts
+    // Brush range scales with grid resolution (see brushMaxFor/defaultBrushFor).
+    this.brushMax = brushMaxFor(opts.gridW, opts.gridH)
+    this.brushSize = defaultBrushFor(opts.gridW, opts.gridH)
     // Editable canvases start "blank" (-1 = untouched). Read-only canvases
     // either get the supplied targetGrid or default to all-zero. -1 cells
     // render transparent so the canvas's white background shows through.
@@ -90,7 +108,7 @@ export class PixelCanvas {
   }
 
   setBrushSize(size: number) {
-    this.brushSize = Math.max(1, Math.min(8, size))
+    this.brushSize = Math.max(1, Math.min(this.brushMax, size))
     // Refresh the hover footprint immediately so the new size is visible
     // without requiring a mouse move.
     if (this.cursorCell && !this.painting) {
@@ -100,6 +118,11 @@ export class PixelCanvas {
 
   getBrushSize(): number {
     return this.brushSize
+  }
+
+  // Max brush for this grid (drives the slider's upper bound).
+  getBrushMax(): number {
+    return this.brushMax
   }
 
   lock() {
@@ -309,51 +332,85 @@ export class PixelCanvas {
 
   private attachInput() {
     const el = this.canvas
+    // Don't let the browser hijack drags as scroll/pan/selection on touch —
+    // we handle all pointer movement ourselves.
+    el.style.touchAction = 'none'
 
-    el.addEventListener('mousedown', (e) => {
+    // Unified Pointer Events (mouse + touch + pen in one path). On pointerdown
+    // we `setPointerCapture`, so every subsequent pointermove/up is delivered to
+    // this canvas even when the cursor leaves it — fixing the bug where dragging
+    // off the canvas and back (button still held) silently stopped painting.
+    el.addEventListener('pointerdown', (e) => {
       if (this.locked)
         return
+      // Capture this pointer so moves outside the element still reach us.
+      try { el.setPointerCapture(e.pointerId) }
+      catch { /* capture is best-effort; painting still works without it */ }
       this.pushUndoSnapshot()
       this.painting = true
       this.resetStroke()
       // Promote the hover preview into a real paint at the same cell.
       this.hoverCells.clear()
-      this.paint(e)
+      this.paintAt(e.clientX, e.clientY)
     })
-    el.addEventListener('mousemove', (e) => {
+
+    el.addEventListener('pointermove', (e) => {
       if (this.locked)
         return
       const { x, y } = this.eventCell(e.clientX, e.clientY)
       const { gridW, gridH } = this.opts
       const inBounds = x >= 0 && y >= 0 && x < gridW && y < gridH
+
+      if (this.painting) {
+        if (inBounds) {
+          // Painting inside the canvas — draw, mirror the cursor for the marker.
+          this.paintAt(e.clientX, e.clientY)
+          this.cursorCell = { x, y }
+          this.opts.onHover?.(this.cursorCell)
+        }
+        else {
+          // Pen lifts off the paper: while out of bounds we paint nothing (no
+          // edge-clamp smear), and reset the stroke so re-entry begins a fresh
+          // segment rather than drawing a line across the off-canvas gap.
+          // Capture still delivers these moves, so re-entry resumes without a
+          // new click.
+          this.resetStroke()
+          this.cursorCell = null
+          this.opts.onHover?.(null)
+        }
+        return
+      }
+
       this.cursorCell = inBounds ? { x, y } : null
       this.opts.onHover?.(this.cursorCell)
-      if (this.painting) {
-        this.paint(e)
-      }
-      else if (inBounds) {
+      if (inBounds)
         this.showHover(x, y)
-      }
-    })
-    el.addEventListener('mouseup', () => { this.painting = false; this.resetStroke() })
-    el.addEventListener('mouseleave', () => {
-      this.painting = false
-      this.resetStroke()
-      this.clearHover()
-      this.cursorCell = null
-      this.opts.onHover?.(null)
+      else
+        this.clearHover()
     })
 
-    el.addEventListener('touchstart', (e) => {
-      if (this.locked)
-        return; e.preventDefault(); this.pushUndoSnapshot(); this.painting = true; this.resetStroke(); this.paintTouch(e)
-    }, { passive: false })
-    el.addEventListener('touchmove', (e) => {
-      if (this.locked)
-        return; e.preventDefault(); if (this.painting)
-        this.paintTouch(e)
-    }, { passive: false })
-    el.addEventListener('touchend', () => { this.painting = false; this.resetStroke() })
+    const endStroke = (e: PointerEvent) => {
+      if (!this.painting)
+        return
+      this.painting = false
+      this.resetStroke()
+      try { el.releasePointerCapture(e.pointerId) }
+      catch { /* no-op if capture was never taken */ }
+    }
+    el.addEventListener('pointerup', endStroke)
+    el.addEventListener('pointercancel', endStroke)
+
+    // Pointer leaving the element hides the hover preview. An in-progress stroke
+    // is NOT ended (capture keeps delivering moves so the user can drag back in
+    // and continue) — but pointermove handles the "paint nothing while out"
+    // behaviour; here we just clear the visual preview/marker.
+    el.addEventListener('pointerleave', () => {
+      this.clearHover()
+      if (!this.painting) {
+        this.cursorCell = null
+        this.opts.onHover?.(null)
+      }
+    })
   }
 
   // Lightweight hover tracking for read-only canvases — fires `onHover` only,
@@ -376,14 +433,10 @@ export class PixelCanvas {
     this.lastCy = -1
   }
 
-  private paint(e: MouseEvent) {
-    const { x, y } = this.eventCell(e.clientX, e.clientY)
-    this.paintLine(x, y)
-  }
-
-  private paintTouch(e: TouchEvent) {
-    const t = e.touches[0]
-    const { x, y } = this.eventCell(t.clientX, t.clientY)
+  // Paint at a viewport coordinate (works for mouse/touch/pen alike, since
+  // Pointer Events normalise them). paintLine clamps to the grid.
+  private paintAt(clientX: number, clientY: number) {
+    const { x, y } = this.eventCell(clientX, clientY)
     this.paintLine(x, y)
   }
 
@@ -534,7 +587,7 @@ export function buildBrushControls(pc: PixelCanvas): HTMLElement {
   slider.className = 'brush__slider'
   slider.type = 'range'
   slider.min = '1'
-  slider.max = '8'
+  slider.max = String(pc.getBrushMax())
   slider.value = String(pc.getBrushSize())
 
   const label = document.createElement('span')
