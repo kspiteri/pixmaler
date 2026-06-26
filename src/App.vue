@@ -35,15 +35,12 @@ function getOrCreateClientId(): string {
   return id
 }
 
-function getOrCreateName(): string {
-  let name = localStorage.getItem('pixmaler:name')?.trim()
-  if (!name) {
-    // No name chosen yet (e.g. arrived via a shared room link) — assign a
-    // friendly random word-pair and persist it so it sticks across reconnects.
-    name = wordPair()
-    localStorage.setItem('pixmaler:name', name)
-  }
-  return name
+// Stored display name, or null if the player hasn't chosen one yet. Unlike the
+// old getOrCreate, this does NOT mint a name — the room route shows a name gate
+// when it's null, both to let first-timers choose and so bots that merely load
+// the URL never connect (no human action → no socket → no ghost player).
+function storedName(): string | null {
+  return localStorage.getItem('pixmaler:name')?.trim() || null
 }
 
 // ── Reactive room state ──────────────────────────────────────────────────────
@@ -62,18 +59,46 @@ const connectionStatus = ref<'connecting' | 'connected' | 'closed'>('connecting'
 
 // ── Connect (only when on the room route) ────────────────────────────────────
 
+// The socket is created lazily by `connect()` (after the name gate), so it's a
+// ref that starts null. Provided to descendants; non-null by the time any phase
+// view mounts (those only render once server state arrives).
+const socketRef = shallowRef<PartySocket | null>(null)
+
+// Name gate: shown on the room route until the player has a stored name. The
+// random word-pair is offered as a placeholder — submitting empty accepts it
+// (the random names went down well in playtesting).
+const showNameGate = ref(false)
+const nameInput = ref('')
+const randomName = wordPair()
+
 if (route === 'room' && roomCode) {
+  provide(clientIdKey, getOrCreateClientId())
+  provide(socketKey, socketRef)
+
+  const existing = storedName()
+  if (existing) {
+    // Returning player / refresh — skip the gate, reconnect seamlessly.
+    connect(existing)
+  }
+  else {
+    showNameGate.value = true
+  }
+}
+
+function submitName() {
+  const chosen = nameInput.value.trim() || randomName
+  localStorage.setItem('pixmaler:name', chosen)
+  showNameGate.value = false
+  connect(chosen)
+}
+
+function connect(name: string) {
   const clientId = getOrCreateClientId()
-  const name = getOrCreateName()
 
   // `party` matches the kebab-cased Durable Object binding name
   // (PixmalerServer → "pixmaler-server"); routePartykitRequest routes on it.
-  const socket = new PartySocket({ host: PARTYKIT_HOST, party: 'pixmaler-server', room: roomCode })
-
-  // `socket` and `clientId` never change for the lifetime of the page, so
-  // descendants inject them rather than receiving them through every prop list.
-  provide(socketKey, socket)
-  provide(clientIdKey, clientId)
+  const socket = new PartySocket({ host: PARTYKIT_HOST, party: 'pixmaler-server', room: roomCode! })
+  socketRef.value = socket
 
   socket.addEventListener('open', () => {
     connectionStatus.value = 'connected'
@@ -116,7 +141,9 @@ if (route === 'room' && roomCode) {
         break
     }
   })
+}
 
+if (route === 'room' && roomCode) {
   onMounted(() => {
     document.title = `Pixmaler — ${roomCode}`
   })
@@ -128,7 +155,35 @@ if (route === 'room' && roomCode) {
   <Paint v-else-if="route === 'paint'" />
 
   <template v-else-if="route === 'room'">
-    <div v-if="!state" class="page">
+    <!-- Name gate: shown before connecting when the player has no stored name.
+         No socket is opened until they submit, so bots that just load the URL
+         never become ghost players. Empty submit accepts the random name. -->
+    <div v-if="showNameGate" class="page page--narrow namegate">
+      <p class="label label--eyebrow">
+        joining room
+      </p>
+      <p class="namegate__room">
+        {{ roomCode }}
+      </p>
+      <form class="namegate__form" @submit.prevent="submitName">
+        <label class="field">
+          <span class="label">Your name</span>
+          <input
+            v-model="nameInput"
+            class="input"
+            type="text"
+            maxlength="24"
+            :placeholder="randomName"
+            autofocus
+          >
+        </label>
+        <button class="btn btn--primary" type="submit">
+          {{ nameInput.trim() ? "Join →" : `Join as ${randomName} →` }}
+        </button>
+      </form>
+    </div>
+
+    <div v-else-if="!state" class="page">
       <p>{{ connectionStatus === "closed" ? "Disconnected." : `Connecting to ${roomCode}…` }}</p>
     </div>
 
@@ -144,3 +199,28 @@ if (route === 'room' && roomCode) {
     <Results v-else-if="state.phase === 'RESULTS'" :results="results" :gm-client-id="state.gmClientId" />
   </template>
 </template>
+
+<style scoped lang="scss">
+@use './styles/tokens' as *;
+
+.namegate {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-3;
+
+  &__room {
+    font-family: $font-display;
+    font-weight: 700;
+    font-size: 2rem;
+    color: $accent;
+    margin: 0 0 $gap-4;
+    word-break: break-word;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-4;
+  }
+}
+</style>
