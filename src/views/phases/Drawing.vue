@@ -23,13 +23,14 @@ import {
 } from 'vue'
 import CanvasPair from '../../components/CanvasPair.vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
-import { socketKey } from '../../lib/keys'
+import { clientIdKey, socketKey } from '../../lib/keys'
 
 type State = Extract<ServerMsg, { type: 'state' }>
 
 const props = defineProps<{ state: State }>()
 
 const socket = inject(socketKey)!.value!
+const clientId = inject(clientIdKey)!
 // `state.config` is checked non-null in App.vue's v-if, so this assertion is safe.
 const config = computed(() => props.state.config!)
 const deadline = computed(() => props.state.deadline)
@@ -41,7 +42,16 @@ const pairRef = useTemplateRef<InstanceType<typeof CanvasPair>>('pair')
 // Seconds remaining on the countdown (null until we know the deadline).
 const secondsLeft = ref<number | null>(null)
 const totalSeconds = computed(() => config.value.drawSeconds)
-const flaggedDone = ref(false) // has the player clicked Done — purely social
+
+// "Done" is a purely social signal (it never gates submission). Local optimistic
+// flag for instant feedback on click, OR'd with the server's truth so a player
+// who reconnects mid-DRAWING (local flag reset to false) still sees their
+// already-flagged state restored rather than a fresh "I'm done" button.
+const flaggedLocally = ref(false)
+const flaggedDone = computed(() =>
+  flaggedLocally.value
+  || (props.state.players.find(p => p.clientId === clientId)?.doneDrawing ?? false),
+)
 
 // Derived timer presentation. Bar shrinks as time runs out and shifts
 // lime → orange → red in the final stretch for urgency.
@@ -107,7 +117,7 @@ function onCanvasUpdate(grid: number[]) {
 function flagDone() {
   if (flaggedDone.value)
     return
-  flaggedDone.value = true
+  flaggedLocally.value = true
   // Pure social ping — no `draw:submit` here. Auto-submit handles the wire
   // state; this just tells the room "I think I'm finished".
   socket.send(JSON.stringify({ type: 'draw:done' } satisfies ClientMsg))

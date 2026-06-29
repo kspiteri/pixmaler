@@ -51,11 +51,15 @@ function storedName(): string | null {
 type StateMsg = Extract<ServerMsg, { type: 'state' }>
 type GalleryMsg = Extract<ServerMsg, { type: 'gallery' }>
 type ResultsMsg = Extract<ServerMsg, { type: 'results' }>
+type VoteStateMsg = Extract<ServerMsg, { type: 'vote-state' }>
 
 const state = shallowRef<StateMsg | null>(null)
 const gallery = shallowRef<GalleryMsg | null>(null)
 const results = shallowRef<ResultsMsg | null>(null)
-const connectionStatus = ref<'connecting' | 'connected' | 'closed'>('connecting')
+// This voter's own picks, echoed by the server on (re)join during VOTING so the
+// vote UI rehydrates after a reconnect. Null until/unless we receive it.
+const voteState = shallowRef<VoteStateMsg | null>(null)
+const connectionStatus = ref<'connecting' | 'connected' | 'reconnecting'>('connecting')
 
 // ── Connect (only when on the room route) ────────────────────────────────────
 
@@ -107,8 +111,12 @@ function connect(name: string) {
   })
 
   socket.addEventListener('close', () => {
-    connectionStatus.value = 'closed'
-    console.warn('[pixmaler] socket closed')
+    // partysocket auto-reconnects, so a close is "reconnecting", not dead — the
+    // next `open` flips it back to connected (and re-sends `join`, reclaiming
+    // the slot by clientId). Surface it so players see a blip rather than a
+    // silently-frozen UI.
+    connectionStatus.value = 'reconnecting'
+    console.warn('[pixmaler] socket closed — reconnecting')
   })
 
   socket.addEventListener('message', (ev) => {
@@ -125,6 +133,7 @@ function connect(name: string) {
         }
         break
       case 'gallery': gallery.value = msg; break
+      case 'vote-state': voteState.value = msg; break
       case 'results': results.value = msg; break
       case 'done-status':
         if (state.value) {
@@ -184,19 +193,30 @@ if (route === 'room' && roomCode) {
     </div>
 
     <div v-else-if="!state" class="page">
-      <p>{{ connectionStatus === "closed" ? "Disconnected." : `Connecting to ${roomCode}…` }}</p>
+      <p>{{ connectionStatus === "reconnecting" ? "Reconnecting…" : `Connecting to ${roomCode}…` }}</p>
     </div>
 
-    <Lobby v-else-if="state.phase === 'LOBBY'" :state="state" />
-    <Drawing v-else-if="state.phase === 'DRAWING' && state.config" :state="state" />
-    <Voting
-      v-else-if="state.phase === 'VOTING'"
-      :gallery="gallery"
-      :gm-client-id="state.gmClientId"
-      :voted-count="state.votedCount"
-      :total-voters="state.totalVoters"
-    />
-    <Results v-else-if="state.phase === 'RESULTS'" :results="results" :gm-client-id="state.gmClientId" />
+    <template v-else>
+      <!-- Connection banner: once we've loaded state, a drop shows here rather
+           than freezing silently. partysocket auto-reconnects (reclaims the slot
+           by clientId), so this is usually a brief blip. Plain markup — styled in
+           the design pass (05). -->
+      <div v-if="connectionStatus === 'reconnecting'" class="conn-banner" role="status">
+        Reconnecting…
+      </div>
+
+      <Lobby v-if="state.phase === 'LOBBY'" :state="state" />
+      <Drawing v-else-if="state.phase === 'DRAWING' && state.config" :state="state" />
+      <Voting
+        v-else-if="state.phase === 'VOTING'"
+        :gallery="gallery"
+        :gm-client-id="state.gmClientId"
+        :voted-count="state.votedCount"
+        :total-voters="state.totalVoters"
+        :vote-state="voteState"
+      />
+      <Results v-else-if="state.phase === 'RESULTS'" :results="results" :gm-client-id="state.gmClientId" />
+    </template>
   </template>
 </template>
 
@@ -222,5 +242,22 @@ if (route === 'room' && roomCode) {
     flex-direction: column;
     gap: $gap-4;
   }
+}
+
+// Connection status banner — fixed at the top while reconnecting. Minimal
+// styling; the design pass (05) owns the final look.
+.conn-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  padding: $gap-2 $gap-3;
+  text-align: center;
+  font-family: $font-display;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: $accent-fg;
+  background: $accent;
 }
 </style>

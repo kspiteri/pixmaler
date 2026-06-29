@@ -13,12 +13,16 @@ import { clientIdKey, socketKey } from '../../lib/keys'
 import { VOTE_CATEGORIES } from '../../lib/types'
 
 type Gallery = Extract<ServerMsg, { type: 'gallery' }>
+type VoteState = Extract<ServerMsg, { type: 'vote-state' }>
 
 const props = defineProps<{
   gallery: Gallery | null
   gmClientId: string
   votedCount: number
   totalVoters: number
+  // Echoed by the server on (re)join during VOTING — this voter's own picks, so
+  // a reconnecting player sees their votes restored instead of a blank slate.
+  voteState: VoteState | null
 }>()
 
 const socket = inject(socketKey)!.value!
@@ -70,6 +74,19 @@ const myVotes = ref<Record<VoteCategory, string | null>>({ funniest: null, best:
 function emptyVotes(): Record<VoteCategory, string | null> {
   return { funniest: null, best: null }
 }
+
+// Rehydrate my picks from the server's echo on (re)join. Only fills categories
+// the server reported — never clobbers a fresh optimistic vote with stale null.
+// `immediate` so a reconnect that lands before this view mounts still applies.
+watch(() => props.voteState, (vs) => {
+  if (!vs)
+    return
+  for (const c of VOTE_CATEGORIES) {
+    const picked = vs.votes[c.id]
+    if (picked)
+      myVotes.value[c.id] = picked
+  }
+}, { immediate: true })
 
 // Which of my category votes have landed on a given submission — drives the
 // stickers shown on that card.

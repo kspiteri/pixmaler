@@ -148,6 +148,14 @@ export interface ErrorMsg {
   message: string
 }
 
+// Sent to a single voter when they (re)join mid-VOTING, echoing back their own
+// per-category picks so the client can rehydrate `myVotes` after a reconnect.
+// Only their own votes — never anyone else's (running tallies stay hidden).
+export interface VoteStateMsg {
+  type: 'vote-state'
+  votes: Partial<Record<VoteCategory, string>> // category → submissionId
+}
+
 export type ServerMsg
   = | StateMsg
     | PhaseMsg
@@ -155,3 +163,4 @@ export type ServerMsg
     | ResultsMsg
     | DoneStatusMsg
     | ErrorMsg
+    | VoteStateMsg
