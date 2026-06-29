@@ -512,10 +512,22 @@ export class PixmalerServer extends Server<Env> {
   // (Re)arm the DO alarm to the soonest pending deadline. Fire-and-forget: the
   // storage write is awaited internally; errors are logged, not propagated (the
   // DO keeps running and the next event re-arms).
+  //
+  // Coalesced: the idle deadline slides forward on every message, so naively
+  // re-arming per message thrashes the single alarm slot (a storage write +
+  // a "alarm canceled with requestScheduledAlarm" runtime log each time). We
+  // skip the write unless the target moved by more than ARM_TOLERANCE_MS, which
+  // is harmless for minute-scale windows.
+  private armedFor: number | null = null
+  private static readonly ARM_TOLERANCE_MS = 5000
+
   private armAlarm(): void {
     const when = this.nextWake()
     if (when === null)
       return
+    if (this.armedFor !== null && Math.abs(when - this.armedFor) < PixmalerServer.ARM_TOLERANCE_MS)
+      return
+    this.armedFor = when
     this.ctx.storage.setAlarm(when).catch(err =>
       console.error('[pixmaler] setAlarm failed', err),
     )
@@ -525,6 +537,10 @@ export class PixmalerServer extends Server<Env> {
   // each branch re-checks its condition before acting.
   async onAlarm(): Promise<void> {
     const now = Date.now()
+    // The alarm slot just fired and is now empty — forget what we armed for so
+    // the next armAlarm() definitely writes (rather than coalescing against a
+    // stale value).
+    this.armedFor = null
 
     // 1) Draw round ended.
     if (this.state.phase === 'DRAWING' && this.state.deadline !== null && now >= this.state.deadline) {
@@ -566,6 +582,7 @@ export class PixmalerServer extends Server<Env> {
     }
     this.emptySince = null
     this.lastActivityAt = Date.now()
+    this.armedFor = null
     this.ctx.storage.deleteAlarm().catch(err =>
       console.error('[pixmaler] deleteAlarm failed', err),
     )
