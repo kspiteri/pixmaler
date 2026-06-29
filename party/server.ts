@@ -235,6 +235,17 @@ export class PixmalerServer extends Server<Env> {
         gridW: cfg.gridW,
         gridH: cfg.gridH,
       } satisfies ServerMsg))
+
+      // Echo back this voter's OWN picks so the client rehydrates its vote UI
+      // after a reconnect. Only their votes — never others' (tallies stay
+      // hidden until RESULTS).
+      const own: Partial<Record<VoteCategory, string>> = {}
+      for (const [key, subId] of this.state.votes.entries()) {
+        const voterId = key.slice(0, key.lastIndexOf(':'))
+        if (voterId === msg.clientId)
+          own[categoryOf(key)] = subId
+      }
+      conn.send(JSON.stringify({ type: 'vote-state', votes: own } satisfies ServerMsg))
     }
 
     this.broadcastAll(this.buildState())
