@@ -11,11 +11,13 @@
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["PixmalerServer"] }
   ],
-  // Public (non-secret) config: web origins allowed to connect in prod.
-  // Comma-separated. Read by guardOrigin in party/server.ts. PIXMALER_DEV
-  // (local .dev.vars only) bypasses this for dev.
+  // Public (non-secret) config. ALLOWED_ORIGINS: web origins allowed to connect
+  // in prod (guardOrigin). IDLE_MS / EMPTY_GRACE_MS: room-lifecycle windows in
+  // ms (armAlarm/onAlarm) — tweak in the dashboard to test without a redeploy.
   "vars": {
-    "ALLOWED_ORIGINS": "https://kspiteri.github.io"
+    "ALLOWED_ORIGINS": "https://kspiteri.github.io",
+    "IDLE_MS": "2700000",
+    "EMPTY_GRACE_MS": "60000"
   },
   "dev": {
     "port": 1999

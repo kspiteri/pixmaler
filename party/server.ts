@@ -20,9 +20,23 @@ interface Env {
   // Public config, not a secret — it's just the frontend's URL. Defaults to the
   // GitHub Pages origin if unset. See guardOrigin + docs/.plans/09-server-hardening.md.
   ALLOWED_ORIGINS?: string
+  // Room-lifecycle windows (ms, strings — vars come through as strings). See
+  // docs/.plans/10-room-lifecycle.md. Configurable via wrangler.jsonc vars or the
+  // dashboard so they're tunable/testable without a code change.
+  IDLE_MS?: string // wipe a room after this long with no messages (default 45 min)
+  EMPTY_GRACE_MS?: string // wipe this long after the last connection closes (default 60 s)
   // The Durable Object namespace bound in wrangler.jsonc — used by
   // routePartykitRequest in the Worker entry to address rooms.
   PixmalerServer: DurableObjectNamespace
+}
+
+// Lifecycle window defaults (ms) if the env vars are unset/unparseable.
+const DEFAULT_IDLE_MS = 45 * 60 * 1000 // 45 min of no activity → wipe
+const DEFAULT_EMPTY_GRACE_MS = 60 * 1000 // 60 s after last tab closes → wipe
+
+function parseMs(value: string | undefined, fallback: number): number {
+  const n = value ? Number.parseInt(value, 10) : Number.NaN
+  return Number.isFinite(n) && n > 0 ? n : fallback
 }
 
 // Origin allowlist for incoming connections / requests. This is CSWSH / casual-
@@ -77,15 +91,17 @@ interface RoomState {
   // Frozen gallery for the current VOTING round — filtered (blanks dropped) and
   // shuffled once at endDrawing so the order is stable across re-sends (rejoins).
   gallery: Submission[] | null
-  drawTimer: ReturnType<typeof setTimeout> | null
 }
 
 // Ported from PartyKit to PartyServer (standard Durable Object, deployed via
-// wrangler). State is in-memory: the DO stays warm while anyone is connected,
-// so this behaves exactly as before. NOTE: not hibernation-safe — if we ever
-// enable `static options = { hibernate: true }`, this state must be persisted
-// to `this.ctx.storage` (reload in onStart) and the setTimeout draw timer
-// replaced with a DO alarm. See docs/.plans/07-partyserver-port.md.
+// wrangler). State is in-memory: the DO stays warm while anyone is connected.
+// Room lifecycle (idle / empty-room cleanup) + the draw-round deadline are
+// driven by a single DO **alarm** (see armAlarm/onAlarm) rather than setTimeout,
+// so the round still ends and stale rooms still get wiped even across an
+// eviction. NOTE: full state persistence (Tier 2) is still deferred — if a DO is
+// evicted mid-game its in-memory state is lost; that's acceptable (idle/empty
+// rooms are what get evicted, and those are what we wipe anyway). See
+// docs/.plans/10-room-lifecycle.md + 07-partyserver-port.md.
 export class PixmalerServer extends Server<Env> {
   private state: RoomState = {
     phase: 'LOBBY',
@@ -98,8 +114,12 @@ export class PixmalerServer extends Server<Env> {
     submissions: new Map(),
     votes: new Map(),
     gallery: null,
-    drawTimer: null,
   }
+
+  // Lifecycle bookkeeping (not part of RoomState — it's wipe target). Timestamps
+  // in ms epoch; null when not applicable.
+  private lastActivityAt = Date.now()
+  private emptySince: number | null = null
 
   // ── HTTP existence check ───────────────────────────────────────────────────
   async onRequest(req: Request): Promise<Response> {
@@ -124,14 +144,24 @@ export class PixmalerServer extends Server<Env> {
   onClose(conn: Connection) {
     const clientId = this.state.connMap.get(conn.id)
     this.state.connMap.delete(conn.id)
-    if (!clientId)
+    // When the last live connection drops, start the empty-room grace clock.
+    // connMap is the authoritative live-connection count (the closing conn is
+    // already deleted above).
+    if (this.state.connMap.size === 0)
+      this.emptySince = Date.now()
+    if (!clientId) {
+      this.armAlarm()
       return
+    }
     const player = this.state.players.get(clientId)
-    if (!player)
+    if (!player) {
+      this.armAlarm()
       return
+    }
     player.connected = false
     this.autoPromoteGm()
     this.broadcastAll(this.buildState())
+    this.armAlarm()
   }
 
   // ── Message handler ────────────────────────────────────────────────────────
@@ -140,23 +170,32 @@ export class PixmalerServer extends Server<Env> {
     try { msg = JSON.parse(raw) as ClientMsg }
     catch { return }
 
+    // Any message counts as activity — pushes back the idle-wipe deadline.
+    this.lastActivityAt = Date.now()
+
     switch (msg.type) {
-      case 'join': return this.handleJoin(msg, sender)
-      case 'rename': return this.handleRename(msg, sender)
-      case 'gm:configure': return this.handleConfigure(msg, sender)
-      case 'gm:start': return this.handleStart(sender)
-      case 'gm:transfer': return this.handleTransfer(msg, sender)
-      case 'draw:done': return this.handleDrawDone(sender)
-      case 'draw:submit': return this.handleSubmit(msg, sender)
-      case 'vote:cast': return this.handleVote(msg, sender)
-      case 'gm:stopVoting': return this.handleStopVoting(sender)
-      case 'gm:playAgain': return this.handlePlayAgain(sender)
+      case 'join': this.handleJoin(msg, sender); break
+      case 'rename': this.handleRename(msg, sender); break
+      case 'gm:configure': this.handleConfigure(msg, sender); break
+      case 'gm:start': this.handleStart(sender); break
+      case 'gm:transfer': this.handleTransfer(msg, sender); break
+      case 'draw:done': this.handleDrawDone(sender); break
+      case 'draw:submit': this.handleSubmit(msg, sender); break
+      case 'vote:cast': this.handleVote(msg, sender); break
+      case 'gm:stopVoting': this.handleStopVoting(sender); break
+      case 'gm:playAgain': this.handlePlayAgain(sender); break
     }
+
+    // Re-arm the lifecycle alarm after every message: the activity stamp moved,
+    // and a phase change (start/stop) may have changed the draw deadline.
+    this.armAlarm()
   }
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   private handleJoin(msg: Extract<ClientMsg, { type: 'join' }>, conn: Connection) {
+    // Someone's here — cancel any pending empty-room wipe.
+    this.emptySince = null
     this.state.connMap.set(conn.id, msg.clientId)
 
     const existing = this.state.players.get(msg.clientId)
@@ -270,7 +309,6 @@ export class PixmalerServer extends Server<Env> {
       return
     }
 
-    this.clearDrawTimer()
     const deadline = Date.now() + this.state.config.drawSeconds * 1000
     this.state.phase = 'DRAWING'
     this.state.deadline = deadline
@@ -280,7 +318,8 @@ export class PixmalerServer extends Server<Env> {
     for (const p of this.state.players.values()) p.doneDrawing = false
 
     this.broadcastAll({ type: 'phase', phase: 'DRAWING', deadline } satisfies ServerMsg)
-    this.state.drawTimer = setTimeout(() => this.endDrawing(), this.state.config.drawSeconds * 1000)
+    // Round-end fires from the DO alarm at `deadline` (armed by onMessage after
+    // this handler) — survives eviction where a setTimeout would not.
   }
 
   private handleDrawDone(conn: Connection) {
@@ -337,7 +376,6 @@ export class PixmalerServer extends Server<Env> {
   private handlePlayAgain(conn: Connection) {
     if (!this.isGm(conn))
       return
-    this.clearDrawTimer()
     this.state.phase = 'LOBBY'
     this.state.config = null
     this.state.deadline = null
@@ -351,7 +389,6 @@ export class PixmalerServer extends Server<Env> {
   // ── Phase transitions ──────────────────────────────────────────────────────
 
   private endDrawing() {
-    this.clearDrawTimer()
     if (this.state.phase !== 'DRAWING')
       return
     this.state.phase = 'VOTING'
@@ -438,11 +475,89 @@ export class PixmalerServer extends Server<Env> {
     }
   }
 
-  private clearDrawTimer() {
-    if (this.state.drawTimer) {
-      clearTimeout(this.state.drawTimer)
-      this.state.drawTimer = null
+  // ── Room lifecycle (DO alarm) ────────────────────────────────────────────
+  // A single alarm drives three deadlines (one alarm slot per DO): the draw
+  // round end, the empty-room grace wipe, and the idle wipe. armAlarm() picks
+  // the soonest; onAlarm() figures out which fired and acts, then re-arms.
+
+  private get idleMs(): number {
+    return parseMs(this.env.IDLE_MS, DEFAULT_IDLE_MS)
+  }
+
+  private get emptyGraceMs(): number {
+    return parseMs(this.env.EMPTY_GRACE_MS, DEFAULT_EMPTY_GRACE_MS)
+  }
+
+  // Soonest deadline we care about, or null if nothing is pending.
+  private nextWake(): number | null {
+    const candidates: number[] = [this.lastActivityAt + this.idleMs]
+    if (this.state.phase === 'DRAWING' && this.state.deadline !== null)
+      candidates.push(this.state.deadline)
+    if (this.emptySince !== null)
+      candidates.push(this.emptySince + this.emptyGraceMs)
+    return candidates.length ? Math.min(...candidates) : null
+  }
+
+  // (Re)arm the DO alarm to the soonest pending deadline. Fire-and-forget: the
+  // storage write is awaited internally; errors are logged, not propagated (the
+  // DO keeps running and the next event re-arms).
+  private armAlarm(): void {
+    const when = this.nextWake()
+    if (when === null)
+      return
+    this.ctx.storage.setAlarm(when).catch(err =>
+      console.error('[pixmaler] setAlarm failed', err),
+    )
+  }
+
+  // Fired by the runtime when the alarm is due. Idempotent (alarms auto-retry):
+  // each branch re-checks its condition before acting.
+  async onAlarm(): Promise<void> {
+    const now = Date.now()
+
+    // 1) Draw round ended.
+    if (this.state.phase === 'DRAWING' && this.state.deadline !== null && now >= this.state.deadline) {
+      this.endDrawing()
+      this.armAlarm()
+      return
     }
+
+    // 2) Room empty past the grace window → wipe so the code reuses clean.
+    if (this.emptySince !== null && this.state.connMap.size === 0 && now >= this.emptySince + this.emptyGraceMs) {
+      this.wipeState()
+      return
+    }
+
+    // 3) No activity for the idle window → wipe.
+    if (now >= this.lastActivityAt + this.idleMs) {
+      this.wipeState()
+      return
+    }
+
+    // Woke early (deadlines moved) — just re-arm for whatever's next.
+    this.armAlarm()
+  }
+
+  // Reset the room to a pristine LOBBY (as if the code were never used) and
+  // cancel any pending alarm. Used by both wipe paths.
+  private wipeState(): void {
+    this.state = {
+      phase: 'LOBBY',
+      players: new Map(),
+      connMap: new Map(),
+      gmClientId: '',
+      originalGmClientId: '',
+      config: null,
+      deadline: null,
+      submissions: new Map(),
+      votes: new Map(),
+      gallery: null,
+    }
+    this.emptySince = null
+    this.lastActivityAt = Date.now()
+    this.ctx.storage.deleteAlarm().catch(err =>
+      console.error('[pixmaler] deleteAlarm failed', err),
+    )
   }
 
   private buildState(): StateMsg {
