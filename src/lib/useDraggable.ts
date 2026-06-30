@@ -18,6 +18,12 @@ export interface UseDraggableOpts {
   initialY: number
   // Skip drag wiring on touch devices for now.
   desktopOnly?: boolean
+  // Optional: the element being moved (the panel, not the handle). When given,
+  // dragging is clamped so it can't leave the viewport. Called per move so it
+  // tolerates the element mounting after the composable is created.
+  element?: () => HTMLElement | null | undefined
+  // Gap (px) to keep between the element and the viewport edge when clamping.
+  margin?: number
 }
 
 export function useDraggable(opts: UseDraggableOpts) {
@@ -34,6 +40,21 @@ export function useDraggable(opts: UseDraggableOpts) {
   function isCoarsePointer(): boolean {
     return typeof window !== 'undefined'
       && window.matchMedia('(pointer: coarse)').matches
+  }
+
+  // Keep (nextX, nextY) such that the dragged element stays within the viewport.
+  // No-op if no element is provided or it hasn't laid out yet.
+  function clamp(nextX: number, nextY: number): { x: number, y: number } {
+    const el = opts.element?.()
+    if (!el)
+      return { x: nextX, y: nextY }
+    const m = opts.margin ?? 8
+    const maxX = Math.max(m, window.innerWidth - el.offsetWidth - m)
+    const maxY = Math.max(m, window.innerHeight - el.offsetHeight - m)
+    return {
+      x: Math.min(Math.max(m, nextX), maxX),
+      y: Math.min(Math.max(m, nextY), maxY),
+    }
   }
 
   function start(e: PointerEvent) {
@@ -60,8 +81,9 @@ export function useDraggable(opts: UseDraggableOpts) {
   }
 
   function onMove(e: PointerEvent) {
-    x.value = originX + (e.clientX - startClientX)
-    y.value = originY + (e.clientY - startClientY)
+    const next = clamp(originX + (e.clientX - startClientX), originY + (e.clientY - startClientY))
+    x.value = next.x
+    y.value = next.y
   }
 
   function onEnd() {
@@ -77,8 +99,9 @@ export function useDraggable(opts: UseDraggableOpts) {
   }
 
   function setPosition(nextX: number, nextY: number) {
-    x.value = nextX
-    y.value = nextY
+    const next = clamp(nextX, nextY)
+    x.value = next.x
+    y.value = next.y
   }
 
   onBeforeUnmount(onEnd)

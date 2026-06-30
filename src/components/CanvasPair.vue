@@ -54,6 +54,9 @@ let swatch: SwatchHandle | null = null
 // Floating tools panel position. We use a ref instead of inlining into
 // useDraggable so we can update it from the resize handler.
 const panelVisible = ref(false)
+// Ref on the floating panel itself so useDraggable can clamp it to the viewport
+// (can't be dragged off-screen).
+const panelEl = useTemplateRef<HTMLDivElement>('panelEl')
 // Destructure the refs so they unwrap automatically in the template; the
 // returned object's `x`/`y` are nested refs and wouldn't auto-unwrap.
 const {
@@ -61,7 +64,7 @@ const {
   y: panelY,
   start: startDrag,
   setPosition: setPanelPosition,
-} = useDraggable({ initialX: 16, initialY: 16, desktopOnly: true })
+} = useDraggable({ initialX: 16, initialY: 16, desktopOnly: true, element: () => panelEl.value })
 
 // Below $bp-mobile the panel docks to the bottom full-width and dragging is
 // disabled — so we skip the free-floating transform and hide the drag handle.
@@ -206,6 +209,7 @@ function clear() {
   <Teleport to="body">
     <div
       v-show="panelVisible"
+      ref="panelEl"
       class="tools-panel"
       :class="[`tools-panel--${swatchSize}`, { 'tools-panel--docked': isMobile }]"
       :style="isMobile ? undefined : { transform: `translate(${panelX}px, ${panelY}px)` }"
