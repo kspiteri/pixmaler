@@ -12,6 +12,7 @@
 @use 'paint';
 @use 'voting';
 @use 'results';
+@use 'tools-panel'; // CanvasPair's static chrome (panel + canvas-pair layout)
 
 // Page-wide. Per-component styles live inside each .vue file's <style scoped>.
 body {
