@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pixmaler</title>
+    <!-- The 4-square pixel mark (shared with the wordmark in Logo.vue). SVG so it
+         stays crisp at any size. Relative href resolves to <base>/mark.svg in both
+         dev and the production build (a %BASE_URL% token double-applies the base in
+         the dev server). -->
+    <link rel="icon" type="image/svg+xml" href="./mark.svg" />
     <meta
       name="description"
       content="A real-time party game: redraw a pixelated image against the clock, then vote on the funniest results."
@@ -13,7 +18,8 @@
          resolve relative paths, and they read these tags from the static HTML
          without executing the app JS (so they never open a game socket). Keeps
          Messenger/Facebook previews rich and stops polite crawlers at the head.
-         TODO: drop a real 1200×630 branded card at public/og-image.png. -->
+         og-image.png (public/) is the branded 1200×630 card, generated from the
+         Logo design — see docs note in the commit history if it needs regenerating. -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Pixmaler" />
     <meta property="og:title" content="Pixmaler — pixel-art party game" />
