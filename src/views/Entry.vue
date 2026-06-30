@@ -50,7 +50,6 @@ function joinRoom() {
           v-model="name"
           class="input"
           type="text"
-          placeholder="e.g. Keith"
         >
       </label>
 
