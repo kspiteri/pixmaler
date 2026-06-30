@@ -15,14 +15,20 @@ import Drawing from './views/phases/Drawing.vue'
 import Lobby from './views/phases/Lobby.vue'
 import Results from './views/phases/Results.vue'
 import Voting from './views/phases/Voting.vue'
+// Hidden debug route (/taglines) — not linked anywhere; for reading the full
+// tagline set in bulk.
+import Taglines from './views/Taglines.vue'
 
 const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST ?? '127.0.0.1:1999'
 
 // ── Routing ──────────────────────────────────────────────────────────────────
 
 const roomCode = new URLSearchParams(location.search).get('room')
-const isPaintRoute = location.pathname.replace(/\/+$/, '').endsWith('/paint')
-const route = isPaintRoute ? 'paint' : roomCode ? 'room' : 'entry'
+const path = location.pathname.replace(/\/+$/, '')
+const isPaintRoute = path.endsWith('/paint')
+// Hidden debug page — read all taglines in bulk. Not linked from anywhere.
+const isTaglinesRoute = path.endsWith('/taglines')
+const route = isTaglinesRoute ? 'taglines' : isPaintRoute ? 'paint' : roomCode ? 'room' : 'entry'
 
 // ── Identity ─────────────────────────────────────────────────────────────────
 
@@ -162,6 +168,7 @@ if (route === 'room' && roomCode) {
 <template>
   <Entry v-if="route === 'entry'" />
   <Paint v-else-if="route === 'paint'" />
+  <Taglines v-else-if="route === 'taglines'" />
 
   <template v-else-if="route === 'room'">
     <!-- Name gate: shown before connecting when the player has no stored name.

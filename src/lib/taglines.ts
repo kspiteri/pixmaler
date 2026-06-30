@@ -28,22 +28,59 @@ const ARTISTS = [
   'frida kahlo',
 ]
 
-const TAGLINES: (string | (() => string))[] = [
+// A templated tagline: a `suffix` appended to a randomly-picked option. Modelled
+// as data (not an opaque closure) so it can be both *sampled* (randomTagline) and
+// *enumerated* (taglineGroups) from one definition — no duplicated format strings.
+interface Template {
+  options: readonly string[]
+  suffix: string
+}
+
+const TEMPLATES: Template[] = [
+  { options: PAINTINGS, suffix: ', but horrible' },
+  { options: ARTISTS, suffix: ', hates you right now' },
+]
+
+const FIXED = [
   'draw pixels, have fun, win nothing',
   'ruin a masterpiece with friends',
   'pixels in, chaos out',
   'draw badly, vote honestly',
   'great art, two-minute deadline',
   'recreate art. poorly.',
-  () => `${pick(PAINTINGS)}, but horrible`,
-  () => `${pick(ARTISTS)}, hates you right now`,
 ]
 
-function pick<T>(arr: T[]): T {
+function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
+// Pick uniformly over the *slots* — each fixed line and each template category
+// is equally likely (a template then fills a random option). Matches the
+// original weighting, where a template counts as one slot regardless of how many
+// options it has.
 export function randomTagline(): string {
-  const choice = pick(TAGLINES)
-  return typeof choice === 'function' ? choice() : choice
+  const slot = Math.floor(Math.random() * (FIXED.length + TEMPLATES.length))
+  if (slot < FIXED.length)
+    return FIXED[slot]
+  const t = TEMPLATES[slot - FIXED.length]
+  return `${pick(t.options)}${t.suffix}`
+}
+
+// Structured view of the tagline set for the /taglines debug page: the fixed
+// lines, plus each template as its own group (pattern label + expanded lines).
+// Same FIXED/TEMPLATES source as randomTagline, so it can't drift from what
+// players see.
+export interface TaglineGroups {
+  fixed: string[]
+  templates: { pattern: string, expanded: string[] }[]
+}
+
+export function taglineGroups(): TaglineGroups {
+  return {
+    fixed: [...FIXED],
+    templates: TEMPLATES.map(t => ({
+      pattern: `{}${t.suffix}`,
+      expanded: t.options.map(o => `${o}${t.suffix}`),
+    })),
+  }
 }
