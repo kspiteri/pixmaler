@@ -7,6 +7,7 @@
 import type { ClientMsg, ServerMsg } from '../../lib/types'
 import { computed, inject, nextTick, onBeforeUnmount, watch } from 'vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
+import Tagline from '../../components/Tagline.vue'
 import { PixelCanvas } from '../../lib/canvas'
 import { clientIdKey, socketKey } from '../../lib/keys'
 import { VOTE_CATEGORIES } from '../../lib/types'
@@ -148,6 +149,8 @@ function playAgain() {
             </div>
           </div>
         </div>
+
+        <Tagline class="results__tagline" />
 
         <!-- Gallery: everyone else, ordered by overall points -->
         <div v-if="rest.length" class="results__gallery">

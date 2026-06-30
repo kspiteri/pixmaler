@@ -31,10 +31,9 @@
     margin-bottom: $gap-6;
   }
 
+  // The <Tagline> under the wordmark (component is margin-less; spacing here).
   &__sub {
     margin: $gap-2 0 0;
-    color: $fg-35;
-    font-size: 0.875rem;
   }
 
   &__form {

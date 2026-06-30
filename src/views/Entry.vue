@@ -3,14 +3,11 @@
 
 import { ref } from 'vue'
 import Logo from '../components/Logo.vue'
-import { randomTagline } from '../lib/taglines'
+import Tagline from '../components/Tagline.vue'
 import { wordPair } from '../lib/words'
 
 const name = ref(localStorage.getItem('pixmaler:name') ?? '')
 const code = ref('')
-
-// A fresh cosmetic tagline per page load.
-const tagline = randomTagline()
 
 // Strip any trailing "index.html" so BASE_URL ("/pixmaler/") prefixes /paint
 // correctly in dev and prod alike.
@@ -42,9 +39,7 @@ function joinRoom() {
     <!-- Wordmark -->
     <header class="entry__brand">
       <Logo size="lg" />
-      <p class="entry__sub">
-        {{ tagline }}
-      </p>
+      <Tagline class="entry__sub" />
     </header>
 
     <!-- Form -->

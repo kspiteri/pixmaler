@@ -75,6 +75,12 @@
   }
 
   // ── Gallery (the rest) ───────────────────────────────────────────────────────
+  // Rotating flavour line between the hero and the gallery — fills the reveal lull.
+  &__tagline {
+    text-align: center;
+    margin: $gap-4 0;
+  }
+
   &__gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

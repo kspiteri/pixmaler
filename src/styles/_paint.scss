@@ -27,10 +27,10 @@
     font-weight: 700;
     font-size: 1.75rem;
   }
+
+  // The <Tagline> under the title (component is margin-less; spacing here).
   &__sub {
     margin: $gap-1 0 $gap-5;
-    color: $fg-40;
-    font-size: 0.875rem;
   }
 
   &__row {

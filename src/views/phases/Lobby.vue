@@ -12,6 +12,7 @@ import { computed, inject, onBeforeUnmount, ref, useTemplateRef, watch } from 'v
 import ImagePicker from '../../components/ImagePicker.vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import PlayerList from '../../components/PlayerList.vue'
+import Tagline from '../../components/Tagline.vue'
 import { PixelCanvas } from '../../lib/canvas'
 import { clientIdKey, socketKey } from '../../lib/keys'
 
@@ -181,6 +182,9 @@ onBeforeUnmount(() => {
           >
         </label>
         <PlayerList :players="state.players" :gm-client-id="state.gmClientId" />
+        <!-- GM sees the tagline here, under the roster. Non-GMs get it beside
+             the "waiting for GM" line instead (below), where their eyes are. -->
+        <Tagline v-if="isGm" class="lobby__tagline" />
       </aside>
 
       <section class="lobby__settings">
@@ -212,9 +216,12 @@ onBeforeUnmount(() => {
         </template>
 
         <template v-else>
-          <p class="lobby__waiting">
-            Waiting for GM to start…
-          </p>
+          <div class="lobby__waiting">
+            <p class="lobby__waiting-text">
+              Waiting for GM to start…
+            </p>
+            <Tagline class="lobby__waiting-tagline" />
+          </div>
           <div ref="previewSlot" class="lobby__preview" />
         </template>
       </section>

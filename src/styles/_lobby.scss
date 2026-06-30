@@ -54,6 +54,12 @@
     padding: $gap-5;
   }
 
+  // Rotating flavour line under the player list (GM view) — fills the lobby lull.
+  &__tagline {
+    margin: $gap-4 0 0;
+    text-align: center;
+  }
+
   &__settings {
     padding: $gap-5;
     display: flex;
@@ -78,7 +84,19 @@
   // Non-GM waiting state
   &__waiting {
     margin: $gap-4 0 0;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: $gap-2;
     color: $fg-50;
+  }
+  &__waiting-text {
+    margin: 0;
+  }
+  // The tagline sits inline beside the waiting text — drop its own top margin
+  // (it's tuned for stacking under the player list, the GM placement).
+  &__waiting-tagline {
+    margin: 0;
   }
   &__preview {
     margin-top: $gap-4;

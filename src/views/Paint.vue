@@ -7,13 +7,10 @@ import type { PipelineResult } from '../lib/pipeline'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import CanvasPair from '../components/CanvasPair.vue'
 import ImagePicker from '../components/ImagePicker.vue'
-import { randomTagline } from '../lib/taglines'
+import Tagline from '../components/Tagline.vue'
 
 const result = ref<PipelineResult | null>(null)
 const pairRef = ref<InstanceType<typeof CanvasPair> | null>(null)
-
-// A fresh cosmetic tagline per page load (shared with Entry).
-const tagline = randomTagline()
 
 // Settings start open; collapse automatically once the first image is loaded
 // so the canvas gets the focus. The toggle re-opens them for a quick tweak.
@@ -49,9 +46,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
     <h1 class="paint__title">
       Paint sandbox
     </h1>
-    <p class="paint__sub">
-      {{ tagline }} — solo sandbox, no lobby, no timer.
-    </p>
+    <Tagline class="paint__sub" seed="solo sandbox, no lobby, no timer" />
 
     <div class="paint__row">
       <div class="paint__settings">
