@@ -14,10 +14,52 @@
 @use 'results';
 @use 'tools-panel'; // CanvasPair's static chrome (panel + canvas-pair layout)
 
+// ── CSS custom properties ──────────────────────────────────────────────────
+// Exposed so `.vue` scoped styles can consume the same tokens without a
+// second SCSS import. Keep this list to values that actually need to be
+// reached from component styles (typography + safe viewport).
+:root {
+  // Safe viewport height — `100dvh` (mobile URL-bar aware) with a `100vh`
+  // fallback on older browsers. Ready for Drawing.vue's fixed shell (item 5).
+  --vh-safe: 100vh;
+  --vh-safe: 100dvh;
+
+  // Fonts
+  --font-display: #{$font-display};
+  --font-body: #{$font-body};
+  --font-alert: #{$font-alert};
+
+  // Static type scale
+  --fs-2xs: #{$fs-2xs};
+  --fs-xs: #{$fs-xs};
+  --fs-sm: #{$fs-sm};
+  --fs-base: #{$fs-base};
+  --fs-md: #{$fs-md};
+  --fs-lg: #{$fs-lg};
+  --fs-xl: #{$fs-xl};
+  --fs-2xl: #{$fs-2xl};
+  --fs-3xl: #{$fs-3xl};
+
+  // Fluid headings
+  --fs-h3-fluid: #{$fs-h3-fluid};
+  --fs-h2-fluid: #{$fs-h2-fluid};
+  --fs-h1-fluid: #{$fs-h1-fluid};
+  --fs-hero-fluid: #{$fs-hero-fluid};
+
+  // Weights
+  --fw-regular: #{$fw-regular};
+  --fw-medium: #{$fw-medium};
+  --fw-semibold: #{$fw-semibold};
+  --fw-bold: #{$fw-bold};
+  --fw-black: #{$fw-black};
+}
+
 // Page-wide. Per-component styles live inside each .vue file's <style scoped>.
 body {
   margin: 0;
   font-family: $font-body;
+  font-size: $fs-base;
+  line-height: $lh-normal;
   color: $fg;
   background: $bg;
   -webkit-font-smoothing: antialiased;
@@ -27,11 +69,16 @@ a {
   color: $fg;
 }
 
+// Base heading typography — family + weight + line-height only. Sizes and
+// margins are kept as browser defaults here to avoid regressing screens that
+// style headings by class. Screens opting in to the fluid scale can apply
+// $fs-h*-fluid / --fs-h*-fluid on their own selectors.
 h1,
 h2,
 h3 {
   font-family: $font-display;
-  font-weight: 700;
+  font-weight: $fw-bold;
+  line-height: $lh-tight;
 }
 
 // Generic page wrapper used by most views.

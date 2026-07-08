@@ -1,9 +1,53 @@
 // Design tokens — colours, spacing, typography. One place to tweak the look.
 // Dark "party game" theme translated from the Figma Make design.
 
-// Fonts — Fredoka for display/headings/buttons, Nunito for body.
+// Fonts — Fredoka for display/headings, Plus Jakarta Sans for body,
+// Space Grotesk for buttons + alerts (short, punchy status messages).
 $font-display: 'Fredoka', sans-serif;
-$font-body: 'Nunito', sans-serif;
+$font-body: 'Plus Jakarta Sans', sans-serif;
+$font-alert: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+
+// ── Type scale ──────────────────────────────────────────────────────────────
+// Static rem sizes for chrome/UI — predictable, snap to design grid.
+// The `-fluid` variants use clamp() for headings that should breathe with the
+// viewport (mobile → desktop). Use static tokens for buttons, labels, body;
+// fluid tokens for h1/h2/hero copy.
+$fs-2xs: 0.6875rem; // 11px — micro labels
+$fs-xs: 0.75rem; // 12px — meta / captions
+$fs-sm: 0.875rem; // 14px — small body, plain buttons, form labels
+$fs-base: 1rem; // 16px — body default
+$fs-md: 1.125rem; // 18px — primary buttons, emphasised body
+$fs-lg: 1.25rem; // 20px — sub-headings, prompts
+$fs-xl: 1.5rem; // 24px — section headings
+$fs-2xl: 2rem; // 32px — page headings (room code, results)
+$fs-3xl: 2.5rem; // 40px — hero / logo
+
+// Fluid headings — scale between mobile min and desktop max across the
+// viewport. Middle value uses vw so it grows smoothly.
+$fs-h3-fluid: clamp(1.125rem, 1rem + 0.6vw, 1.375rem);
+$fs-h2-fluid: clamp(1.25rem, 1rem + 1.2vw, 1.75rem);
+$fs-h1-fluid: clamp(1.75rem, 1.25rem + 2.4vw, 2.75rem);
+$fs-hero-fluid: clamp(2rem, 1.25rem + 3.6vw, 3.5rem);
+
+// Weights — mirror the loaded font subsets.
+// Fredoka: 400/500/600/700 · Plus Jakarta Sans: 400/500/700/800 · Space Grotesk: 500/700
+$fw-regular: 400;
+$fw-medium: 500;
+$fw-semibold: 600;
+$fw-bold: 700;
+$fw-black: 800;
+
+// Line heights — tight for display, comfy for body.
+$lh-tight: 1.15;
+$lh-snug: 1.3;
+$lh-normal: 1.5;
+
+// Letter-spacing — slight negative on big display; alerts are mixed-case now
+// (Space Grotesk), so only a hair of positive tracking.
+$ls-tight: -0.01em;
+$ls-normal: 0;
+$ls-wide: 0.04em;
+$ls-alert: 0.02em;
 
 // Surface
 $bg: #0e0e12; // page background

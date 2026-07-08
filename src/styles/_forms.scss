@@ -10,12 +10,12 @@
   display: block;
   margin-bottom: 0.375rem;
   color: $fg-50;
-  font-size: 0.875rem;
+  font-size: $fs-sm;
 
   // Uppercase section header ("PLAYERS", "GAME SETTINGS", "TARGET"…).
   &--eyebrow {
     color: $fg-35;
-    font-size: 0.75rem;
+    font-size: $fs-xs;
     text-transform: uppercase;
     letter-spacing: 0.18em;
   }
@@ -30,7 +30,7 @@
   border: 1px solid $border;
   color: $fg;
   font-family: $font-body;
-  font-size: 1rem;
+  font-size: $fs-base;
   transition: border-color 0.15s;
 
   &::placeholder {

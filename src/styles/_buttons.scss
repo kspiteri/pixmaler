@@ -11,9 +11,10 @@
   padding: 0.875rem 1rem;
   border-radius: $radius;
   border: none;
-  font-family: $font-display;
-  font-weight: 700;
-  font-size: 1.125rem;
+  font-family: $font-alert;
+  font-weight: $fw-bold;
+  font-size: $fs-md;
+  letter-spacing: $ls-alert;
   cursor: pointer;
   transition:
     transform 0.1s,
@@ -54,7 +55,7 @@
     background: $surface;
     border: 1px solid $border;
     color: $fg-60;
-    font-size: 0.875rem;
+    font-size: $fs-sm;
     padding: 0.625rem 1rem;
 
     &:not(:disabled):hover {
