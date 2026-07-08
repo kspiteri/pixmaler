@@ -4,8 +4,8 @@
 // time the picker emits a new result, so PixelCanvas instances tear down cleanly.
 
 import type { PipelineResult } from '../lib/pipeline'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { ChevronDown, ChevronUp, Settings } from '@lucide/vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import CanvasPair from '../components/CanvasPair.vue'
 import ImagePicker from '../components/ImagePicker.vue'
 import Tagline from '../components/Tagline.vue'

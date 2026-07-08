@@ -15,7 +15,7 @@
     "prepare": "simple-git-hooks"
   },
   "dependencies": {
-    "@lucide/vue": "^1.23.0",
+    "@lucide/vue": "catalog:prod",
     "partyserver": "catalog:prod",
     "partysocket": "catalog:prod",
     "unique-names-generator": "catalog:prod",

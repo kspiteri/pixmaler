@@ -12,9 +12,6 @@ import { PixelCanvas } from '../../lib/canvas'
 import { clientIdKey, socketKey } from '../../lib/keys'
 import { VOTE_CATEGORIES } from '../../lib/types'
 
-type Gallery = Extract<ServerMsg, { type: 'gallery' }>
-type VoteState = Extract<ServerMsg, { type: 'vote-state' }>
-
 const props = defineProps<{
   gallery: Gallery | null
   gmClientId: string
@@ -24,6 +21,15 @@ const props = defineProps<{
   // a reconnecting player sees their votes restored instead of a blank slate.
   voteState: VoteState | null
 }>()
+
+// Resolve a `public/`-hosted asset path against Vite's `base` (e.g.
+// `/pixmaler/`) so absolute URLs don't skip the base and 404.
+function iconUrl(path: string): string {
+  return `${import.meta.env.BASE_URL}${path}`
+}
+
+type Gallery = Extract<ServerMsg, { type: 'gallery' }>
+type VoteState = Extract<ServerMsg, { type: 'vote-state' }>
 
 const socket = inject(socketKey)!.value!
 const clientId = inject(clientIdKey)!
@@ -205,7 +211,7 @@ function castVote(category: VoteCategory, submissionId: string) {
               :key="c.id"
               class="voting__hint-cat"
               :class="{ 'voting__hint-cat--done': myVotes[c.id] }"
-            >{{ c.emoji }}</span>
+            ><img :src="iconUrl(c.icon)" :alt="c.label" class="voting__hint-icon"></span>
           </template>
         </p>
       </header>
@@ -225,7 +231,7 @@ function castVote(category: VoteCategory, submissionId: string) {
                 v-for="c in votedCategoriesFor(sub.submissionId)"
                 :key="c.id"
                 class="voting__sticker"
-              >{{ c.emoji }}</span>
+              ><img :src="iconUrl(c.icon)" :alt="c.label" class="voting__sticker-icon"></span>
             </div>
             <span v-if="sub.submissionId === clientId" class="voting__tag">Yours</span>
           </div>
@@ -241,7 +247,7 @@ function castVote(category: VoteCategory, submissionId: string) {
               :title="`Vote ${c.label}`"
               @click="castVote(c.id, sub.submissionId)"
             >
-              <span class="voting__cat-emoji">{{ c.emoji }}</span>
+              <img :src="iconUrl(c.icon)" alt="" class="voting__cat-icon">
               {{ c.label }}
             </button>
           </div>

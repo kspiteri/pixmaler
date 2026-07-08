@@ -12,13 +12,19 @@ import { PixelCanvas } from '../../lib/canvas'
 import { clientIdKey, socketKey } from '../../lib/keys'
 import { VOTE_CATEGORIES } from '../../lib/types'
 
-type Results = Extract<ServerMsg, { type: 'results' }>
-type Entry = Results['ranked'][number]
-
 const props = defineProps<{
   results: Results | null
   gmClientId: string
 }>()
+
+// Resolve a `public/`-hosted asset path against Vite's `base` (e.g.
+// `/pixmaler/`) so absolute URLs don't skip the base and 404.
+function iconUrl(path: string): string {
+  return `${import.meta.env.BASE_URL}${path}`
+}
+
+type Results = Extract<ServerMsg, { type: 'results' }>
+type Entry = Results['ranked'][number]
 
 const socket = inject(socketKey)!.value!
 const clientId = inject(clientIdKey)!
@@ -45,12 +51,16 @@ const rest = computed<Entry[]>(() => {
   return ranked.slice(winners.value.length)
 })
 
-// "5 😂 · 6 ⭐" breakdown line for the hero. Falls back to 0 for any missing
-// category so a stale/old-shape results payload can't crash the reveal.
-function breakdownText(entry: Entry): string {
-  return VOTE_CATEGORIES
-    .map(c => `${entry.breakdown?.[c.id] ?? 0} ${c.emoji}`)
-    .join(' · ')
+// Per-category breakdown for the hero, e.g. `[{ count: 5, icon: laugh.svg, … }, …]`.
+// Falls back to 0 for any missing category so a stale/old-shape results payload
+// can't crash the reveal.
+function breakdownItems(entry: Entry) {
+  return VOTE_CATEGORIES.map(c => ({
+    id: c.id,
+    label: c.label,
+    icon: iconUrl(c.icon),
+    count: entry.breakdown?.[c.id] ?? 0,
+  }))
 }
 
 // PixelCanvas instances mounted into the per-row slots. Re-built whenever
@@ -125,7 +135,8 @@ function playAgain() {
         <!-- Hero: overall winner(s) -->
         <div class="results__hero">
           <p class="results__crown">
-            👑 {{ winners.length > 1 ? "joint winners" : "overall winner" }}
+            <img :src="iconUrl('assets/icons/crown.svg')" alt="crown" class="results__crown-icon">
+            {{ winners.length > 1 ? "joint winners" : "overall winner" }}
           </p>
           <div class="results__winners">
             <div
@@ -143,7 +154,15 @@ function playAgain() {
                   {{ w.votes }} vote{{ w.votes === 1 ? "" : "s" }}
                 </p>
                 <p class="results__winner-breakdown">
-                  {{ breakdownText(w) }}
+                  <span
+                    v-for="(b, i) in breakdownItems(w)"
+                    :key="b.id"
+                    class="results__winner-breakdown-item"
+                  >
+                    <template v-if="i > 0"> · </template>
+                    {{ b.count }}
+                    <img :src="b.icon" :alt="b.label" class="results__breakdown-icon">
+                  </span>
                 </p>
               </div>
             </div>

@@ -43,6 +43,9 @@ catalogs:
       specifier: ^4.105.0
       version: 4.105.0
   prod:
+    '@lucide/vue':
+      specifier: ^1.23.0
+      version: 1.23.0
     partyserver:
       specifier: ^0.5.8
       version: 0.5.8
@@ -61,7 +64,7 @@ importers:
   .:
     dependencies:
       '@lucide/vue':
-        specifier: ^1.23.0
+        specifier: catalog:prod
         version: 1.23.0(vue@3.5.35(typescript@5.9.3))
       partyserver:
         specifier: catalog:prod

@@ -41,9 +41,11 @@ export type VoteCategory = 'funniest' | 'best'
 
 // Vote categories in display order. Shared by client (buttons, stickers) and
 // server (tally) so they can't drift apart.
-export const VOTE_CATEGORIES: { id: VoteCategory, label: string, emoji: string }[] = [
-  { id: 'funniest', label: 'Funniest', emoji: '😂' },
-  { id: 'best', label: 'Best', emoji: '⭐' },
+// Icon paths are relative (no leading `/`) so they resolve under the Vite
+// `base` (`/pixmaler/`) when consumers prepend `import.meta.env.BASE_URL`.
+export const VOTE_CATEGORIES: { id: VoteCategory, label: string, icon: string }[] = [
+  { id: 'funniest', label: 'Funniest', icon: 'assets/icons/laugh.svg' },
+  { id: 'best', label: 'Best', icon: 'assets/icons/star.svg' },
 ]
 
 export interface VoteCastMsg {

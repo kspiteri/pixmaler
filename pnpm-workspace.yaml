@@ -24,6 +24,7 @@ catalogs:
     vue-tsc: ^3.3.4
     wrangler: ^4.105.0
   prod:
+    '@lucide/vue': ^1.23.0
     partyserver: ^0.5.8
     partysocket: ^1.0.3
     unique-names-generator: ^4.7.1

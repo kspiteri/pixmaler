@@ -21,12 +21,21 @@
   }
   &__crown {
     margin: 0 0 $gap-4;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: $gap-2;
     font-family: $font-body;
     font-weight: 700;
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.2em;
     color: $accent;
+  }
+  &__crown-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    display: block;
   }
   &__winners {
     display: flex;
@@ -72,6 +81,17 @@
     margin: 0.125rem 0 0;
     color: $fg-40;
     font-size: 0.875rem;
+  }
+  &__winner-breakdown-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    vertical-align: middle;
+  }
+  &__breakdown-icon {
+    width: 1rem;
+    height: 1rem;
+    display: block;
   }
 
   // ── Gallery (the rest) ───────────────────────────────────────────────────────
