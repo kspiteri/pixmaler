@@ -5,10 +5,11 @@
 
 import type { PipelineResult } from '../lib/pipeline'
 import { ChevronDown, ChevronUp, Settings } from '@lucide/vue'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import CanvasPair from '../components/CanvasPair.vue'
 import ImagePicker from '../components/ImagePicker.vue'
 import Tagline from '../components/Tagline.vue'
+import { orientationFor } from '../lib/aspect'
 
 const result = ref<PipelineResult | null>(null)
 const pairRef = ref<InstanceType<typeof CanvasPair> | null>(null)
@@ -20,6 +21,22 @@ let collapsedOnce = false
 
 const base = import.meta.env.BASE_URL.replace(/\/+$/, '')
 const backHref = `${base}/`
+
+// Ratio-aware layout, matching the DRAWING phase (item 5): the canvas pair
+// flips between a row (reference beside the canvas) and a column (stacked) so
+// the editable canvas always claims the largest fitting area. `orientationFor`
+// compares the grid's aspect to the live viewport.
+const viewportW = ref(window.innerWidth)
+const viewportH = ref(window.innerHeight)
+function onResize() {
+  viewportW.value = window.innerWidth
+  viewportH.value = window.innerHeight
+}
+const orientation = computed(() =>
+  result.value
+    ? orientationFor(result.value.gridW, result.value.gridH, viewportW.value, viewportH.value)
+    : 'row',
+)
 
 function onResult(next: PipelineResult) {
   result.value = next
@@ -37,15 +54,21 @@ function onKeyDown(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => window.addEventListener('keydown', onKeyDown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
+onMounted(() => {
+  window.addEventListener('keydown', onKeyDown)
+  window.addEventListener('resize', onResize)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeyDown)
+  window.removeEventListener('resize', onResize)
+})
 </script>
 
 <template>
   <div class="paint">
-    <a class="paint__back" :href="backHref">← Back to entry</a>
+    <a class="paint__back" :href="backHref">← Back to Homepage</a>
     <h1 class="paint__title">
-      Paint sandbox
+      Paint Sandbox
     </h1>
     <Tagline class="paint__sub" seed="solo sandbox, no lobby, no timer" />
 
@@ -83,6 +106,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
         :palette="result.palette"
         :target-grid="result.targetGrid"
         variant="paint"
+        :orientation="orientation"
       />
     </div>
   </div>

@@ -10,7 +10,8 @@
 // (teleported to <body>). Split out of this file so the canvas surface stays
 // layout-agnostic ahead of item 5's fixed drawing shell.
 
-import { onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
+import { useAppLayout } from '../lib/appLayout'
 import { buildBrushControls, buildSwatch, PixelCanvas } from '../lib/canvas'
 import PaletteTools from './PaletteTools.vue'
 
@@ -22,19 +23,42 @@ interface Props {
   // "drawing" → wider editable canvas, no Clear button (committed strokes only).
   // "paint"   → narrower target reference, Clear button included (sandbox toy).
   variant: 'drawing' | 'paint'
+  // Ratio-aware layout direction for the fixed drawing shell (item 5). `'row'`
+  // places reference + canvas side by side; `'column'` stacks them. Only the
+  // "drawing" variant consumes it; the paint sandbox keeps its default flow.
+  orientation?: 'row' | 'column'
+  // DRAWING only — whether the player has flagged themselves done, forwarded to
+  // the palette's Ready button.
+  flaggedDone?: boolean
 }
 const props = defineProps<Props>()
 
 // Bubble up grid changes so parents (e.g. Drawing.vue) can debounce-resubmit
-// while the player keeps painting after their first "Done" click.
+// while the player keeps painting after their first "Done" click. `done` relays
+// the palette's Ready button click for the DRAWING social ping.
 const emit = defineEmits<{
   update: [grid: number[]]
+  done: []
 }>()
+
+// Shared app-layout context. `isMobile` tells us the palette is docked to the
+// bottom (fixed, overlapping the shell); `paletteHeight` is its measured height
+// in px, published by <PaletteTools>. On mobile BOTH the DRAWING shell and the
+// /paint sandbox must leave exactly that much room below the canvas so it never
+// sits behind the docked palette — we reserve it as padding on the pair (and,
+// for drawing, refit the fit-zoomed canvas into what's left). Desktop's panel
+// floats, so no reservation is held.
+const { isMobile, paletteHeight } = useAppLayout()
+
+// Space the docked palette needs below the canvas area (mobile only — both
+// variants, since the panel docks fixed to the bottom on either page).
+const reservedForPalette = computed(() =>
+  isMobile.value ? paletteHeight.value : 0,
+)
 
 // Layout slots
 const targetSlot = useTemplateRef<HTMLDivElement>('targetSlot')
 const drawSlot = useTemplateRef<HTMLDivElement>('drawSlot')
-const targetWrap = useTemplateRef<HTMLDivElement>('targetWrap')
 
 // PixelCanvas instances — imperative, so kept in plain vars (no deep reactivity).
 // `player` is also exposed reactively via shallowRef so <PaletteTools> can
@@ -49,6 +73,26 @@ const brushEl = shallowRef<HTMLElement | null>(null)
 
 // Anchor for the panel's default position — targetWrap's DOM element.
 const anchorEl = ref<HTMLElement | null>(null)
+
+// The target reference <canvas> and its in-flow home slot. On mobile the
+// palette docks to the bottom and would obscure the canvas, so <PaletteTools>
+// relocates this reference into the docked bar (next to the tools) and returns
+// it to `targetHomeEl` on desktop. Passing both lets the panel own the move.
+const targetEl = shallowRef<HTMLElement | null>(null)
+const targetHomeEl = ref<HTMLElement | null>(null)
+
+// Pattern A fit-zoom: we size the editable canvas's DISPLAY box (via
+// PixelCanvas.fitTo) to the largest aspect-preserving fit of its slot,
+// re-running whenever the slot resizes (viewport, orientation flip). Used by
+// BOTH variants now so the /paint sandbox shares the DRAWING look & feel.
+let drawResizeObserver: ResizeObserver | null = null
+function fitDrawCanvas() {
+  const slot = drawSlot.value
+  const player = playerRef.value
+  if (!slot || !player)
+    return
+  player.fitTo(slot.clientWidth, slot.clientHeight)
+}
 
 defineExpose({
   player: () => playerRef.value,
@@ -105,11 +149,41 @@ onMounted(() => {
   playerRef.value = player
   swatchEl.value = swatch.element
   brushEl.value = buildBrushControls(player)
-  anchorEl.value = targetWrap.value
+  // Anchor the floating palette to the reference thumbnail itself (targetSlot),
+  // NOT targetWrap: in the drawing shell the target column is stretched to the
+  // full row height (align-items: stretch), so targetWrap's bottom sits below
+  // the whole canvas. The slot hugs the thumbnail, so the palette opens right
+  // beneath the reference image.
+  anchorEl.value = targetSlot.value
+  targetEl.value = target.canvas
+  targetHomeEl.value = targetSlot.value
+
+  // Fit the editable canvas to its slot and keep it fitted as the slot resizes.
+  if (drawSlot.value) {
+    fitDrawCanvas()
+    drawResizeObserver = new ResizeObserver(() => fitDrawCanvas())
+    drawResizeObserver.observe(drawSlot.value)
+  }
+})
+
+// Orientation flips row↔column, which changes the slot's shape — refit once the
+// DOM has applied the new flex-direction. (The ResizeObserver also catches it,
+// but this makes the refit deterministic on the same frame the prop changes.)
+watch(() => props.orientation, () => {
+  nextTick(fitDrawCanvas)
+})
+
+// The reserved palette band changes the draw slot's available height, so refit
+// whenever it (or the mobile flag) changes. The style binding shrinks the slot
+// first; nextTick lets that layout settle before fitTo reads clientHeight.
+watch(reservedForPalette, () => {
+  nextTick(fitDrawCanvas)
 })
 
 onBeforeUnmount(() => {
   // Drop references so PixelCanvas's listeners fall away with the DOM nodes.
+  drawResizeObserver?.disconnect()
+  drawResizeObserver = null
   target = null
   playerRef.value = null
   swatchEl.value = null
@@ -118,19 +192,23 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="canvas-pair" :class="`canvas-pair--${variant}`">
-    <div class="canvas-pair__row">
-      <div ref="targetWrap" class="canvas-pair__target">
+  <div
+    class="canvas-pair"
+    :class="`canvas-pair--${variant}`"
+    :style="reservedForPalette ? { 'padding-bottom': `${reservedForPalette}px` } : undefined"
+  >
+    <div
+      class="canvas-pair__row"
+      :style="orientation ? { 'flex-direction': orientation } : undefined"
+    >
+      <div class="canvas-pair__target">
         <p class="label label--eyebrow">
-          {{ variant === "paint" ? "Reference" : "Target" }}
+          Reference
         </p>
-        <div ref="targetSlot" />
+        <div ref="targetSlot" class="canvas-pair__target-slot" />
       </div>
       <div class="canvas-pair__draw">
-        <p class="label label--eyebrow">
-          {{ variant === "paint" ? "Your canvas" : "Your drawing" }}
-        </p>
-        <div ref="drawSlot" />
+        <div ref="drawSlot" class="canvas-pair__draw-slot" />
       </div>
     </div>
   </div>
@@ -141,6 +219,10 @@ onBeforeUnmount(() => {
     :brush-el="brushEl"
     :variant="variant"
     :anchor="anchorEl"
+    :flagged-done="flaggedDone"
+    :target-el="targetEl"
+    :target-home="targetHomeEl"
+    @done="emit('done')"
   />
 </template>
 
@@ -150,21 +232,46 @@ onBeforeUnmount(() => {
 // lib/canvas.ts) stay here — :deep() only works in a scoped block.
 @use '../styles/tokens' as *;
 
+// ── Fixed fit-zoom shell (item 5, Pattern A) ────────────────────────────────
+// Shared by BOTH the DRAWING phase and the /paint sandbox so they look & feel
+// identical. The pair fills its container's free area; the editable canvas's
+// DISPLAY size is set imperatively by PixelCanvas.fitTo (JS fit-zoom) rather
+// than CSS, so we must NOT constrain its width/height here — we only centre it
+// in its slot. The reference stays a compact thumbnail so the editable canvas
+// claims the rest. Static flex rules for the row/columns live in
+// _tools-panel.scss. `variant` no longer changes the layout — only the palette
+// button (Clear vs Ready).
 .canvas-pair {
-  // PixelCanvas's <canvas> is appended into the slot; size it via :deep so
-  // the scoped CSS reaches it.
-  :deep(.canvas-pair__target-canvas) {
-    width: 100%;
-    max-width: 240px;
-    height: auto;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+
+  // The draw slot is the measured box fitTo() reads (clientWidth/Height);
+  // it grows to fill the row and centres the fitted canvas inside it.
+  .canvas-pair__draw-slot {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
+
+  // fitTo owns the editable canvas box — reset any default CSS sizing so it
+  // can't fight the JS-set width/height or reintroduce squish.
   :deep(.canvas-pair__draw-canvas) {
-    width: 100%;
-    max-width: 900px;
+    width: auto;
     height: auto;
+    max-width: none;
   }
-  &--paint :deep(.canvas-pair__target-canvas) {
-    max-width: 200px;
+
+  // Compact reference — capped on both axes and relative to the viewport so
+  // it never crowds out the editable canvas in either orientation.
+  :deep(.canvas-pair__target-canvas) {
+    width: auto;
+    height: auto;
+    max-width: min(28vw, 240px);
+    max-height: min(28vh, 240px);
   }
 }
 </style>

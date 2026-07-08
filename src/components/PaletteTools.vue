@@ -14,8 +14,9 @@
 // PixelCanvas reference); we just mount them into slots here.
 
 import type { PixelCanvas } from '../lib/canvas'
-import { GripVertical, Pin, Trash2, Undo2 } from '@lucide/vue'
+import { Check, GripVertical, Pin, Trash2, Undo2 } from '@lucide/vue'
 import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { setPaletteHeight, useAppLayout } from '../lib/appLayout'
 import { useDraggable } from '../lib/useDraggable'
 
 interface Props {
@@ -26,17 +27,34 @@ interface Props {
   // their lifecycle (they're wired to the PixelCanvas hover/select handlers).
   swatchEl: HTMLElement | null
   brushEl: HTMLElement | null
-  // "paint" → show Clear (sandbox). "drawing" → hide it.
+  // "paint" → show Clear (sandbox). "drawing" → show Done (Ready) instead.
   variant: 'drawing' | 'paint'
   // Element to anchor the panel's default position under (usually the target
   // reference). If null / not laid out, we fall back to (16, 16).
   anchor?: HTMLElement | null
+  // DRAWING only — whether this player has flagged themselves done. When true
+  // the Done button reads as flagged and is disabled.
+  flaggedDone?: boolean
+  // DRAWING only — the target reference <canvas> and its in-flow home slot.
+  // On mobile the panel docks to the bottom and would cover the drawing canvas,
+  // so we relocate the reference into the docked bar (next to the tools) and
+  // move it back to `targetHome` on desktop.
+  targetEl?: HTMLElement | null
+  targetHome?: HTMLElement | null
 }
+
 const props = defineProps<Props>()
+
+// DRAWING only — the Done button is a social "Ready" ping; the parent owns the
+// actual state and wire message, we just surface the click.
+const emit = defineEmits<{
+  done: []
+}>()
 
 const swatchSlot = useTemplateRef<HTMLDivElement>('swatchSlot')
 const brushSlot = useTemplateRef<HTMLDivElement>('brushSlot')
 const panelEl = useTemplateRef<HTMLDivElement>('panelEl')
+const dockTargetSlot = useTemplateRef<HTMLDivElement>('dockTargetSlot')
 
 const panelVisible = ref(false)
 
@@ -48,12 +66,35 @@ const {
 } = useDraggable({ initialX: 16, initialY: 16, desktopOnly: true, element: () => panelEl.value })
 
 // Below $bp-mobile the panel docks to the bottom full-width and dragging is
-// disabled. Mirror of $bp-mobile in _tokens.scss.
-const MOBILE_BP = 640
-const isMobile = ref(false)
-let mql: MediaQueryList | null = null
-function onMobileChange(e: MediaQueryListEvent | MediaQueryList) {
-  isMobile.value = e.matches
+// disabled. `isMobile` comes from the shared app-layout context so CanvasPair
+// (and anyone else) agrees on the breakpoint without a second matchMedia.
+const { isMobile } = useAppLayout()
+
+// Docked ↔ floating flip changes whether the reference belongs in the dock and
+// how tall the reserve should be — re-run once the layout has settled.
+watch(isMobile, () => {
+  nextTick(() => {
+    placeTarget()
+    schedulePublishDockHeight()
+  })
+})
+
+// Relocate the target reference between its in-flow home (desktop) and the
+// docked bar (mobile drawing). Moving the imperative <canvas> node is safe —
+// it's non-editable and unaffected by fit-zoom — and keeps the reference
+// visible without covering the drawing canvas on phones.
+function placeTarget() {
+  const el = props.targetEl
+  if (!el)
+    return
+  const dock = dockTargetSlot.value
+  if (isMobile.value && dock) {
+    if (!dock.contains(el))
+      dock.appendChild(el)
+  }
+  else if (props.targetHome && !props.targetHome.contains(el)) {
+    props.targetHome.appendChild(el)
+  }
 }
 
 // Swatch cell size — drives a CSS var on the panel; the swatch grid reflows.
@@ -83,6 +124,38 @@ function onResize() {
   snapToDefault()
 }
 
+// Mobile only — the docked panel is `position: fixed` at the bottom with a
+// VARIABLE height (mobile head + body up to `max-height: 45vh`, growing with
+// the swatch size / brush row). Measure its real height and publish it into the
+// shared app-layout context (`paletteHeight`) so both the DRAWING shell and the
+// /paint sandbox (via <CanvasPair>) can reserve exactly that much space and
+// never let the canvas slide behind the palette. On desktop (floating panel)
+// it's cleared so no space is held.
+let dockObserver: ResizeObserver | null = null
+
+function publishDockHeight() {
+  const el = panelEl.value
+  if (!isMobile.value || !el) {
+    // Desktop (floating panel): hold no space.
+    setPaletteHeight(0)
+    return
+  }
+  const h = Math.ceil(el.getBoundingClientRect().height)
+  // Guard against measuring a collapsed panel (e.g. while still `v-show`
+  // hidden, or mid-layout before the relocated reference has sized): a 0/tiny
+  // reading would under-reserve and let the canvas slide behind the dock.
+  // Keep the last good value until a real height lands.
+  if (h > 0)
+    setPaletteHeight(h)
+}
+
+// The docked height only settles after the relocated reference <canvas> is in
+// place AND the body has flipped to its row layout, so measure across two
+// animation frames rather than a single microtask.
+function schedulePublishDockHeight() {
+  requestAnimationFrame(() => requestAnimationFrame(publishDockHeight))
+}
+
 // Mount imperative swatch/brush DOM into our slots whenever the parent
 // finishes building them. `watch` (vs onMounted) covers the case where the
 // parent's PixelCanvas is instantiated in its own onMounted and props arrive
@@ -99,23 +172,54 @@ watch(
       brushSlot.value.appendChild(br)
     snapToDefault()
     panelVisible.value = true
+    placeTarget()
+    // Panel is now visible and the reference (if any) relocated — publish the
+    // real docked height so the DRAWING shell reserves the correct band.
+    schedulePublishDockHeight()
   },
   { immediate: true },
 )
 
+// Keep the reference in the right place when it (or the viewport) changes.
+watch(() => props.targetEl, () => nextTick(() => {
+  placeTarget()
+  schedulePublishDockHeight()
+}))
+
+// Swatch size changes the docked panel's height — re-measure the reserve.
+watch(swatchSize, () => schedulePublishDockHeight())
+
 onMounted(() => {
   window.addEventListener('resize', onResize)
-  mql = window.matchMedia(`(max-width: ${MOBILE_BP}px)`)
-  onMobileChange(mql)
-  mql.addEventListener('change', onMobileChange)
+  // isMobile is already live from the shared context; reconcile the initial
+  // reference placement / reserve now that our DOM exists.
+  placeTarget()
+  schedulePublishDockHeight()
+
+  // Keep the reserve in sync with the panel's rendered height (swatch size
+  // changes, brush row wrapping, etc.).
+  if (panelEl.value) {
+    dockObserver = new ResizeObserver(() => publishDockHeight())
+    dockObserver.observe(panelEl.value)
+  }
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
-  mql?.removeEventListener('change', onMobileChange)
+  dockObserver?.disconnect()
+  dockObserver = null
+  // Return the reference to its home slot so the parent can tear it down with
+  // the rest of its DOM (the node currently lives in our dock on mobile).
+  if (props.targetEl && props.targetHome && !props.targetHome.contains(props.targetEl))
+    props.targetHome.appendChild(props.targetEl)
+  // Drop the reserve so other screens don't inherit a stale dock height.
+  setPaletteHeight(0)
 })
 
-function undo() { props.player?.undo() }
+function undo() {
+  props.player?.undo()
+}
+
 function clear() {
   const p = props.player
   if (!p)
@@ -134,7 +238,7 @@ function clear() {
       v-show="panelVisible"
       ref="panelEl"
       class="tools-panel"
-      :class="[`tools-panel--${swatchSize}`, { 'tools-panel--docked': isMobile }]"
+      :class="[`tools-panel--${swatchSize}`, `tools-panel--${variant}`, { 'tools-panel--docked': isMobile }]"
       :style="isMobile ? undefined : { transform: `translate(${panelX}px, ${panelY}px)` }"
     >
       <div
@@ -200,29 +304,50 @@ function clear() {
       </div>
 
       <div class="tools-panel__body">
-        <div ref="swatchSlot" />
-        <div ref="brushSlot" class="tools-panel__brush" />
-        <div class="tools-panel__row">
-          <div class="tools-panel__actions">
-            <button
-              class="btn btn--plain tools-panel__btn"
-              type="button"
-              title="Undo"
-              aria-label="Undo"
-              @click="undo"
-            >
-              <Undo2 :size="18" />
-            </button>
-            <button
-              v-if="variant === 'paint'"
-              class="btn btn--plain tools-panel__btn"
-              type="button"
-              title="Clear"
-              aria-label="Clear canvas"
-              @click="clear"
-            >
-              <Trash2 :size="18" />
-            </button>
+        <!-- Mobile only: the target reference is relocated here to save space -->
+        <div
+          v-if="isMobile"
+          ref="dockTargetSlot"
+          class="tools-panel__target"
+        />
+        <div class="tools-panel__controls">
+          <div ref="swatchSlot" />
+          <div ref="brushSlot" class="tools-panel__brush" />
+          <div class="tools-panel__row">
+            <div class="tools-panel__actions">
+              <button
+                class="btn btn--plain tools-panel__btn"
+                type="button"
+                title="Undo"
+                aria-label="Undo"
+                @click="undo"
+              >
+                <Undo2 :size="18" />
+              </button>
+              <button
+                v-if="variant === 'paint'"
+                class="btn btn--plain tools-panel__btn"
+                type="button"
+                title="Clear"
+                aria-label="Clear canvas"
+                @click="clear"
+              >
+                <Trash2 :size="18" />
+              </button>
+              <button
+                v-else
+                class="btn btn--primary tools-panel__btn tools-panel__btn--done"
+                :class="{ 'tools-panel__btn--flagged': flaggedDone }"
+                type="button"
+                title="Ready"
+                :aria-label="flaggedDone ? 'Flagged as ready' : 'Ready'"
+                :aria-pressed="flaggedDone"
+                :disabled="flaggedDone"
+                @click="emit('done')"
+              >
+                <Check :size="18" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -241,9 +366,11 @@ function clear() {
   // Swatch cell size, driven by the S / M / L control (reactive --sm/--lg
   // classes). Consumed by the :deep(.swatch*) rules below.
   --sw: 26px;
+
   &--sm {
     --sw: 20px;
   }
+
   &--lg {
     --sw: 34px;
   }

@@ -95,6 +95,27 @@ export class PixelCanvas {
     this.render()
   }
 
+  // Fit the canvas's DISPLAY size (CSS width/height) into the given available
+  // box while preserving the grid's aspect ratio (Pattern A — Piskel-style
+  // fit-zoom). The drawing bitmap (`canvas.width/height`) is never touched, so:
+  //   - pointer→cell mapping stays correct — `eventCell` reads
+  //     `getBoundingClientRect()` and divides per axis, so any display size
+  //     works as long as the box keeps the grid's aspect ratio, which a single
+  //     shared `scale` guarantees (no squish);
+  //   - pixels stay crisp via `image-rendering: pixelated`.
+  // Scale is snapped to an integer when ≥ 1 so every cell is the same number of
+  // display pixels (no uneven 3px/4px columns); sub-1× grids fall back to a
+  // fractional scale so a tiny container still fits without overflow.
+  fitTo(availW: number, availH: number) {
+    const { gridW, gridH } = this.opts
+    if (gridW <= 0 || gridH <= 0 || availW <= 0 || availH <= 0)
+      return
+    const raw = Math.min(availW / gridW, availH / gridH)
+    const scale = raw >= 1 ? Math.floor(raw) : raw
+    this.canvas.style.width = `${gridW * scale}px`
+    this.canvas.style.height = `${gridH * scale}px`
+  }
+
   selectColor(index: number) {
     this.selectedColor = index
   }

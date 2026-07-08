@@ -23,6 +23,7 @@ import {
 } from 'vue'
 import CanvasPair from '../../components/CanvasPair.vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
+import { orientationFor } from '../../lib/aspect'
 import { clientIdKey, socketKey } from '../../lib/keys'
 
 type State = Extract<ServerMsg, { type: 'state' }>
@@ -42,6 +43,20 @@ const pairRef = useTemplateRef<InstanceType<typeof CanvasPair>>('pair')
 // Seconds remaining on the countdown (null until we know the deadline).
 const secondsLeft = ref<number | null>(null)
 const totalSeconds = computed(() => config.value.drawSeconds)
+
+// Ratio-aware layout (item 5). The drawing screen is a fixed, non-scrolling
+// shell; we flip the reference/canvas pair between a row and a column so the
+// editable canvas always claims the largest fitting area. `orientationFor`
+// compares the grid's aspect to the live viewport.
+const viewportW = ref(window.innerWidth)
+const viewportH = ref(window.innerHeight)
+function onResize() {
+  viewportW.value = window.innerWidth
+  viewportH.value = window.innerHeight
+}
+const orientation = computed(() =>
+  orientationFor(config.value.gridW, config.value.gridH, viewportW.value, viewportH.value),
+)
 
 // "Done" is a purely social signal (it never gates submission). Local optimistic
 // flag for instant feedback on click, OR'd with the server's truth so a player
@@ -174,9 +189,13 @@ function onKeyDown(e: KeyboardEvent) {
   }
 }
 
-onMounted(() => window.addEventListener('keydown', onKeyDown))
+onMounted(() => {
+  window.addEventListener('keydown', onKeyDown)
+  window.addEventListener('resize', onResize)
+})
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown)
+  window.removeEventListener('resize', onResize)
   cancelTimers()
 })
 </script>
@@ -198,18 +217,11 @@ onBeforeUnmount(() => {
         :palette="config.palette"
         :target-grid="config.targetGrid"
         variant="drawing"
+        :orientation="orientation"
+        :flagged-done="flaggedDone"
         @update="onCanvasUpdate"
+        @done="flagDone"
       />
-
-      <button
-        class="btn btn--primary drawing__done-btn"
-        :class="{ 'drawing__done-btn--flagged': flaggedDone }"
-        type="button"
-        :disabled="flaggedDone"
-        @click="flagDone"
-      >
-        {{ flaggedDone ? "Flagged as done" : "I'm done" }}
-      </button>
     </div>
   </PhaseLayout>
 </template>
@@ -229,28 +241,50 @@ onBeforeUnmount(() => {
   }
 
   &__body {
-    padding: $gap-4;
+    // ── Fixed drawing shell (item 5, Pattern A) ─────────────────────────────
+    // The drawing screen is a non-scrolling `--vh-safe` shell on every viewport:
+    // the canvas pair fills the whole shell, and the editable canvas (sized
+    // imperatively by PixelCanvas.fitTo) grows to the largest aspect-preserving
+    // box that fits — so the page never scrolls and the canvas is never left
+    // small. The "Ready" (done) control now lives inside the floating palette.
+    height: 100%;
     max-width: $page-max;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    padding: $gap-4;
+    gap: $gap-4;
+    overflow: hidden;
 
-    // On mobile the tools panel docks fixed to the bottom (up to ~45vh tall,
-    // z-index 100). CanvasPair reserves space for *its* canvas, but the Done
-    // button is a sibling below it — so reserve clearance here too, otherwise
-    // the panel overlays the button and it can't be tapped.
     @media (max-width: $bp-mobile) {
-      padding-bottom: 50vh;
+      // On phones the tools panel docks fixed to the bottom. The space it needs
+      // is reserved *inside* <CanvasPair> now (it reads the measured palette
+      // height from the shared app-layout context and pads the canvas area by
+      // exactly that much), so the shell body itself holds no reservation here —
+      // this keeps a single source of truth for "how tall is the palette".
+      max-width: none;
+      padding: 0;
+      gap: 0;
     }
   }
+}
 
-  // Keep the "done" button readable in its disabled state rather than faded
-  // out. Combined selector beats `.btn:disabled`'s opacity rule.
-  &__done-btn {
-    margin-top: $gap-4;
-  }
-  &__done-btn.drawing__done-btn--flagged:disabled {
-    opacity: 1;
-    background: $surface;
-    color: $accent;
-  }
+// Lock the shared phase shell to the safe viewport height so the body fills it
+// exactly and nothing scrolls — the drawing surface is a fixed shell on every
+// viewport. `.phase` is PhaseLayout's root, which inherits this component's
+// scope id, so a plain selector reaches it and this only affects the DRAWING
+// screen (other phases keep `min-height: 100vh`).
+.phase {
+  // `_phase.scss` sets `min-height: 100vh` on every phase shell. On mobile
+  // `100vh` is TALLER than the visible viewport whenever the browser URL bar is
+  // shown (it counts the collapsed-bar height), so leaving that min-height in
+  // place forces `.phase` past the real viewport and the window scrolls even
+  // though `height` is the safe `100dvh`. Reset both height AND min-height to
+  // the safe value so the shell is exactly the visible viewport and nothing
+  // scrolls.
+  height: var(--vh-safe);
+  min-height: var(--vh-safe);
+  max-height: var(--vh-safe);
+  overflow: hidden;
 }
 </style>
