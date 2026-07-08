@@ -5,6 +5,7 @@
 
 import type { PipelineResult } from '../lib/pipeline'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { ChevronDown, ChevronUp, Settings } from '@lucide/vue'
 import CanvasPair from '../components/CanvasPair.vue'
 import ImagePicker from '../components/ImagePicker.vue'
 import Tagline from '../components/Tagline.vue'
@@ -56,8 +57,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeyDown))
           :aria-expanded="settingsOpen"
           @click="settingsOpen = !settingsOpen"
         >
-          <span>⚙ Settings</span>
-          <span class="paint__chevron">{{ settingsOpen ? "▴" : "▾" }}</span>
+          <span class="paint__toggle-label">
+            <Settings :size="16" />
+            <span>Settings</span>
+          </span>
+          <span class="paint__chevron">
+            <ChevronUp v-if="settingsOpen" :size="16" />
+            <ChevronDown v-else :size="16" />
+          </span>
         </button>
         <div v-show="settingsOpen" class="paint__settings-body">
           <ImagePicker

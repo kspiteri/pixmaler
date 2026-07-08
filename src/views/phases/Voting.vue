@@ -185,7 +185,7 @@ function castVote(category: VoteCategory, submissionId: string) {
         type="button"
         @click="stopVoting"
       >
-        End voting →
+        End voting
       </button>
     </template>
 

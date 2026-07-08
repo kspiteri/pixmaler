@@ -162,7 +162,7 @@ onBeforeUnmount(() => {
         @click="copyLink"
       >
         Room: <span class="lobby__code">{{ roomCode }}</span>
-        <span class="lobby__copy">{{ copied ? "✓ copied!" : "copy link" }}</span>
+        <span class="lobby__copy">{{ copied ? "copied!" : "copy link" }}</span>
       </button>
     </template>
 
@@ -207,7 +207,7 @@ onBeforeUnmount(() => {
               :disabled="startDisabled"
               @click="startGame"
             >
-              {{ startDisabled ? "Start game" : "Start game →" }}
+              Start game
             </button>
             <p v-if="startDisabled" class="lobby__start-hint">
               choose an image to start

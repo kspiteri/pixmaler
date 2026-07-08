@@ -208,7 +208,7 @@ onBeforeUnmount(() => {
         :disabled="flaggedDone"
         @click="flagDone"
       >
-        {{ flaggedDone ? "Flagged as done ✓" : "I'm done →" }}
+        {{ flaggedDone ? "Flagged as done" : "I'm done" }}
       </button>
     </div>
   </PhaseLayout>

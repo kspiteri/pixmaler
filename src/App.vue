@@ -194,7 +194,7 @@ if (route === 'room' && roomCode) {
           >
         </label>
         <button class="btn btn--primary" type="submit">
-          {{ nameInput.trim() ? "Join →" : `Join as ${randomName} →` }}
+          {{ nameInput.trim() ? "Join" : `Join as ${randomName}` }}
         </button>
       </form>
     </div>

@@ -4,6 +4,7 @@
 // scale/colour controls, sample buttons, and runs the pipeline on change.
 
 import type { PipelineResult } from '../lib/pipeline'
+import { TriangleAlert } from '@lucide/vue'
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { PixelCanvas } from '../lib/canvas'
 import {
@@ -192,7 +193,8 @@ onMounted(() => {
       </div>
 
       <p v-if="showWarnNode" class="picker__warn">
-        ⚠ Grid exceeds 64px on its longest side — mobile players may struggle.
+        <TriangleAlert :size="16" />
+        <span>Grid exceeds 64px on its longest side — mobile players may struggle.</span>
       </p>
 
       <p v-if="status" class="picker__status">
@@ -325,6 +327,9 @@ onMounted(() => {
   }
 
   &__warn {
+    display: flex;
+    align-items: center;
+    gap: $gap-2;
     margin: 0;
     color: $warn;
     font-size: 0.875rem;

@@ -4,7 +4,7 @@
 // (mobile). Extracted from CanvasPair.vue so the canvas surface can be
 // reshaped without dragging the panel logic along (item 5, fixed shell).
 //
-// Desktop users can drag the panel around; the 📌 button in the handle sends
+// Desktop users can drag the panel around; the pin button in the handle sends
 // it back to its default position (below the target reference).
 //
 // Panel-owned concerns: teleport, drag, viewport-clamp, mobile dock,
@@ -14,6 +14,7 @@
 // PixelCanvas reference); we just mount them into slots here.
 
 import type { PixelCanvas } from '../lib/canvas'
+import { GripVertical, Pin, Trash2, Undo2 } from '@lucide/vue'
 import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { useDraggable } from '../lib/useDraggable'
 
@@ -142,7 +143,7 @@ function clear() {
         title="Drag to move"
         @pointerdown="startDrag"
       >
-        <span class="tools-panel__grip">⋮⋮</span>
+        <span class="tools-panel__grip"><GripVertical :size="16" /></span>
         <span class="tools-panel__label">palette</span>
         <!-- Dock button — snaps the panel back to its default position. Click
              is stopped so it doesn't also initiate a drag on pointerdown. -->
@@ -154,7 +155,7 @@ function clear() {
           @pointerdown.stop
           @click="snapToDefault"
         >
-          📌
+          <Pin :size="14" />
         </button>
         <!-- Swatch size lives up here in the handle, away from the brush slider,
              so it's not mistaken for the brush. pointerdown is stopped so
@@ -210,10 +211,7 @@ function clear() {
               aria-label="Undo"
               @click="undo"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 7v6h6" />
-                <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
-              </svg>
+              <Undo2 :size="18" />
             </button>
             <button
               v-if="variant === 'paint'"
@@ -223,11 +221,7 @@ function clear() {
               aria-label="Clear canvas"
               @click="clear"
             >
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M3 6h18" />
-                <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
-                <path d="M6 6l1 14a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-14" />
-              </svg>
+              <Trash2 :size="18" />
             </button>
           </div>
         </div>

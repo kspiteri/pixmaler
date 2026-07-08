@@ -111,7 +111,7 @@ function playAgain() {
         type="button"
         @click="playAgain"
       >
-        Play again →
+        Play again
       </button>
       <span v-else-if="results" class="results__hint">waiting for the GM…</span>
     </template>

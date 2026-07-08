@@ -87,7 +87,7 @@ function joinRoom() {
         Join room
       </button>
 
-      <a class="entry__sandbox" :href="sandboxHref">Or open the Paint sandbox →</a>
+      <a class="entry__sandbox" :href="sandboxHref">Or open the Paint sandbox</a>
     </div>
   </div>
 </template>
