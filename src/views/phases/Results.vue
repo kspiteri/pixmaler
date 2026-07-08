@@ -8,6 +8,7 @@ import type { ClientMsg, ServerMsg } from '../../lib/types'
 import { computed, inject, nextTick, onBeforeUnmount, watch } from 'vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import Tagline from '../../components/Tagline.vue'
+import { artRatio as artRatioFor } from '../../lib/aspect'
 import { PixelCanvas } from '../../lib/canvas'
 import { clientIdKey, socketKey } from '../../lib/keys'
 import { VOTE_CATEGORIES } from '../../lib/types'
@@ -34,7 +35,7 @@ const isGm = computed(() => props.gmClientId === clientId)
 // All drawings share the GM's image dimensions — one ratio drives every art
 // slot (hero + gallery) via `--art-ratio`, so non-square images keep shape.
 const artRatio = computed(() =>
-  props.results ? `${props.results.gridW} / ${props.results.gridH}` : '1 / 1',
+  props.results ? artRatioFor(props.results.gridW, props.results.gridH) : '1 / 1',
 )
 
 // Top scorers (joint on a tie) become the hero; the rest form the gallery,

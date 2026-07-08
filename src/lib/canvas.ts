@@ -1,5 +1,7 @@
 // Drawing canvas: cell rendering, swatch, square brush, mouse + touch input.
 
+import { brushMaxFor, defaultBrushFor } from './aspect'
+
 export interface CanvasOptions {
   gridW: number
   gridH: number
@@ -15,19 +17,9 @@ export interface CanvasOptions {
 
 const CELL_SIZE = 14 // px per grid cell at 1× scale — scales up on large screens
 
-// Brush sizing scales with grid resolution: a fixed 1–8 range felt tiny on a
-// high-res image where one cell is a sliver of the picture. We derive a max (and
-// a sensible default) from the longest grid side so the brush stays proportional.
-// Small grids still get a 1px brush; large ones get a usefully chunky one.
-function brushMaxFor(gridW: number, gridH: number): number {
-  // ~1 brush step per 8 cells of the longest side, clamped to a usable range.
-  return Math.max(8, Math.min(40, Math.round(Math.max(gridW, gridH) / 8)))
-}
-function defaultBrushFor(gridW: number, gridH: number): number {
-  // Default to a brush ~1/64 of the longest side (min 1) — a single cell on
-  // small grids, a few cells on big ones.
-  return Math.max(1, Math.round(Math.max(gridW, gridH) / 64))
-}
+// Brush sizing (see `./aspect` — `brushMaxFor` / `defaultBrushFor`) scales with
+// grid resolution so the brush stays proportional to the image: small grids
+// still get a 1-cell brush, large ones get a usefully chunky one.
 
 export class PixelCanvas {
   readonly canvas: HTMLCanvasElement

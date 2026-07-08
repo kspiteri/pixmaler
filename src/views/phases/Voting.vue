@@ -8,6 +8,7 @@
 import type { ClientMsg, ServerMsg, Submission, VoteCategory } from '../../lib/types'
 import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
+import { artRatio as artRatioFor } from '../../lib/aspect'
 import { PixelCanvas } from '../../lib/canvas'
 import { clientIdKey, socketKey } from '../../lib/keys'
 import { VOTE_CATEGORIES } from '../../lib/types'
@@ -41,7 +42,7 @@ const isGm = computed(() => props.gmClientId === clientId)
 // the gallery lands. Drives `--art-ratio` on the root; slots read it via
 // `aspect-ratio` so non-square images aren't squished.
 const artRatio = computed(() =>
-  props.gallery ? `${props.gallery.gridW} / ${props.gallery.gridH}` : '1 / 1',
+  props.gallery ? artRatioFor(props.gallery.gridW, props.gallery.gridH) : '1 / 1',
 )
 
 // Per-client gallery order. The drawings are shuffled locally so no two players
