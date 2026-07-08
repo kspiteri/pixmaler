@@ -91,6 +91,37 @@
     white-space: nowrap;
   }
 
+  // Dock-to-default button — small pin icon on the handle bar. Sits next to
+  // the S/M/L group; both flex-shrink so the handle stays compact.
+  &__dock {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    background: transparent;
+    border: 1px solid $border;
+    border-radius: $radius-sm;
+    color: $fg-60;
+    font-size: 0.875rem;
+    line-height: 1;
+    cursor: pointer;
+    transition:
+      background 0.15s,
+      color 0.15s,
+      border-color 0.15s;
+
+    &:hover {
+      color: $fg;
+      border-color: $fg-25;
+    }
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+
   &__body {
     padding: $gap-3;
     display: flex;
