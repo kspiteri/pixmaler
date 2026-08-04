@@ -100,13 +100,16 @@
     }
   }
 
+  // Drag handle's grip — a GripVertical Lucide icon (it used to be a `⋮⋮` text
+  // hack, hence the negative letter-spacing that lived here).
   &__grip {
     color: $fg-30;
-    letter-spacing: -0.1em;
+    display: inline-flex;
+    align-items: center;
   }
   &__label {
     // Push everything after the label (the S/M/L group) to the far end, so the
-    // handle reads `⋮⋮ palette ........ [S|M|L]`.
+    // handle reads `⋮ palette ........ [S|M|L]`.
     margin-right: auto;
     white-space: nowrap;
   }

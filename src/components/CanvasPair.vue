@@ -71,6 +71,12 @@ const playerRef = shallowRef<PixelCanvas | null>(null)
 const swatchEl = shallowRef<HTMLElement | null>(null)
 const brushEl = shallowRef<HTMLElement | null>(null)
 
+// Mirrors `player.canUndo()` for the panel's Undo button. `PixelCanvas` is
+// imperative, so this is refreshed from `onUpdate` — which fires on every
+// stroke AND from `undo()` itself, so the flag flips back off when the stack
+// empties.
+const canUndo = ref(false)
+
 // Anchor for the panel's default position — targetWrap's DOM element.
 const anchorEl = ref<HTMLElement | null>(null)
 
@@ -136,7 +142,10 @@ onMounted(() => {
       target!.showMarker(cell)
       swatch.highlight(cell ? props.targetGrid[cell.y * props.gridW + cell.x] : null)
     },
-    onUpdate: grid => emit('update', grid),
+    onUpdate: (grid) => {
+      canUndo.value = player.canUndo()
+      emit('update', grid)
+    },
   })
   player.canvas.classList.add('canvas-pair__draw-canvas')
   player.canvas.style.border = '1px solid rgba(255,255,255,0.1)'
@@ -220,6 +229,7 @@ onBeforeUnmount(() => {
     :variant="variant"
     :anchor="anchorEl"
     :flagged-done="flaggedDone"
+    :can-undo="canUndo"
     :target-el="targetEl"
     :target-home="targetHomeEl"
     @done="emit('done')"

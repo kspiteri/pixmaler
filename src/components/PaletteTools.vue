@@ -35,6 +35,10 @@ interface Props {
   // DRAWING only — whether this player has flagged themselves done. When true
   // the Done button reads as flagged and is disabled.
   flaggedDone?: boolean
+  // Whether the canvas has anything on its undo stack. Parent-supplied because
+  // `PixelCanvas.canUndo()` is imperative — the parent refreshes it from the
+  // same `onUpdate` callback that painting and undo both fire.
+  canUndo?: boolean
   // DRAWING only — the target reference <canvas> and its in-flow home slot.
   // On mobile the panel docks to the bottom and would cover the drawing canvas,
   // so we relocate the reference into the docked bar (next to the tools) and
@@ -220,6 +224,11 @@ function undo() {
   props.player?.undo()
 }
 
+// Tooltip advertises the keyboard shortcut (handled by Paint.vue / Drawing.vue),
+// spelled the way the platform spells it. Tooltip only — the aria-label stays a
+// plain "Undo" so screen readers don't announce a keystroke.
+const undoTitle = `Undo (${/mac|iphone|ipad|ipod/i.test(navigator.platform || navigator.userAgent) ? '⌘Z' : 'Ctrl+Z'})`
+
 function clear() {
   const p = props.player
   if (!p)
@@ -318,8 +327,9 @@ function clear() {
               <button
                 class="btn btn--plain tools-panel__btn"
                 type="button"
-                title="Undo"
+                :title="undoTitle"
                 aria-label="Undo"
+                :disabled="!canUndo"
                 @click="undo"
               >
                 <Undo2 :size="18" />

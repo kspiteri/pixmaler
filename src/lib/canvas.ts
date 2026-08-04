@@ -90,9 +90,15 @@ export class PixelCanvas {
     return [...this.grid]
   }
 
+  // Replace the whole grid. Notifies via `onUpdate`, exactly like a stroke or an
+  // `undo()` does: its only callers are the destructive Clear actions, and both
+  // the wire-side state (DRAWING's auto-submit) and any UI mirroring `canUndo()`
+  // have to catch up the same way. Without the notify, clearing mid-round left
+  // the server holding the pre-clear drawing until the next stroke.
   setGrid(grid: number[]) {
     this.grid = [...grid]
     this.render()
+    this.opts.onUpdate?.(this.getGrid())
   }
 
   // Fit the canvas's DISPLAY size (CSS width/height) into the given available
