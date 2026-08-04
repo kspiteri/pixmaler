@@ -9,6 +9,14 @@ export interface PipelineResult {
   targetGrid: number[] // palette indices, length gridW*gridH
 }
 
+// What the picker was pointed at, emitted alongside the result. Lets a caller
+// caption the current selection (see Paint's collapsed settings summary).
+export interface PickerMeta {
+  /** Human-readable source: a sample's label, or the uploaded file's name. */
+  source: string
+  colours: number
+}
+
 // Classic staples always appended to the palette.
 const CLASSICS: [number, number, number][] = [
   [0, 0, 0], // black

@@ -3,7 +3,7 @@
 // `showDrawSeconds`) and the /paint sandbox (without). Owns the file input,
 // scale/colour controls, sample buttons, and runs the pipeline on change.
 
-import type { PipelineResult } from '../lib/pipeline'
+import type { PickerMeta, PipelineResult } from '../lib/pipeline'
 import { TriangleAlert } from '@lucide/vue'
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { PixelCanvas } from '../lib/canvas'
@@ -15,18 +15,22 @@ import {
   processImage,
 } from '../lib/pipeline'
 
+// The bundled sample images (`public/assets/<name>.png`). Add a sample by
+// dropping the png in and appending an entry to `samples` below.
+type SampleName = 'monalisa' | 'scream' | 'pearls'
+
 interface Props {
   showMobileWarn?: boolean
   showDrawSeconds?: boolean
   showPreview?: boolean
   // Auto-load a sample on first render. Useful for the sandbox where an image
   // is required.
-  autoLoadSample?: 'monalisa' | 'scream' | 'pearls'
+  autoLoadSample?: SampleName
 }
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
-  result: [result: PipelineResult]
+  result: [result: PipelineResult, meta: PickerMeta]
   // Fires when input changes but before processing finishes — caller can use
   // this to disable a Start button etc.
   processing: []
@@ -47,8 +51,26 @@ let cachedFile: File | null = null
 let runId = 0
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
-const samples = ['monalisa', 'scream', 'pearls'] as const
+// Labels stay short — the caption sits under the thumbnail on one line, and a
+// long title would stretch the button far wider than its image.
+const samples: { name: SampleName, label: string }[] = [
+  { name: 'monalisa', label: 'Mona Lisa' },
+  { name: 'scream', label: 'The Scream' },
+  { name: 'pearls', label: 'Pearl Earring' },
+]
+
+// Which sample is currently loaded — drives the selected state. `null` once an
+// uploaded file takes over, so the swatches stop claiming credit for it.
+const selected = ref<SampleName | null>(null)
+
+// Label for whatever is loaded — the sample's title, or the uploaded filename.
+const sourceLabel = ref('')
+
 const showWarnNode = computed(() => props.showMobileWarn && showWarn.value)
+
+function sampleUrl(name: SampleName) {
+  return `${import.meta.env.BASE_URL}assets/${name}.png`
+}
 
 async function reprocess() {
   if (!cachedFile)
@@ -85,7 +107,7 @@ async function reprocess() {
       previewSlot.value.replaceChildren(label, pc.canvas)
     }
 
-    emit('result', result)
+    emit('result', result, { source: sourceLabel.value, colours: colorCount.value })
   }
   catch (err) {
     if (myRun !== runId)
@@ -107,17 +129,20 @@ function onFileChange() {
   if (!file)
     return
   cachedFile = file
+  selected.value = null
+  sourceLabel.value = file.name
   reprocess()
 }
 
-async function loadSample(name: typeof samples[number]) {
+async function loadSample(name: SampleName) {
   try {
-    const url = `${import.meta.env.BASE_URL}assets/${name}.png`
-    const res = await fetch(url)
+    const res = await fetch(sampleUrl(name))
     if (!res.ok)
       throw new Error(`${res.status} ${res.statusText}`)
     const blob = await res.blob()
     cachedFile = new File([blob], `${name}.png`, { type: blob.type || 'image/png' })
+    selected.value = name
+    sourceLabel.value = samples.find(s => s.name === name)?.label ?? name
     if (fileInput.value)
       fileInput.value.value = ''
     reprocess()
@@ -181,15 +206,20 @@ onMounted(() => {
 
       <div class="picker__samples">
         <span class="picker__samples-label">Or try a sample:</span>
-        <button
-          v-for="name in samples"
-          :key="name"
-          class="picker__sample"
-          type="button"
-          @click="loadSample(name)"
-        >
-          {{ name }}
-        </button>
+        <ul class="picker__sample-list">
+          <li v-for="s in samples" :key="s.name">
+            <button
+              class="picker__sample"
+              :class="{ 'is-selected': selected === s.name }"
+              type="button"
+              :aria-pressed="selected === s.name"
+              @click="loadSample(s.name)"
+            >
+              <img class="picker__sample-thumb" :src="sampleUrl(s.name)" :alt="s.label">
+              <span class="picker__sample-name">{{ s.label }}</span>
+            </button>
+          </li>
+        </ul>
       </div>
 
       <p v-if="showWarnNode" class="picker__warn">
@@ -205,153 +235,3 @@ onMounted(() => {
     </div>
   </div>
 </template>
-
-<style scoped lang="scss">
-@use '../styles/tokens' as *;
-
-.picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: $gap-5;
-
-  &__card {
-    flex: 1 1 320px;
-    background: $surface;
-    border: 1px solid $border-soft;
-    border-radius: $radius-lg;
-    padding: $gap-4;
-    display: flex;
-    flex-direction: column;
-    gap: $gap-4;
-  }
-
-  &__setting {
-    display: flex;
-    align-items: center;
-    gap: $gap-4;
-
-    &--inline {
-      gap: $gap-2;
-    }
-  }
-  &__setting-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: $gap-4;
-    align-items: center;
-  }
-  &__setting-label {
-    color: $fg-60;
-    font-size: 0.875rem;
-    flex-shrink: 0;
-  }
-
-  &__scale {
-    flex: 1;
-    accent-color: $primary;
-  }
-  &__scale-val {
-    font-family: $font-display;
-    font-weight: 700;
-    width: 1.5rem;
-    text-align: center;
-  }
-
-  &__select,
-  &__time {
-    padding: 0.5rem 0.75rem;
-    border-radius: $radius;
-    background: $bg;
-    border: 1px solid $border;
-    color: $fg;
-    font-family: $font-body;
-    font-size: 0.875rem;
-
-    &:focus {
-      outline: none;
-      border-color: $primary;
-    }
-  }
-  &__time {
-    width: 5rem;
-    text-align: center;
-  }
-
-  &__upload-row {
-    display: flex;
-    align-items: center;
-    gap: $gap-3;
-  }
-  &__browse {
-    padding: 0.375rem 0.75rem;
-    border-radius: $radius-sm;
-    background: $bg;
-    border: 1px solid $border;
-    color: $fg-60;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition:
-      color 0.15s,
-      border-color 0.15s;
-
-    &:hover {
-      color: $fg;
-      border-color: $fg-25;
-    }
-  }
-
-  &__samples {
-    display: flex;
-    gap: $gap-2;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-  &__samples-label {
-    color: $fg-40;
-    font-size: 0.875rem;
-  }
-  &__sample {
-    padding: 0.375rem 0.75rem;
-    border-radius: $radius-sm;
-    background: transparent;
-    border: 1px solid $border;
-    color: $fg-50;
-    font-size: 0.875rem;
-    cursor: pointer;
-    transition: all 0.15s;
-
-    &:hover {
-      color: $fg;
-      border-color: $fg-25;
-    }
-  }
-
-  &__warn {
-    display: flex;
-    align-items: center;
-    gap: $gap-2;
-    margin: 0;
-    color: $warn;
-    font-size: 0.875rem;
-  }
-  &__status {
-    margin: 0;
-    color: $muted;
-    font-size: 0.875rem;
-  }
-
-  &__preview {
-    :deep(p) {
-      margin: 0 0 $gap-2;
-      color: $fg-40;
-      font-size: 0.75rem;
-    }
-    :deep(canvas) {
-      max-width: 160px;
-      height: auto;
-      border-radius: $radius-sm;
-      border: 1px solid $border;
-    }
-  }
-}
-</style>

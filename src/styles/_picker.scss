@@ -1,0 +1,201 @@
+@use 'tokens' as *;
+
+// ImagePicker's chrome — two cards (settings + image) shared by the Lobby's GM
+// controls and the /paint sandbox. Static, so it lives here rather than in a
+// scoped block; that also lets the preview target its imperatively-appended
+// canvas with plain descendant selectors instead of `:deep()`.
+
+.picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $gap-5;
+
+  &__card {
+    flex: 1 1 320px;
+    background: $surface;
+    border: 1px solid $border-soft;
+    border-radius: $radius-lg;
+    padding: $gap-4;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-4;
+  }
+
+  // ── Settings card ─────────────────────────────────────────────────────────
+  &__setting {
+    display: flex;
+    align-items: center;
+    gap: $gap-4;
+
+    &--inline {
+      gap: $gap-2;
+    }
+  }
+  &__setting-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $gap-4;
+    align-items: center;
+  }
+  &__setting-label {
+    color: $fg-60;
+    font-size: $fs-sm;
+    flex-shrink: 0;
+  }
+
+  &__scale {
+    flex: 1;
+    accent-color: $primary;
+  }
+  &__scale-val {
+    font-family: $font-display;
+    font-weight: $fw-bold;
+    width: 1.5rem;
+    text-align: center;
+  }
+
+  // Compact dark inputs — the `.input` primitive at UI-chrome scale.
+  &__select,
+  &__time {
+    padding: $gap-2 $gap-3;
+    border-radius: $radius;
+    background: $bg;
+    border: 1px solid $border;
+    color: $fg;
+    font-family: $font-body;
+    font-size: $fs-sm;
+
+    &:focus {
+      outline: none;
+      border-color: $primary;
+    }
+  }
+  &__time {
+    width: 5rem;
+    text-align: center;
+  }
+
+  // ── Image card ────────────────────────────────────────────────────────────
+  &__upload-row {
+    display: flex;
+    align-items: center;
+    gap: $gap-3;
+  }
+
+  // Outlined tiles — Browse… and each sample thumbnail. Shared hover/focus so
+  // the two read as the same class of control.
+  &__browse,
+  &__sample {
+    border: 1px solid $border;
+    color: $fg-60;
+    font-family: $font-body;
+    cursor: pointer;
+    transition:
+      color 0.15s,
+      border-color 0.15s,
+      background-color 0.15s;
+
+    &:hover {
+      color: $fg;
+      border-color: $fg-25;
+    }
+    &:focus-visible {
+      outline: 2px solid $accent;
+      outline-offset: 2px;
+    }
+  }
+
+  &__browse {
+    padding: 0.375rem $gap-3;
+    border-radius: $radius-sm;
+    background: $bg;
+    font-size: $fs-sm;
+  }
+
+  &__samples {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-2;
+  }
+  &__samples-label {
+    color: $fg-60;
+    font-size: $fs-sm;
+  }
+  &__sample-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    // Wrapping ribbon of aspect-true thumbnails: each button hugs its image, so
+    // portraits sit narrow and landscapes wide (the masonry-ish look). Items
+    // share a fixed thumb height, which keeps every row's baseline aligned.
+    display: flex;
+    flex-wrap: wrap;
+    gap: $gap-2;
+    align-items: flex-end;
+  }
+  &__sample {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $gap-1;
+    padding: $gap-1;
+    border-radius: $radius-sm;
+    background: transparent;
+    font-size: $fs-2xs;
+
+    // Selected sample wears the accent — matches the settings toggle's open
+    // state, and is the only "which image am I painting?" cue once the panel
+    // collapses (see the summary on the toggle bar).
+    &.is-selected {
+      color: $accent;
+      border-color: $accent;
+      background: rgba($accent, 0.08);
+    }
+  }
+  // Whole image, never cropped: fixed height, width follows the source aspect.
+  &__sample-thumb {
+    display: block;
+    height: 4rem;
+    width: auto;
+    max-width: 7rem;
+    object-fit: contain;
+    border-radius: calc($radius-sm / 2);
+  }
+  &__sample-name {
+    white-space: nowrap;
+    line-height: $lh-snug;
+  }
+
+  // ── Messages + preview ────────────────────────────────────────────────────
+  &__warn {
+    display: flex;
+    align-items: center;
+    gap: $gap-2;
+    margin: 0;
+    color: $warn;
+    font-size: $fs-sm;
+  }
+  &__status {
+    margin: 0;
+    color: $muted;
+    font-size: $fs-sm;
+  }
+
+  // Contents are appended imperatively by `reprocess()` (a <p> caption + the
+  // PixelCanvas <canvas>), so they carry no scope attribute — plain descendant
+  // selectors, no `:deep()` needed now this lives outside the component.
+  &__preview {
+    p {
+      margin: 0 0 $gap-2;
+      color: $fg-60;
+      font-size: $fs-xs;
+    }
+    canvas {
+      max-width: 160px;
+      height: auto;
+      border-radius: $radius-sm;
+      border: 1px solid $border;
+    }
+  }
+}
