@@ -104,10 +104,3 @@ $col-mid: 600px;
 
 // Breakpoints
 $bp-mobile: 640px;
-
-// ── Back-compat aliases ──────────────────────────────────────────────────────
-// Old token names still referenced by not-yet-restyled screens (Lobby, Drawing,
-// Voting, Results, Paint, components). Remove each as its screen is redone.
-$font-mono: $font-body;
-$rule: $border;
-$rule-soft: $border-soft;

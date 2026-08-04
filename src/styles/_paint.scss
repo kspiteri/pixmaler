@@ -21,8 +21,8 @@
   &__back {
     display: inline-block;
     margin-bottom: $gap-2;
-    color: $fg-40;
-    font-size: 0.8125rem;
+    color: $fg-60;
+    font-size: $fs-sm;
     text-decoration: none;
     transition: color 0.15s;
 
@@ -34,15 +34,15 @@
   &__title {
     margin: 0;
     font-family: $font-display;
-    font-weight: 700;
-    font-size: 1.25rem;
-    line-height: 1.1;
+    font-weight: $fw-bold;
+    font-size: $fs-h2-fluid;
+    line-height: $lh-tight;
   }
 
   // The <Tagline> under the title (component is margin-less; spacing here).
   &__sub {
     margin: $gap-1 0 $gap-3;
-    font-size: 0.8125rem;
+    font-size: $fs-xs;
   }
 
   // Fills the shell below the header so the canvas pair (a flex:1 child) claims
@@ -82,8 +82,8 @@
     border: 1px solid $border;
     color: $fg-60;
     font-family: $font-body;
-    font-weight: 600;
-    font-size: 0.875rem;
+    font-weight: $fw-semibold;
+    font-size: $fs-sm;
     cursor: pointer;
     transition:
       color 0.15s,
