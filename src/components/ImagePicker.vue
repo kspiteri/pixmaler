@@ -4,12 +4,13 @@
 // scale/colour controls, sample buttons, and runs the pipeline on change.
 
 import type { PickerMeta, PipelineResult } from '../lib/pipeline'
-import { TriangleAlert } from '@lucide/vue'
+import { Loader2, TriangleAlert } from '@lucide/vue'
 import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { PixelCanvas } from '../lib/canvas'
 import {
   DEFAULT_COLOR_COUNT,
   DEFAULT_SCALE,
+  gridSizeFor,
   isMobileWarning,
 
   processImage,
@@ -39,8 +40,21 @@ const emit = defineEmits<{
 const scale = ref(DEFAULT_SCALE)
 const colorCount = ref(DEFAULT_COLOR_COUNT)
 const drawSecs = ref(120)
+// `status` carries user-facing *messages* (errors) only; in-flight processing is
+// `busy`, so the spinner never has to sniff the message string.
 const status = ref('')
+const busy = ref(false)
 const showWarn = ref(false)
+
+// Colour-count options — the number is what the player actually cares about, so
+// the segmented control shows it and the friendly wording rides along as the
+// accessible name.
+const COLOUR_OPTIONS: { value: number, label: string }[] = [
+  { value: 8, label: 'Very few colours' },
+  { value: 16, label: 'A normal number of colours' },
+  { value: 24, label: 'A bit more colours' },
+  { value: 32, label: 'A lot more colours' },
+]
 
 defineExpose({ getDrawSeconds: () => drawSecs.value })
 
@@ -68,6 +82,19 @@ const sourceLabel = ref('')
 
 const showWarnNode = computed(() => props.showMobileWarn && showWarn.value)
 
+// Normalised source dimensions of the loaded image, kept from the last result.
+// They don't depend on scale, so the grid readout below can be recomputed live
+// while the slider moves — no reprocessing, no lag, and no drift from what the
+// pipeline will actually produce (both call `gridSizeFor`).
+const sourceDims = ref<{ w: number, h: number } | null>(null)
+
+const gridPreview = computed(() => {
+  if (!sourceDims.value)
+    return ''
+  const { gridW, gridH } = gridSizeFor(sourceDims.value.w, sourceDims.value.h, scale.value)
+  return `${gridW}×${gridH}`
+})
+
 function sampleUrl(name: SampleName) {
   return `${import.meta.env.BASE_URL}assets/${name}.png`
 }
@@ -76,9 +103,11 @@ async function reprocess() {
   if (!cachedFile)
     return
   const myRun = ++runId
-  status.value = 'Processing…'
-  if (props.showPreview && previewSlot.value)
-    previewSlot.value.replaceChildren()
+  busy.value = true
+  status.value = ''
+  // The previous preview deliberately stays on screen (dimmed by `is-busy`)
+  // rather than being cleared — blanking it flashed an empty box on every
+  // slider nudge, which read as slower than it was.
   showWarn.value = false
   emit('processing')
 
@@ -87,7 +116,8 @@ async function reprocess() {
     if (myRun !== runId)
       return // stale
 
-    status.value = ''
+    busy.value = false
+    sourceDims.value = { w: result.sourceW, h: result.sourceH }
     if (props.showMobileWarn) {
       showWarn.value = isMobileWarning(Math.max(result.gridW, result.gridH))
     }
@@ -112,6 +142,7 @@ async function reprocess() {
   catch (err) {
     if (myRun !== runId)
       return
+    busy.value = false
     status.value = `Error: ${err}`
   }
 }
@@ -169,19 +200,43 @@ onMounted(() => {
           class="picker__scale"
           type="range" min="1" max="50"
         >
-        <span class="picker__scale-val">{{ scale }}</span>
+        <!-- Value + the grid it produces. The dims are computed, not measured,
+             so they track the slider instantly instead of waiting on a run. -->
+        <span class="picker__scale-out">
+          <span class="picker__scale-val">{{ scale }}</span>
+          <span v-if="gridPreview" class="picker__scale-grid">→ {{ gridPreview }}</span>
+          <!-- Busy indicator lives here, in the eye-line of the control being
+               dragged, rather than at the bottom of the card. Always rendered so
+               it reserves its space — appearing/disappearing would nudge the
+               slider's width and make the thumb twitch mid-drag. -->
+          <Loader2
+            class="picker__spinner"
+            :class="{ 'is-on': busy }"
+            :size="14"
+            aria-hidden="true"
+          />
+          <span v-if="busy" class="picker__sr">Processing…</span>
+        </span>
       </label>
 
       <div class="picker__setting-row">
-        <label class="picker__setting picker__setting--inline">
-          <span class="picker__setting-label">Colours</span>
-          <select v-model.number="colorCount" class="picker__select">
-            <option :value="8">Very few</option>
-            <option :value="16">Normal</option>
-            <option :value="24">A bit more</option>
-            <option :value="32">A lot more</option>
-          </select>
-        </label>
+        <div class="picker__setting picker__setting--inline">
+          <span id="picker-colours" class="picker__setting-label">Colours</span>
+          <div class="segmented segmented--wide" role="group" aria-labelledby="picker-colours">
+            <button
+              v-for="opt in COLOUR_OPTIONS"
+              :key="opt.value"
+              class="segmented__item"
+              :class="{ 'segmented__item--active': colorCount === opt.value }"
+              type="button"
+              :aria-label="opt.label"
+              :aria-pressed="colorCount === opt.value"
+              @click="colorCount = opt.value"
+            >
+              {{ opt.value }}
+            </button>
+          </div>
+        </div>
 
         <label v-if="showDrawSeconds" class="picker__setting picker__setting--inline">
           <span class="picker__setting-label">Draw seconds</span>
@@ -231,7 +286,7 @@ onMounted(() => {
         {{ status }}
       </p>
 
-      <div v-if="showPreview" ref="previewSlot" class="picker__preview" />
+      <div v-if="showPreview" ref="previewSlot" class="picker__preview" :class="{ 'is-busy': busy }" />
     </div>
   </div>
 </template>

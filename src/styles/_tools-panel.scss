@@ -198,39 +198,6 @@
     gap: $gap-2;
   }
 
-  &__sizes {
-    display: flex;
-    border: 1px solid $border;
-    border-radius: $radius-sm;
-    overflow: hidden;
-    flex-shrink: 0;
-  }
-  &__size {
-    width: 1.75rem;
-    padding: 0.375rem 0;
-    background: transparent;
-    border: none;
-    color: $fg-40;
-    font-family: $font-display;
-    font-weight: 700;
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition:
-      background 0.15s,
-      color 0.15s;
-
-    & + & {
-      border-left: 1px solid $border;
-    }
-    &:hover {
-      color: $fg;
-    }
-    &--active {
-      background: $primary;
-      color: $fg;
-    }
-  }
-
   &__actions {
     display: flex;
     gap: $gap-2;

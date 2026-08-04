@@ -7,6 +7,11 @@ export interface PipelineResult {
   gridH: number
   palette: string[] // hex colours
   targetGrid: number[] // palette indices, length gridW*gridH
+  // The normalised source dimensions the grid was derived from (≤ SOURCE_MAX_SIDE
+  // on the longest side). Scale-independent, so a caller can feed them back into
+  // `gridSizeFor` to preview the grid for *any* scale without reprocessing.
+  sourceW: number
+  sourceH: number
 }
 
 // What the picker was pointed at, emitted alongside the result. Lets a caller
@@ -193,6 +198,21 @@ function mergeNearDuplicates(
 
 // ── Main pipeline ─────────────────────────────────────────────────────────────
 
+// Grid the pipeline will produce for a given (normalised) source at a given
+// scale — pixelit's "small grid" size. Exported so the UI can show the resulting
+// dimensions live while the scale slider moves, without reprocessing and without
+// re-deriving the math (`processImage` calls this too, so the two can't drift).
+export function gridSizeFor(
+  sourceW: number,
+  sourceH: number,
+  scale: number,
+): { gridW: number, gridH: number } {
+  return {
+    gridW: Math.max(1, Math.round(sourceW * scale * 0.01)),
+    gridH: Math.max(1, Math.round(sourceH * scale * 0.01)),
+  }
+}
+
 export async function processImage(
   file: File,
   scale: number, // pixelit scale, 0-50; clamped if out of range
@@ -217,9 +237,12 @@ export async function processImage(
   // ── Step 1: derive palette from a downscaled copy at pixelit's small-grid size.
   // Pixelit's small-grid is natW × scale*0.01. Source is normalised to ≤768px
   // (see SOURCE_MAX_SIDE) so pixelit's >900 halving branch never triggers — the
-  // small-grid math is just scale × 0.01 of the source dimensions.
-  const smallW = Math.max(1, Math.round(sourceCanvas.width * scale * 0.01))
-  const smallH = Math.max(1, Math.round(sourceCanvas.height * scale * 0.01))
+  // small-grid math is just scale × 0.01 of the source dimensions (`gridSizeFor`).
+  const { gridW: smallW, gridH: smallH } = gridSizeFor(
+    sourceCanvas.width,
+    sourceCanvas.height,
+    scale,
+  )
 
   const sampleCanvas = document.createElement('canvas')
   sampleCanvas.width = smallW
@@ -286,7 +309,7 @@ export async function processImage(
   const remappedTargetGrid = targetGrid.map(idx => indexMap[idx])
 
   const palette = sortedPalette.map(([r, g, b]) => rgbToHex(r, g, b))
-  return { gridW, gridH, palette, targetGrid: remappedTargetGrid }
+  return { gridW, gridH, palette, targetGrid: remappedTargetGrid, sourceW, sourceH }
 }
 
 // ── Helpers for callers ───────────────────────────────────────────────────────

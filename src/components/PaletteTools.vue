@@ -265,7 +265,7 @@ function clear() {
              so it's not mistaken for the brush. pointerdown is stopped so
              clicking a size button doesn't start a panel drag. -->
         <div
-          class="tools-panel__sizes"
+          class="segmented"
           role="group"
           aria-label="Swatch size"
           @pointerdown.stop
@@ -273,8 +273,8 @@ function clear() {
           <button
             v-for="s in SWATCH_SIZES"
             :key="s.id"
-            class="tools-panel__size"
-            :class="{ 'tools-panel__size--active': swatchSize === s.id }"
+            class="segmented__item"
+            :class="{ 'segmented__item--active': swatchSize === s.id }"
             type="button"
             :aria-pressed="swatchSize === s.id"
             @click="swatchSize = s.id"
@@ -288,12 +288,12 @@ function clear() {
            header strip instead (same reason: keep it off the brush row). -->
       <div v-else class="tools-panel__mobile-head">
         <span class="tools-panel__label">palette</span>
-        <div class="tools-panel__sizes" role="group" aria-label="Swatch size">
+        <div class="segmented" role="group" aria-label="Swatch size">
           <button
             v-for="s in SWATCH_SIZES"
             :key="s.id"
-            class="tools-panel__size"
-            :class="{ 'tools-panel__size--active': swatchSize === s.id }"
+            class="segmented__item"
+            :class="{ 'segmented__item--active': swatchSize === s.id }"
             type="button"
             :aria-pressed="swatchSize === s.id"
             @click="swatchSize = s.id"

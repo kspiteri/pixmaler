@@ -47,15 +47,55 @@
     flex: 1;
     accent-color: $primary;
   }
+  // Readout: "12 → 40×60" plus the busy spinner. Right-aligned in a reserved
+  // slot so digit-count changes eat their own space instead of resizing the
+  // slider next to it.
+  &__scale-out {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: $gap-1;
+    flex-shrink: 0;
+    min-width: 7rem;
+  }
   &__scale-val {
-    font-family: $font-display;
+    // Space Grotesk, not the display face — Fredoka's rounded numerals are hard
+    // to read at small sizes, and this is a value to be read precisely.
+    font-family: $font-alert;
     font-weight: $fw-bold;
     width: 1.5rem;
     text-align: center;
   }
+  &__scale-grid {
+    color: $fg-60;
+    font-size: $fs-xs;
+    white-space: nowrap;
+  }
+  &__spinner {
+    color: $accent;
+    flex-shrink: 0;
+    opacity: 0; // space stays reserved; only `is-on` shows it
+    transition: opacity 0.15s;
 
-  // Compact dark inputs — the `.input` primitive at UI-chrome scale.
-  &__select,
+    &.is-on {
+      opacity: 1;
+      animation: picker-spin 0.8s linear infinite;
+    }
+  }
+  // Screen-reader-only text — pairs with the aria-hidden spinner icon.
+  &__sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  // Compact dark input — the `.input` primitive at UI-chrome scale. (The colour
+  // count used to be a <select> here; it's a `.segmented` group now.)
   &__time {
     padding: $gap-2 $gap-3;
     border-radius: $radius;
@@ -64,15 +104,13 @@
     color: $fg;
     font-family: $font-body;
     font-size: $fs-sm;
+    width: 5rem;
+    text-align: center;
 
     &:focus {
       outline: none;
       border-color: $primary;
     }
-  }
-  &__time {
-    width: 5rem;
-    text-align: center;
   }
 
   // ── Image card ────────────────────────────────────────────────────────────
@@ -186,6 +224,14 @@
   // PixelCanvas <canvas>), so they carry no scope attribute — plain descendant
   // selectors, no `:deep()` needed now this lives outside the component.
   &__preview {
+    transition: opacity 0.15s;
+
+    // Re-processing: the previous target stays visible but dims, so the card
+    // keeps its height and the change reads as a refresh, not a reload.
+    &.is-busy {
+      opacity: 0.4;
+    }
+
     p {
       margin: 0 0 $gap-2;
       color: $fg-60;
@@ -197,5 +243,29 @@
       border-radius: $radius-sm;
       border: 1px solid $border;
     }
+  }
+}
+
+@keyframes picker-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+// Reduced motion: swap the spin for a gentle fade so there's still a "working"
+// signal without rotation.
+@media (prefers-reduced-motion: reduce) {
+  .picker__spinner.is-on {
+    animation: picker-pulse 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes picker-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
   }
 }
