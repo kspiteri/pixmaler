@@ -3,7 +3,7 @@
 // canvas pair (target + editable + tools) on the right. Pair re-mounts each
 // time the picker emits a new result, so PixelCanvas instances tear down cleanly.
 
-import type { PipelineResult } from '../lib/pipeline'
+import type { PickerMeta, PipelineResult } from '../lib/pipeline'
 import { ChevronDown, ChevronUp, Settings } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import CanvasPair from '../components/CanvasPair.vue'
@@ -12,6 +12,7 @@ import Tagline from '../components/Tagline.vue'
 import { orientationFor } from '../lib/aspect'
 
 const result = ref<PipelineResult | null>(null)
+const meta = ref<PickerMeta | null>(null)
 const pairRef = ref<InstanceType<typeof CanvasPair> | null>(null)
 
 // Settings start open; collapse automatically once the first image is loaded
@@ -38,13 +39,25 @@ const orientation = computed(() =>
     : 'row',
 )
 
-function onResult(next: PipelineResult) {
+function onResult(next: PipelineResult, nextMeta: PickerMeta) {
   result.value = next
+  meta.value = nextMeta
   if (!collapsedOnce) {
     collapsedOnce = true
     settingsOpen.value = false
   }
 }
+
+// Collapsed toggle caption — "Mona Lisa · 32×48 · 16 colours" — so the player
+// can see what they're painting without re-opening the panel.
+const summary = computed(() => {
+  if (!result.value || !meta.value)
+    return ''
+  const { gridW, gridH } = result.value
+  return [meta.value.source, `${gridW}×${gridH}`, `${meta.value.colours} colours`]
+    .filter(Boolean)
+    .join(' · ')
+})
 
 // Cmd/Ctrl+Z → undo on the active canvas.
 function onKeyDown(e: KeyboardEvent) {
@@ -83,6 +96,9 @@ onBeforeUnmount(() => {
           <span class="paint__toggle-label">
             <Settings :size="16" />
             <span>Settings</span>
+            <span v-if="!settingsOpen && summary" class="paint__toggle-summary">
+              · {{ summary }}
+            </span>
           </span>
           <span class="paint__chevron">
             <ChevronUp v-if="settingsOpen" :size="16" />

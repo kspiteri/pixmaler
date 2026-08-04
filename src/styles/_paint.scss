@@ -93,11 +93,37 @@
       color: $fg;
       border-color: $fg-25;
     }
+
+    // Open state wears the lime accent — the one persistent bit of brand colour
+    // on this page, and it reads as "this panel is the thing you're editing".
+    &[aria-expanded='true'] {
+      color: $accent;
+      border-color: rgba($accent, 0.4);
+
+      .paint__chevron {
+        color: $accent;
+      }
+    }
+
+    &:focus-visible {
+      outline: 2px solid $accent;
+      outline-offset: 2px;
+    }
   }
   &__toggle-label {
     display: inline-flex;
     align-items: center;
     gap: $gap-2;
+  }
+  // Collapsed-state caption ("· Mona Lisa · 32×48 · 16 colours"). Quieter than
+  // the label and allowed to truncate on narrow screens.
+  &__toggle-summary {
+    color: $fg-60;
+    font-weight: $fw-regular;
+    font-size: $fs-xs;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   &__chevron {
     display: inline-flex;
