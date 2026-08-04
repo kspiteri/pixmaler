@@ -231,6 +231,12 @@
     bottom: 0;
     left: 0;
     width: 100%;
+    // Slide up from below the fold on dock. `top: auto`/`width` aren't
+    // interpolatable against the floating state, so each state announces itself
+    // with a short entrance instead of transitioning between them. Safe to
+    // animate `transform` here — only the FLOATING panel carries an inline
+    // transform (the drag position), which a keyframe would override.
+    animation: tools-panel-dock-in 0.22s ease-out;
     // Hard cap the whole docked panel to a known height. The DRAWING shell
     // reserves this same `50vh` as its `--palette-dock-h` fallback, so even if
     // the JS height measurement never lands the canvas can never slide behind
@@ -254,5 +260,36 @@
       align-items: flex-start;
       gap: $gap-3;
     }
+  }
+
+  // Undock: fade the floating panel in at its drag position. Opacity ONLY — the
+  // position is an inline `transform`, and animating transform here would beat
+  // the inline style and snap the panel to the origin mid-animation.
+  &:not(&--docked) {
+    animation: tools-panel-float-in 0.18s ease-out;
+  }
+}
+
+@keyframes tools-panel-dock-in {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+
+@keyframes tools-panel-float-in {
+  from {
+    opacity: 0;
+  }
+}
+
+// The dock flip is a layout change, not decoration — with reduced motion the
+// panel simply appears in its new state. Selectors mirror the ones above rather
+// than being written short: a bare `.tools-panel` (0,1,0) would lose to
+// `.tools-panel:not(.tools-panel--docked)` (0,2,0) no matter the source order.
+@media (prefers-reduced-motion: reduce) {
+  .tools-panel:not(.tools-panel--docked),
+  .tools-panel--docked {
+    animation: none;
   }
 }
