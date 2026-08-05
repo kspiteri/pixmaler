@@ -124,6 +124,12 @@ onBeforeUnmount(() => {
         variant="paint"
         :orientation="orientation"
       />
+      <div v-else class="paint__skeleton" role="status">
+        <div class="paint__skeleton-box" />
+        <p class="paint__skeleton-text">
+          Preparing canvas…
+        </p>
+      </div>
     </div>
   </div>
 </template>

@@ -130,4 +130,51 @@
     align-items: center;
     color: $fg-35;
   }
+
+  // Placeholder shown until the first pipeline result lands. Mirrors
+  // <CanvasPair>'s `flex: 1` so it claims the same box — swapping one for the
+  // other doesn't move anything.
+  &__skeleton {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: $gap-3;
+  }
+  &__skeleton-box {
+    // Squarish and generous, but capped so it can't force the fixed shell to
+    // scroll on a short viewport.
+    width: min(60%, 22rem);
+    max-height: 60%;
+    aspect-ratio: 1;
+    border-radius: $radius-lg;
+    border: 1px solid $border-soft;
+    background: linear-gradient(100deg, $surface 30%, rgba(255, 255, 255, 0.06) 50%, $surface 70%) $surface;
+    background-size: 300% 100%;
+    animation: paint-skeleton-shimmer 1.4s ease-in-out infinite;
+  }
+  &__skeleton-text {
+    margin: 0;
+    color: $fg-60;
+    font-family: $font-alert;
+    font-size: $fs-sm;
+  }
+}
+
+@keyframes paint-skeleton-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -150% 0;
+  }
+}
+
+// Reduced motion: keep the placeholder, drop the sweep.
+@media (prefers-reduced-motion: reduce) {
+  .paint__skeleton-box {
+    animation: none;
+  }
 }
