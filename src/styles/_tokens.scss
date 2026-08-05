@@ -55,16 +55,19 @@ $surface: #1a1a24; // cards, inputs, panels
 $surface-2: #111118; // slightly-off panel (drawing sidebar)
 $fg: #ffffff;
 
-// Text on dark — opacity ramp
+// Text on dark — opacity ramp.
+// Measured against $bg (#0e0e12): $fg-60 is 8.0:1, $fg-50 is 5.4:1, $fg-35 only
+// 3.2:1. WCAG AA wants 4.5:1 for normal text, so **$fg-40 and below are non-text
+// only** — icons, rules, decorative marks. Reach for $muted, not a raw rung, for
+// quiet body copy; that keeps the next contrast change a one-line edit.
 $fg-80: rgba(255, 255, 255, 0.8);
 $fg-60: rgba(255, 255, 255, 0.6);
 $fg-50: rgba(255, 255, 255, 0.5);
-$fg-40: rgba(255, 255, 255, 0.4);
 $fg-35: rgba(255, 255, 255, 0.35);
 $fg-30: rgba(255, 255, 255, 0.3);
 $fg-25: rgba(255, 255, 255, 0.25);
 $fg-20: rgba(255, 255, 255, 0.2);
-$muted: $fg-40;
+$muted: $fg-60; // quiet body copy — captions, status lines, inactive labels
 
 // Borders / rules
 $border: rgba(255, 255, 255, 0.1);

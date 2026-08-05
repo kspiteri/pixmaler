@@ -120,8 +120,8 @@
     gap: $gap-3;
   }
 
-  // Outlined tiles — Browse… and each sample thumbnail. Shared hover/focus so
-  // the two read as the same class of control.
+  // Outlined tiles — Browse… and each sample thumbnail. Shared hover so the two
+  // read as the same class of control. (Focus ring comes from main.scss.)
   &__browse,
   &__sample {
     border: 1px solid $border;
@@ -136,10 +136,6 @@
     &:hover {
       color: $fg;
       border-color: $fg-25;
-    }
-    &:focus-visible {
-      outline: 2px solid $accent;
-      outline-offset: 2px;
     }
   }
 
@@ -206,13 +202,26 @@
   }
 
   // ── Messages + preview ────────────────────────────────────────────────────
+  // A tinted card, not just orange text: bounded and filled so it reads as an
+  // alert at a glance. The icon already carries the meaning without colour;
+  // the fill is what stops it being mistaken for another caption.
   &__warn {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: $gap-2;
     margin: 0;
+    padding: $gap-2;
+    border: 1px solid rgba($warn, 0.35);
+    border-radius: $radius-sm;
+    background: rgba($warn, 0.1);
     color: $warn;
     font-size: $fs-sm;
+
+    // Keeps the triangle on the first line when the copy wraps.
+    svg {
+      flex-shrink: 0;
+      margin-top: 0.1em;
+    }
   }
   &__status {
     margin: 0;

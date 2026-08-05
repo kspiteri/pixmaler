@@ -417,7 +417,7 @@ function clear() {
     gap: $gap-2;
     font-family: $font-body;
     font-size: $fs-xs;
-    color: $fg-40;
+    color: $muted;
   }
 
   :deep(.brush__slider) {

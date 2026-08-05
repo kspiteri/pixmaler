@@ -277,7 +277,9 @@ onMounted(() => {
         </ul>
       </div>
 
-      <p v-if="showWarnNode" class="picker__warn">
+      <!-- Polite, not role="alert": this re-fires every time the scale slider
+           settles, and an assertive live region would interrupt on each pass. -->
+      <p v-if="showWarnNode" class="picker__warn" role="status">
         <TriangleAlert :size="16" />
         <span>Grid exceeds 64px on its longest side — mobile players may struggle.</span>
       </p>

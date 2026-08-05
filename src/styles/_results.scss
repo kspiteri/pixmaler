@@ -11,7 +11,7 @@
 
   &__waiting {
     text-align: center;
-    color: $fg-40;
+    color: $muted;
   }
 
   // ── Hero ───────────────────────────────────────────────────────────────────
@@ -79,7 +79,7 @@
   }
   &__winner-breakdown {
     margin: 0.125rem 0 0;
-    color: $fg-40;
+    color: $muted;
     font-size: 0.875rem;
   }
   &__winner-breakdown-item {
@@ -135,7 +135,7 @@
   }
   &__item-votes {
     margin: 0.125rem 0 0;
-    color: $fg-40;
+    color: $muted;
     font-size: 0.75rem;
   }
 

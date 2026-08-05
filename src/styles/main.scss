@@ -70,6 +70,20 @@ a {
   color: $fg;
 }
 
+// One keyboard-focus ring for the whole app. Global rather than per-component
+// because the alternative — a rule per control class — silently misses things:
+// it left the palette swatches, the vote buttons and an unclassed link with no
+// ring at all. There is no `tabindex` anywhere in `src/`, so this only ever
+// matches native controls (button / a / input).
+//
+// Two deliberate exceptions override it locally: `.btn--primary` (white, since
+// lime-on-lime reads as a halo) and `.segmented__item` (inset, because its
+// parent clips with `overflow: hidden`).
+:focus-visible {
+  outline: 2px solid $accent;
+  outline-offset: 2px;
+}
+
 // Base heading typography — family + weight + line-height only. Sizes and
 // margins are kept as browser defaults here to avoid regressing screens that
 // style headings by class. Screens opting in to the fluid scale can apply
@@ -94,11 +108,6 @@ h3 {
   &--mid {
     max-width: $col-mid;
   }
-}
-
-.muted {
-  color: $muted;
-  margin: 0;
 }
 
 .btn-row > * + * {

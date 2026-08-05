@@ -83,7 +83,7 @@ onBeforeUnmount(() => {
 .tagline {
   // Margin intentionally unset — placement spacing is the host's job. Setting
   // it here (even to 0) would win on scoped specificity and block host overrides.
-  color: $fg-40;
+  color: $muted;
   font-family: $font-body; // TODO(05): switch to the alerts/notification face once added
   font-size: 0.875rem;
   // Names this element for the View Transitions API so only the tagline animates,
