@@ -57,9 +57,15 @@ $fg: #ffffff;
 
 // Text on dark — opacity ramp.
 // Measured against $bg (#0e0e12): $fg-60 is 8.0:1, $fg-50 is 5.4:1, $fg-35 only
-// 3.2:1. WCAG AA wants 4.5:1 for normal text, so **$fg-40 and below are non-text
-// only** — icons, rules, decorative marks. Reach for $muted, not a raw rung, for
-// quiet body copy; that keeps the next contrast change a one-line edit.
+// 3.2:1. WCAG AA wants 4.5:1 for normal text, so the intent is that **$fg-40 and
+// below are non-text only** — icons, rules, decorative marks. Reach for $muted,
+// not a raw rung, for quiet body copy; that keeps the next contrast change a
+// one-line edit.
+//
+// Known exceptions: 11 text sites still sit at $fg-35/$fg-25/$fg-20 (hints,
+// eyebrow labels, `::placeholder`). Audited and deliberately left — raising them
+// is a design change, not a sweep. Full list in `docs/.plans/12-ui-polish.md`
+// under item 8's follow-ups. Don't add new ones.
 $fg-80: rgba(255, 255, 255, 0.8);
 $fg-60: rgba(255, 255, 255, 0.6);
 $fg-50: rgba(255, 255, 255, 0.5);
