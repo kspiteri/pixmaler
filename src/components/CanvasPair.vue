@@ -30,6 +30,10 @@ interface Props {
   // DRAWING only — whether the player has flagged themselves done, forwarded to
   // the palette's Ready button.
   flaggedDone?: boolean
+  // DRAWING only — a grid echoed back by the server on rejoin, used to seed the
+  // editable canvas so a page reload restores work in progress. `/paint` never
+  // passes it.
+  initialGrid?: number[] | null
 }
 const props = defineProps<Props>()
 
@@ -138,6 +142,7 @@ onMounted(() => {
     gridH: props.gridH,
     palette: props.palette,
     editable: true,
+    initialGrid: props.initialGrid ?? undefined,
     onHover: (cell) => {
       target!.showMarker(cell)
       swatch.highlight(cell ? props.targetGrid[cell.y * props.gridW + cell.x] : null)
@@ -173,6 +178,20 @@ onMounted(() => {
     drawResizeObserver = new ResizeObserver(() => fitDrawCanvas())
     drawResizeObserver.observe(drawSlot.value)
   }
+})
+
+// The grid normally arrives before this component mounts (the server sends it
+// ahead of `state`, and App.vue only renders DRAWING once `state` lands), so
+// the constructor seed above is the usual path. This covers the narrow case
+// where an unrelated `state` broadcast renders DRAWING before our own
+// `draw-state` is processed. Guarded on `canUndo`: an empty undo stack means
+// the player has not drawn yet, so applying a server grid cannot clobber
+// strokes. NOT `immediate` — mount is already handled by the constructor.
+watch(() => props.initialGrid, (grid) => {
+  const player = playerRef.value
+  if (!player || !grid || canUndo.value)
+    return
+  player.setGrid(grid)
 })
 
 // Orientation flips row↔column, which changes the slot's shape — refit once the

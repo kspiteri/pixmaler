@@ -66,12 +66,17 @@ function guardOrigin(req: Request, env: Env): Response | undefined {
 }
 
 // Votes are keyed by voter + category so each player gets one vote per
-// category. `voteKey` builds the composite key; `categoryOf` reads it back.
+// category. `voteKey` builds the composite key; `categoryOf` and `voterOf` read
+// the halves back. clientIds are UUIDs (no colons), so the LAST colon is always
+// the separator.
 function voteKey(clientId: string, category: VoteCategory): string {
   return `${clientId}:${category}`
 }
 function categoryOf(key: string): VoteCategory {
   return key.slice(key.lastIndexOf(':') + 1) as VoteCategory
+}
+function voterOf(key: string): string {
+  return key.slice(0, key.lastIndexOf(':'))
 }
 
 interface RoomState {
@@ -241,11 +246,19 @@ export class PixmalerServer extends Server<Env> {
       // hidden until RESULTS).
       const own: Partial<Record<VoteCategory, string>> = {}
       for (const [key, subId] of this.state.votes.entries()) {
-        const voterId = key.slice(0, key.lastIndexOf(':'))
-        if (voterId === msg.clientId)
+        if (voterOf(key) === msg.clientId)
           own[categoryOf(key)] = subId
       }
       conn.send(JSON.stringify({ type: 'vote-state', votes: own } satisfies ServerMsg))
+    }
+
+    // A player rejoining mid-DRAWING gets their own latest auto-submitted grid
+    // back, so a page reload restores the drawing instead of a blank canvas.
+    // Targeted at this connection only — never broadcast.
+    if (this.state.phase === 'DRAWING') {
+      const own = this.state.submissions.get(msg.clientId)
+      if (own)
+        conn.send(JSON.stringify({ type: 'draw-state', grid: own } satisfies ServerMsg))
     }
 
     this.broadcastAll(this.buildState())
@@ -439,6 +452,13 @@ export class PixmalerServer extends Server<Env> {
       breakdowns.set(sub.submissionId, { funniest: 0, best: 0 })
     }
     for (const [key, subId] of this.state.votes.entries()) {
+      // A voter who has dropped doesn't influence the ranking. Votes are never
+      // pruned (`onClose` only flips `connected`), so reconnecting before the GM
+      // ends voting restores their weight. This keeps the tally counting the
+      // same population as `votingProgress`, which is what the GM's
+      // "N of M voted" readout — and so their decision to end — is based on.
+      if (!this.state.players.get(voterOf(key))?.connected)
+        continue
       const bd = breakdowns.get(subId)
       if (bd)
         bd[categoryOf(key)]++
@@ -602,15 +622,21 @@ export class PixmalerServer extends Server<Env> {
       gmClientId: this.state.gmClientId,
       config: this.state.config,
       deadline: this.state.deadline,
-      // `doneCount` reflects players who have flagged themselves as done via
-      // the "I'm done" social ping. Submission is now automatic on every
-      // stroke, so `submissions.size` no longer corresponds to "done".
-      doneCount: [...this.state.players.values()].filter(p => p.doneDrawing).length,
-      // Exclude GM — they don't submit a drawing.
-      totalDrawing: [...this.state.players.values()].filter(
-        p => p.connected && p.clientId !== this.state.gmClientId,
-      ).length,
+      ...this.drawProgress(),
       ...this.votingProgress(),
+    }
+  }
+
+  // DRAWING progress: how many connected players have flagged "I'm done", out
+  // of all connected players. Both halves count the same population, so the
+  // numerator can never exceed the denominator — a player who flags done and
+  // then drops leaves both counts. The GM is included: they draw and are ranked
+  // like everyone else (their submission lands in the gallery).
+  private drawProgress(): { doneCount: number, totalDrawing: number } {
+    const present = [...this.state.players.values()].filter(p => p.connected)
+    return {
+      doneCount: present.filter(p => p.doneDrawing).length,
+      totalDrawing: present.length,
     }
   }
 
@@ -620,7 +646,7 @@ export class PixmalerServer extends Server<Env> {
   private votingProgress(): { votedCount: number, totalVoters: number } {
     const perVoter = new Map<string, number>()
     for (const key of this.state.votes.keys()) {
-      const voterId = key.slice(0, key.lastIndexOf(':'))
+      const voterId = voterOf(key)
       perVoter.set(voterId, (perVoter.get(voterId) ?? 0) + 1)
     }
     const present = [...this.state.players.values()].filter(p => p.connected)
@@ -637,10 +663,7 @@ export class PixmalerServer extends Server<Env> {
   private broadcastDoneStatus() {
     this.broadcastAll({
       type: 'done-status',
-      doneCount: [...this.state.players.values()].filter(p => p.doneDrawing).length,
-      totalDrawing: [...this.state.players.values()].filter(
-        p => p.connected && p.clientId !== this.state.gmClientId,
-      ).length,
+      ...this.drawProgress(),
     })
   }
 }

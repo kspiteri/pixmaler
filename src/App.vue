@@ -58,6 +58,7 @@ type StateMsg = Extract<ServerMsg, { type: 'state' }>
 type GalleryMsg = Extract<ServerMsg, { type: 'gallery' }>
 type ResultsMsg = Extract<ServerMsg, { type: 'results' }>
 type VoteStateMsg = Extract<ServerMsg, { type: 'vote-state' }>
+type DrawStateMsg = Extract<ServerMsg, { type: 'draw-state' }>
 
 const state = shallowRef<StateMsg | null>(null)
 const gallery = shallowRef<GalleryMsg | null>(null)
@@ -65,6 +66,9 @@ const results = shallowRef<ResultsMsg | null>(null)
 // This voter's own picks, echoed by the server on (re)join during VOTING so the
 // vote UI rehydrates after a reconnect. Null until/unless we receive it.
 const voteState = shallowRef<VoteStateMsg | null>(null)
+// This player's own in-progress grid, echoed by the server on (re)join during
+// DRAWING so a page reload restores their drawing. Null until/unless received.
+const drawState = shallowRef<DrawStateMsg | null>(null)
 const connectionStatus = ref<'connecting' | 'connected' | 'reconnecting'>('connecting')
 
 // ── Connect (only when on the room route) ────────────────────────────────────
@@ -137,9 +141,17 @@ function connect(name: string) {
         if (state.value) {
           state.value = { ...state.value, phase: msg.phase, deadline: msg.deadline }
         }
+        // A `phase` message with DRAWING is only ever broadcast by handleStart
+        // (party/server.ts:340) — i.e. a fresh round, whose submissions the
+        // server just cleared. Drop any grid held from the previous round so
+        // Play again doesn't resurrect the last drawing. A mid-round rejoin
+        // arrives as `state`, not `phase`, so a genuine restore survives.
+        if (msg.phase === 'DRAWING')
+          drawState.value = null
         break
       case 'gallery': gallery.value = msg; break
       case 'vote-state': voteState.value = msg; break
+      case 'draw-state': drawState.value = msg; break
       case 'results': results.value = msg; break
       case 'done-status':
         if (state.value) {
@@ -213,7 +225,7 @@ if (route === 'room' && roomCode) {
       </div>
 
       <Lobby v-if="state.phase === 'LOBBY'" :state="state" />
-      <Drawing v-else-if="state.phase === 'DRAWING' && state.config" :state="state" />
+      <Drawing v-else-if="state.phase === 'DRAWING' && state.config" :state="state" :initial-grid="drawState?.grid ?? null" />
       <Voting
         v-else-if="state.phase === 'VOTING'"
         :gallery="gallery"

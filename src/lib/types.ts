@@ -158,6 +158,14 @@ export interface VoteStateMsg {
   votes: Partial<Record<VoteCategory, string>> // category → submissionId
 }
 
+// Sent to a single player when they (re)join mid-DRAWING, echoing back their
+// OWN latest auto-submitted grid so a page reload restores their drawing.
+// Only their own — never anyone else's (the blind reveal depends on it).
+export interface DrawStateMsg {
+  type: 'draw-state'
+  grid: number[] // palette indices; -1 = untouched
+}
+
 export type ServerMsg
   = | StateMsg
     | PhaseMsg
@@ -166,3 +174,4 @@ export type ServerMsg
     | DoneStatusMsg
     | ErrorMsg
     | VoteStateMsg
+    | DrawStateMsg

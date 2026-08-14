@@ -7,6 +7,10 @@ export interface CanvasOptions {
   gridH: number
   palette: string[]
   targetGrid?: number[] // if provided, renders as the reference image
+  // Editable canvases only: seed the canvas with a drawing already in progress
+  // (rejoin mid-DRAWING). Ignored when `targetGrid` is set — a read-only
+  // reference canvas has no in-progress state.
+  initialGrid?: number[]
   editable?: boolean // if false, read-only display (used for gallery/results)
   onUpdate?: (grid: number[]) => void
   // Fires when the cursor moves to a different cell on an editable canvas, or
@@ -52,11 +56,12 @@ export class PixelCanvas {
     // Brush range scales with grid resolution (see brushMaxFor/defaultBrushFor).
     this.brushMax = brushMaxFor(opts.gridW, opts.gridH)
     this.brushSize = defaultBrushFor(opts.gridW, opts.gridH)
-    // Editable canvases start "blank" (-1 = untouched). Read-only canvases
-    // either get the supplied targetGrid or default to all-zero. -1 cells
-    // render transparent so the canvas's white background shows through.
-    this.grid = opts.targetGrid
-      ? [...opts.targetGrid]
+    // Read-only canvases render `targetGrid`. Editable canvases start blank
+    // (-1 = untouched, rendered transparent so the white background shows
+    // through) unless `initialGrid` restores a drawing in progress.
+    const seed = opts.targetGrid ?? opts.initialGrid
+    this.grid = seed
+      ? [...seed]
       : Array.from<number>({ length: opts.gridW * opts.gridH }).fill(opts.editable ? -1 : 0)
 
     this.canvas = document.createElement('canvas')

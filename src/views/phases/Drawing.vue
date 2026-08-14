@@ -28,12 +28,27 @@ import { clientIdKey, socketKey } from '../../lib/keys'
 
 type State = Extract<ServerMsg, { type: 'state' }>
 
-const props = defineProps<{ state: State }>()
+const props = defineProps<{ state: State, initialGrid: number[] | null }>()
 
 const socket = inject(socketKey)!.value!
 const clientId = inject(clientIdKey)!
 // `state.config` is checked non-null in App.vue's v-if, so this assertion is safe.
 const config = computed(() => props.state.config!)
+// Server-echoed grid for a rejoin mid-round. Length-checked against the live
+// config: `handleSubmit` stores whatever a client sent without validating, so
+// a wrong-sized grid would render as garbage. Mismatch → ignore and start
+// blank, which is the pre-existing behaviour.
+const restoredGrid = computed(() => {
+  const g = props.initialGrid
+  if (!g)
+    return null
+  const expected = config.value.gridW * config.value.gridH
+  if (g.length !== expected) {
+    console.warn(`[pixmaler] ignoring restored grid: got ${g.length} cells, expected ${expected}`)
+    return null
+  }
+  return g
+})
 const deadline = computed(() => props.state.deadline)
 const doneText = computed(() =>
   `${props.state.doneCount} of ${props.state.totalDrawing} done`,
@@ -156,6 +171,12 @@ function cancelTimers() {
 }
 
 onMounted(() => {
+  // The server already has this exact grid — it just sent it to us. Priming
+  // `lastSentGrid` makes `sendSubmit`'s equality check suppress the redundant
+  // round-trip that CanvasPair's watcher would otherwise trigger via onUpdate.
+  if (restoredGrid.value)
+    lastSentGrid = [...restoredGrid.value]
+
   const dl = deadline.value
   if (dl) {
     // Tick unconditionally until 0 — the countdown reflects wall-clock time,
@@ -216,6 +237,7 @@ onBeforeUnmount(() => {
         :grid-h="config.gridH"
         :palette="config.palette"
         :target-grid="config.targetGrid"
+        :initial-grid="restoredGrid"
         variant="drawing"
         :orientation="orientation"
         :flagged-done="flaggedDone"
