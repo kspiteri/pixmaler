@@ -2,7 +2,7 @@
 
 A real-time pixel-art party game.
 
-> **Gameplay loop complete + restyled.** Lobby → Drawing → Voting → Results → Play again all work end-to-end, with a dark "party game" visual theme and two-category voting. What's left is finer responsive/mobile polish, reconnection edge cases, and CI/deploy wiring (GitHub Pages Action + `partykit deploy`).
+> **Deployed and playable.** Lobby → Drawing → Voting → Results → Play again all work end-to-end, with a dark "party game" visual theme and two-category voting. The frontend is on GitHub Pages and the realtime server is live on Cloudflare Workers. What's left is UI polish plus a handful of engineering papercuts.
 
 ## What it does
 
@@ -19,7 +19,7 @@ A game master uploads any image. It's quantized in the browser into chunky, limi
 ## Stack
 
 - Vite + Vue 3 (Composition API, `<script setup>`) + TypeScript, canvas-based drawing
-- [PartyKit](https://www.partykit.io/) on Cloudflare Durable Objects for realtime rooms
+- [PartyServer](https://github.com/cloudflare/partyserver) on Cloudflare Durable Objects for realtime rooms, deployed with `wrangler`
 - `partysocket` WebSocket client (auto-reconnect)
 - `unique-names-generator` for memorable room codes (custom curated word list)
 - Client-side image pipeline: median-cut palette derivation + near-duplicate merge, then [pixelit](https://github.com/giventofly/pixelit) (vendored, MIT) for the pixelation pass. No server image processing, no image storage.
@@ -28,11 +28,11 @@ A game master uploads any image. It's quantized in the browser into chunky, limi
 
 ```bash
 pnpm install
-pnpm dev               # Vite frontend
-pnpm exec partykit dev  # realtime server on :1999 (separate terminal)
+pnpm dev        # Vite frontend on :7965
+pnpm wr:dev     # realtime server on :1999 (separate terminal)
 ```
 
-Set `VITE_PARTYKIT_HOST` (`127.0.0.1:1999` in dev). See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the full developer guide — tooling, conventions, and deploy.
+Both are needed to play; the `/paint` sandbox needs only `pnpm dev`. Set `VITE_PARTYKIT_HOST` so the client can find the server — `127.0.0.1:1999` in dev (already in the gitignored `.env.local`). See [`CONTRIBUTING.md`](./CONTRIBUTING.md) for the full developer guide — tooling, conventions, and deploy.
 
 ## Paint sandbox
 
