@@ -82,6 +82,7 @@ async function transferGm(p: Player) {
 
 <style scoped lang="scss">
 @use '../styles/tokens' as *;
+@use '../styles/wonk' as *;
 
 .player-list {
   &__rows {
@@ -101,6 +102,8 @@ async function transferGm(p: Player) {
     border-radius: $radius;
     background: $surface;
     border: 2px solid var(--row-colour, #{$border});
+
+    @include wonk($art: null);
 
     &--offline {
       opacity: 0.5;

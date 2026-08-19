@@ -5,7 +5,9 @@
 //   Chrome    panels, inputs, settings — quiet $surface, hairline border, flush
 //   Person    roster row, vote card — coloured border, generous radius, tilt
 // Only the artefact role has a utility; the other two are conventions the
-// per-screen partials follow.
+// per-screen partials follow. The Person role's tilt is the `wonk` mixin in
+// `_wonk.scss`, which lives apart because a scoped block has to reach it and
+// this file emits rules.
 
 // A drawing. Square corners on purpose — a canvas has none — so this is the one
 // place the radius scale in `_tokens.scss` deliberately doesn't apply.

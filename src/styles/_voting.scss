@@ -1,4 +1,5 @@
 @use 'tokens' as *;
+@use 'wonk' as *;
 
 // Voting screen — anonymised gallery. Each card has the drawing (with the
 // voter's emoji stickers on top) and a row of category vote buttons below. The
@@ -58,6 +59,8 @@
     display: flex;
     flex-direction: column;
     gap: $gap-3;
+
+    @include wonk;
   }
 
   // Doubles as the artefact's frame (`.art-frame` in the markup) — the stickers
