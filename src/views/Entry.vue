@@ -27,9 +27,6 @@ function enterRoom(room: string) {
 
 <template>
   <div class="entry">
-    <!-- Subtle pixel-grid background texture -->
-    <div class="entry__grid" aria-hidden="true" />
-
     <!-- Wordmark -->
     <header class="entry__brand">
       <Logo size="lg" />

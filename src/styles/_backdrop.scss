@@ -1,0 +1,53 @@
+@use 'tokens' as *;
+
+// Item 25 — the app's backdrop. Promoted out of `.entry__grid`, which was a
+// title-card flourish with exactly one consumer, into the stage every screen
+// stands on: Entry, the name gate, all four room phases, the /paint sandbox and
+// anything added later.
+//
+// **A pseudo-element, not markup.** `App.vue`'s template is a set of `v-if`
+// branches with no shared root, so an element would have to be repeated per
+// route — and forgotten on the next one. This attaches once to `body` and can't
+// be missed. It also drops the `aria-hidden` the old markup needed: a
+// pseudo-element is never in the accessibility tree to begin with.
+//
+// **`html` carries the base colour, not `body`.** The two are a pair and have to
+// move together: the texture sits at `z-index: -1`, which paints *behind* its
+// own element's background, so leaving `$bg` on `body` would bury it. `body`
+// stays transparent and `html`'s background propagates to the canvas exactly as
+// `body`'s used to — same pixels, one less painted layer.
+//
+// **Fixed, not `background-attachment: fixed`.** Same visual result, but the
+// attachment property is long-standing broken on iOS Safari, and this is a game
+// played on phones.
+
+$backdrop-pitch: 32px; // grid cell — the pixel motif, matched to the old Entry grid
+$backdrop-line: rgba(255, 255, 255, 0.03); // alpha baked in, so no compositing layer
+$backdrop-vignette: rgba(0, 0, 0, 0.45); // corner darkness; centre stays untouched
+$backdrop-vignette-clear: 42%; // how far out the centre reads as unvignetted
+
+html {
+  background: $bg;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  // Behind every screen's content but above `html`'s background. `body` creates
+  // no stacking context, so this resolves against the root and cannot escape.
+  z-index: -1;
+  pointer-events: none;
+
+  // Layer order is paint order, topmost first: the vignette sits *over* the grid
+  // so the pixel field dissolves into the dark at the edges rather than running
+  // sharply into the corners. The grid alone reads as graph paper; fading it is
+  // what makes it a room.
+  background-image:
+    radial-gradient(ellipse at center, rgba(0, 0, 0, 0) $backdrop-vignette-clear, $backdrop-vignette 100%),
+    linear-gradient($backdrop-line 1px, transparent 1px), linear-gradient(90deg, $backdrop-line 1px, transparent 1px);
+  background-size:
+    100% 100%,
+    $backdrop-pitch $backdrop-pitch,
+    $backdrop-pitch $backdrop-pitch;
+}

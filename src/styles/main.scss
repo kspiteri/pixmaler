@@ -1,6 +1,7 @@
 @use 'tokens' as *;
 
 // Shared primitives — reused across screens.
+@use 'backdrop'; // html base colour + the app-wide pixel grid & vignette
 @use 'alerts'; // the alert register — .conn-banner + AlertDialog
 @use 'buttons';
 @use 'forms';
@@ -58,18 +59,25 @@
 }
 
 // Page-wide. Per-component styles live inside each .vue file's <style scoped>.
+// The page background is deliberately NOT here: `_backdrop.scss` owns it, and
+// owns `html`'s base colour with it, because the texture layer only shows while
+// `body` stays transparent. Setting a background here would bury it.
 body {
   margin: 0;
   font-family: $font-body;
   font-size: $fs-base;
   line-height: $lh-normal;
   color: $fg;
-  background: $bg;
   -webkit-font-smoothing: antialiased;
+  user-select: none;
 }
 
 a {
   color: $fg;
+
+  .logo {
+    text-decoration: unset;
+  }
 }
 
 // One keyboard-focus ring for the whole app. Global rather than per-component
