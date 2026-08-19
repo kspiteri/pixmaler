@@ -6,6 +6,8 @@
 import type { ClientMsg, ServerMsg } from './lib/types'
 import PartySocket from 'partysocket'
 import { onMounted, provide, ref, shallowRef } from 'vue'
+import AlertDialog from './components/AlertDialog.vue'
+import { askAlert, currentDialog, settleDialog } from './lib/dialog'
 import { clientIdKey, socketKey } from './lib/keys'
 import { wordPair } from './lib/words'
 
@@ -163,8 +165,10 @@ function connect(name: string) {
         }
         break
       case 'error':
+        // A backstop, not a workflow: the UI already prevents every rejection
+        // the server can send, so this catches races and protocol drift.
         console.warn('[pixmaler] server error:', msg.message)
-        alert(msg.message)
+        askAlert(msg.message)
         break
     }
   })
@@ -218,8 +222,8 @@ if (route === 'room' && roomCode) {
     <template v-else>
       <!-- Connection banner: once we've loaded state, a drop shows here rather
            than freezing silently. partysocket auto-reconnects (reclaims the slot
-           by clientId), so this is usually a brief blip. Plain markup — styled in
-           the design pass (05). -->
+           by clientId), so this is usually a brief blip. Condition-bound and
+           self-clearing, so it carries no dismiss control. -->
       <div v-if="connectionStatus === 'reconnecting'" class="conn-banner" role="status">
         Reconnecting…
       </div>
@@ -236,6 +240,18 @@ if (route === 'room' && roomCode) {
       />
       <Results v-else-if="state.phase === 'RESULTS'" :results="results" :gm-client-id="state.gmClientId" />
     </template>
+
+    <!-- The app's only dialog instance (lib/dialog.ts). Outside the phase chain
+         because a rejection can arrive before state loads and must survive a
+         phase change. Keyed so each request mounts a fresh <dialog>. -->
+    <AlertDialog
+      v-if="currentDialog"
+      :key="currentDialog.id"
+      :message="currentDialog.message"
+      :mode="currentDialog.mode"
+      @confirm="settleDialog(true)"
+      @cancel="settleDialog(false)"
+    />
   </template>
 </template>
 
@@ -261,22 +277,5 @@ if (route === 'room' && roomCode) {
     flex-direction: column;
     gap: $gap-4;
   }
-}
-
-// Connection status banner — fixed at the top while reconnecting. Minimal
-// styling; the design pass (05) owns the final look.
-.conn-banner {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 200;
-  padding: $gap-2 $gap-3;
-  text-align: center;
-  font-family: $font-display;
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: $accent-fg;
-  background: $accent;
 }
 </style>

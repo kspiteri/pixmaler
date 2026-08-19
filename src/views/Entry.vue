@@ -14,18 +14,12 @@ const code = ref('')
 const base = import.meta.env.BASE_URL.replace(/\/+$/, '')
 const sandboxHref = `${base}/paint`
 
-function createRoom() {
+// The guard is belt-and-braces: both buttons are already `:disabled` until
+// their fields are filled, so it can't actually fire.
+function enterRoom(room: string) {
   const trimmed = name.value.trim()
-  if (!trimmed) { alert('Enter your name first.'); return }
-  localStorage.setItem('pixmaler:name', trimmed)
-  location.href = `${location.pathname}?room=${wordPair()}`
-}
-
-function joinRoom() {
-  const trimmed = name.value.trim()
-  const room = code.value.trim().toLowerCase()
-  if (!trimmed) { alert('Enter your name first.'); return }
-  if (!room) { alert('Enter a room code.'); return }
+  if (!trimmed || !room)
+    return
   localStorage.setItem('pixmaler:name', trimmed)
   location.href = `${location.pathname}?room=${room}`
 }
@@ -57,7 +51,7 @@ function joinRoom() {
         class="btn btn--primary"
         type="button"
         :disabled="!name.trim()"
-        @click="createRoom"
+        @click="enterRoom(wordPair())"
       >
         Create room (GM)
       </button>
@@ -82,7 +76,7 @@ function joinRoom() {
         class="btn btn--ghost"
         type="button"
         :disabled="!name.trim() || !code.trim()"
-        @click="joinRoom"
+        @click="enterRoom(code.trim().toLowerCase())"
       >
         Join room
       </button>

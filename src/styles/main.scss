@@ -1,6 +1,7 @@
 @use 'tokens' as *;
 
 // Shared primitives — reused across screens.
+@use 'alerts'; // the alert register — .conn-banner + AlertDialog
 @use 'buttons';
 @use 'forms';
 @use 'logo';

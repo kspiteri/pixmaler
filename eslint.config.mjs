@@ -18,8 +18,8 @@ export default antfu({
     // (common in algorithmic code: Bresenham bounds, median-cut min/max, etc.).
     'style/max-statements-per-line': ['error', { max: 6 }],
 
-    // alert/confirm are placeholders pending the error-banner UI in the
-    // polishing plan (docs/.plans/04-polishing-and-fixes.md).
-    'no-alert': 'off',
+    // alert() and confirm() both have an in-UI replacement (lib/dialog.ts), so
+    // the rule stands with no exemptions.
+    'no-alert': 'error',
   },
 })

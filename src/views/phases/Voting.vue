@@ -10,6 +10,7 @@ import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import { artRatio as artRatioFor } from '../../lib/aspect'
 import { PixelCanvas } from '../../lib/canvas'
+import { askConfirm } from '../../lib/dialog'
 import { clientIdKey, socketKey } from '../../lib/keys'
 import { VOTE_CATEGORIES } from '../../lib/types'
 
@@ -68,7 +69,10 @@ function sameSet(a: Submission[], b: Submission[]): boolean {
   return b.every(s => ids.has(s.submissionId))
 }
 
-function stopVoting() {
+// The only way out of the phase, so a misclick ruins the round.
+async function stopVoting() {
+  if (!await askConfirm('End voting now? Anyone who hasn\'t finished voting won\'t be counted.'))
+    return
   const msg: ClientMsg = { type: 'gm:stopVoting' }
   socket.send(JSON.stringify(msg))
 }

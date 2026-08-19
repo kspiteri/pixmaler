@@ -74,11 +74,11 @@ async function copyLink() {
 
 // ── GM controls ──────────────────────────────────────────────────────────────
 
-const startDisabled = ref(true)
+const imageReady = ref(false)
 const pickerRef = useTemplateRef<InstanceType<typeof ImagePicker>>('picker')
 let lastConfig: GmConfigureMsg | null = null
 
-function onProcessing() { startDisabled.value = true }
+function onProcessing() { imageReady.value = false }
 
 function onResult(result: PipelineResult) {
   lastConfig = {
@@ -90,8 +90,33 @@ function onResult(result: PipelineResult) {
     drawSeconds: pickerRef.value?.getDrawSeconds() ?? 120,
   }
   socket.send(JSON.stringify(lastConfig))
-  startDisabled.value = false
+  imageReady.value = true
 }
+
+// Mirror of the server's gate (`handleStart`), which stays authoritative. The
+// count is always real; only the *blocking* is lifted in dev, matching the
+// worker's PIXMALER_DEV=1 escape hatch so `pnpm dev` stays solo-testable. The
+// hint still renders there, so the gate is visible while it's being bypassed.
+const MIN_PLAYERS = 2
+
+const missingPlayers = computed(() => {
+  const present = props.state.players.filter(p => p.connected && !p.isGm).length
+  return Math.max(0, MIN_PLAYERS - present)
+})
+
+const startDisabled = computed(() =>
+  !imageReady.value || (missingPlayers.value > 0 && !import.meta.env.DEV),
+)
+
+const startHint = computed(() => {
+  if (!imageReady.value)
+    return 'choose an image to start'
+  if (missingPlayers.value > 0) {
+    const need = `need ${missingPlayers.value} more player${missingPlayers.value === 1 ? '' : 's'}`
+    return import.meta.env.DEV ? `${need} — ignored in dev` : need
+  }
+  return ''
+})
 
 function startGame() {
   if (!lastConfig)
@@ -113,18 +138,16 @@ function startGame() {
 // a new object reference too.)
 
 const previewSlot = useTemplateRef<HTMLDivElement>('previewSlot')
-let previewPc: PixelCanvas | null = null
 
 function renderPreview(config: State['config']) {
   if (!previewSlot.value)
     return
   previewSlot.value.replaceChildren()
-  previewPc = null
   if (!config)
     return
   const label = document.createElement('p')
   label.textContent = `Target image (${config.gridW}×${config.gridH}):`
-  previewPc = new PixelCanvas({
+  const previewPc = new PixelCanvas({
     gridW: config.gridW,
     gridH: config.gridH,
     palette: config.palette,
@@ -146,7 +169,6 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  previewPc = null
   if (copyTimer)
     clearTimeout(copyTimer)
 })
@@ -209,8 +231,8 @@ onBeforeUnmount(() => {
             >
               Start game
             </button>
-            <p v-if="startDisabled" class="lobby__start-hint">
-              choose an image to start
+            <p v-if="startHint" class="lobby__start-hint">
+              {{ startHint }}
             </p>
           </div>
         </template>

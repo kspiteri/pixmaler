@@ -5,6 +5,7 @@
 
 import type { ClientMsg, Player } from '../lib/types'
 import { inject } from 'vue'
+import { askConfirm } from '../lib/dialog'
 import { clientIdKey, socketKey } from '../lib/keys'
 
 const props = defineProps<Props>()
@@ -40,8 +41,9 @@ function canTransfer(p: Player): boolean {
   return viewerIsGm() && p.connected && p.clientId !== viewerClientId && !p.isGm
 }
 
-function transferGm(p: Player) {
-  if (!confirm(`Transfer GM to ${p.name}?`))
+// Not undoable by the player who does it: only the new GM can hand it back.
+async function transferGm(p: Player) {
+  if (!await askConfirm(`Transfer GM to ${p.name}?`))
     return
   const msg: ClientMsg = { type: 'gm:transfer', toClientId: p.clientId }
   socket.send(JSON.stringify(msg))
