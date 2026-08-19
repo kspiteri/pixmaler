@@ -2,7 +2,7 @@
 
 A real-time pixel-art party game.
 
-> **Deployed and playable.** Lobby → Drawing → Voting → Results → Play again all work end-to-end, with a dark "party game" visual theme and two-category voting. The frontend is on GitHub Pages and the realtime server is live on Cloudflare Workers. What's left is UI polish plus a handful of engineering papercuts.
+> **Deployed and playable.** Lobby → Drawing → Voting → Results → Play again all work end-to-end, with a dark "party game" visual theme and two-category voting. The frontend is on GitHub Pages and the realtime server is live on Cloudflare Workers. What's left is a visual personality pass — currently under way — plus sound and a few deferred engineering pieces.
 
 ## What it does
 
