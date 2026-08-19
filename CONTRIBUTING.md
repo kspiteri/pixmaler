@@ -49,7 +49,7 @@ pnpm wr:deploy    # deploy the realtime server to Cloudflare
 **Lint + format** via `@antfu/eslint-config` (no separate Prettier) — config in `eslint.config.mjs`. Two local tweaks:
 
 - `style/max-statements-per-line` relaxed to `max: 6` — grouped one-line variable inits are idiomatic in the algorithmic code.
-- `no-alert` off — `alert()`/`confirm()` are placeholders pending the error-banner UI ([`13-technical.md`](./docs/.plans/13-technical.md) item 16, which re-enables the rule).
+- `no-alert` on, **with no inline exemptions** — the rule covers `confirm()` as well as `alert()`, and both have an in-UI replacement. `src/lib/dialog.ts` exposes `askAlert(message)` and `askConfirm(message)`; each returns a promise, so a guard reads `if (!await askConfirm('End voting now?')) return`. Requests queue into the one `AlertDialog.vue` instance mounted in `App.vue`, which renders acknowledge or yes/no from its `mode` prop (`'alert'` by default). Reach for the browser's dialogs only if you're prepared to explain why in the same commit that adds the disable.
 
 The vendored `src/lib/vendor/` (pixelit) is ignored. Don't lint or reformat it.
 
@@ -71,8 +71,8 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 ## Structure
 
 ```
-src/lib/        # canvas, image pipeline, shared types, taglines, layout helpers, composables
-src/components/ # reusable UI (ImagePicker, CanvasPair, PaletteTools, PlayerList, PhaseLayout, Tagline, Logo)
+src/lib/        # canvas, image pipeline, shared types, taglines, layout helpers, dialog queue, composables
+src/components/ # reusable UI (AlertDialog, ImagePicker, CanvasPair, PaletteTools, PlayerList, PhaseLayout, Tagline, Logo)
 src/views/      # Entry, Paint, Taglines, and the phase screens
 src/styles/     # _tokens + shared primitives + per-screen partials, all via main.scss
 party/          # PartyServer Durable Object (server.ts); config in wrangler.jsonc
