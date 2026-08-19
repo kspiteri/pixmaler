@@ -45,7 +45,7 @@
   }
   &__winner {
     background: rgba($accent, 0.05);
-    border: 2px solid $accent;
+    border: 1px solid $accent;
     border-radius: $radius-xl;
     padding: $gap-4;
     box-shadow: 0 0 32px rgba($accent, 0.15);
@@ -54,13 +54,10 @@
     align-items: center;
     gap: $gap-3;
   }
+  // The frame; the drawing itself is the `.art-surface` inside it.
   &__winner-art {
     width: 220px;
     max-width: 60vw;
-    aspect-ratio: var(--art-ratio, 1 / 1);
-    background: #fff;
-    border-radius: $radius;
-    overflow: hidden;
   }
   &__winner-meta {
     text-align: center;
@@ -118,11 +115,6 @@
     }
   }
   &__item-art {
-    width: 100%;
-    aspect-ratio: var(--art-ratio, 1 / 1);
-    background: #fff;
-    border-radius: $radius-sm;
-    overflow: hidden;
     margin-bottom: $gap-2;
   }
   &__item-name {

@@ -228,8 +228,8 @@ function castVote(category: VoteCategory, submissionId: string) {
           class="voting__card"
           :class="{ 'voting__card--mine': sub.submissionId === clientId }"
         >
-          <div class="voting__art">
-            <div :ref="el => setSlot(sub.submissionId, el)" class="voting__slot" />
+          <div class="voting__art art-frame">
+            <div :ref="el => setSlot(sub.submissionId, el)" class="art-surface" />
             <!-- Your votes' stickers, top-anchored, side by side. -->
             <div v-if="votedCategoriesFor(sub.submissionId).length" class="voting__stickers">
               <span

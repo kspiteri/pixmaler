@@ -6,6 +6,7 @@
 @use 'forms';
 @use 'logo';
 @use 'phase';
+@use 'surfaces'; // the three surface roles + the .art-frame / .art-surface pair
 
 // Page partials — per-screen static layout.
 @use 'entry';

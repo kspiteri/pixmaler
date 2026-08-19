@@ -1,0 +1,52 @@
+@use 'tokens' as *;
+
+// The three surface roles. What a thing *is* decides how it's dressed:
+//   Artefact  a drawing — white paper, square corners, framed once it's on show
+//   Chrome    panels, inputs, settings — quiet $surface, hairline border, flush
+//   Person    roster row, vote card — coloured border, generous radius, tilt
+// Only the artefact role has a utility; the other two are conventions the
+// per-screen partials follow.
+
+// A drawing. Square corners on purpose — a canvas has none — so this is the one
+// place the radius scale in `_tokens.scss` deliberately doesn't apply.
+.art-surface {
+  display: block;
+  aspect-ratio: var(--art-ratio, 1 / 1);
+  background: $paper;
+  overflow: hidden;
+}
+
+// The frame. Wraps `.art-surface` rather than sharing its box: the canvas inside
+// sizes itself off the aspect ratio, so a border on that same element would crop
+// it. Unframed while it's being drawn, framed once it's finished and on show —
+// which is why CanvasPair (DRAWING and /paint) has neither this nor the lift.
+.art-frame {
+  --frame-base: #{$frame};
+  --frame-hi: #{$frame-hi};
+  --frame-lo: #{$frame-lo};
+
+  box-sizing: border-box;
+  // Not a radius-scale rung: this is the frame's own milled edge, not a UI
+  // corner, and anything larger stops reading as a solid object.
+  border-radius: 2px;
+  border: $frame-w solid var(--frame-base);
+  border-top-color: var(--frame-lo);
+  border-bottom-color: var(--frame-hi);
+  box-shadow: $shadow-1;
+
+  // The frame's inner lip. Outset on the art rather than inset on the frame: an
+  // inset shadow here would paint beneath the drawing's own background and
+  // never be seen.
+  .art-surface {
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+  }
+
+  // The winner's frame. Lime rather than a gold of its own — the crown, the vote
+  // count and the card border are already $accent, and a second metal would be
+  // the only one in the app.
+  &--winner {
+    --frame-base: #{$accent};
+    --frame-hi: #{$accent};
+    --frame-lo: #{$accent-deep};
+  }
+}

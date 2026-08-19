@@ -60,20 +60,11 @@
     gap: $gap-3;
   }
 
+  // Doubles as the artefact's frame (`.art-frame` in the markup) — the stickers
+  // and the "Yours" tag are absolute against it, so they land on the drawing
+  // rather than on the frame, which is what the border being here buys.
   &__art {
     position: relative;
-  }
-
-  &__slot {
-    // The PixelCanvas is appended here. White background so untouched cells
-    // (-1 in submitted grids) read as paper rather than bleeding into the card.
-    // Ratio tracks the actual image (--art-ratio, set per-room on .voting) so
-    // non-square drawings aren't squished; defaults square until it's set.
-    width: 100%;
-    aspect-ratio: var(--art-ratio, 1 / 1);
-    background: #fff;
-    border-radius: $radius-sm;
-    overflow: hidden;
   }
 
   // Emoji stickers for the voter's own picks — top of the drawing, side by side.

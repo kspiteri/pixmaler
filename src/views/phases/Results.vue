@@ -146,7 +146,9 @@ function playAgain() {
               class="results__winner"
               :class="{ 'results__winner--mine': w.clientId === clientId }"
             >
-              <div :ref="el => setSlot(w.submissionId, el)" class="results__winner-art" />
+              <div class="results__winner-art art-frame art-frame--winner">
+                <div :ref="el => setSlot(w.submissionId, el)" class="art-surface" />
+              </div>
               <div class="results__winner-meta">
                 <p class="results__winner-name">
                   {{ w.name }}
@@ -180,7 +182,9 @@ function playAgain() {
             class="results__item"
             :class="{ 'results__item--mine': entry.clientId === clientId }"
           >
-            <div :ref="el => setSlot(entry.submissionId, el)" class="results__item-art" />
+            <div class="results__item-art art-frame">
+              <div :ref="el => setSlot(entry.submissionId, el)" class="art-surface" />
+            </div>
             <p class="results__item-name">
               {{ entry.name }}
             </p>

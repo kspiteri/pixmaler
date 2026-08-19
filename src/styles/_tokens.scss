@@ -55,6 +55,20 @@ $surface: #1a1a24; // cards, inputs, panels
 $surface-2: #111118; // slightly-off panel (drawing sidebar)
 $fg: #ffffff;
 
+// Paper — the artefact role's background (see `_surfaces.scss`). Same hex as
+// $fg, deliberately its own token: this is the drawing's paper, not text, and
+// the two must be able to move apart. Untouched cells (-1 in a submitted grid)
+// land on it, so it can never go dark.
+$paper: #ffffff;
+
+// Frame — the bevelled picture frame around a finished drawing. Three shades
+// of one bone-white: the top edge is the darkest and the bottom the lightest,
+// which is what makes it read as lit from below rather than as a flat border.
+$frame: #eeeeee;
+$frame-hi: #ffffff; // bottom edge — catches the light
+$frame-lo: #dddddd; // top edge — in shadow
+$frame-w: 6px;
+
 // Text on dark — opacity ramp.
 // Measured against $bg (#0e0e12): $fg-60 is 8.0:1, $fg-50 is 5.4:1, $fg-35 only
 // 3.2:1. WCAG AA wants 4.5:1 for normal text, so the intent is that **$fg-40 and
@@ -100,11 +114,14 @@ $accent-deep: #8cb320;
 $primary-deep: #4d399e;
 $shadow-press: rgba(0, 0, 0, 0.45);
 
-// Depth — the palette panel's shadow, in its two orientations. One value, two Y
-// directions: the panel keeps its weight whether it floats (desktop) or docks to
-// the bottom edge (mobile), so the pair has to change together. Named for the
-// rung it occupies; $shadow-1 (resting lift on artwork) doesn't exist yet — it
-// arrives with item 23's art-surface utility, which is what will consume it.
+// Depth — three rungs, and only three. $shadow-1 is the resting lift under a
+// framed drawing; $shadow-2 is floating chrome, in its two orientations. One
+// value, two Y directions: the palette panel keeps its weight whether it floats
+// (desktop) or docks to the bottom edge (mobile), so that pair has to change
+// together. $shadow-press above is the third rung, the hard offset under a
+// control. Nothing else joins the ramp — `.voting__sticker`'s drop-shadow is a
+// filter that follows the emoji's alpha, and the winner's lime glow is a one-off.
+$shadow-1: 0 4px 10px rgba(0, 0, 0, 0.35);
 $shadow-2: 0 8px 24px rgba(0, 0, 0, 0.5);
 $shadow-2-up: 0 -8px 24px rgba(0, 0, 0, 0.5);
 
@@ -116,7 +133,14 @@ $gap-4: 1rem;
 $gap-5: 1.5rem;
 $gap-6: 2rem;
 
-// Radius scale
+// Radius scale — the rung says what kind of thing it is, so the scale can be
+// retuned without re-deciding every site:
+//   $radius-sm  inner / nested — something sitting inside something else
+//   $radius     controls — buttons, inputs, pills
+//   $radius-lg  containers — cards, panels, rows
+//   $radius-xl  hero only — the winner card, and nothing else
+// Artwork is the standing exception: a drawing has square corners, because a
+// physical canvas does. See `_surfaces.scss`.
 $radius-sm: 0.5rem;
 $radius: 0.75rem;
 $radius-lg: 1rem;
