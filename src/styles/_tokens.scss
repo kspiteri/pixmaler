@@ -91,6 +91,15 @@ $green: #00cc00;
 $warn: $orange;
 $danger: #ef130b;
 
+// Press depth — the hard offset a control sits on, so pressing it is real
+// travel rather than a scale (see `_buttons.scss`). Static hex rather than
+// `color.adjust($accent, …)`: the values stay greppable and the compiled CSS
+// stays static. The neutral rung is for controls with no hue to deepen —
+// anything on $surface or transparent.
+$accent-deep: #8cb320;
+$primary-deep: #4d399e;
+$shadow-press: rgba(0, 0, 0, 0.45);
+
 // Spacing scale (rem)
 $gap-1: 0.25rem;
 $gap-2: 0.5rem;

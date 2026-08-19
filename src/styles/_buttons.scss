@@ -18,6 +18,7 @@
   cursor: pointer;
   transition:
     transform 0.1s,
+    box-shadow 0.1s,
     background 0.15s,
     color 0.15s,
     border-color 0.15s;
@@ -28,6 +29,8 @@
   }
 
   &--primary {
+    --press: 4px;
+    --press-colour: #{$accent-deep};
     background: $accent;
     color: $accent-fg;
 
@@ -36,15 +39,16 @@
       outline-color: $fg;
     }
 
+    // The offset grows by exactly what the button rises, so its bottom edge
+    // stays pinned to the page and the key reads as having left it.
     &:not(:disabled):hover {
-      transform: scale(1.02);
-    }
-    &:not(:disabled):active {
-      transform: scale(0.95);
+      transform: translateY(-2px);
+      box-shadow: 0 calc(var(--press) + 2px) 0 var(--press-colour);
     }
   }
 
   &--ghost {
+    --press-colour: #{$primary-deep};
     background: transparent;
     border: 2px solid $primary;
     color: $primary;
@@ -55,7 +59,7 @@
     }
   }
 
-  // Subdued surface button — Undo / Clear / Stop voting.
+  // Subdued surface button — Undo / Clear / Stop voting. Keeps the defaults.
   &--plain {
     background: $surface;
     border: 1px solid $border;
@@ -67,5 +71,23 @@
       color: $fg;
       border-color: $fg-25;
     }
+  }
+}
+
+// One press for every control in the app: it sits on a hard offset shadow and
+// travels down onto the page by that same distance.
+.btn,
+.pressable {
+  box-shadow: 0 var(--press, 2px) 0 var(--press-colour, #{$shadow-press});
+
+  &:not(:disabled):active {
+    transform: translateY(var(--press, 2px));
+    box-shadow: 0 0 0 var(--press-colour, #{$shadow-press});
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn {
+    transition-property: background, color, border-color;
   }
 }

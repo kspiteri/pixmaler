@@ -88,7 +88,7 @@ onBeforeUnmount(() => {
     <div class="paint__row">
       <div class="paint__settings">
         <button
-          class="paint__toggle"
+          class="paint__toggle pressable"
           type="button"
           :aria-expanded="settingsOpen"
           @click="settingsOpen = !settingsOpen"

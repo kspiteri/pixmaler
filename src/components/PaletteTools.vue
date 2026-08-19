@@ -261,7 +261,7 @@ function clear() {
         <!-- Dock button — snaps the panel back to its default position. Click
              is stopped so it doesn't also initiate a drag on pointerdown. -->
         <button
-          class="tools-panel__dock"
+          class="tools-panel__dock pressable"
           type="button"
           title="Dock to default position"
           aria-label="Dock palette to default position"

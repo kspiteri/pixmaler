@@ -245,7 +245,7 @@ function castVote(category: VoteCategory, submissionId: string) {
             <button
               v-for="c in VOTE_CATEGORIES"
               :key="c.id"
-              class="voting__cat"
+              class="voting__cat pressable"
               :class="{ 'voting__cat--active': myVotes[c.id] === sub.submissionId }"
               type="button"
               :aria-pressed="myVotes[c.id] === sub.submissionId"

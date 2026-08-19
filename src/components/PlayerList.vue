@@ -69,7 +69,7 @@ async function transferGm(p: Player) {
         <span v-if="p.isGm" class="player-list__pill">GM</span>
         <button
           v-if="canTransfer(p)"
-          class="player-list__make-gm"
+          class="player-list__make-gm pressable"
           type="button"
           @click="transferGm(p)"
         >

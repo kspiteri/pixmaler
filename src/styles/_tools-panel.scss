@@ -140,9 +140,6 @@
       color: $fg;
       border-color: $fg-25;
     }
-    &:active {
-      transform: scale(0.95);
-    }
   }
 
   &__body {
@@ -218,10 +215,13 @@
 
   // Done ("Ready") button — the DRAWING-phase primary CTA in place of Clear.
   // Once flagged it stays fully lit (accent fill) rather than fading out like a
-  // regular disabled button, so it reads as "locked in / ready".
+  // regular disabled button, so it reads as "locked in / ready" — and it sits
+  // held down, since a raised key that can no longer be pressed reads as broken.
   &__btn--done.tools-panel__btn--flagged:disabled {
     opacity: 1;
     cursor: default;
+    transform: translateY(var(--press));
+    box-shadow: 0 0 0 var(--press-colour);
   }
 
   // ── Mobile: dock to the bottom, full-width ──────────────────────────────────

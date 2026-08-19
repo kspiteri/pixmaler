@@ -253,7 +253,7 @@ onMounted(() => {
     <div class="picker__card">
       <div class="picker__upload-row">
         <span class="picker__setting-label">Upload image</span>
-        <label class="picker__browse">
+        <label class="picker__browse pressable">
           Browse…
           <input ref="fileInput" type="file" accept="image/*" hidden @change="onFileChange">
         </label>
@@ -264,7 +264,7 @@ onMounted(() => {
         <ul class="picker__sample-list">
           <li v-for="s in samples" :key="s.name">
             <button
-              class="picker__sample"
+              class="picker__sample pressable"
               :class="{ 'is-selected': selected === s.name }"
               type="button"
               :aria-pressed="selected === s.name"
