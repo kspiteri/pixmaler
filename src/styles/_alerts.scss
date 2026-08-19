@@ -1,0 +1,53 @@
+@use 'tokens' as *;
+
+// The alert register: `.conn-banner` (self-clearing status) and `.alert-dialog`
+// (answered by the user). They can't share markup — a native <dialog> lives in
+// the browser's top layer, a banner is pinned to the page — so they share this
+// file, which keeps the aesthetic pass a single-file edit.
+
+// ── LIVE STATUS ─────────────────────────────────────────────────────────────
+
+.conn-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  padding: $gap-2 $gap-3;
+  text-align: center;
+  font-family: $font-alert;
+  font-weight: $fw-semibold;
+  font-size: $fs-sm;
+  letter-spacing: $ls-alert;
+  color: $accent-fg;
+  background: $accent;
+}
+
+// ── MODAL ───────────────────────────────────────────────────────────────────
+
+.alert-dialog {
+  max-width: min(24rem, calc(100vw - #{$gap-6}));
+  padding: $gap-5;
+  border: 2px solid $warn;
+  border-radius: $radius-lg;
+  background: $surface;
+  color: $fg;
+
+  &::backdrop {
+    background: rgba(14, 14, 18, 0.7);
+  }
+
+  &__msg {
+    margin: 0 0 $gap-5;
+    font-family: $font-alert;
+    font-size: $fs-base;
+    line-height: $lh-snug;
+    letter-spacing: $ls-alert;
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: $gap-2;
+  }
+}
