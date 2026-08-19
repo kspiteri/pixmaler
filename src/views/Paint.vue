@@ -8,6 +8,7 @@ import { ChevronDown, ChevronUp, Settings } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import CanvasPair from '../components/CanvasPair.vue'
 import ImagePicker from '../components/ImagePicker.vue'
+import Logo from '../components/Logo.vue'
 import Tagline from '../components/Tagline.vue'
 import { orientationFor } from '../lib/aspect'
 
@@ -79,11 +80,12 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="paint">
-    <a class="paint__back" :href="backHref">← Back to Homepage</a>
-    <h1 class="paint__title">
-      Paint Sandbox
-    </h1>
-    <Tagline class="paint__sub" seed="solo sandbox, no lobby, no timer" />
+    <header class="phase__bar">
+      <a class="paint__back" :href="backHref"><Logo size="sm" /></a>
+      <div class="phase__status">
+        <Tagline class="paint__sub" seed="solo sandbox, no lobby, no timer" />
+      </div>
+    </header>
 
     <div class="paint__row">
       <div class="paint__settings">
