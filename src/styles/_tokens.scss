@@ -100,6 +100,14 @@ $accent-deep: #8cb320;
 $primary-deep: #4d399e;
 $shadow-press: rgba(0, 0, 0, 0.45);
 
+// Depth — the palette panel's shadow, in its two orientations. One value, two Y
+// directions: the panel keeps its weight whether it floats (desktop) or docks to
+// the bottom edge (mobile), so the pair has to change together. Named for the
+// rung it occupies; $shadow-1 (resting lift on artwork) doesn't exist yet — it
+// arrives with item 23's art-surface utility, which is what will consume it.
+$shadow-2: 0 8px 24px rgba(0, 0, 0, 0.5);
+$shadow-2-up: 0 -8px 24px rgba(0, 0, 0, 0.5);
+
 // Spacing scale (rem)
 $gap-1: 0.25rem;
 $gap-2: 0.5rem;

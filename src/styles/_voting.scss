@@ -151,7 +151,7 @@
     }
     &--active {
       border-color: $accent;
-      background: rgba(200, 255, 45, 0.1);
+      background: rgba($accent, 0.1);
       color: $accent;
     }
   }

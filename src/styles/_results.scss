@@ -44,11 +44,11 @@
     gap: $gap-4;
   }
   &__winner {
-    background: rgba(200, 255, 45, 0.05);
+    background: rgba($accent, 0.05);
     border: 2px solid $accent;
     border-radius: $radius-xl;
     padding: $gap-4;
-    box-shadow: 0 0 32px rgba(200, 255, 45, 0.15);
+    box-shadow: 0 0 32px rgba($accent, 0.15);
     display: flex;
     flex-direction: column;
     align-items: center;

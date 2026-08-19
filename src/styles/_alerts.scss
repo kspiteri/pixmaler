@@ -33,8 +33,10 @@
   background: $surface;
   color: $fg;
 
+  // $bg, not $accent-fg — they hold the same hex today, but this is the page
+  // darkening behind the dialog, not text on lime.
   &::backdrop {
-    background: rgba(14, 14, 18, 0.7);
+    background: rgba($bg, 0.7);
   }
 
   &__msg {
