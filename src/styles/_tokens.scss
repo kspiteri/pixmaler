@@ -105,6 +105,38 @@ $green: #00cc00;
 $warn: $orange;
 $danger: #ef130b;
 
+// Seat colours — a player's identity colour, by their seat (index) in the room.
+// Its own register, deliberately NOT a reuse of the accents above: every accent
+// carries a meaning already (lime = active/selected, purple = GM, orange =
+// $warn, red = error), and a filled avatar chip in one of those would claim that
+// meaning. See `lib/seats.ts` for how a seat maps to a colour.
+//
+// Generated, not hand-picked, in OKLCH — a perceptually uniform space, so equal
+// hue steps look equal and one lightness reads as one lightness across every
+// hue. All 21 sit at L=0.72 with chroma capped at 0.20 (gamut-limited in the
+// blues), which buys three properties worth keeping if these are ever retuned:
+//
+//   1. **Every chip clears AA with the dark initial on it** — 7.04:1 at worst
+//      against $bg ink, measured, so the initial needs no size exemption.
+//   2. **Neither reserved accent can be mistaken for a seat**, by *lightness*
+//      rather than hue: lime is L=0.929 and $danger L=0.602 against this ramp's
+//      0.72 (OKLab ΔE 0.215 and 0.135 from the nearest seat). That's why no hue
+//      band is carved out — doing so only forces muddy olives into the ramp.
+//   3. **Consecutive seats are ~137° apart** (the golden angle): the list is
+//      stored in walk order, not hue order, so the 2nd player to join never gets
+//      a near-neighbour of the 1st. Sorting this list by hue would silently
+//      destroy that — don't.
+//
+// $pink and $green are NOT in here. $pink lands within a just-noticeable
+// difference of seat 13 (ΔE 0.026) and $green a visible 0.055 from seat 14 with
+// much higher chroma, so folding either in would be invisible or would break the
+// uniform ramp. Both are now provably consumerless — flagged for item 20's token
+// audit, not deleted here.
+// 21 entries, seats 0–20 in list order.
+$player-colours:
+  #ff6f7d, #00c46d, #a690ff, #e48f00, #00baca, #f568c6, #98b300, #65a6ff, #ff7455, #00c099, #c67eff, #ce9c00, #00b6e1,
+  #ff67a0, #61bf2a, #899cff, #fd7a00, #00bdb3, #e171e7, #b7a700, #06afff;
+
 // Press depth — the hard offset a control sits on, so pressing it is real
 // travel rather than a scale (see `_buttons.scss`). Static hex rather than
 // `color.adjust($accent, …)`: the values stay greppable and the compiled CSS

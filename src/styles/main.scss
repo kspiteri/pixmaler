@@ -1,3 +1,4 @@
+@use 'sass:list';
 @use 'tokens' as *;
 
 // Shared primitives — reused across screens.
@@ -56,6 +57,13 @@
   --fw-semibold: #{$fw-semibold};
   --fw-bold: #{$fw-bold};
   --fw-black: #{$fw-black};
+
+  // Seat colours (item 26), 0-indexed so `lib/seats.ts` can address a seat by
+  // number without a single hex crossing into TypeScript. Emitted as a loop so
+  // the ramp in `_tokens.scss` stays the only place the colours are written down.
+  @for $i from 1 through list.length($player-colours) {
+    --player-colour-#{$i - 1}: #{list.nth($player-colours, $i)};
+  }
 }
 
 // Page-wide. Per-component styles live inside each .vue file's <style scoped>.

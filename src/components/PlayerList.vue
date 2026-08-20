@@ -1,30 +1,15 @@
 <script setup lang="ts">
-// Player list — one row per player: avatar, name, GM pill, and an optional
+// Player list — one row per player: avatar chip, name, GM pill, and an optional
 // "Make GM" transfer button when the viewer is the GM and the row is for a
 // connected non-self player.
 
 import type { ClientMsg, Player } from '../lib/types'
-import { inject } from 'vue'
+import { computed, inject } from 'vue'
 import { askConfirm } from '../lib/dialog'
 import { clientIdKey, socketKey } from '../lib/keys'
+import { seatFor } from '../lib/seats'
 
 const props = defineProps<Props>()
-// Per-player accent colour — assigned by the player's position in the list.
-// Index-based (not a clientId hash) so adjacent players never collide on a
-// near-identical colour; cycles once past 7 players, which is past coworker
-// party size anyway.
-const ROW_COLOURS = [
-  '#7c5cff',
-  '#ff5ca8',
-  '#c8ff2d',
-  '#ff8c00',
-  '#00cc00',
-  '#ef130b',
-  '#87ceeb',
-]
-function colourFor(index: number): string {
-  return ROW_COLOURS[index % ROW_COLOURS.length]
-}
 
 interface Props {
   players: Player[]
@@ -34,6 +19,21 @@ interface Props {
 }
 const socket = inject(socketKey)!.value!
 const viewerClientId = inject(clientIdKey)!
+
+// Seat is the player's index — join order, stable for the room's life (see
+// `lib/seats.ts`). Paired up here so the template resolves it once per row
+// rather than once per binding.
+//
+// `i` is doing double duty: it is both the seat and the render position, and
+// that only holds while nothing reorders. Nothing does today, and the current
+// intent is to keep it that way — a kicked player (`13-technical.md` item 33)
+// would stay in place, exactly as an `[offline]` one does. **If that ever
+// changes**, map first and sort the paired result, never the other way round:
+// sorting `props.players` before the map re-seats every row below the moved one
+// and silently re-colours players mid-game.
+const rows = computed(() =>
+  props.players.map((p, i) => ({ player: p, seat: seatFor(i, p.name) })),
+)
 
 const viewerIsGm = () => props.gmClientId === viewerClientId
 
@@ -57,12 +57,15 @@ async function transferGm(p: Player) {
     </p>
     <ul class="player-list__rows">
       <li
-        v-for="(p, i) in players"
+        v-for="{ player: p, seat } in rows"
         :key="p.clientId"
         class="player-list__row"
         :class="{ 'player-list__row--offline': !p.connected }"
-        :style="{ '--row-colour': colourFor(i) }"
+        :style="{ '--seat-colour': seat?.colour }"
       >
+        <!-- Decorative: the name sits right beside it, so the letter is never
+             the only way to tell who this is. -->
+        <span class="player-list__avatar" aria-hidden="true">{{ seat?.initial }}</span>
         <span class="player-list__name">
           {{ p.name }}<span v-if="!p.connected" class="player-list__offline"> [offline]</span>
         </span>
@@ -101,13 +104,34 @@ async function transferGm(p: Player) {
     padding: 0.625rem 0.75rem;
     border-radius: $radius;
     background: $surface;
-    border: 2px solid var(--row-colour, #{$border});
+    border: 2px solid var(--seat-colour, #{$border});
 
     @include wonk($art: null);
 
     &--offline {
       opacity: 0.5;
     }
+  }
+
+  // The seat colour as a filled chip. This is the artefact of item 26(b): the
+  // colour stops being a border the eye skips and becomes the player's mark,
+  // which Results then repeats. Ink is $bg rather than $fg — every seat in the
+  // ramp is ≥7:1 against it, while white fails on all 21 (best case 4.4).
+  &__avatar {
+    flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    // A nested rung: the chip sits inside the row.
+    border-radius: $radius-sm;
+    background: var(--seat-colour, #{$fg-25});
+    color: $bg;
+    font-family: $font-display;
+    font-weight: $fw-bold;
+    font-size: $fs-sm;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   &__name {
@@ -124,7 +148,7 @@ async function transferGm(p: Player) {
     font-size: 0.625rem;
     padding: 0.125rem 0.5rem;
     border-radius: 999px;
-    border: 1px solid rgba(124, 92, 255, 0.5);
+    border: 1px solid rgba($primary, 0.5);
     color: $primary;
   }
 

@@ -4,18 +4,22 @@
 // ordered by overall points. Each drawing appears exactly once. The GM gets a
 // "Play again" button that returns the room to LOBBY.
 
-import type { ClientMsg, ServerMsg } from '../../lib/types'
+import type { ClientMsg, Player, ServerMsg } from '../../lib/types'
 import { computed, inject, nextTick, onBeforeUnmount, watch } from 'vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import Tagline from '../../components/Tagline.vue'
 import { artRatio as artRatioFor } from '../../lib/aspect'
 import { PixelCanvas } from '../../lib/canvas'
 import { clientIdKey, socketKey } from '../../lib/keys'
+import { seatFor } from '../../lib/seats'
 import { VOTE_CATEGORIES } from '../../lib/types'
 
 const props = defineProps<{
   results: Results | null
   gmClientId: string
+  // Needed only to resolve seat colours: `RankedResult` carries a clientId but
+  // no seat, and a seat is the player's index in this array (see `lib/seats.ts`).
+  players: Player[]
 }>()
 
 // Resolve a `public/`-hosted asset path against Vite's `base` (e.g.
@@ -32,6 +36,11 @@ const clientId = inject(clientIdKey)!
 
 const isGm = computed(() => props.gmClientId === clientId)
 
+// clientId → seat, built once per state push rather than a findIndex per card:
+// the gallery is ordered by points, not by join order, so every entry needs a
+// lookup. A player missing from the roster yields no chip rather than a guess.
+const seats = computed(() => new Map(props.players.map((p, i) => [p.clientId, i])))
+
 // All drawings share the GM's image dimensions — one ratio drives every art
 // slot (hero + gallery) via `--art-ratio`, so non-square images keep shape.
 const artRatio = computed(() =>
@@ -39,18 +48,22 @@ const artRatio = computed(() =>
 )
 
 // Top scorers (joint on a tie) become the hero; the rest form the gallery,
-// still in overall-points order. `ranked` arrives pre-sorted descending.
-const winners = computed<Entry[]>(() => {
-  const ranked = props.results?.ranked ?? []
-  if (ranked.length === 0)
+// still in overall-points order. `ranked` arrives pre-sorted descending. Each
+// entry is paired with its seat here so the template resolves the lookup once
+// per card instead of once per binding.
+const ranked = computed<Entry[]>(() => props.results?.ranked ?? [])
+function withSeats(entries: Entry[]) {
+  return entries.map(e => ({ entry: e, seat: seatFor(seats.value.get(e.clientId) ?? -1, e.name) }))
+}
+
+const winners = computed(() => {
+  const all = ranked.value
+  if (all.length === 0)
     return []
-  const top = ranked[0].votes
-  return ranked.filter(e => e.votes === top)
+  const top = all[0].votes
+  return withSeats(all.filter(e => e.votes === top))
 })
-const rest = computed<Entry[]>(() => {
-  const ranked = props.results?.ranked ?? []
-  return ranked.slice(winners.value.length)
-})
+const rest = computed(() => withSeats(ranked.value.slice(winners.value.length)))
 
 // Per-category breakdown for the hero, e.g. `[{ count: 5, icon: laugh.svg, … }, …]`.
 // Falls back to 0 for any missing category so a stale/old-shape results payload
@@ -141,7 +154,7 @@ function playAgain() {
           </p>
           <div class="results__winners">
             <div
-              v-for="w in winners"
+              v-for="{ entry: w, seat } in winners"
               :key="w.submissionId"
               class="results__winner"
               :class="{ 'results__winner--mine': w.clientId === clientId }"
@@ -151,6 +164,12 @@ function playAgain() {
               </div>
               <div class="results__winner-meta">
                 <p class="results__winner-name">
+                  <span
+                    v-if="seat"
+                    class="results__seat"
+                    :style="{ '--seat-colour': seat.colour }"
+                    aria-hidden="true"
+                  >{{ seat.initial }}</span>
                   {{ w.name }}
                 </p>
                 <p class="results__winner-votes">
@@ -177,7 +196,7 @@ function playAgain() {
         <!-- Gallery: everyone else, ordered by overall points -->
         <div v-if="rest.length" class="results__gallery">
           <div
-            v-for="entry in rest"
+            v-for="{ entry, seat } in rest"
             :key="entry.submissionId"
             class="results__item"
             :class="{ 'results__item--mine': entry.clientId === clientId }"
@@ -186,6 +205,12 @@ function playAgain() {
               <div :ref="el => setSlot(entry.submissionId, el)" class="art-surface" />
             </div>
             <p class="results__item-name">
+              <span
+                v-if="seat"
+                class="results__seat"
+                :style="{ '--seat-colour': seat.colour }"
+                aria-hidden="true"
+              >{{ seat.initial }}</span>
               {{ entry.name }}
             </p>
             <p class="results__item-votes">

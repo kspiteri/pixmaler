@@ -238,7 +238,12 @@ if (route === 'room' && roomCode) {
         :total-voters="state.totalVoters"
         :vote-state="voteState"
       />
-      <Results v-else-if="state.phase === 'RESULTS'" :results="results" :gm-client-id="state.gmClientId" />
+      <Results
+        v-else-if="state.phase === 'RESULTS'"
+        :results="results"
+        :gm-client-id="state.gmClientId"
+        :players="state.players"
+      />
     </template>
 
     <!-- The app's only dialog instance (lib/dialog.ts). Outside the phase chain
