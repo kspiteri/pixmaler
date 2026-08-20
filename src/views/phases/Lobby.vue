@@ -260,7 +260,7 @@ onBeforeUnmount(() => {
             <button
               v-for="s in AVATAR_SHAPES"
               :key="s"
-              class="lobby__shape-btn pressable"
+              class="lobby__shape-btn pressable no-shadow"
               type="button"
               :aria-pressed="s === mySeat.shape"
               :aria-label="s"

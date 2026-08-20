@@ -84,6 +84,10 @@
     transform: translateY(var(--press, 2px));
     box-shadow: 0 0 0 var(--press-colour, #{$shadow-press});
   }
+
+  &.no-shadow {
+    box-shadow: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
