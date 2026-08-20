@@ -78,7 +78,19 @@ function enterRoom(room: string) {
         Join room
       </button>
 
-      <a class="entry__sandbox" :href="sandboxHref">Or open the Paint sandbox</a>
+      <div class="entry__divider">
+        <span class="entry__rule" />
+        <span class="entry__divider-text">or practice without a timer</span>
+        <span class="entry__rule" />
+      </div>
+
+      <button
+        class="btn btn--ghost entry__sandbox"
+        type="button"
+        @href="sandboxHref"
+      >
+        Free Mode
+      </button>
     </div>
   </div>
 </template>
