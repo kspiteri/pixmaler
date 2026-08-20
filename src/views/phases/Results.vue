@@ -150,7 +150,7 @@ function playAgain() {
 
     <div class="results" :style="{ '--art-ratio': artRatio }">
       <p v-if="!results" class="results__waiting">
-        Waiting for results…
+        counting the damage…
       </p>
 
       <template v-else>

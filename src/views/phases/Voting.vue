@@ -207,7 +207,7 @@ function castVote(category: VoteCategory, submissionId: string) {
         </p>
         <p class="voting__hint">
           <template v-if="allCast">
-            all votes in — waiting for the others…
+            your votes are in. waiting for the rest.
           </template>
           <template v-else>
             you've voted:
@@ -263,7 +263,7 @@ function castVote(category: VoteCategory, submissionId: string) {
       </div>
 
       <p v-else class="voting__waiting">
-        Waiting for the gallery…
+        hanging the exhibition…
       </p>
     </div>
   </PhaseLayout>

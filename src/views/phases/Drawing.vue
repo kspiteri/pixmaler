@@ -86,7 +86,7 @@ const flaggedDone = computed(() =>
 // Derived timer presentation. Bar shrinks as time runs out and shifts
 // lime → orange → red in the final stretch for urgency.
 const timerText = computed(() =>
-  secondsLeft.value === null ? 'Drawing…' : `Time left: ${secondsLeft.value}s`,
+  secondsLeft.value === null ? 'drawing…' : `${secondsLeft.value}s left`,
 )
 const timerPct = computed(() => {
   if (secondsLeft.value === null || totalSeconds.value <= 0)
@@ -192,7 +192,7 @@ onMounted(() => {
     autoSubmitTimer = setTimeout(autoSubmitAtDeadline, remaining)
   }
 
-  // No deadline → secondsLeft stays null; timerText shows "Drawing…".
+  // No deadline → secondsLeft stays null; timerText shows "drawing…".
 
   // Cancel pending sends if the socket goes away. Phase change is handled by
   // onBeforeUnmount.
