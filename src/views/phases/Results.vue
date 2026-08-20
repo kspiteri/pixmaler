@@ -193,8 +193,6 @@ function playAgain() {
           </div>
         </div>
 
-        <Tagline class="results__tagline" />
-
         <!-- Gallery: everyone else, ordered by overall points -->
         <div v-if="rest.length" class="results__gallery">
           <div
@@ -221,6 +219,8 @@ function playAgain() {
         </div>
       </template>
     </div>
+
+    <Tagline class="results__tagline" />
   </PhaseLayout>
 </template>
 
