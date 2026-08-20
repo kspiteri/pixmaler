@@ -1,14 +1,19 @@
 @use 'tokens' as *;
 
-// The seat chip — a player's avatar. One definition, because it renders in two
-// places and the shape modifiers would otherwise have to be written twice: the
-// lobby roster (`_player-list.scss`) and the results screen (`_results.scss`).
+// The seat chip — a player's avatar. One definition, because the shape modifiers
+// would otherwise have to be written twice. Two consumers:
+//
+//   - `_player-tag.scss` — every place a chip sits beside a name, which is all
+//     four player sites, since they all render through `PlayerTag.vue`.
+//   - `_lobby.scss` — the shape picker, where a chip is a *swatch* rather than a
+//     player. That distinction is why the picker is the one place the lean in
+//     `_player-tag.scss` deliberately doesn't reach: a grid of leaning swatches
+//     reads as broken rendering.
 //
 // It originally had to be global so `PlayerList.vue`'s *scoped* block could wear
 // the classes — a scoped block can always use a global class, but can't `@use` a
-// rule-emitting partial without duplicating it. The roster's CSS has since moved
-// into a partial of its own, so this is now just an ordinary shared primitive with
-// two consumers.
+// rule-emitting partial without duplicating it. That block is gone entirely now,
+// so this is just an ordinary shared primitive.
 //
 // Colour comes from `--seat-colour` (the seat ramp, see `_tokens.scss`), set
 // inline by whoever renders the chip. Ink is $bg, never white — every seat in the
