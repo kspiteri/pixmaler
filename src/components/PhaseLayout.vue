@@ -5,12 +5,13 @@
 // (0–100) and `progressColour`.
 
 import Logo from './Logo.vue'
+import ThemeToggle from './ThemeToggle.vue'
 
 withDefaults(defineProps<{
   // 0–100 width of the top bar. Omit to hide the bar entirely.
   progress?: number | null
   progressColour?: string
-}>(), { progress: null, progressColour: '#c8ff2d' })
+}>(), { progress: null, progressColour: 'var(--timer-ok)' })
 </script>
 
 <template>
@@ -30,6 +31,7 @@ withDefaults(defineProps<{
       <Logo size="sm" />
       <div class="phase__status">
         <slot name="status" />
+        <ThemeToggle />
       </div>
     </header>
 

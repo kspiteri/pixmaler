@@ -1,0 +1,139 @@
+// The two theme palettes — the only file that writes a colour value. `_tokens.scss`
+// holds the names that point here.
+//
+// Not in `_tokens.scss` because five `<style scoped>` blocks `@use` it, and Vue
+// compiles each separately — a `:root` rule there is emitted once per block and
+// scope-attributed. Only theme-varying colours belong here; fills that carry their
+// own ink, `$paper`, `$ink-on-colour` and `$scrim` stay literals in `_tokens.scss`.
+
+@mixin dark {
+  --bg: #0e0e12;
+  --surface: #1a1a24;
+  --surface-2: #111118;
+  --fg: #ffffff;
+
+  --fg-80: rgba(255, 255, 255, 0.8);
+  --fg-60: rgba(255, 255, 255, 0.6);
+  --fg-50: rgba(255, 255, 255, 0.5);
+  --fg-35: rgba(255, 255, 255, 0.35);
+  --fg-30: rgba(255, 255, 255, 0.3);
+  --fg-25: rgba(255, 255, 255, 0.25);
+  --fg-20: rgba(255, 255, 255, 0.2);
+
+  --border: rgba(255, 255, 255, 0.1);
+  --border-soft: rgba(255, 255, 255, 0.07);
+
+  // `-hi` is the bottom edge and catches the light, `-lo` the top and sits in
+  // shadow. That order is what reads as lit from below.
+  --frame-base: #eeeeee;
+  --frame-hi: #ffffff;
+  --frame-lo: #dddddd;
+  --frame-winner-base: #c8ff2d;
+  --frame-winner-hi: #c8ff2d;
+  --frame-winner-lo: #8cb320;
+
+  --accent-ink: #c8ff2d;
+  --warn-ink: #ff8c00;
+
+  // Timer ribbon fill, in urgency order. Needs 3:1 against the `$surface` track.
+  --timer-ok: #c8ff2d;
+  --timer-warn: #ff8c00;
+  --timer-danger: #ef130b;
+
+  --logo-shadow: none;
+  // Kept as the literal it replaced, so this theme is untouched — white at 10%
+  // over white paper, so in practice invisible.
+  --canvas-edge: rgba(255, 255, 255, 0.1);
+
+  --shadow-1: 0 4px 10px rgba(0, 0, 0, 0.35);
+  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-2-up: 0 -8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-press: rgba(0, 0, 0, 0.45);
+
+  --backdrop-line: rgba(255, 255, 255, 0.03);
+  --backdrop-vignette: rgba(0, 0, 0, 0.45);
+}
+
+@mixin light {
+  // Grey, not white: white paper on a white page is 1.00:1, so the drawing would
+  // have no edge. At #dcdce2 it's 1.37:1 before its shadow, and the ladder up to
+  // `$paper` keeps "raised is lighter" true.
+  --bg: #dcdce2;
+  --surface: #f2f2f6;
+  --surface-2: #e8e8ee;
+  --fg: #0e0e12;
+
+  // Re-derived, not inverted — black on a pale page gives less contrast than white
+  // on a dark one at equal alpha, so each stop rises to hold its dark-theme ratio.
+  --fg-80: rgba(14, 14, 18, 0.93);
+  --fg-60: rgba(14, 14, 18, 0.75);
+  --fg-50: rgba(14, 14, 18, 0.65);
+  --fg-35: rgba(14, 14, 18, 0.48);
+  --fg-30: rgba(14, 14, 18, 0.41);
+  --fg-25: rgba(14, 14, 18, 0.34);
+  --fg-20: rgba(14, 14, 18, 0.27);
+
+  // Alphas unchanged: 0.1 is 1.28:1 on dark and 1.25:1 here.
+  --border: rgba(14, 14, 18, 0.1);
+  --border-soft: rgba(14, 14, 18, 0.07);
+
+  // A grey mat; bone-white would vanish into the page. Every edge clears the page
+  // (1.22-2.04:1) and the paper (1.66-2.78:1).
+  --frame-base: #b4b4c0;
+  --frame-hi: #c8c8d2;
+  --frame-lo: #9a9aa6;
+  // A frame reads against the *card*, and lime there is 1.16:1 — same hue, dark
+  // enough to edge a near-white card at 4.2-9.8:1.
+  --frame-winner-base: #485f01;
+  --frame-winner-hi: #607e02;
+  --frame-winner-lo: #314201;
+
+  // Lime is 1.16:1 on this page and fails 1.4.11 even as a border, so text and
+  // lines take a hue-preserved olive. The lime *fills* are untouched.
+  --accent-ink: #485f01;
+  --warn-ink: #944f00;
+
+  // Drives the ribbon fill *and* the timer text, so each needs 3:1 on the
+  // `$surface` track and 4.5:1 on the page. Bright lime is 1.06:1 on the track and
+  // bright red only 3.2:1 as text, so all three darken.
+  --timer-ok: #485f01;
+  --timer-warn: #944f00;
+  --timer-danger: #bb0a05;
+
+  // Clamped so the halo reads the same at 16px and 88px: `em` alone leaves it
+  // sub-pixel small and disproportionate large.
+  --logo-shadow: 0 clamp(1px, 0.05em, 4px) clamp(3px, 0.11em, 10px) rgba(14, 14, 18, 0.9);
+  --canvas-edge: #a8a8b4;
+
+  // Lighter than dark's — a heavy shadow on a pale page reads as dirt.
+  --shadow-1: 0 4px 10px rgba(14, 14, 18, 0.16);
+  --shadow-2: 0 8px 24px rgba(14, 14, 18, 0.2);
+  --shadow-2-up: 0 -8px 24px rgba(14, 14, 18, 0.2);
+  --shadow-press: rgba(14, 14, 18, 0.28);
+
+  --backdrop-line: rgba(14, 14, 18, 0.05);
+  --backdrop-vignette: rgba(14, 14, 18, 0.1);
+}
+
+// Dark is the default; the query honours the OS; the attribute blocks override it.
+//
+// **Order is load-bearing.** `[data-theme='dark']` and `:root` inside the query are
+// both one selector, so they tie and source order decides. Move the attribute
+// blocks above the query and choosing dark on a light-set OS stops working.
+:root {
+  @include dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    @include light;
+  }
+}
+
+[data-theme='light'] {
+  @include light;
+}
+
+[data-theme='dark'] {
+  @include dark;
+}

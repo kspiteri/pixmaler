@@ -4,6 +4,7 @@
 import { ref } from 'vue'
 import Logo from '../components/Logo.vue'
 import Tagline from '../components/Tagline.vue'
+import ThemeToggle from '../components/ThemeToggle.vue'
 import { wordPair } from '../lib/words'
 
 const name = ref(localStorage.getItem('pixmaler:name') ?? '')
@@ -27,6 +28,7 @@ function enterRoom(room: string) {
 
 <template>
   <div class="entry">
+    <ThemeToggle class="theme-toggle--corner" />
     <!-- Wordmark -->
     <header class="entry__brand">
       <Logo size="lg" />

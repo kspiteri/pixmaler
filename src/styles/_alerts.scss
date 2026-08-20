@@ -28,7 +28,7 @@
 .alert-dialog {
   max-width: min(24rem, calc(100vw - #{$gap-6}));
   padding: $gap-5;
-  border: 2px solid $warn;
+  border: 2px solid $warn-ink;
   border-radius: $radius-lg;
   background: $surface;
   color: $fg;
@@ -36,7 +36,7 @@
   // $bg, not $accent-fg — they hold the same hex today, but this is the page
   // darkening behind the dialog, not text on lime.
   &::backdrop {
-    background: rgba($bg, 0.7);
+    background: $scrim;
   }
 
   &__msg {

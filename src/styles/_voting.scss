@@ -144,9 +144,9 @@
       border-color: $fg-25;
     }
     &--active {
-      border-color: $accent;
-      background: rgba($accent, 0.1);
-      color: $accent;
+      border-color: $accent-ink;
+      background: color-mix(in srgb, $accent-ink 10%, transparent);
+      color: $accent-ink;
     }
   }
   &__cat-icon {
@@ -163,7 +163,7 @@
 
   // Status-bar tally + end button.
   &__tally {
-    color: $fg-50;
+    color: $muted;
     font-size: 0.875rem;
   }
   &__stop {

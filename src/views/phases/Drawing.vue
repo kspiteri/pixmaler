@@ -93,13 +93,15 @@ const timerPct = computed(() => {
     return 100
   return Math.max(0, Math.min(100, (secondsLeft.value / totalSeconds.value) * 100))
 })
+// Themed, so no hex lives here: one value drives both the ribbon fill and the timer
+// text, and neither reads on a light page in bright lime.
 const timerColour = computed(() => {
   const s = secondsLeft.value
   if (s === null || s > 40)
-    return '#c8ff2d' // accent
+    return 'var(--timer-ok)'
   if (s > 20)
-    return '#ff8c00' // orange
-  return '#ef130b' // danger
+    return 'var(--timer-warn)'
+  return 'var(--timer-danger)'
 })
 
 let autoSubmitTimer: ReturnType<typeof setTimeout> | null = null
@@ -258,7 +260,7 @@ onBeforeUnmount(() => {
     font-size: 1.05rem;
   }
   &__done {
-    color: $fg-35;
+    color: $muted;
     font-size: 0.875rem;
   }
 

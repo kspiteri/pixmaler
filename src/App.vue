@@ -282,7 +282,7 @@ if (route === 'room' && roomCode) {
     font-family: $font-display;
     font-weight: 700;
     font-size: 2rem;
-    color: $accent;
+    color: $accent-ink;
     margin: 0 0 $gap-4;
     word-break: break-word;
   }

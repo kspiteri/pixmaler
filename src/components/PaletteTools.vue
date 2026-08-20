@@ -408,7 +408,7 @@ function clear() {
   }
 
   :deep(.swatch__cell--highlighted) {
-    border-color: $accent;
+    border-color: $accent-ink;
   }
 
   :deep(.brush) {

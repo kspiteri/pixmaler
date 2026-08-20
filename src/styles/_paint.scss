@@ -97,11 +97,11 @@
     // Open state wears the lime accent — the one persistent bit of brand colour
     // on this page, and it reads as "this panel is the thing you're editing".
     &[aria-expanded='true'] {
-      color: $accent;
-      border-color: rgba($accent, 0.4);
+      color: $accent-ink;
+      border-color: color-mix(in srgb, $accent-ink 40%, transparent);
 
       .paint__chevron {
-        color: $accent;
+        color: $accent-ink;
       }
     }
   }

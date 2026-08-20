@@ -5,25 +5,20 @@
 // stands on: Entry, the name gate, all four room phases, the /paint sandbox and
 // anything added later.
 //
-// **A pseudo-element, not markup.** `App.vue`'s template is a set of `v-if`
-// branches with no shared root, so an element would have to be repeated per
-// route — and forgotten on the next one. This attaches once to `body` and can't
-// be missed. It also drops the `aria-hidden` the old markup needed: a
-// pseudo-element is never in the accessibility tree to begin with.
+// **A pseudo-element, not markup**, because `App.vue` has no shared root — an
+// element would be repeated per route and forgotten on the next. It also needs no
+// `aria-hidden`: a pseudo-element is never in the accessibility tree.
 //
-// **`html` carries the base colour, not `body`.** The two are a pair and have to
-// move together: the texture sits at `z-index: -1`, which paints *behind* its
-// own element's background, so leaving `$bg` on `body` would bury it. `body`
-// stays transparent and `html`'s background propagates to the canvas exactly as
-// `body`'s used to — same pixels, one less painted layer.
+// **`html` carries the base colour, not `body`** — the texture sits at `z-index: -1`,
+// which paints behind its own element's background, so a background on `body` buries
+// it. The two are a pair; don't split them.
 //
-// **Fixed, not `background-attachment: fixed`.** Same visual result, but the
-// attachment property is long-standing broken on iOS Safari, and this is a game
-// played on phones.
+// **Fixed, not `background-attachment: fixed`** — same result, but the attachment
+// property is long-broken on iOS Safari and this is a game played on phones.
 
 $backdrop-pitch: 32px; // grid cell — the pixel motif, matched to the old Entry grid
-$backdrop-line: rgba(255, 255, 255, 0.03); // alpha baked in, so no compositing layer
-$backdrop-vignette: rgba(0, 0, 0, 0.45); // corner darkness; centre stays untouched
+$backdrop-line: var(--backdrop-line); // alpha baked in, so no compositing layer
+$backdrop-vignette: var(--backdrop-vignette); // corner shade; centre stays untouched
 $backdrop-vignette-clear: 42%; // how far out the centre reads as unvignetted
 
 html {

@@ -31,7 +31,7 @@
     font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.2em;
-    color: $accent;
+    color: $accent-ink;
   }
   &__crown-icon {
     width: 1.5rem;
@@ -45,11 +45,10 @@
     gap: $gap-4;
   }
   &__winner {
-    background: rgba($accent, 0.05);
-    border: 1px solid $accent;
+    background: color-mix(in srgb, $accent-ink 5%, transparent);
     border-radius: $radius-xl;
     padding: $gap-4;
-    box-shadow: 0 0 32px rgba($accent, 0.15);
+    box-shadow: 0 0 32px color-mix(in srgb, $accent-ink 15%, transparent);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -76,7 +75,7 @@
     margin: 0.125rem 0 0;
     font-family: $font-display;
     font-weight: 700;
-    color: $accent;
+    color: $accent-ink;
   }
   &__winner-breakdown {
     margin: 0.125rem 0 0;
@@ -109,7 +108,6 @@
   }
   &__item {
     background: $surface;
-    border: 1px solid $border-soft;
     border-radius: $radius-lg;
     padding: $gap-3;
     text-align: center;

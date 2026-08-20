@@ -2,6 +2,7 @@
 @use 'tokens' as *;
 
 // Shared primitives — reused across screens.
+@use 'theme'; // the dark/light palettes — must come first, everything reads it
 @use 'backdrop'; // html base colour + the app-wide pixel grid & vignette
 @use 'alerts'; // the alert register — .conn-banner + AlertDialog
 @use 'avatar'; // the seat chip + its shape modifiers (shared: roster + results)
@@ -21,6 +22,7 @@
 @use 'picker'; // ImagePicker's cards (shared by Lobby GM controls + /paint)
 @use 'player-list'; // the lobby roster — after `buttons`, see the file header
 @use 'player-tag'; // PlayerTag.vue — the seat chip + name pairing
+@use 'theme-toggle'; // ThemeToggle.vue — the switch in every header
 
 // ── CSS custom properties ──────────────────────────────────────────────────
 // Exposed so `.vue` scoped styles can consume the same tokens without a
@@ -101,7 +103,7 @@ a {
 // lime-on-lime reads as a halo) and `.segmented__item` (inset, because its
 // parent clips with `overflow: hidden`).
 :focus-visible {
-  outline: 2px solid $accent;
+  outline: 2px solid $accent-ink;
   outline-offset: 2px;
 }
 

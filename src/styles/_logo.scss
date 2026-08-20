@@ -23,8 +23,11 @@
   line-height: 1;
   font-size: clamp(3rem, 10vw, 5.5rem);
 
+  // Brand lime in both themes, not `$accent-ink` — a logotype is exempt from 1.4.3.
+  // The light page is close to lime's lightness, so a dark halo carries the edge.
   &__pix {
     color: $accent;
+    text-shadow: var(--logo-shadow);
   }
   &__maler {
     color: $fg;

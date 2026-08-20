@@ -1,0 +1,35 @@
+@use 'tokens' as *;
+
+// The theme switch, top right of every header. No fill to deepen, so `.pressable`
+// rather than a `.btn` variant.
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  // 44px, item 9's touch floor.
+  width: 2.75rem;
+  height: 2.75rem;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid $border;
+  border-radius: $radius;
+  background: transparent;
+  color: $fg-60;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+
+  &:hover {
+    color: $fg;
+    border-color: $fg-25;
+  }
+
+  // Entry is a centred hero with no bar, so the button anchors to the corner.
+  &--corner {
+    position: absolute;
+    top: $gap-4;
+    right: $gap-4;
+  }
+}

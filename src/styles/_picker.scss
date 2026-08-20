@@ -72,7 +72,7 @@
     white-space: nowrap;
   }
   &__spinner {
-    color: $accent;
+    color: $accent-ink;
     flex-shrink: 0;
     opacity: 0; // space stays reserved; only `is-on` shows it
     transition: opacity 0.15s;
@@ -182,9 +182,9 @@
     // state, and is the only "which image am I painting?" cue once the panel
     // collapses (see the summary on the toggle bar).
     &.is-selected {
-      color: $accent;
-      border-color: $accent;
-      background: rgba($accent, 0.08);
+      color: $accent-ink;
+      border-color: $accent-ink;
+      background: color-mix(in srgb, $accent-ink 8%, transparent);
     }
   }
   // Whole image, never cropped: fixed height, width follows the source aspect.
@@ -211,10 +211,10 @@
     gap: $gap-2;
     margin: 0;
     padding: $gap-2;
-    border: 1px solid rgba($warn, 0.35);
+    border: 1px solid color-mix(in srgb, $warn-ink 35%, transparent);
     border-radius: $radius-sm;
-    background: rgba($warn, 0.1);
-    color: $warn;
+    background: color-mix(in srgb, $warn-ink 10%, transparent);
+    color: $warn-ink;
     font-size: $fs-sm;
 
     // Keeps the triangle on the first line when the copy wraps.

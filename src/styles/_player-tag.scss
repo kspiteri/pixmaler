@@ -20,8 +20,8 @@
     transition: rotate 160ms ease-out;
   }
 
-  // The delay sits here rather than in the base rule, so it only pauses on the way
-  // to straight — leaving the tag flops it back instantly, which is the joke.
+  // Delay here, not on the base rule, so only the straighten pauses — leaving the
+  // tag flops it back instantly, which is the joke.
   &:hover .avatar {
     rotate: 0deg;
     transition-delay: 250ms;
@@ -55,9 +55,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    // `:hover` needs covering explicitly: at 0-3-0 it outranks a bare
-    // `.avatar` reset, which would leave the 250ms delay in place and turn this
-    // into an unresponsive pause followed by a jump.
+    // `:hover` needs covering explicitly — at 0-3-0 it outranks a bare `.avatar`
+    // reset, leaving the delay in place: a dead pause, then a jump.
     .avatar,
     &:hover .avatar {
       transition: none;

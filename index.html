@@ -57,6 +57,15 @@
         }
       })()
     </script>
+
+    <script>
+      // Apply a stored choice before first paint, so light-on-a-dark-OS doesn't flash.
+      // Does nothing when unset — `_theme.scss`'s media query handles that in CSS.
+      ;(function () {
+        var t = localStorage.getItem('pixmaler:theme')
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>

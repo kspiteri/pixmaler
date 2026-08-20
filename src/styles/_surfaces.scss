@@ -24,10 +24,6 @@
 // it. Unframed while it's being drawn, framed once it's finished and on show —
 // which is why CanvasPair (DRAWING and /paint) has neither this nor the lift.
 .art-frame {
-  --frame-base: #{$frame};
-  --frame-hi: #{$frame-hi};
-  --frame-lo: #{$frame-lo};
-
   box-sizing: border-box;
   // Not a radius-scale rung: this is the frame's own milled edge, not a UI
   // corner, and anything larger stops reading as a solid object.
@@ -45,11 +41,14 @@
   }
 
   // The winner's frame. Lime rather than a gold of its own — the crown, the vote
-  // count and the card border are already $accent, and a second metal would be
+  // count and the card border are already the accent, and a second metal would be
   // the only one in the app.
+  //
+  // Themed, unlike the lime *fills*: a frame reads against the card behind it, and
+  // lime on a near-white card is 1.16:1. Light takes the olive family instead.
   &--winner {
-    --frame-base: #{$accent};
-    --frame-hi: #{$accent};
-    --frame-lo: #{$accent-deep};
+    --frame-base: var(--frame-winner-base);
+    --frame-hi: var(--frame-winner-hi);
+    --frame-lo: var(--frame-winner-lo);
   }
 }

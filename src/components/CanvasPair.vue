@@ -132,9 +132,9 @@ onMounted(() => {
     ),
   })
   target.canvas.classList.add('canvas-pair__target-canvas')
-  // PixelCanvas defaults editable canvases to a soft border, applied inline by
-  // the constructor. Force the theme border here — inline beats class rules.
-  target.canvas.style.border = '1px solid rgba(255,255,255,0.1)'
+  // Inline, not a partial: this has to beat the class rules. The constructor covers
+  // the editable canvas only, so the read-only target needs its own.
+  target.canvas.style.border = '1px solid var(--canvas-edge)'
   targetSlot.value!.appendChild(target.canvas)
 
   const player = new PixelCanvas({
@@ -153,7 +153,7 @@ onMounted(() => {
     },
   })
   player.canvas.classList.add('canvas-pair__draw-canvas')
-  player.canvas.style.border = '1px solid rgba(255,255,255,0.1)'
+  player.canvas.style.border = '1px solid var(--canvas-edge)'
   player.canvas.style.background = '#fff'
   drawSlot.value!.appendChild(player.canvas)
 

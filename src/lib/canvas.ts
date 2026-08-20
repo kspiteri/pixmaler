@@ -71,10 +71,11 @@ export class PixelCanvas {
     this.canvas.style.cursor = opts.editable ? 'crosshair' : 'default'
     this.canvas.style.display = 'block'
     if (opts.editable) {
+      // White in both themes: untouched cells (-1) render transparent onto it.
       this.canvas.style.background = '#fff'
-      // Default border so the canvas edge is visible against a white page.
-      // Call sites can override via Object.assign if they want a different look.
-      this.canvas.style.border = '1px solid #ccc'
+      // The only edge this canvas gets — CanvasPair has no `.art-frame`. Themed, and
+      // inline `var()` resolves against `:root` like any other declaration.
+      this.canvas.style.border = '1px solid var(--canvas-edge)'
     }
 
     this.ctx = this.canvas.getContext('2d')!
@@ -286,11 +287,11 @@ export class PixelCanvas {
     const half = minSize / 2
 
     ctx.save()
-    // Black halo first.
+    // Black halo, cyan on top. Not themed: it sits on the artwork, not the page, so
+    // it has to read against any palette colour.
     ctx.lineWidth = Math.max(2, Math.round(3 * canvasPxPerDisplayPx))
     ctx.strokeStyle = '#000'
     ctx.strokeRect(cxPx - half, cyPx - half, minSize, minSize)
-    // Bright accent on top.
     ctx.lineWidth = Math.max(1, Math.round(canvasPxPerDisplayPx))
     ctx.strokeStyle = '#0ff'
     ctx.strokeRect(cxPx - half, cyPx - half, minSize, minSize)

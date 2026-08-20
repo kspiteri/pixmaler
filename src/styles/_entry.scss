@@ -4,9 +4,10 @@
 // come from the shared partials (_buttons, _forms, _logo).
 
 // The pixel grid that used to live here is now the app-wide backdrop
-// (`_backdrop.scss`), so this screen no longer needs a positioning context, a
-// clip, or anything stacked above a local texture.
+// (`_backdrop.scss`), so this screen needs no clip or local stacking. It does still
+// need a positioning context — for the corner theme toggle, not the texture.
 .entry {
+  position: relative;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
