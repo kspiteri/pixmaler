@@ -19,6 +19,7 @@
 @use 'results';
 @use 'tools-panel'; // CanvasPair's static chrome (panel + canvas-pair layout)
 @use 'picker'; // ImagePicker's cards (shared by Lobby GM controls + /paint)
+@use 'player-list'; // the lobby roster — after `buttons`, see the file header
 
 // ── CSS custom properties ──────────────────────────────────────────────────
 // Exposed so `.vue` scoped styles can consume the same tokens without a

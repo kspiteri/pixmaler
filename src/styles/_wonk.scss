@@ -3,11 +3,14 @@
 // Item 24 — controlled wonk. The Kahoot take: chrome and art tilt at different
 // volumes so a screenful of cards reads as hand-placed rather than tiled.
 //
-// **Mixins and variables only — never a rule.** `PlayerList.vue`'s scoped block
-// `@use`s this file, and Vue compiles each scoped block as its own unit, so any
-// CSS declared here would be duplicated into the component and scope-attributed.
-// That constraint is why this isn't folded into `_surfaces.scss`, which does emit
-// rules and therefore can't be reached from a scoped block.
+// **Mixins and variables only — never a rule.** This was originally a hard
+// requirement: `PlayerList.vue`'s scoped block `@use`d this file, and Vue compiles
+// each scoped block as its own unit, so a rule here would have been duplicated
+// into the component and scope-attributed. That's no longer the reason — the
+// roster's CSS moved to `_player-list.scss` and nothing scoped reaches this file
+// any more — so it is now rule-free **by choice**, like `_tokens.scss`: a mixin
+// library with no output is the easy thing to reason about, and it keeps the door
+// open to a scoped consumer arriving again. Adding a rule would work; don't.
 //
 // Why `:nth-child` and not a random angle: the server pushes state on every
 // join, vote and submission echo, so `Math.random()` would re-roll the whole

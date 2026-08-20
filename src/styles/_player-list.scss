@@ -1,0 +1,81 @@
+@use 'tokens' as *;
+@use 'wonk' as *;
+
+// Lobby roster — one row per player: avatar chip, name, GM pill, and the GM's
+// "Make GM" transfer button. `PlayerList.vue` keeps no styles of its own; this is
+// all of them, following the `_picker.scss` / `_tools-panel.scss` precedent for a
+// component whose CSS is plain static chrome with nothing needing `:deep()`.
+//
+// Going global rather than scoped costs nothing here and buys two things: the
+// `wonk` mixin no longer has a scoped consumer (see `_wonk.scss`), and the rules
+// stop carrying a `[data-v-…]` attribute they never needed — every selector is
+// already BEM-namespaced, so scoping was adding specificity, not isolation.
+//
+// **Must be `@use`d after `buttons`.** `.player-list__make-gm` also wears
+// `.pressable`, and unscoped they tie at one class each; the later file wins, and
+// this one has to. They don't currently set the same properties — `.pressable`
+// owns `box-shadow` and the `:active` travel — but the ordering is what keeps that
+// true if either grows.
+
+.player-list {
+  &__rows {
+    list-style: none;
+    margin: $gap-3 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-2;
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: $gap-3;
+    padding: 0.625rem 0.75rem;
+    border-radius: $radius;
+    background: $surface;
+    border: 2px solid var(--seat-colour, #{$border});
+
+    @include wonk($art: null);
+
+    &--offline {
+      opacity: 0.5;
+    }
+  }
+
+  &__name {
+    flex: 1;
+    min-width: 0;
+    color: $fg-80;
+    font-size: 0.875rem;
+  }
+  &__offline {
+    color: $fg-25;
+  }
+
+  &__pill {
+    font-size: 0.625rem;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid rgba($primary, 0.5);
+    color: $primary;
+  }
+
+  &__make-gm {
+    font-size: 0.6875rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: $radius-sm;
+    background: transparent;
+    border: 1px solid $border;
+    color: $fg-50;
+    cursor: pointer;
+    transition:
+      color 0.15s,
+      border-color 0.15s;
+
+    &:hover {
+      color: $fg;
+      border-color: $fg-25;
+    }
+  }
+}
