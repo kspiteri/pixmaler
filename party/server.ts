@@ -10,7 +10,7 @@ import type {
   VoteCategory,
 } from '../src/lib/types'
 import { routePartykitRequest, Server } from 'partyserver'
-import { VOTE_CATEGORIES } from '../src/lib/types'
+import { normaliseShape, VOTE_CATEGORIES } from '../src/lib/types'
 
 // Bindings available on `this.env`. `PIXMALER_DEV=1` (local only, via .dev.vars)
 // relaxes the lobby start gate so the whole flow can be tested solo.
@@ -181,6 +181,7 @@ export class PixmalerServer extends Server<Env> {
     switch (msg.type) {
       case 'join': this.handleJoin(msg, sender); break
       case 'rename': this.handleRename(msg, sender); break
+      case 'shape': this.handleShape(msg, sender); break
       case 'gm:configure': this.handleConfigure(msg, sender); break
       case 'gm:start': this.handleStart(sender); break
       case 'gm:transfer': this.handleTransfer(msg, sender); break
@@ -206,6 +207,20 @@ export class PixmalerServer extends Server<Env> {
     const existing = this.state.players.get(msg.clientId)
     if (existing) {
       existing.connected = true
+      // The client's localStorage is the source of truth for its own shape, but
+      // **only the lobby may apply it.** Past LOBBY the shape is locked exactly
+      // like `name`, which this branch deliberately does not re-apply either —
+      // and without this guard the lock had only one of its two halves:
+      // `handleShape` refuses mid-game messages, but a plain reconnect walked
+      // straight past it, because `storedShape()` is re-read on every socket
+      // `open`. Two tabs and a reload were enough to repaint a RESULTS chip
+      // mid-reveal, and a phone waking a suspended tab did it unprompted.
+      //
+      // Skipping the assignment (rather than defaulting) also stops a reconnect
+      // that carries no shape — an older bundle, or localStorage evicted by the
+      // browser — from silently resetting a chosen shape to `rounded` mid-game.
+      if (this.state.phase === 'LOBBY')
+        existing.shape = normaliseShape(msg.shape)
       // The original GM reclaims the role on reconnect — even if an auto-promote
       // gave it to someone else while they were gone.
       if (msg.clientId === this.state.originalGmClientId) {
@@ -221,6 +236,7 @@ export class PixmalerServer extends Server<Env> {
         isGm: false,
         connected: true,
         doneDrawing: false,
+        shape: normaliseShape(msg.shape),
       }
       if (isFirst) {
         this.state.gmClientId = msg.clientId
@@ -279,6 +295,22 @@ export class PixmalerServer extends Server<Env> {
     if (!name)
       return
     player.name = name
+    this.broadcastAll(this.buildState())
+  }
+
+  private handleShape(msg: Extract<ClientMsg, { type: 'shape' }>, conn: Connection) {
+    // LOBBY-only for the same reason as `rename`: the chip is shown in RESULTS,
+    // so a shape change after the drawings are in would rewrite identity after
+    // the fact. The picker only exists in the lobby UI; this is the enforcement.
+    if (this.state.phase !== 'LOBBY')
+      return
+    const clientId = this.state.connMap.get(conn.id)
+    if (!clientId)
+      return
+    const player = this.state.players.get(clientId)
+    if (!player)
+      return
+    player.shape = normaliseShape(msg.shape)
     this.broadcastAll(this.buildState())
   }
 

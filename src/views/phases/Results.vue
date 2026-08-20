@@ -36,10 +36,14 @@ const clientId = inject(clientIdKey)!
 
 const isGm = computed(() => props.gmClientId === clientId)
 
-// clientId → seat, built once per state push rather than a findIndex per card:
-// the gallery is ordered by points, not by join order, so every entry needs a
-// lookup. A player missing from the roster yields no chip rather than a guess.
-const seats = computed(() => new Map(props.players.map((p, i) => [p.clientId, i])))
+// clientId → { seat, player }, built once per state push rather than a findIndex
+// per card: the gallery is ordered by points, not by join order, so every entry
+// needs a lookup. The `Player` comes along because the chip's shape lives there —
+// `RankedResult` carries a name but no shape. A player missing from the roster
+// yields no chip rather than a guess.
+const seats = computed(() =>
+  new Map(props.players.map((p, i) => [p.clientId, { seat: i, player: p }])),
+)
 
 // All drawings share the GM's image dimensions — one ratio drives every art
 // slot (hero + gallery) via `--art-ratio`, so non-square images keep shape.
@@ -53,7 +57,10 @@ const artRatio = computed(() =>
 // per card instead of once per binding.
 const ranked = computed<Entry[]>(() => props.results?.ranked ?? [])
 function withSeats(entries: Entry[]) {
-  return entries.map(e => ({ entry: e, seat: seatFor(seats.value.get(e.clientId) ?? -1, e.name) }))
+  return entries.map((e) => {
+    const found = seats.value.get(e.clientId)
+    return { entry: e, seat: found ? seatFor(found.seat, found.player) : null }
+  })
 }
 
 const winners = computed(() => {
@@ -166,7 +173,8 @@ function playAgain() {
                 <p class="results__winner-name">
                   <span
                     v-if="seat"
-                    class="results__seat"
+                    class="avatar avatar--sm"
+                    :class="`avatar--${seat.shape}`"
                     :style="{ '--seat-colour': seat.colour }"
                     aria-hidden="true"
                   >{{ seat.initial }}</span>
@@ -207,7 +215,8 @@ function playAgain() {
             <p class="results__item-name">
               <span
                 v-if="seat"
-                class="results__seat"
+                class="avatar avatar--sm"
+                :class="`avatar--${seat.shape}`"
                 :style="{ '--seat-colour': seat.colour }"
                 aria-hidden="true"
               >{{ seat.initial }}</span>

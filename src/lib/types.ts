@@ -2,12 +2,58 @@
 
 export type Phase = 'LOBBY' | 'DRAWING' | 'VOTING' | 'RESULTS'
 
+// Avatar shapes — the silhouette a player picks for their seat chip in the
+// lobby. Runtime array, not just a union, because the **server validates against
+// it**: the value reaches the DOM as a class name, so an unchecked string is an
+// injection route. Same reason `rename` clamps to 24 chars.
+//
+// Deliberately restricted to shapes that hold a centred capital at 28 px. A
+// diamond, triangle or star crushes the letter, and the letter is doing real
+// work — it maps the chip to the name beside it. If a future custom-avatar
+// feature drops the letter, that constraint lifts and this list can grow.
+//
+// `rounded` is the default because it is what the chip already looked like, so a
+// player who never opens the picker sees no change.
+export const AVATAR_SHAPES = ['rounded', 'square', 'circle', 'hexagon', 'octagon', 'leaf'] as const
+export type AvatarShape = typeof AVATAR_SHAPES[number]
+export const DEFAULT_AVATAR_SHAPE: AvatarShape = 'rounded'
+
+// The one place a shape is validated, deliberately beside the list it checks and
+// in the module both sides already import — same reasoning as `VOTE_CATEGORIES`
+// above ("shared … so they can't drift apart"). This predicate is a security
+// boundary: the value ends up as a class name on every other player's screen, so
+// the server runs it on everything inbound and the client runs it on whatever
+// localStorage hands back. Two copies would mean the next rule added here (case
+// folding, a legacy alias) only lands on one side.
+//
+// Clamps rather than rejects, matching `rename`'s 24-char slice. `includes` on a
+// real array compares with SameValueZero, so this coerces nothing, triggers no
+// getters and cannot throw — `undefined`, `null`, numbers, objects and
+// prototype-flavoured keys all fall through to the default.
+export function normaliseShape(shape: unknown): AvatarShape {
+  return AVATAR_SHAPES.includes(shape as AvatarShape)
+    ? shape as AvatarShape
+    : DEFAULT_AVATAR_SHAPE
+}
+
 // ── Client → Server ──────────────────────────────────────────────────────────
 
 export interface JoinMsg {
   type: 'join'
   clientId: string
   name: string
+  // The player's stored shape, so their chip is right on the very first render
+  // rather than defaulting and then correcting. Optional: the server normalises
+  // anything missing or unrecognised to DEFAULT_AVATAR_SHAPE.
+  shape?: AvatarShape
+}
+
+// Change of avatar shape. LOBBY-only server-side, for the same reason `rename`
+// is: the chip shows up in RESULTS, so letting it change after the drawing is in
+// would let a player edit their identity after the fact.
+export interface SetShapeMsg {
+  type: 'shape'
+  shape: AvatarShape
 }
 
 export interface RenameMsg {
@@ -70,6 +116,7 @@ export interface GmTransferMsg {
 export type ClientMsg
   = | JoinMsg
     | RenameMsg
+    | SetShapeMsg
     | GmConfigureMsg
     | GmStartMsg
     | DrawSubmitMsg
@@ -87,6 +134,10 @@ export interface Player {
   isGm: boolean
   connected: boolean
   doneDrawing: boolean
+  // Chosen in the lobby, persisted in the player's own localStorage, and echoed
+  // here so *other* clients can draw their chip. Always a valid AvatarShape —
+  // the server normalises on the way in.
+  shape: AvatarShape
 }
 
 export interface StateMsg {

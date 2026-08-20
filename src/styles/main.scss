@@ -4,6 +4,7 @@
 // Shared primitives — reused across screens.
 @use 'backdrop'; // html base colour + the app-wide pixel grid & vignette
 @use 'alerts'; // the alert register — .conn-banner + AlertDialog
+@use 'avatar'; // the seat chip + its shape modifiers (shared: roster + results)
 @use 'buttons';
 @use 'forms';
 @use 'logo';

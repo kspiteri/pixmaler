@@ -1,3 +1,6 @@
+import type { AvatarShape, Player } from './types'
+import { normaliseShape } from './types'
+
 // Seat colours — a player's identity colour, shared by the lobby roster and the
 // results screen so the colour genuinely follows the player rather than being a
 // per-screen decoration. The palette lives in `_tokens.scss` as `$player-colours`
@@ -38,22 +41,39 @@ export interface Seat {
    * the chip is `aria-hidden` and this is never read aloud.
    */
   initial: string
+  /** Modifier class suffix — `avatar--<shape>` (see `_avatar.scss`). */
+  shape: AvatarShape
 }
 
 /**
  * Everything a seat chip needs, or `null` for a player who isn't in the roster —
- * the caller then renders no chip rather than guessing a colour. Results needs
- * that branch because `RankedResult` carries a `clientId` but no seat, so a
- * lookup miss is representable; passing `-1` is how it says "not found".
+ * the caller then renders no chip rather than guessing a colour.
+ *
+ * **No caller passes the old `-1` sentinel any more.** Results resolves the
+ * `Player` first and renders nothing on a lookup miss, `PlayerList` maps over the
+ * array so its index is never negative, and `Lobby` guards before calling. The
+ * `seat < 0` branch is belt-and-braces, not the documented way to say "not
+ * found" — don't reintroduce `?? -1` at a call site to lean on it, or a player
+ * absent from the roster gets a chip.
+ *
+ * Takes the player rather than loose fields so the chip's three inputs stay in
+ * one object: Results resolves the `Player` for the shape anyway, and splitting
+ * them invited passing a `RankedResult` (which has a name but no shape).
  *
  * Seats past `SEAT_COUNT` wrap, so a 22nd player reuses seat 0 rather than
  * falling off the end of the ramp.
  */
-export function seatFor(seat: number, name: string): Seat | null {
+export function seatFor(seat: number, player: Pick<Player, 'name' | 'shape'>): Seat | null {
   if (seat < 0)
     return null
   return {
     colour: `var(--player-colour-${seat % SEAT_COUNT})`,
-    initial: name.trim().charAt(0).toUpperCase() || '?',
+    initial: player.name.trim().charAt(0).toUpperCase() || '?',
+    // Inbound `state` is assigned verbatim by App.vue's dispatcher, so this is
+    // the read-side boundary: the client and server deploy to two independent
+    // targets, and a client newer than the server would otherwise emit
+    // `avatar--undefined`. Harmless today only because `--rounded` carries no
+    // rule of its own; normalising keeps the declared type honest regardless.
+    shape: normaliseShape(player.shape),
   }
 }

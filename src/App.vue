@@ -3,12 +3,13 @@
 // Provides `socket` and `clientId` to descendants; passes mutable `state`,
 // `gallery`, and `results` down as props.
 
-import type { ClientMsg, ServerMsg } from './lib/types'
+import type { AvatarShape, ClientMsg, ServerMsg } from './lib/types'
 import PartySocket from 'partysocket'
 import { onMounted, provide, ref, shallowRef } from 'vue'
 import AlertDialog from './components/AlertDialog.vue'
 import { askAlert, currentDialog, settleDialog } from './lib/dialog'
 import { clientIdKey, socketKey } from './lib/keys'
+import { normaliseShape } from './lib/types'
 import { wordPair } from './lib/words'
 
 import Entry from './views/Entry.vue'
@@ -49,6 +50,15 @@ function getOrCreateClientId(): string {
 // the URL never connect (no human action → no socket → no ghost player).
 function storedName(): string | null {
   return localStorage.getItem('pixmaler:name')?.trim() || null
+}
+
+// The player's chosen avatar shape. Browser-local by design: it follows them
+// into every future room rather than being per-room state, and it's sent with
+// `join` so their chip is right on the first render. Validation is the shared
+// `normaliseShape` — the same predicate the server runs on receipt, so an old or
+// hand-edited key degrades to the default identically on both sides.
+function storedShape(): AvatarShape {
+  return normaliseShape(localStorage.getItem('pixmaler:shape'))
 }
 
 // ── Reactive room state ──────────────────────────────────────────────────────
@@ -118,7 +128,7 @@ function connect(name: string) {
 
   socket.addEventListener('open', () => {
     connectionStatus.value = 'connected'
-    const msg: ClientMsg = { type: 'join', clientId, name }
+    const msg: ClientMsg = { type: 'join', clientId, name, shape: storedShape() }
     socket.send(JSON.stringify(msg))
   })
 

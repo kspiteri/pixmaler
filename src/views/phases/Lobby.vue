@@ -4,6 +4,7 @@
 
 import type { PipelineResult } from '../../lib/pipeline'
 import type {
+  AvatarShape,
   ClientMsg,
   GmConfigureMsg,
   ServerMsg,
@@ -15,6 +16,8 @@ import PlayerList from '../../components/PlayerList.vue'
 import Tagline from '../../components/Tagline.vue'
 import { PixelCanvas } from '../../lib/canvas'
 import { clientIdKey, socketKey } from '../../lib/keys'
+import { seatFor } from '../../lib/seats'
+import { AVATAR_SHAPES } from '../../lib/types'
 
 type State = Extract<ServerMsg, { type: 'state' }>
 
@@ -52,6 +55,37 @@ function commitName() {
   localStorage.setItem('pixmaler:name', next)
   socket.send(JSON.stringify({ type: 'rename', name: next } satisfies ClientMsg))
 }
+
+// ── Avatar shape ─────────────────────────────────────────────────────────────
+// Browser-local (`pixmaler:shape`) so it follows the player into future rooms,
+// and echoed through the server so *other* people see it. LOBBY-only, enforced
+// server-side for the same reason as rename: the chip shows up in RESULTS.
+
+// The viewer's own seat, so each option previews in their real colour and
+// initial rather than a generic swatch. `null` when this client isn't in
+// `players` yet — a state push triggered by someone else can land between our
+// socket opening and the server handling our own `join`, and hiding the picker
+// for that frame beats rendering a wrong colour.
+const mySeat = computed(() => {
+  const i = props.state.players.findIndex(p => p.clientId === clientId)
+  return i < 0 ? null : seatFor(i, props.state.players[i])
+})
+
+function pickShape(shape: AvatarShape) {
+  if (shape === mySeat.value?.shape)
+    return
+  socket.send(JSON.stringify({ type: 'shape', shape } satisfies ClientMsg))
+}
+
+// Persist only what the server has actually accepted. Writing on click instead
+// would durably store a shape the server may refuse — the reachable case is the
+// phase flipping to DRAWING before this client hears about it — and that value
+// would then be re-applied by the next `join`. `mySeat.shape` is echoed state, so
+// this only ever records a confirmed choice.
+watch(() => mySeat.value?.shape, (shape) => {
+  if (shape)
+    localStorage.setItem('pixmaler:shape', shape)
+}, { immediate: true })
 
 // ── Copy room link ───────────────────────────────────────────────────────────
 
@@ -203,6 +237,46 @@ onBeforeUnmount(() => {
             @blur="commitName"
           >
         </label>
+
+        <!-- Avatar shape. Each option previews the viewer's own colour and
+             initial, so it shows what the roster will actually look like rather
+             than an abstract swatch.
+
+             Both halves of the house pattern, as `_forms.scss` writes it down and
+             ImagePicker's colour control implements it: `role="group"` +
+             `aria-labelledby` to name the set, `aria-pressed` on each item. The
+             group name is load-bearing here — the chip is `aria-hidden`, so
+             without it a screen reader hears six bare nouns ("leaf", "octagon")
+             with nothing saying what they control. No `title`: it would duplicate
+             `aria-label` into the accessible *description*, so the word gets
+             announced twice, and a tooltip never reaches touch or keyboard anyway.
+
+             `aria-pressed` also *drives* the selected styling (see `_lobby.scss`),
+             so there's no parallel `--active` class to fall out of sync. And
+             `.pressable` is the house rule for any non-`.btn` control: without it
+             the chip is dead to the touch, which matters most here, where there is
+             no hover. -->
+        <div v-if="mySeat" class="field lobby__shape">
+          <span id="lobby-shape" class="label">Your avatar shape</span>
+          <div class="lobby__shapes" role="group" aria-labelledby="lobby-shape">
+            <button
+              v-for="s in AVATAR_SHAPES"
+              :key="s"
+              class="lobby__shape-btn pressable"
+              type="button"
+              :aria-pressed="s === mySeat.shape"
+              :aria-label="s"
+              @click="pickShape(s)"
+            >
+              <span
+                class="avatar"
+                :class="`avatar--${s}`"
+                :style="{ '--seat-colour': mySeat.colour }"
+                aria-hidden="true"
+              >{{ mySeat.initial }}</span>
+            </button>
+          </div>
+        </div>
         <PlayerList :players="state.players" :gm-client-id="state.gmClientId" />
         <!-- GM sees the tagline here, under the roster. Non-GMs get it beside
              the "waiting for GM" line instead (below), where their eyes are. -->

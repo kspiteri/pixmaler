@@ -1,0 +1,85 @@
+@use 'tokens' as *;
+
+// The seat chip — a player's avatar. One definition, because it renders in two
+// places and the shape modifiers would otherwise have to be written twice: the
+// lobby roster (`_player-list.scss`) and the results screen (`_results.scss`).
+//
+// It originally had to be global so `PlayerList.vue`'s *scoped* block could wear
+// the classes — a scoped block can always use a global class, but can't `@use` a
+// rule-emitting partial without duplicating it. The roster's CSS has since moved
+// into a partial of its own, so this is now just an ordinary shared primitive with
+// two consumers.
+//
+// Colour comes from `--seat-colour` (the seat ramp, see `_tokens.scss`), set
+// inline by whoever renders the chip. Ink is $bg, never white — every seat in the
+// ramp clears 7:1 against $bg while white fails on all 21.
+
+.avatar {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  background: var(--seat-colour, #{$fg-25});
+  color: $bg;
+  font-family: $font-display;
+  font-weight: $fw-bold;
+  font-size: $fs-sm;
+  line-height: 1;
+  // Fallback silhouette only. The templates always emit an explicit
+  // `--<shape>`, so this is what a stale `avatar--undefined` from an older
+  // server would land on.
+  border-radius: $radius-sm;
+
+  // Trailing a name rather than anchoring a row — the results screen's size.
+  // **Size only, deliberately.** A `border-radius` here would tie with every
+  // `--<shape>` at one class each, so nothing but declaration order would keep the
+  // shapes winning: move this block below them and `--sm --circle` silently
+  // becomes a 4px rounded square, with no error anywhere. The two `--rounded`
+  // rules below carry the radius instead, at two classes for the small variant.
+  &--sm {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.375rem;
+    vertical-align: -0.2em;
+    font-size: $fs-xs;
+  }
+
+  // ── Shapes (item 34) ──────────────────────────────────────────────────────
+  // Restricted on purpose to silhouettes that hold a centred capital at 1.75rem.
+  // A diamond, triangle or star crushes the letter, and the letter is load-
+  // bearing: it ties the chip to the name beside it. `clip-path` rather than
+  // assets — there are only three SVGs in the whole repo, and a shape library
+  // would be a new asset class for no gain at this size.
+  //
+  // `--rounded` is the default *and* written out, so the small variant can scale
+  // its own radius without any modifier reaching the other shapes.
+  &--rounded {
+    border-radius: $radius-sm;
+  }
+  &--sm#{&}--rounded {
+    border-radius: 0.25rem;
+  }
+  &--square {
+    border-radius: 0;
+  }
+  &--circle {
+    border-radius: 50%;
+  }
+  &--hexagon {
+    border-radius: 0;
+    // Flat top and bottom, points left and right: full width across the vertical
+    // centre, so the letter never meets a sloped edge.
+    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  }
+  &--octagon {
+    border-radius: 0;
+    clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+  }
+  // Two opposite corners rounded hard, two left square — asymmetric on purpose,
+  // in the same register as item 24's tilt. The letter stays centred and clear.
+  &--leaf {
+    border-radius: 50% 15% 50% 15%;
+  }
+}
