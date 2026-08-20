@@ -69,9 +69,17 @@ function sameSet(a: Submission[], b: Submission[]): boolean {
   return b.every(s => ids.has(s.submissionId))
 }
 
-// The only way out of the phase, so a misclick ruins the round.
+// Everyone *present* has finished voting. Both sides of the fraction come from the
+// same population (`votingProgress` on the server), so this can un-fire when a
+// straggler reconnects — which is why the state lives in the status line rather
+// than a dialog.
+const allVoted = computed(() => props.totalVoters > 0 && props.votedCount >= props.totalVoters)
+
+// The only way out of the phase, so a misclick ruins the round — but the warning is
+// only *true* while someone can still be cut off. Once everyone has voted there is
+// nobody left to not count, so asking would be confirming an impossible consequence.
 async function stopVoting() {
-  if (!await askConfirm('End voting now? Anyone who hasn\'t finished voting won\'t be counted.'))
+  if (!allVoted.value && !await askConfirm('End voting now? Anyone who hasn\'t finished voting won\'t be counted.'))
     return
   const msg: ClientMsg = { type: 'gm:stopVoting' }
   socket.send(JSON.stringify(msg))
@@ -189,7 +197,9 @@ function castVote(category: VoteCategory, submissionId: string) {
 <template>
   <PhaseLayout>
     <template #status>
-      <span class="voting__tally">{{ votedCount }} of {{ totalVoters }} voted</span>
+      <span class="voting__tally" :class="{ 'voting__tally--complete': allVoted }">
+        {{ allVoted ? 'the votes are in…' : `${votedCount} of ${totalVoters} voted` }}
+      </span>
       <button
         v-if="isGm && gallery"
         class="btn btn--primary voting__stop"

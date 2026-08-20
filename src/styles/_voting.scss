@@ -165,6 +165,13 @@
   &__tally {
     color: $muted;
     font-size: 0.875rem;
+
+    // Reads as a prompt once the click is free. Deliberately not `$accent-ink` —
+    // lime means "active/selected" app-wide, and this is a status.
+    &--complete {
+      color: $fg;
+      font-weight: $fw-semibold;
+    }
   }
   &__stop {
     font-size: 0.875rem;
