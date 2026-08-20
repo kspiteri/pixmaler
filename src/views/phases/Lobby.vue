@@ -317,9 +317,11 @@ onBeforeUnmount(() => {
             <p v-else class="lobby__waiting-text">
               waiting for the GM…
             </p>
-            <Tagline class="lobby__waiting-tagline" />
           </div>
           <div ref="previewSlot" class="lobby__preview" />
+          <div class="lobby__tagline">
+            <Tagline class="lobby__waiting-tagline" />
+          </div>
         </template>
       </section>
     </div>
