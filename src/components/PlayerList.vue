@@ -11,6 +11,7 @@ import { computed, inject } from 'vue'
 import { askConfirm } from '../lib/dialog'
 import { clientIdKey, socketKey } from '../lib/keys'
 import { seatFor } from '../lib/seats'
+import PlayerTag from './PlayerTag.vue'
 
 const props = defineProps<Props>()
 
@@ -66,17 +67,16 @@ async function transferGm(p: Player) {
         :class="{ 'player-list__row--offline': !p.connected }"
         :style="{ '--seat-colour': seat?.colour }"
       >
-        <!-- Decorative: the name sits right beside it, so the letter is never
-             the only way to tell who this is. -->
-        <span
+        <PlayerTag
           v-if="seat"
-          class="avatar"
-          :class="`avatar--${seat.shape}`"
-          aria-hidden="true"
-        >{{ seat.initial }}</span>
-        <span class="player-list__name">
-          {{ p.name }}<span v-if="!p.connected" class="player-list__offline"> [offline]</span>
-        </span>
+          :seat="seat"
+          :name="p.name"
+          size="row"
+        >
+          <template v-if="!p.connected" #suffix>
+            <span class="player-list__offline"> [offline]</span>
+          </template>
+        </PlayerTag>
         <span v-if="p.isGm" class="player-list__pill">GM</span>
         <button
           v-if="canTransfer(p)"

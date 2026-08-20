@@ -65,9 +65,10 @@
   &__winner-meta {
     text-align: center;
   }
+  // Size and weight only — `PlayerTag` inside owns the chip, the name and the
+  // display family, and inherits these two from here.
   &__winner-name {
     margin: 0;
-    font-family: $font-display;
     font-weight: 700;
     font-size: 1.25rem;
   }
@@ -122,13 +123,12 @@
   &__item-art {
     margin-bottom: $gap-2;
   }
+  // Size and weight only; the one-line clip is `PlayerTag`'s `truncate`, which has
+  // to live on the name span it owns rather than on this paragraph.
   &__item-name {
     margin: 0;
     font-weight: 600;
     font-size: 0.875rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
   &__item-votes {
     margin: 0.125rem 0 0;

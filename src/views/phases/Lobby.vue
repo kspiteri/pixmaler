@@ -13,6 +13,7 @@ import { computed, inject, onBeforeUnmount, ref, useTemplateRef, watch } from 'v
 import ImagePicker from '../../components/ImagePicker.vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import PlayerList from '../../components/PlayerList.vue'
+import PlayerTag from '../../components/PlayerTag.vue'
 import Tagline from '../../components/Tagline.vue'
 import { PixelCanvas } from '../../lib/canvas'
 import { clientIdKey, socketKey } from '../../lib/keys'
@@ -86,6 +87,22 @@ watch(() => mySeat.value?.shape, (shape) => {
   if (shape)
     localStorage.setItem('pixmaler:shape', shape)
 }, { immediate: true })
+
+// The GM's own chip + name, for the non-GM waiting line: it turns "waiting for
+// the GM" into waiting for a specific person you can already see in the roster
+// directly above, matched by colour and silhouette. `null` if the GM isn't in
+// `players` yet, in which case the line falls back to naming the role.
+//
+// The **name is not optional here.** The chip is `aria-hidden` like every other
+// one, so if it carried the identity alone a screen reader would read "waiting
+// for to start…".
+const gmSeat = computed(() => {
+  const i = props.state.players.findIndex(p => p.clientId === props.state.gmClientId)
+  if (i < 0)
+    return null
+  const seat = seatFor(i, props.state.players[i])
+  return seat ? { seat, name: props.state.players[i].name } : null
+})
 
 // ── Copy room link ───────────────────────────────────────────────────────────
 
@@ -225,7 +242,7 @@ onBeforeUnmount(() => {
     <div class="lobby__body">
       <aside class="lobby__players">
         <label class="field lobby__name">
-          <span class="label">Your name</span>
+          <span class="label">your name</span>
           <input
             ref="nameInput"
             v-model="nameDraft"
@@ -237,27 +254,8 @@ onBeforeUnmount(() => {
             @blur="commitName"
           >
         </label>
-
-        <!-- Avatar shape. Each option previews the viewer's own colour and
-             initial, so it shows what the roster will actually look like rather
-             than an abstract swatch.
-
-             Both halves of the house pattern, as `_forms.scss` writes it down and
-             ImagePicker's colour control implements it: `role="group"` +
-             `aria-labelledby` to name the set, `aria-pressed` on each item. The
-             group name is load-bearing here — the chip is `aria-hidden`, so
-             without it a screen reader hears six bare nouns ("leaf", "octagon")
-             with nothing saying what they control. No `title`: it would duplicate
-             `aria-label` into the accessible *description*, so the word gets
-             announced twice, and a tooltip never reaches touch or keyboard anyway.
-
-             `aria-pressed` also *drives* the selected styling (see `_lobby.scss`),
-             so there's no parallel `--active` class to fall out of sync. And
-             `.pressable` is the house rule for any non-`.btn` control: without it
-             the chip is dead to the touch, which matters most here, where there is
-             no hover. -->
         <div v-if="mySeat" class="field lobby__shape">
-          <span id="lobby-shape" class="label">Your avatar shape</span>
+          <span id="lobby-shape" class="label">your avatar shape</span>
           <div class="lobby__shapes" role="group" aria-labelledby="lobby-shape">
             <button
               v-for="s in AVATAR_SHAPES"
@@ -313,8 +311,11 @@ onBeforeUnmount(() => {
 
         <template v-else>
           <div class="lobby__waiting">
-            <p class="lobby__waiting-text">
-              Waiting for GM to start…
+            <p v-if="gmSeat" class="lobby__waiting-text">
+              waiting for <PlayerTag :seat="gmSeat.seat" :name="gmSeat.name" /> to start…
+            </p>
+            <p v-else class="lobby__waiting-text">
+              waiting for the GM…
             </p>
             <Tagline class="lobby__waiting-tagline" />
           </div>

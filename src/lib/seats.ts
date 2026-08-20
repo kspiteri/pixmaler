@@ -33,6 +33,22 @@ import { normaliseShape } from './types'
 // and the 2nd player to join never gets a near-neighbour of the 1st's colour.
 export const SEAT_COUNT = 21
 
+// How far the chip leans, as a multiplier on `$wonk-avatar` (the angle itself
+// lives in `_wonk.scss` with the rest of the tilt doctrine, so no degree value
+// crosses into TypeScript). Four buckets rather than a simple ±1: two of them
+// half-strength, so a screenful reads as hand-placed rather than as two
+// alternating states.
+//
+// Picked by the **initial's** character code, not the seat. The roster rows
+// already alternate by seat (`wonk()` on `.player-list__row`), so keying the chip
+// to seat parity too would just amplify a signal that's already there; keyed to
+// the letter it varies independently, and a player keeps the same lean in every
+// room forever — like their colour, but derived from their name instead of their
+// join order. Consecutive letters land in different buckets, so alphabetically
+// adjacent names don't match. Two players sharing an initial do share a lean; the
+// row tilt still separates them.
+const LEANS = [-1, -0.55, 0.55, 1] as const
+
 export interface Seat {
   /** `var()` reference into the ramp — never a literal colour. */
   colour: string
@@ -43,6 +59,11 @@ export interface Seat {
   initial: string
   /** Modifier class suffix — `avatar--<shape>` (see `_avatar.scss`). */
   shape: AvatarShape
+  /**
+   * Multiplier on `$wonk-avatar` (see `LEANS`) — how far and which way the chip
+   * leans. Derived from the initial, so it varies independently of the row tilt.
+   */
+  lean: number
 }
 
 /**
@@ -66,14 +87,16 @@ export interface Seat {
 export function seatFor(seat: number, player: Pick<Player, 'name' | 'shape'>): Seat | null {
   if (seat < 0)
     return null
+  const initial = player.name.trim().charAt(0).toUpperCase() || '?'
   return {
     colour: `var(--player-colour-${seat % SEAT_COUNT})`,
-    initial: player.name.trim().charAt(0).toUpperCase() || '?',
+    initial,
     // Inbound `state` is assigned verbatim by App.vue's dispatcher, so this is
     // the read-side boundary: the client and server deploy to two independent
     // targets, and a client newer than the server would otherwise emit
     // `avatar--undefined`. Harmless today only because `--rounded` carries no
     // rule of its own; normalising keeps the declared type honest regardless.
     shape: normaliseShape(player.shape),
+    lean: LEANS[initial.charCodeAt(0) % LEANS.length],
   }
 }

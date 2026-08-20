@@ -43,14 +43,17 @@
     }
   }
 
-  &__name {
-    flex: 1;
-    min-width: 0;
-    color: $fg-80;
-    font-size: 0.875rem;
-  }
+  // `__name` is gone: `PlayerTag size="row"` owns the chip, the name, the flex
+  // and the colour. Only the offline suffix stays here, because it's a property of
+  // the *row's* state rather than of the tag.
   &__offline {
     color: $fg-25;
+  }
+
+  // The roster name's size, applied to the tag — PlayerTag inherits size and
+  // weight from its host on purpose, since the four sites legitimately differ.
+  .player-tag {
+    font-size: 0.875rem;
   }
 
   &__pill {

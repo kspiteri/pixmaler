@@ -32,17 +32,16 @@
   // server would land on.
   border-radius: $radius-sm;
 
-  // Trailing a name rather than anchoring a row — the results screen's size.
-  // **Size only, deliberately.** A `border-radius` here would tie with every
-  // `--<shape>` at one class each, so nothing but declaration order would keep the
-  // shapes winning: move this block below them and `--sm --circle` silently
-  // becomes a 4px rounded square, with no error anywhere. The two `--rounded`
-  // rules below carry the radius instead, at two classes for the small variant.
+  // The smaller chip, used inside `PlayerTag`. **Size only, deliberately** — twice
+  // over. A `border-radius` here would tie with every `--<shape>` at one class
+  // each, so nothing but declaration order would keep the shapes winning (move
+  // this block below them and `--sm --circle` silently becomes a 4px rounded
+  // square, with no error anywhere); the two `--rounded` rules below carry the
+  // radius instead. And no margin: spacing between a chip and a name belongs to
+  // `PlayerTag`'s `gap`, which is the only thing that renders this variant.
   &--sm {
     width: 1.25rem;
     height: 1.25rem;
-    margin-right: 0.375rem;
-    vertical-align: -0.2em;
     font-size: $fs-xs;
   }
 

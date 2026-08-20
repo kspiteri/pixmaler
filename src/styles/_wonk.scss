@@ -25,6 +25,14 @@ $wonk-chrome: 0.6deg; // a card or a row — reads as placed, not as broken
 $wonk-art: 1.5deg; // a drawing — pinned-up paper rather than a tile
 $wonk-lift: -2px; // the "picking it up" rise; matches .btn--primary's hover
 
+// A seat chip inside `PlayerTag`. Much larger than the chrome rung because the
+// element is tiny: at 20–28px a 0.6° lean is invisible, and the chip has a flat
+// edge (or a letter) to read the angle off. The *direction* comes from the
+// player's initial (`LEANS` in `lib/seats.ts`), deliberately not from `:nth-child`
+// or the seat — the roster rows already alternate by seat, so keying the chip to
+// that too would amplify one signal instead of adding a second.
+$wonk-avatar: 4deg;
+
 // Applied to the **card**, which is also the hover target. Any `.art-frame`
 // inside counter-rotates: a child inherits its parent's rotation, so matching
 // signs would just read as one larger tilt. Opposing them leaves the drawing

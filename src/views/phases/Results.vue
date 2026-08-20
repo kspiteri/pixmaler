@@ -7,6 +7,7 @@
 import type { ClientMsg, Player, ServerMsg } from '../../lib/types'
 import { computed, inject, nextTick, onBeforeUnmount, watch } from 'vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
+import PlayerTag from '../../components/PlayerTag.vue'
 import Tagline from '../../components/Tagline.vue'
 import { artRatio as artRatioFor } from '../../lib/aspect'
 import { PixelCanvas } from '../../lib/canvas'
@@ -171,14 +172,7 @@ function playAgain() {
               </div>
               <div class="results__winner-meta">
                 <p class="results__winner-name">
-                  <span
-                    v-if="seat"
-                    class="avatar avatar--sm"
-                    :class="`avatar--${seat.shape}`"
-                    :style="{ '--seat-colour': seat.colour }"
-                    aria-hidden="true"
-                  >{{ seat.initial }}</span>
-                  {{ w.name }}
+                  <PlayerTag v-if="seat" :seat="seat" :name="w.name" />
                 </p>
                 <p class="results__winner-votes">
                   {{ w.votes }} vote{{ w.votes === 1 ? "" : "s" }}
@@ -213,14 +207,12 @@ function playAgain() {
               <div :ref="el => setSlot(entry.submissionId, el)" class="art-surface" />
             </div>
             <p class="results__item-name">
-              <span
+              <PlayerTag
                 v-if="seat"
-                class="avatar avatar--sm"
-                :class="`avatar--${seat.shape}`"
-                :style="{ '--seat-colour': seat.colour }"
-                aria-hidden="true"
-              >{{ seat.initial }}</span>
-              {{ entry.name }}
+                :seat="seat"
+                :name="entry.name"
+                truncate
+              />
             </p>
             <p class="results__item-votes">
               {{ entry.votes }} pt{{ entry.votes === 1 ? "" : "s" }}
