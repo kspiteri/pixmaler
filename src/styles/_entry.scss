@@ -54,6 +54,7 @@
     font-size: 0.875rem;
     text-underline-offset: 2px;
     transition: color 0.15s;
+    text-decoration: none;
 
     &:hover {
       color: $fg-50;

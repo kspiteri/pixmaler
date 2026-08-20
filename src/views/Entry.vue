@@ -40,6 +40,7 @@ function enterRoom(room: string) {
         <input
           v-model="name"
           class="input"
+          maxlength="24"
           type="text"
         >
       </label>
@@ -84,13 +85,13 @@ function enterRoom(room: string) {
         <span class="entry__rule" />
       </div>
 
-      <button
+      <a
         class="btn btn--ghost entry__sandbox"
         type="button"
-        @href="sandboxHref"
+        :href="sandboxHref"
       >
         Free Mode
-      </button>
+      </a>
     </div>
   </div>
 </template>
