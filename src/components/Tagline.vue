@@ -9,6 +9,7 @@
 // NOT on Drawing/Voting: a moving line distracts from the task there.
 
 import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { prefersReducedMotion } from '../lib/motion'
 import { randomTagline } from '../lib/taglines'
 
 const props = withDefaults(defineProps<{
@@ -27,11 +28,6 @@ const VARIANTS = ['fade', 'slide-up', 'slide-down', 'blur'] as const
 
 let timer: ReturnType<typeof setInterval> | null = null
 
-function prefersReducedMotion(): boolean {
-  return typeof window !== 'undefined'
-    && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
 // Pick a different line than the current one (avoid immediate repeats).
 function nextTagline(): string {
   let next = randomTagline()
@@ -40,25 +36,18 @@ function nextTagline(): string {
   return next
 }
 
+// The variant needs a *value*, not just presence, so this sets `[data-tagline-vt]`
+// itself rather than using `withViewTransition`'s bare-attribute form.
 function rotate() {
   const next = nextTagline()
-  // Animate the swap with a view transition where available + motion is allowed;
-  // otherwise just replace the text. `startViewTransition` snapshots the DOM and
-  // runs the ::view-transition-* keyframes for our `view-transition-name`; the
-  // variant is selected by a data attribute on <html> that the CSS keys off.
-  if (!prefersReducedMotion() && document.startViewTransition) {
-    const variant = VARIANTS[Math.floor(Math.random() * VARIANTS.length)]
-    document.documentElement.dataset.taglineVt = variant
-    const transition = document.startViewTransition(() => {
-      current.value = next
-    })
-    transition.finished.finally(() => {
-      delete document.documentElement.dataset.taglineVt
-    })
-  }
-  else {
+  if (prefersReducedMotion() || !document.startViewTransition) {
     current.value = next
+    return
   }
+  const root = document.documentElement
+  root.dataset.taglineVt = VARIANTS[Math.floor(Math.random() * VARIANTS.length)]
+  const transition = document.startViewTransition(() => { current.value = next })
+  transition.finished.finally(() => { delete root.dataset.taglineVt })
 }
 
 onMounted(() => {

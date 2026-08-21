@@ -10,6 +10,8 @@
   color: $muted;
   font-family: $font-body;
   font-size: 0.875rem;
+  // Taglines are one sentence and centred, so an even split beats a ragged orphan.
+  text-wrap: balance;
   // Names this element for the View Transitions API so only the tagline animates,
   // not the whole page. Unique because one <Tagline> mounts per page.
   view-transition-name: tagline;
