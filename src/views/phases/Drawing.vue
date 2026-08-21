@@ -67,6 +67,19 @@ function extendTime() {
   socket.send(JSON.stringify(msg))
 }
 
+// The countdown jumping upward reads as a glitch unless something marks it as a
+// decision. Everyone sees this, not just the GM who pressed it.
+const timeAdded = ref(false)
+let bumpTimer: ReturnType<typeof setTimeout> | null = null
+watch(() => props.state.roundSeconds, (now, before) => {
+  if (before === undefined || now <= before)
+    return
+  timeAdded.value = true
+  if (bumpTimer)
+    clearTimeout(bumpTimer)
+  bumpTimer = setTimeout(() => { timeAdded.value = false }, 700)
+})
+
 // Seconds remaining on the countdown (null until we know the deadline).
 const secondsLeft = ref<number | null>(null)
 // The round's current length, not the configured one — it grows when the GM adds
@@ -181,6 +194,7 @@ function autoSubmitAtDeadline() {
 }
 
 function cancelTimers() {
+  if (bumpTimer) { clearTimeout(bumpTimer); bumpTimer = null }
   if (autoSubmitTimer) { clearTimeout(autoSubmitTimer); autoSubmitTimer = null }
   if (resubmitTimer) { clearTimeout(resubmitTimer); resubmitTimer = null }
   if (rafId) { cancelAnimationFrame(rafId); rafId = null }
@@ -256,7 +270,11 @@ onBeforeUnmount(() => {
 <template>
   <PhaseLayout class="phase--fixed" :progress="timerPct" :progress-colour="timerColour">
     <template #status>
-      <span class="drawing__timer" :style="{ color: timerColour }">
+      <span
+        class="drawing__timer"
+        :class="{ 'drawing__timer--added': timeAdded }"
+        :style="{ color: timerColour }"
+      >
         {{ timerText }}
       </span>
       <span class="drawing__done">{{ doneText }}</span>

@@ -8,6 +8,12 @@
     font-family: $font-display;
     font-weight: 700;
     font-size: 1.05rem;
+
+    // A brief lift when the GM adds time. Standalone `scale`, not `transform`, for
+    // the same reason the tilt uses `rotate` — nothing here should clobber a press.
+    &--added {
+      animation: drawing-time-added 0.7s ease-out;
+    }
   }
 
   &__done {
@@ -40,5 +46,24 @@
       padding: 0;
       gap: 0;
     }
+  }
+}
+
+@keyframes drawing-time-added {
+  0% {
+    scale: 1;
+  }
+  25% {
+    scale: 1.2;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+// The number still jumps — only the flourish goes.
+@media (prefers-reduced-motion: reduce) {
+  .drawing__timer--added {
+    animation: none;
   }
 }
