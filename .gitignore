@@ -29,3 +29,4 @@ pnpm-debug.log*
 # Other
 docs/.plans/
 CLAUDE.md
+.impeccable/
