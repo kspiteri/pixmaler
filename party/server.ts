@@ -49,6 +49,10 @@ function parseMs(value: string | undefined, fallback: number): number {
 // rejected). Returns a 403 Response to block, or undefined to allow.
 const DEFAULT_ALLOWED_ORIGIN = 'https://kspiteri.github.io'
 
+// GM "+15s" during DRAWING. Capped server-side — a client-side cap is decoration.
+const EXTEND_STEP_MS = 15_000
+const MAX_EXTENSIONS = 2
+
 function guardOrigin(req: Request, env: Env): Response | undefined {
   if (env.PIXMALER_DEV === '1')
     return undefined // dev bypass — localhost + header-less smoke-tests
@@ -91,6 +95,11 @@ interface RoomState {
   originalGmClientId: string
   config: GmConfigureMsg | null
   deadline: number | null
+  // Grows with each "+15s"; reset at handleStart. Separate from
+  // `config.drawSeconds`, which stays the configured start so the lobby setting
+  // isn't rewritten by a mid-round extension.
+  roundSeconds: number
+  extensions: number
   submissions: Map<string, number[]> // clientId → grid
   votes: Map<string, string> // `${voterClientId}:${category}` → submissionId
   // Frozen gallery for the current VOTING round — filtered (blanks dropped) and
@@ -116,6 +125,8 @@ export class PixmalerServer extends Server<Env> {
     originalGmClientId: '',
     config: null,
     deadline: null,
+    roundSeconds: 0,
+    extensions: 0,
     submissions: new Map(),
     votes: new Map(),
     gallery: null,
@@ -189,6 +200,7 @@ export class PixmalerServer extends Server<Env> {
       case 'draw:submit': this.handleSubmit(msg, sender); break
       case 'vote:cast': this.handleVote(msg, sender); break
       case 'gm:stopVoting': this.handleStopVoting(sender); break
+      case 'gm:extendTime': this.handleExtendTime(sender); break
       case 'gm:playAgain': this.handlePlayAgain(sender); break
     }
 
@@ -368,6 +380,8 @@ export class PixmalerServer extends Server<Env> {
     const deadline = Date.now() + this.state.config.drawSeconds * 1000
     this.state.phase = 'DRAWING'
     this.state.deadline = deadline
+    this.state.roundSeconds = this.state.config.drawSeconds
+    this.state.extensions = 0
     this.state.submissions.clear()
     this.state.votes.clear()
     this.state.gallery = null
@@ -418,6 +432,25 @@ export class PixmalerServer extends Server<Env> {
     // tally). Re-broadcast state so that tally updates live for everyone.
     // Vote *targets* are never broadcast — only the progress count — so running
     // tallies can't sway later voters.
+    this.broadcastAll(this.buildState())
+  }
+
+  // Add EXTEND_STEP_MS to the running round. No alarm work needed: `onMessage`
+  // re-arms after every message and `armAlarm` reads `state.deadline`.
+  private handleExtendTime(conn: Connection) {
+    if (!this.isGm(conn))
+      return
+    if (this.state.phase !== 'DRAWING' || this.state.deadline === null)
+      return
+    // The alarm may already be firing for this deadline — don't resurrect a round
+    // whose submissions are being collected.
+    if (Date.now() >= this.state.deadline)
+      return
+    if (this.state.extensions >= MAX_EXTENSIONS)
+      return
+    this.state.extensions++
+    this.state.deadline += EXTEND_STEP_MS
+    this.state.roundSeconds += EXTEND_STEP_MS / 1000
     this.broadcastAll(this.buildState())
   }
 
@@ -628,6 +661,8 @@ export class PixmalerServer extends Server<Env> {
       originalGmClientId: '',
       config: null,
       deadline: null,
+      roundSeconds: 0,
+      extensions: 0,
       submissions: new Map(),
       votes: new Map(),
       gallery: null,
@@ -654,6 +689,8 @@ export class PixmalerServer extends Server<Env> {
       gmClientId: this.state.gmClientId,
       config: this.state.config,
       deadline: this.state.deadline,
+      roundSeconds: this.state.roundSeconds,
+      extensionsLeft: Math.max(0, MAX_EXTENSIONS - this.state.extensions),
       ...this.drawProgress(),
       ...this.votingProgress(),
     }
