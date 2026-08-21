@@ -15,16 +15,20 @@
     text-align: center;
     margin-bottom: $gap-5;
   }
+  // Balanced because it's the longest display string in the app and wraps to two
+  // lines on a phone; degrades to normal wrapping where unsupported.
   &__eyebrow {
     margin: 0;
     font-family: $font-display;
     font-weight: 700;
     font-size: clamp(1.4rem, 4vw, 2rem);
+    text-wrap: balance;
   }
   &__hint {
     margin: $gap-2 0 0;
     color: $fg-35;
     font-size: 0.875rem;
+    text-wrap: balance;
   }
   &__hint-cat {
     display: inline-flex;
@@ -162,12 +166,16 @@
   &__tally {
     color: $muted;
     font-size: 0.875rem;
+    transition: color 0.3s ease;
 
     // Reads as a prompt once the click is free. Not `$accent-ink`: lime means
-    // "active/selected" app-wide, and this is a status.
+    // "active/selected" app-wide, and this is a status. Eased, because the line
+    // becoming a call to action is a moment — restrained, since it sits beside a
+    // button rather than being the celebration.
     &--complete {
       color: $fg;
       font-weight: $fw-semibold;
+      animation: voting-tally-complete 0.3s ease-out;
     }
   }
   &__stop {
@@ -184,5 +192,22 @@
   to {
     transform: scale(1);
     opacity: 1;
+  }
+}
+
+@keyframes voting-tally-complete {
+  from {
+    opacity: 0.4;
+  }
+}
+
+// The state still changes — only the ease goes.
+@media (prefers-reduced-motion: reduce) {
+  .voting__tally {
+    transition: none;
+
+    &--complete {
+      animation: none;
+    }
   }
 }
