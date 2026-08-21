@@ -104,6 +104,12 @@ export interface GmStopVotingMsg {
   type: 'gm:stopVoting'
 }
 
+// GM-only, DRAWING-only. Carries no amount: the step and the cap are the server's,
+// so a client can't ask for more time than it's allowed.
+export interface GmExtendTimeMsg {
+  type: 'gm:extendTime'
+}
+
 export interface GmPlayAgainMsg {
   type: 'gm:playAgain'
 }
@@ -123,6 +129,7 @@ export type ClientMsg
     | DrawDoneMsg
     | VoteCastMsg
     | GmStopVotingMsg
+    | GmExtendTimeMsg
     | GmPlayAgainMsg
     | GmTransferMsg
 
@@ -147,6 +154,13 @@ export interface StateMsg {
   gmClientId: string
   config: GmConfigureMsg | null
   deadline: number | null // unix ms
+  // The round's *current* length, growing with each extension. `config.drawSeconds`
+  // is where it starts; the countdown bar divides by this instead, or it pins at
+  // 100% once time is added.
+  roundSeconds: number
+  // "+15s" presses the GM has left. Server-owned, so the button can disable itself
+  // without duplicating the cap.
+  extensionsLeft: number
   doneCount: number
   totalDrawing: number
   // VOTING progress — voters who've cast all categories, out of those present.

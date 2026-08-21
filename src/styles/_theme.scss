@@ -34,6 +34,10 @@
 
   --accent-ink: #c8ff2d;
   --warn-ink: #ff8c00;
+  // Purple as ink/outline. `$primary` itself is 4.43:1 here and 4.36:1 on
+  // `$surface` — under the floor for the 12px `.btn--ghost` label, so the ink
+  // variant is a shade lighter.
+  --primary-ink: #8c7aff;
 
   // Timer ribbon fill, in urgency order. Needs 3:1 against the `$surface` track.
   --timer-ok: #c8ff2d;
@@ -92,6 +96,8 @@
   // lines take a hue-preserved olive. The lime *fills* are untouched.
   --accent-ink: #485f01;
   --warn-ink: #944f00;
+  // 3.18:1 unmodified; oklch L 0.50 brings it to 4.90:1 on the page.
+  --primary-ink: #6239dc;
 
   // Drives the ribbon fill *and* the timer text, so each needs 3:1 on the
   // `$surface` track and 4.5:1 on the page. Bright lime is 1.06:1 on the track and

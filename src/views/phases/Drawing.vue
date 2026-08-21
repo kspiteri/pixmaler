@@ -20,6 +20,7 @@ import {
   onMounted,
   ref,
   useTemplateRef,
+  watch,
 } from 'vue'
 import CanvasPair from '../../components/CanvasPair.vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
@@ -55,9 +56,22 @@ const doneText = computed(() =>
 )
 
 const pairRef = useTemplateRef<InstanceType<typeof CanvasPair>>('pair')
+
+// GM-only. The step and the cap live on the server; this only reports whether the
+// button is still worth showing.
+const isGm = computed(() => props.state.gmClientId === clientId)
+const canExtend = computed(() => props.state.extensionsLeft > 0)
+
+function extendTime() {
+  const msg: ClientMsg = { type: 'gm:extendTime' }
+  socket.send(JSON.stringify(msg))
+}
+
 // Seconds remaining on the countdown (null until we know the deadline).
 const secondsLeft = ref<number | null>(null)
-const totalSeconds = computed(() => config.value.drawSeconds)
+// The round's current length, not the configured one — it grows when the GM adds
+// time, and dividing by the config would pin the bar at 100%.
+const totalSeconds = computed(() => props.state.roundSeconds || config.value.drawSeconds)
 
 // Ratio-aware layout (item 5). The drawing screen is a fixed, non-scrolling
 // shell; we flip the reference/canvas pair between a row and a column so the
@@ -172,6 +186,37 @@ function cancelTimers() {
   if (rafId) { cancelAnimationFrame(rafId); rafId = null }
 }
 
+// Restartable, because the deadline can move: the GM's "+15s" arrives as a fresh
+// `state` push mid-round. The old version read `deadline.value` into a local at
+// mount, so both the tick and the auto-submit stayed pinned to the first value and
+// a revised deadline was silently ignored.
+function armCountdown() {
+  if (autoSubmitTimer) { clearTimeout(autoSubmitTimer); autoSubmitTimer = null }
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null }
+
+  const dl = deadline.value
+  // No deadline → secondsLeft stays null; timerText shows "drawing…".
+  if (!dl)
+    return
+
+  // Tick unconditionally until 0 — the countdown reflects wall-clock time,
+  // independent of submit state. Reads `deadline.value` each frame rather than the
+  // captured `dl`, so an extension lands on the very next frame.
+  const tick = () => {
+    const now = deadline.value
+    if (!now)
+      return
+    const left = Math.max(0, Math.ceil((now - Date.now()) / 1000))
+    secondsLeft.value = left
+    if (left > 0)
+      rafId = requestAnimationFrame(tick)
+  }
+  rafId = requestAnimationFrame(tick)
+  autoSubmitTimer = setTimeout(autoSubmitAtDeadline, Math.max(0, dl - Date.now()))
+}
+
+watch(deadline, armCountdown)
+
 onMounted(() => {
   // The server already has this exact grid — it just sent it to us. Priming
   // `lastSentGrid` makes `sendSubmit`'s equality check suppress the redundant
@@ -179,22 +224,7 @@ onMounted(() => {
   if (restoredGrid.value)
     lastSentGrid = [...restoredGrid.value]
 
-  const dl = deadline.value
-  if (dl) {
-    // Tick unconditionally until 0 — the countdown reflects wall-clock time,
-    // independent of submit state.
-    const tick = () => {
-      const left = Math.max(0, Math.ceil((dl - Date.now()) / 1000))
-      secondsLeft.value = left
-      if (left > 0)
-        rafId = requestAnimationFrame(tick)
-    }
-    rafId = requestAnimationFrame(tick)
-    const remaining = Math.max(0, dl - Date.now())
-    autoSubmitTimer = setTimeout(autoSubmitAtDeadline, remaining)
-  }
-
-  // No deadline → secondsLeft stays null; timerText shows "drawing…".
+  armCountdown()
 
   // Cancel pending sends if the socket goes away. Phase change is handled by
   // onBeforeUnmount.
@@ -230,6 +260,15 @@ onBeforeUnmount(() => {
         {{ timerText }}
       </span>
       <span class="drawing__done">{{ doneText }}</span>
+      <button
+        v-if="isGm && canExtend"
+        class="btn btn--ghost drawing__extend"
+        type="button"
+        title="Give everyone another 15 seconds"
+        @click="extendTime"
+      >
+        +15s
+      </button>
     </template>
 
     <div class="drawing__body">
@@ -262,6 +301,12 @@ onBeforeUnmount(() => {
   &__done {
     color: $muted;
     font-size: 0.875rem;
+  }
+  // Compact next to the countdown. `.btn--ghost` rather than primary: adding time
+  // is a correction, not the round's main action.
+  &__extend {
+    padding: 0.25rem 0.625rem;
+    font-size: $fs-xs;
   }
 
   &__body {

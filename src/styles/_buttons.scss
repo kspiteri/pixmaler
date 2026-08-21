@@ -50,8 +50,10 @@
   &--ghost {
     --press-colour: #{$primary-deep};
     background: transparent;
-    border: 2px solid $primary;
-    color: $primary;
+    // Ink and outline, so the themed variant — `$primary` unmodified is 3.18:1 on
+    // the light page. The hover *fill* keeps `$primary`: it carries its own ink.
+    border: 2px solid $primary-ink;
+    color: $primary-ink;
 
     &:not(:disabled):hover {
       background: $primary;
