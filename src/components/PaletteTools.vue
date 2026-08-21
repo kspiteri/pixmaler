@@ -1,17 +1,7 @@
 <script setup lang="ts">
-// Palette tools panel — swatch + brush + undo/clear. Teleported to <body>
-// so it can be dragged anywhere (desktop) or dock full-width to the bottom
-// (mobile). Extracted from CanvasPair.vue so the canvas surface can be
-// reshaped without dragging the panel logic along (item 5, fixed shell).
-//
-// Desktop users can drag the panel around; the pin button in the handle sends
-// it back to its default position (below the target reference).
-//
-// Panel-owned concerns: teleport, drag, viewport-clamp, mobile dock,
-// swatch-size (S/M/L), and the Undo/Clear buttons. The swatch and brush
-// controls themselves are imperative DOM built by the parent (from
-// lib/canvas.ts's buildSwatch / buildBrushControls, which need a live
-// PixelCanvas reference); we just mount them into slots here.
+// Palette tools panel — swatch + brush + undo/clear, teleported to <body> so it
+// can be dragged (desktop) or dock full-width to the bottom (mobile). The swatch
+// and brush are imperative DOM built by the parent; we only mount them in slots.
 
 import type { PixelCanvas } from '../lib/canvas'
 import { Check, GripVertical, Pin, Trash2, Undo2 } from '@lucide/vue'
@@ -35,14 +25,11 @@ interface Props {
   // DRAWING only — whether this player has flagged themselves done. When true
   // the Done button reads as flagged and is disabled.
   flaggedDone?: boolean
-  // Whether the canvas has anything on its undo stack. Parent-supplied because
-  // `PixelCanvas.canUndo()` is imperative — the parent refreshes it from the
-  // same `onUpdate` callback that painting and undo both fire.
+  // Whether the canvas has anything on its undo stack — parent-supplied because
+  // `PixelCanvas.canUndo()` is imperative.
   canUndo?: boolean
-  // DRAWING only — the target reference <canvas> and its in-flow home slot.
-  // On mobile the panel docks to the bottom and would cover the drawing canvas,
-  // so we relocate the reference into the docked bar (next to the tools) and
-  // move it back to `targetHome` on desktop.
+  // DRAWING only — the target reference `<canvas>` and its in-flow home slot. On
+  // mobile we relocate it into the docked bar, back to `targetHome` on desktop.
   targetEl?: HTMLElement | null
   targetHome?: HTMLElement | null
 }
@@ -69,9 +56,8 @@ const {
   setPosition: setPanelPosition,
 } = useDraggable({ initialX: 16, initialY: 16, desktopOnly: true, element: () => panelEl.value })
 
-// Below $bp-mobile the panel docks to the bottom full-width and dragging is
-// disabled. `isMobile` comes from the shared app-layout context so CanvasPair
-// (and anyone else) agrees on the breakpoint without a second matchMedia.
+// Below $bp-mobile the panel docks to the bottom full-width and dragging is off.
+// `isMobile` comes from the shared context so everyone agrees on the breakpoint.
 const { isMobile } = useAppLayout()
 
 // Docked ↔ floating flip changes whether the reference belongs in the dock and
@@ -83,10 +69,8 @@ watch(isMobile, () => {
   })
 })
 
-// Relocate the target reference between its in-flow home (desktop) and the
-// docked bar (mobile drawing). Moving the imperative <canvas> node is safe —
-// it's non-editable and unaffected by fit-zoom — and keeps the reference
-// visible without covering the drawing canvas on phones.
+// Move the reference between its in-flow home (desktop) and the docked bar
+// (mobile). Safe to move the imperative `<canvas>`: non-editable, no fit-zoom.
 function placeTarget() {
   const el = props.targetEl
   if (!el)
@@ -128,13 +112,8 @@ function onResize() {
   snapToDefault()
 }
 
-// Mobile only — the docked panel is `position: fixed` at the bottom with a
-// VARIABLE height (mobile head + body up to `max-height: 45vh`, growing with
-// the swatch size / brush row). Measure its real height and publish it into the
-// shared app-layout context (`paletteHeight`) so both the DRAWING shell and the
-// /paint sandbox (via <CanvasPair>) can reserve exactly that much space and
-// never let the canvas slide behind the palette. On desktop (floating panel)
-// it's cleared so no space is held.
+// Mobile only — the docked panel's height varies, so we publish its measured
+// height as `paletteHeight`: the single source of truth canvas areas reserve.
 let dockObserver: ResizeObserver | null = null
 
 function publishDockHeight() {
@@ -145,25 +124,20 @@ function publishDockHeight() {
     return
   }
   const h = Math.ceil(el.getBoundingClientRect().height)
-  // Guard against measuring a collapsed panel (e.g. while still `v-show`
-  // hidden, or mid-layout before the relocated reference has sized): a 0/tiny
-  // reading would under-reserve and let the canvas slide behind the dock.
-  // Keep the last good value until a real height lands.
+  // Ignore a 0/tiny reading (panel hidden or mid-layout) and keep the last good
+  // value — under-reserving would let the canvas slide behind the dock.
   if (h > 0)
     setPaletteHeight(h)
 }
 
-// The docked height only settles after the relocated reference <canvas> is in
-// place AND the body has flipped to its row layout, so measure across two
-// animation frames rather than a single microtask.
+// The docked height only settles once the reference is placed AND the body has
+// flipped to its row layout — hence two frames, not a single microtask.
 function schedulePublishDockHeight() {
   requestAnimationFrame(() => requestAnimationFrame(publishDockHeight))
 }
 
-// Mount imperative swatch/brush DOM into our slots whenever the parent
-// finishes building them. `watch` (vs onMounted) covers the case where the
-// parent's PixelCanvas is instantiated in its own onMounted and props arrive
-// after we've already mounted.
+// Mount the parent's imperative swatch/brush DOM into our slots. `watch`, not
+// onMounted: the parent builds them in its own onMounted, after we've mounted.
 watch(
   () => [props.swatchEl, props.brushEl] as const,
   async ([sw, br]) => {
@@ -224,9 +198,8 @@ function undo() {
   props.player?.undo()
 }
 
-// Tooltip advertises the keyboard shortcut (handled by Paint.vue / Drawing.vue),
-// spelled the way the platform spells it. Tooltip only — the aria-label stays a
-// plain "Undo" so screen readers don't announce a keystroke.
+// Tooltip advertises the shortcut (handled by Paint.vue / Drawing.vue) the way
+// the platform spells it; the aria-label stays a plain "Undo".
 const undoTitle = `Undo (${/mac|iphone|ipad|ipod/i.test(navigator.platform || navigator.userAgent) ? '⌘Z' : 'Ctrl+Z'})`
 
 function clear() {
@@ -366,15 +339,13 @@ function clear() {
 </template>
 
 <style scoped lang="scss">
-// Static layout (tools-panel chrome) lives in styles/_tools-panel.scss. Only
-// :deep() rules (reaching the swatch/brush DOM appended imperatively by
-// lib/canvas.ts) and the reactive --sw swatch-size var stay here — :deep()
-// only works in a scoped block.
+// Swatch/brush `:deep()` overrides plus the reactive `--sw` size var — the DOM
+// is mounted imperatively by `lib/canvas.ts`, and `:deep()` only works in a
+// scoped block. Static tools-panel chrome lives in `_tools-panel.scss`.
 @use '../styles/tokens' as *;
 
 .tools-panel {
-  // Swatch cell size, driven by the S / M / L control (reactive --sm/--lg
-  // classes). Consumed by the :deep(.swatch*) rules below.
+  // Swatch cell size — set by the S / M / L control, read by `:deep(.swatch*)`.
   --sw: 26px;
 
   &--sm {
