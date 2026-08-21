@@ -9,15 +9,18 @@
 @use 'buttons';
 @use 'forms';
 @use 'logo';
+@use 'tagline'; // before the page partials — see the file header
 @use 'phase';
 @use 'surfaces'; // the three surface roles + the .art-frame / .art-surface pair
 
 // Page partials — per-screen static layout.
+@use 'drawing'; // DRAWING screen chrome — see also `.phase--fixed` in _phase
 @use 'entry';
 @use 'lobby';
 @use 'paint';
 @use 'voting';
 @use 'results';
+@use 'taglines'; // /taglines debug route
 @use 'tools-panel'; // CanvasPair's static chrome (panel + canvas-pair layout)
 @use 'picker'; // ImagePicker's cards (shared by Lobby GM controls + /paint)
 @use 'player-list'; // the lobby roster — after `buttons`, see the file header
@@ -128,11 +131,4 @@ h3 {
   &--narrow {
     max-width: $col-narrow;
   }
-  &--mid {
-    max-width: $col-mid;
-  }
-}
-
-.btn-row > * + * {
-  margin-left: $gap-2;
 }

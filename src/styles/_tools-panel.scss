@@ -10,6 +10,7 @@
 // :deep() only works inside a component's scoped style, so those can't live here.
 
 @use 'tokens' as *;
+@use 'chrome' as *;
 
 // ── Fixed fit-zoom shell (item 5, Pattern A) ─────────────────────────────────
 // Shared by BOTH the DRAWING phase and the /paint sandbox so they look & feel
@@ -74,9 +75,7 @@
   left: 0;
   z-index: 100;
   width: 13rem;
-  background: $surface;
-  border: 1px solid $border;
-  border-radius: $radius-lg;
+  @include chrome($edge: $border);
   overflow: hidden;
   box-shadow: $shadow-2;
   user-select: none;

@@ -1,46 +1,29 @@
 @use 'tokens' as *;
 
-// Item 24 — controlled wonk. The Kahoot take: chrome and art tilt at different
-// volumes so a screenful of cards reads as hand-placed rather than tiled.
+// Controlled wonk — chrome and art tilt at different volumes so a screenful of
+// cards reads as hand-placed rather than tiled.
 //
-// **Mixins and variables only — never a rule.** This was originally a hard
-// requirement: `PlayerList.vue`'s scoped block `@use`d this file, and Vue compiles
-// each scoped block as its own unit, so a rule here would have been duplicated
-// into the component and scope-attributed. That's no longer the reason — the
-// roster's CSS moved to `_player-list.scss` and nothing scoped reaches this file
-// any more — so it is now rule-free **by choice**, like `_tokens.scss`: a mixin
-// library with no output is the easy thing to reason about, and it keeps the door
-// open to a scoped consumer arriving again. Adding a rule would work; don't.
+// **Mixins and variables only, never a rule** — a rule here would reorder the
+// cascade at its first `@use`. Keep it rule-free.
 //
-// Why `:nth-child` and not a random angle: the server pushes state on every
-// join, vote and submission echo, so `Math.random()` would re-roll the whole
-// gallery on each push. Position is stable across re-renders.
+// `:nth-child`, never a random angle: the server re-pushes state on every join,
+// vote and submission echo, which would re-roll the whole gallery each time.
 //
-// Why the standalone `rotate` / `translate` properties and not `transform`: the
-// press rule (`_buttons.scss:79-87`) owns `transform: translateY()` and
-// `.voting__stickers` owns `transform: translateX(-50%)`. Separate properties
-// compose instead of clobbering, so a tilt can never cancel a press.
+// Standalone `rotate` / `translate`, never `transform`: the press rule owns
+// `transform`, and separate properties compose instead of clobbering.
 
 $wonk-chrome: 0.6deg; // a card or a row — reads as placed, not as broken
 $wonk-art: 1.5deg; // a drawing — pinned-up paper rather than a tile
 $wonk-lift: -2px; // the "picking it up" rise; matches .btn--primary's hover
 
-// A seat chip inside `PlayerTag`. Much larger than the chrome rung because the
-// element is tiny: at 20–28px a 0.6° lean is invisible, and the chip has a flat
-// edge (or a letter) to read the angle off. The *direction* comes from the
-// player's initial (`LEANS` in `lib/seats.ts`), deliberately not from `:nth-child`
-// or the seat — the roster rows already alternate by seat, so keying the chip to
-// that too would amplify one signal instead of adding a second.
+// A seat chip inside `PlayerTag` — larger than the chrome rung because at 20–28px a
+// 0.6° lean is invisible. Direction comes from the initial (`LEANS` in `lib/seats.ts`),
+// not the seat: rows already alternate by seat, so that would amplify one signal.
 $wonk-avatar: 4deg;
 
-// Applied to the **card**, which is also the hover target. Any `.art-frame`
-// inside counter-rotates: a child inherits its parent's rotation, so matching
-// signs would just read as one larger tilt. Opposing them leaves the drawing
-// visibly off-axis against its own card edge — the bit that actually reads as
-// paper — while its absolute tilt stays under $wonk-art.
-//
-// Pass `$art: null` for a card with no artefact in it, to avoid emitting a
-// descendant selector that can never match.
+// Applied to the card, which is also the hover target. Any `.art-frame` inside
+// counter-rotates, since matching signs would read as one larger tilt.
+// Pass `$art: null` for a card with no artefact, so no dead selector is emitted.
 @mixin wonk($chrome: $wonk-chrome, $art: $wonk-art) {
   transition:
     rotate 160ms ease-out,
@@ -71,15 +54,11 @@ $wonk-avatar: 4deg;
     }
   }
 
-  // Halved below the mobile breakpoint, where cards go full-width: the same
-  // angle reads much stronger edge-to-edge, and a rotated box's bounding width
-  // grows by its *height* × sin(θ), which is the dimension that gets big there.
-  // Halved rather than dropped — the wonk is the point of the item.
+  // Halved where cards go full-width — a rotated box's bounding width grows by its
+  // *height* × sin(θ), and height is what gets big there.
   //
-  // **This block must stay above the straighten rule.** `&:nth-child(odd)` and
-  // `&:hover` are both one class plus one pseudo-class, so they tie on
-  // specificity and source order decides. Below the straighten, this would win
-  // and cards would never come level on mobile.
+  // **Must stay above the straighten rule** — they tie on specificity, so below it
+  // cards would never come level on mobile.
   @media (max-width: $bp-mobile) {
     &:nth-child(odd) {
       rotate: $chrome * 0.5;
@@ -101,9 +80,8 @@ $wonk-avatar: 4deg;
     }
   }
 
-  // Straighten and lift, so interacting with a card feels like picking it up.
-  // This is the half that stops the tilt reading as a rendering bug, which is
-  // why it covers `:focus-within` too — every card here holds a control.
+  // Straighten and lift, so a card feels picked up. Covers `:focus-within` too —
+  // every card here holds a control.
   &:hover,
   &:focus-within {
     rotate: 0deg;
@@ -116,8 +94,7 @@ $wonk-avatar: 4deg;
     }
   }
 
-  // Only the *straightening* is motion. The static rotation is harmless and
-  // stays either way, so this drops the transition and keeps the tilt.
+  // Only the straightening is motion — the static tilt stays either way.
   @media (prefers-reduced-motion: reduce) {
     transition: none;
 

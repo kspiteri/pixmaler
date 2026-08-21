@@ -1,14 +1,8 @@
 @use 'tokens' as *;
 
-// The three surface roles. What a thing *is* decides how it's dressed:
-//   Artefact  a drawing — white paper, square corners, framed once it's on show
-//   Chrome    panels, inputs, settings — quiet $surface, hairline border, flush
-//   Person    roster row, vote card — coloured border, generous radius, tilt
-// Only the artefact role has a utility; the other two are conventions the
-// per-screen partials follow. The Person role's tilt is the `wonk` mixin in
-// `_wonk.scss` — a separate file because this one emits rules and that one is a
-// mixin library. (It used to *have* to be separate, back when a scoped block
-// reached it; that's no longer true, but the split is still the right shape.)
+// The artefact surface role — a drawing: white paper, square corners, framed once
+// it's on show. The other two roles live in `_chrome.scss` and `_wonk.scss`, which
+// emit nothing (a rule in either would reorder the cascade at its first `@use`).
 
 // A drawing. Square corners on purpose — a canvas has none — so this is the one
 // place the radius scale in `_tokens.scss` deliberately doesn't apply.
@@ -17,12 +11,19 @@
   aspect-ratio: var(--art-ratio, 1 / 1);
   background: $paper;
   overflow: hidden;
+
+  // PixelCanvas is appended here imperatively and carries no scope attribute, so an
+  // unscoped descendant selector reaches it where a `:deep()` copy once had to.
+  > canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: $paper;
+  }
 }
 
-// The frame. Wraps `.art-surface` rather than sharing its box: the canvas inside
-// sizes itself off the aspect ratio, so a border on that same element would crop
-// it. Unframed while it's being drawn, framed once it's finished and on show —
-// which is why CanvasPair (DRAWING and /paint) has neither this nor the lift.
+// Wraps `.art-surface` rather than sharing its box — the canvas sizes off the aspect
+// ratio, so a border on that element would crop it. CanvasPair deliberately has none.
 .art-frame {
   box-sizing: border-box;
   // Not a radius-scale rung: this is the frame's own milled edge, not a UI
@@ -44,8 +45,8 @@
   // count and the card border are already the accent, and a second metal would be
   // the only one in the app.
   //
-  // Themed, unlike the lime *fills*: a frame reads against the card behind it, and
-  // lime on a near-white card is 1.16:1. Light takes the olive family instead.
+  // Themed unlike the lime *fills*: a frame reads against the card behind it, and
+  // lime on a near-white card is 1.16:1.
   &--winner {
     --frame-base: var(--frame-winner-base);
     --frame-hi: var(--frame-winner-hi);

@@ -1,0 +1,13 @@
+@use 'tokens' as *;
+
+// The Chrome surface role. **Emits no CSS**, like `_wonk.scss` — a rule here would
+// land wherever the first `@use` resolves and reorder the cascade.
+//
+// Five sites hand-rolled this before: `.picker__card`/`.voting__card` byte-identical,
+// `.input`/`.paint__toggle` likewise, `.tools-panel` a near-miss. Defaults are the
+// container recipe; pass the control rung for inputs and toggles.
+@mixin chrome($rung: $radius-lg, $edge: $border-soft) {
+  background: $surface;
+  border: 1px solid $edge;
+  border-radius: $rung;
+}

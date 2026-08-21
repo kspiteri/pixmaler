@@ -1,4 +1,5 @@
 @use 'tokens' as *;
+@use 'chrome' as *;
 
 // Form primitives — labelled fields and dark inputs.
 
@@ -25,9 +26,7 @@
   width: 100%;
   box-sizing: border-box;
   padding: 0.75rem 1rem;
-  border-radius: $radius;
-  background: $surface;
-  border: 1px solid $border;
+  @include chrome($rung: $radius, $edge: $border);
   color: $fg;
   font-family: $font-body;
   font-size: $fs-base;
@@ -42,11 +41,8 @@
   }
 }
 
-// Segmented button group — a joined row of mutually-exclusive options, one tap
-// each. Used for the tools panel's swatch size (S/M/L) and the picker's colour
-// count. Mark up as `role="group"` with `aria-pressed` on the active item; the
-// active state wears the lime accent, matching "accent = active/selected"
-// everywhere else. `--wide` gives items room for 2-digit labels.
+// Segmented button group — joined row of mutually-exclusive options (swatch size,
+// colour count). `role="group"` + `aria-pressed`; active is lime, `--wide` fits 2 digits.
 .segmented {
   display: flex;
   border: 1px solid $border;
@@ -54,15 +50,17 @@
   overflow: hidden;
   flex-shrink: 0;
 
+  // **Deliberately not `.pressable`** — the one standing exemption: `overflow: hidden`
+  // plus the flush `border-left` joins would clip and slide a `translateY` travel out.
+
   &__item {
     width: 1.75rem;
     padding: 0.375rem 0;
     background: transparent;
     border: none;
     color: $muted;
-    // Space Grotesk rather than the display face: these labels are values
-    // (8/16/24/32, S/M/L) read at ~12px, where Fredoka's rounded letterforms
-    // and numerals get mushy.
+    // Space Grotesk, not the display face: these are values read at ~12px, where
+    // Fredoka's rounded letterforms and numerals get mushy.
     font-family: $font-alert;
     font-weight: $fw-bold;
     font-size: $fs-xs;
@@ -77,8 +75,7 @@
     &:hover {
       color: $fg;
     }
-    // Inset the global ring — `.segmented` clips with `overflow: hidden`, so an
-    // outward outline would be cut off on the first and last item.
+    // Inset the global ring — `.segmented` clips, so an outward outline is cut off.
     &:focus-visible {
       outline-offset: -2px;
     }

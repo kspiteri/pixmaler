@@ -1,13 +1,11 @@
 @use 'tokens' as *;
+@use 'chrome' as *;
 
 // Paint sandbox — solo canvas page. Picker left, canvas pair right.
 
 .paint {
-  // Fixed, non-scrolling shell — matches the DRAWING phase's look & feel so the
-  // canvas pair fills the free area below the header/settings and the editable
-  // canvas fit-zooms to the largest box that fits (see CanvasPair.vue). Locking
-  // height AND min/max-height to the safe viewport avoids the mobile URL-bar
-  // `100vh` overshoot that would otherwise scroll the window.
+  // Fixed, non-scrolling shell matching the DRAWING phase, so the canvas pair fills
+  // the free area and fit-zooms; `--vh-safe` dodges the mobile URL-bar `100vh` overshoot.
   height: var(--vh-safe);
   min-height: var(--vh-safe);
   max-height: var(--vh-safe);
@@ -31,22 +29,13 @@
     }
   }
 
-  &__title {
-    margin: 0;
-    font-family: $font-display;
-    font-weight: $fw-bold;
-    font-size: $fs-h2-fluid;
-    line-height: $lh-tight;
-  }
-
   // The <Tagline> under the title (component is margin-less; spacing here).
   &__sub {
     margin: $gap-1 0 $gap-3;
     font-size: $fs-xs;
   }
 
-  // Fills the shell below the header so the canvas pair (a flex:1 child) claims
-  // the remaining height and fit-zooms into it — the DRAWING look & feel.
+  // Fills the shell below the header so the canvas pair claims the rest and fit-zooms.
   &__row {
     flex: 1;
     min-height: 0;
@@ -56,9 +45,8 @@
     align-items: stretch;
   }
 
-  // Header/settings hold their intrinsic height; the settings body scrolls
-  // internally if the picker is taller than the space left, so it never pushes
-  // the canvas out of the fixed shell.
+  // Header/settings hold their intrinsic height; the settings body scrolls internally,
+  // so it never pushes the canvas out of the fixed shell.
   &__settings {
     flex: 0 0 auto;
     min-height: 0;
@@ -77,9 +65,7 @@
     align-items: center;
     gap: $gap-2;
     padding: 0.5rem 0.875rem;
-    border-radius: $radius;
-    background: $surface;
-    border: 1px solid $border;
+    @include chrome($rung: $radius, $edge: $border);
     color: $fg-60;
     font-family: $font-body;
     font-weight: $fw-semibold;
@@ -94,8 +80,7 @@
       border-color: $fg-25;
     }
 
-    // Open state wears the lime accent — the one persistent bit of brand colour
-    // on this page, and it reads as "this panel is the thing you're editing".
+    // Open state wears the lime accent — "this panel is the thing you're editing".
     &[aria-expanded='true'] {
       color: $accent-ink;
       border-color: color-mix(in srgb, $accent-ink 40%, transparent);
@@ -110,8 +95,7 @@
     align-items: center;
     gap: $gap-2;
   }
-  // Collapsed-state caption ("· Mona Lisa · 32×48 · 16 colours"). Quieter than
-  // the label and allowed to truncate on narrow screens.
+  // Collapsed-state caption ("· Mona Lisa · 32×48 · 16 colours"); may truncate.
   &__toggle-summary {
     color: $fg-60;
     font-weight: $fw-regular;
@@ -126,9 +110,8 @@
     color: $fg-35;
   }
 
-  // Placeholder shown until the first pipeline result lands. Mirrors
-  // <CanvasPair>'s `flex: 1` so it claims the same box — swapping one for the
-  // other doesn't move anything.
+  // Placeholder until the first pipeline result lands. Mirrors <CanvasPair>'s
+  // `flex: 1` so swapping one for the other moves nothing.
   &__skeleton {
     flex: 1;
     min-height: 0;
@@ -139,8 +122,7 @@
     gap: $gap-3;
   }
   &__skeleton-box {
-    // Squarish and generous, but capped so it can't force the fixed shell to
-    // scroll on a short viewport.
+    // Capped so it can't force the fixed shell to scroll on a short viewport.
     width: min(60%, 22rem);
     max-height: 60%;
     aspect-ratio: 1;

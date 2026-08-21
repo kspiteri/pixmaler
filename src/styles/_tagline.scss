@@ -1,0 +1,99 @@
+@use 'tokens' as *;
+
+// `Tagline.vue` — the rotating subtitle, plus its View Transition keyframes.
+//
+// **Must be `@use`d before the page partials.** Hosts position the tagline
+// (`.entry__sub`, `.paint__sub`, `.lobby__waiting-tagline`), and unscoped they tie
+// with `.tagline` at one class each, so source order decides who wins. Scoped, this
+// rule was `0,2,0` and the host *couldn't* override it — extraction fixed that, and
+// the order is what keeps it fixed.
+
+.tagline {
+  // Margin deliberately unset: placement is the host's job.
+  color: $muted;
+  font-family: $font-body;
+  font-size: 0.875rem;
+  // Names this element for the View Transitions API so only the tagline animates,
+  // not the whole page. Unique because one <Tagline> mounts per page.
+  view-transition-name: tagline;
+}
+
+// `::view-transition-*` are document-level pseudo-elements, so these could never be
+// scoped — the variant is picked per rotation via `[data-tagline-vt]` on `<html>`.
+// Reduced motion is handled in script (we skip `startViewTransition`) and zeroed at
+// the bottom as belt-and-braces.
+::view-transition-old(tagline),
+::view-transition-new(tagline) {
+  animation-duration: 0.4s;
+  animation-timing-function: ease;
+}
+
+// fade is the API's built-in cross-fade, so it needs no keyframes of its own.
+@keyframes tagline-up-out {
+  to {
+    opacity: 0;
+    transform: translateY(-30%);
+  }
+}
+@keyframes tagline-up-in {
+  from {
+    opacity: 0;
+    transform: translateY(30%);
+  }
+}
+@keyframes tagline-down-out {
+  to {
+    opacity: 0;
+    transform: translateY(30%);
+  }
+}
+@keyframes tagline-down-in {
+  from {
+    opacity: 0;
+    transform: translateY(-30%);
+  }
+}
+@keyframes tagline-blur-out {
+  to {
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+@keyframes tagline-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+}
+
+[data-tagline-vt='slide-up'] {
+  &::view-transition-old(tagline) {
+    animation-name: tagline-up-out;
+  }
+  &::view-transition-new(tagline) {
+    animation-name: tagline-up-in;
+  }
+}
+[data-tagline-vt='slide-down'] {
+  &::view-transition-old(tagline) {
+    animation-name: tagline-down-out;
+  }
+  &::view-transition-new(tagline) {
+    animation-name: tagline-down-in;
+  }
+}
+[data-tagline-vt='blur'] {
+  &::view-transition-old(tagline) {
+    animation-name: tagline-blur-out;
+  }
+  &::view-transition-new(tagline) {
+    animation-name: tagline-blur-in;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(tagline),
+  ::view-transition-new(tagline) {
+    animation: none;
+  }
+}

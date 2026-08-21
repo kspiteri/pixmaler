@@ -1,4 +1,5 @@
 @use 'tokens' as *;
+@use 'chrome' as *;
 
 // ImagePicker's chrome — two cards (settings + image) shared by the Lobby's GM
 // controls and the /paint sandbox. Static, so it lives here rather than in a
@@ -12,9 +13,7 @@
 
   &__card {
     flex: 1 1 320px;
-    background: $surface;
-    border: 1px solid $border-soft;
-    border-radius: $radius-lg;
+    @include chrome;
     padding: $gap-4;
     display: flex;
     flex-direction: column;

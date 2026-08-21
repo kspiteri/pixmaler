@@ -185,7 +185,7 @@
   }
 
   // Stack on narrow screens.
-  @media (max-width: 640px) {
+  @media (max-width: $bp-mobile) {
     &__body {
       grid-template-columns: 1fr;
     }

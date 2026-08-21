@@ -1,10 +1,8 @@
 @use 'tokens' as *;
 
-// The seat chip — a player's avatar. One definition, so the shape modifiers aren't
-// written twice. Two consumers: `_player-tag.scss` (every chip beside a name, i.e.
-// all four player sites) and `_lobby.scss` (the shape picker, where a chip is a
-// *swatch*, not a player — which is why the lean deliberately doesn't reach it: a
-// grid of leaning swatches reads as broken rendering).
+// The seat chip — a player's avatar. Two consumers: `_player-tag.scss` (every chip
+// beside a name) and `_lobby.scss` (the shape picker, where a chip is a *swatch* —
+// which is why `_player-tag.scss`'s lean deliberately doesn't reach it).
 //
 // Colour comes from `--seat-colour` (the seat ramp, see `_tokens.scss`), set
 // inline by whoever renders the chip. Ink is $bg, never white — every seat in the

@@ -62,3 +62,27 @@
     }
   }
 }
+
+// The name gate — shown when arriving via a room link, before joining. Lives here
+// rather than in a partial of its own: it's the other pre-room screen, and a
+// 20-line file would be exactly the thin partial item 20 exists to avoid.
+.namegate {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-3;
+
+  &__room {
+    margin: 0 0 $gap-4;
+    font-family: $font-display;
+    font-weight: 700;
+    font-size: 2rem;
+    color: $accent-ink;
+    word-break: break-word;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-4;
+  }
+}

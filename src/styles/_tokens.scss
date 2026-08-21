@@ -44,9 +44,6 @@ $lh-normal: 1.5;
 
 // Letter-spacing — slight negative on big display; alerts are mixed-case now
 // (Space Grotesk), so only a hair of positive tracking.
-$ls-tight: -0.01em;
-$ls-normal: 0;
-$ls-wide: 0.04em;
 $ls-alert: 0.02em;
 
 // ── Colour ─────────────────────────────────────────────────────────────────
@@ -56,7 +53,6 @@ $ls-alert: 0.02em;
 // Surface
 $bg: var(--bg); // page background
 $surface: var(--surface); // cards, inputs, panels
-$surface-2: var(--surface-2); // slightly-off panel (drawing sidebar)
 $fg: var(--fg);
 
 // The drawing's paper. Untouched cells (-1) land on it, so it can never go dark.
@@ -70,12 +66,8 @@ $ink-on-colour: #0e0e12;
 // `_surfaces.scss`.
 $frame-w: 6px;
 
-// Text ramp. Against dark's $bg: $fg-60 is 8.0:1, $fg-50 5.4:1, $fg-35 only 3.2:1 —
-// so **$fg-40 and below are non-text only**. Reach for $muted, not a raw rung.
-//
-// 11 text sites still sit at $fg-35/$fg-25/$fg-20 (hints, eyebrow labels,
-// `::placeholder`). Audited and deliberately left; don't add new ones. Full list in
-// `docs/.plans/12-ui-polish.md` under item 8.
+// Text ramp. **$fg-40 and below are non-text only** ($fg-35 is 3.2:1); reach for
+// $muted, not a raw rung. 11 sites sit below the floor by audit — don't add more.
 $fg-80: var(--fg-80);
 $fg-60: var(--fg-60);
 $fg-50: var(--fg-50);
@@ -94,9 +86,6 @@ $border-soft: var(--border-soft);
 $accent: #c8ff2d; // lime — primary CTA fill
 $accent-fg: #0e0e12; // text on lime
 $primary: #7c5cff; // purple — secondary / GM
-$pink: #ff5ca8;
-$orange: #ff8c00;
-$green: #00cc00;
 
 // The same hues as *text or a line*, with the page behind them instead of a fill.
 // Bright lime is 1.16:1 on light grey and fails 1.4.11 even as a border.
@@ -104,47 +93,31 @@ $accent-ink: var(--accent-ink);
 $warn-ink: var(--warn-ink);
 $primary-ink: var(--primary-ink);
 
-// Status
-$warn: $orange;
-$danger: #ef130b;
-
 // The modal scrim. Not themed — a scrim darkens either way. Matches dark's $bg by
 // history, not intent; don't re-point it at $bg.
 $scrim: rgba(14, 14, 18, 0.7);
 
-// Seat colours — a player's identity colour, by their index in the room. Its own
-// register, not a reuse of the accents: each accent already means something (lime =
-// active/selected, purple = GM, orange = $warn, red = error) and a filled chip would
-// claim that meaning. See `lib/seats.ts` for the mapping.
+// Seat colours, by a player's index. Its own register, not a reuse of the accents —
+// each accent already means something and a filled chip would claim it.
 //
-// Generated in OKLCH, all 21 at L=0.72 with chroma capped 0.20. Keep the uniform
-// lightness if you retune — it's what buys three things:
+// Generated in OKLCH, all 21 at L=0.72: uniform lightness is what guarantees 7:1
+// against $ink-on-colour and keeps the accents distinguishable. Keep it if you retune.
 //
-//   1. Every chip clears AA with $ink-on-colour on it (7.04:1 worst case).
-//   2. No accent can be mistaken for a seat, by *lightness* rather than hue — so no
-//      hue band is carved out, which would only force muddy olives into the ramp.
-//   3. Consecutive seats are ~137° apart (the golden angle), so the 2nd player to
-//      join never neighbours the 1st. **Stored in walk order — sorting this list by
-//      hue silently destroys that.**
+// **Stored in golden-angle walk order (~137° apart) — sorting by hue destroys that.**
 //
-// $pink and $green are deliberately absent: each lands within a JND of an existing
-// seat, so folding them in would be invisible or would break the ramp. Both are
-// provably consumerless — flagged for item 20's audit, not deleted here.
 $player-colours:
   #ff6f7d, #00c46d, #a690ff, #e48f00, #00baca, #f568c6, #98b300, #65a6ff, #ff7455, #00c099, #c67eff, #ce9c00, #00b6e1,
   #ff67a0, #61bf2a, #899cff, #fd7a00, #00bdb3, #e171e7, #b7a700, #06afff;
 
-// Press depth — the hard offset a control sits on (see `_buttons.scss`). Static hex
-// rather than a derived shade, so the values stay greppable. The neutral rung is for
-// controls with no hue to deepen.
+// Press depth — the hard offset a control sits on. Static hex, not derived, so the
+// values stay greppable; the neutral rung is for controls with no hue to deepen.
 $accent-deep: #8cb320;
 $primary-deep: #4d399e;
 $shadow-press: var(--shadow-press);
 
-// Depth — three rungs, and only three: $shadow-1 (a framed drawing at rest),
-// $shadow-2 / -2-up (floating chrome, one value in two Y directions — the palette
-// panel keeps its weight whether it floats or docks, so the pair moves together) and
-// $shadow-press above. Nothing else joins the ramp.
+// Depth — three rungs only: $shadow-1 (a drawing at rest), $shadow-2 / -2-up
+// (floating chrome, one value in two Y directions — the pair moves together),
+// $shadow-press above. Nothing else joins.
 $shadow-1: var(--shadow-1);
 $shadow-2: var(--shadow-2);
 $shadow-2-up: var(--shadow-2-up);
