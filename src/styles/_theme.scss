@@ -127,3 +127,15 @@
 [data-theme='dark'] {
   @include dark;
 }
+
+// The theme swap is cross-faded by `lib/theme.ts` (see `withViewTransition`). The
+// default `root` snapshot already fades; 0.25s is brisk for a whole-page colour
+// change, so this only stretches it. `lib/motion.ts` skips the transition entirely
+// under reduced motion, so there is nothing to guard here.
+[data-theme-vt] {
+  &::view-transition-old(root),
+  &::view-transition-new(root) {
+    animation-duration: 0.35s;
+    animation-timing-function: ease;
+  }
+}

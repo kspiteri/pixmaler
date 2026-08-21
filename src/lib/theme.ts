@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { withViewTransition } from './motion'
 
 // The theme switch. Module-level like `lib/dialog.ts` — one theme per document.
 //
@@ -35,9 +36,14 @@ systemLight.addEventListener('change', () => {
     theme.value = systemTheme()
 })
 
+// Cross-faded via a View Transition: every colour on screen changes at once, and an
+// instant swap reads as a flicker. The whole document is the transition, so the
+// default `root` snapshot does the work — CSS only tunes its duration.
 export function toggleTheme(): void {
   const next: Theme = theme.value === 'dark' ? 'light' : 'dark'
-  theme.value = next
-  localStorage.setItem(KEY, next)
-  document.documentElement.dataset.theme = next
+  withViewTransition(() => {
+    theme.value = next
+    localStorage.setItem(KEY, next)
+    document.documentElement.dataset.theme = next
+  }, 'theme')
 }
