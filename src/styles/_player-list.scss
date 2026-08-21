@@ -1,21 +1,11 @@
 @use 'tokens' as *;
 @use 'wonk' as *;
 
-// Lobby roster — one row per player: avatar chip, name, GM pill, and the GM's
-// "Make GM" transfer button. `PlayerList.vue` keeps no styles of its own; this is
-// all of them, following the `_picker.scss` / `_tools-panel.scss` precedent for a
-// component whose CSS is plain static chrome with nothing needing `:deep()`.
-//
-// Going global rather than scoped costs nothing here and buys two things: the
-// `wonk` mixin no longer has a scoped consumer (see `_wonk.scss`), and the rules
-// stop carrying a `[data-v-…]` attribute they never needed — every selector is
-// already BEM-namespaced, so scoping was adding specificity, not isolation.
-//
+// Lobby roster — one row per player: avatar chip, name, GM pill and the GM's
+// "Make GM" transfer button. Global, not scoped: static chrome, no `:deep()`.
+
 // **Must be `@use`d after `buttons`.** `.player-list__make-gm` also wears
-// `.pressable`, and unscoped they tie at one class each; the later file wins, and
-// this one has to. They don't currently set the same properties — `.pressable`
-// owns `box-shadow` and the `:active` travel — but the ordering is what keeps that
-// true if either grows.
+// `.pressable`; unscoped they tie at one class each, so the later file wins.
 
 .player-list {
   &__rows {
@@ -43,15 +33,14 @@
     }
   }
 
-  // `__name` is gone: `PlayerTag size="row"` owns the chip, the name, the flex
-  // and the colour. Only the offline suffix stays here, because it's a property of
-  // the *row's* state rather than of the tag.
+  // `__name` is gone — `PlayerTag size="row"` owns the chip, name, flex and colour.
+  // Only the offline suffix stays: it's the row's state, not the tag's.
   &__offline {
     color: $fg-25;
   }
 
   // The roster name's size, applied to the tag — PlayerTag inherits size and
-  // weight from its host on purpose, since the four sites legitimately differ.
+  // weight from its host, since the four sites legitimately differ.
   .player-tag {
     font-size: 0.875rem;
   }

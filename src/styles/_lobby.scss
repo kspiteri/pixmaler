@@ -1,8 +1,7 @@
 @use 'tokens' as *;
 
-// Lobby screen — two-column body (players sidebar + game settings). The header
-// bar / logo come from PhaseLayout; the room copy-link button sits in its
-// status slot.
+// Lobby screen — two-column body (players sidebar + game settings). Header bar
+// and logo come from PhaseLayout; the room copy-link button sits in its status slot.
 
 .lobby {
   &__room {
@@ -42,34 +41,20 @@
     margin-bottom: $gap-4;
   }
 
-  // Avatar shape picker — one button per shape, each previewing the viewer's own
-  // chip so it shows what the roster will actually look like.
+  // Avatar shape picker — each button previews the viewer's own chip.
   &__shape {
     margin-bottom: $gap-4;
   }
-  // One row, always. Six fixed 44px targets would need 304px and the lobby aside
-  // is ~231px, so the cells **flex** instead: `1fr` each, square via
-  // `aspect-ratio`, with a `minmax` floor of the chip's own size so a narrow
-  // container can never crush the preview.
-  //
-  // That trades a fixed 44px target for a responsive one, and it lands the right
-  // way round: where the aside goes full-width — narrow viewports, i.e. the touch
-  // case — the cells compute to ~48px, comfortably over the 44px floor. Desktop
-  // gets ~35px, which is a mouse target, not a thumb one.
+  // One row, always: six fixed 44px targets would need 304px but the aside is
+  // ~231px, so the cells flex — ~48px where it goes full-width, ~35px on desktop.
   &__shapes {
     display: grid;
     grid-template-columns: repeat(6, minmax(1.75rem, 1fr));
     gap: $gap-1;
     margin-top: $gap-2;
   }
-  // No button chrome at all: the chip *is* the control. Selection reads as
-  // opacity plus a size step — chosen at full strength and slightly larger, the
-  // rest receding — rather than a ring around a box, so the only things on screen
-  // are the six silhouettes.
-  //
-  // The box is gone but the hit area isn't: `aspect-ratio` on a `1fr` cell still
-  // gives 54px on mobile. Keeping `border-radius` shapes the global focus ring,
-  // which is now the only chrome this control has and must not be removed.
+  // No chrome: the chip *is* the control (selection = opacity + size step), but the
+  // `aspect-ratio` cell still gives 54px. Keep `border-radius`: it shapes the focus ring.
   &__shape-btn {
     display: inline-flex;
     align-items: center;
@@ -81,10 +66,8 @@
     background: none;
     cursor: pointer;
 
-    // Fade the **chip**, not the button. Opacity on the button composites its own
-    // `:focus-visible` outline too, which dropped the global lime ring from
-    // 16.5:1 to 4.0:1 against $bg on every unselected option — a 4x cut for
-    // keyboard users on five of the six.
+    // Fade the **chip**, not the button — button opacity composites its own
+    // `:focus-visible` ring too, cutting its contrast ~4x for keyboard users.
     .avatar {
       opacity: 0.45;
       transition:
@@ -96,16 +79,8 @@
       opacity: 0.6;
     }
 
-    // Driven by the same attribute that carries the semantic state, so the two
-    // can't drift — there is no separate `--active` class to forget. **Must stay
-    // below `:hover`**: both are one class, one qualifier and `.avatar`, so they
-    // tie at 0-3-0 and source order decides. Above it, hovering the chosen shape
-    // would fade it.
-    //
-    // `scale` is a second, non-opacity cue: opacity alone left hover only 1.6:1
-    // from selected, so a resting pointer made the choice ambiguous — and on touch
-    // hover sticks after a tap. `scale`, not `transform`, because `.pressable`
-    // owns `transform` for the press travel and one would clobber the other.
+    // **Must stay below `:hover`** — both tie at 0-3-0, so source order decides.
+    // `scale`, not `transform`: `.pressable` owns `transform` for the press travel.
     &[aria-pressed='true'] .avatar {
       opacity: 1;
       scale: 1.12;
@@ -163,8 +138,7 @@
   &__waiting-text {
     margin: 0;
   }
-  // The tagline sits inline beside the waiting text — drop its own top margin
-  // (it's tuned for stacking under the player list, the GM placement).
+  // Sits inline beside the waiting text — drop the top margin tuned for the GM stack.
   &__waiting-tagline {
     margin: 0;
   }

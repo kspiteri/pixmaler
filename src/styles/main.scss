@@ -1,3 +1,6 @@
+// App-wide stylesheet — loads every global partial in dependency order, exposes
+// the token subset `.vue` scoped styles need, and sets base page typography.
+
 @use 'sass:list';
 @use 'tokens' as *;
 
@@ -28,12 +31,12 @@
 @use 'theme-toggle'; // ThemeToggle.vue — the switch in every header
 
 // ── CSS custom properties ──────────────────────────────────────────────────
-// Exposed so `.vue` scoped styles can consume the same tokens without a
-// second SCSS import. Keep this list to values that actually need to be
-// reached from component styles (typography + safe viewport).
+
+// Exposed so `.vue` scoped styles can read the same tokens without a second
+// SCSS import — typography + safe viewport only.
 :root {
-  // Safe viewport height — `100dvh` (mobile URL-bar aware) with a `100vh`
-  // fallback on older browsers. Ready for Drawing.vue's fixed shell (item 5).
+  // Safe viewport height — `100dvh` (mobile URL-bar aware), with a `100vh`
+  // fallback for older browsers.
   --vh-safe: 100vh;
   --vh-safe: 100dvh;
 
@@ -66,18 +69,15 @@
   --fw-bold: #{$fw-bold};
   --fw-black: #{$fw-black};
 
-  // Seat colours (item 26), 0-indexed so `lib/seats.ts` can address a seat by
-  // number without a single hex crossing into TypeScript. Emitted as a loop so
-  // the ramp in `_tokens.scss` stays the only place the colours are written down.
+  // Seat colours, 0-indexed so `lib/seats.ts` can address a seat by number.
+  // Looped so the ramp in `_tokens.scss` stays the only place they're written.
   @for $i from 1 through list.length($player-colours) {
     --player-colour-#{$i - 1}: #{list.nth($player-colours, $i)};
   }
 }
 
-// Page-wide. Per-component styles live inside each .vue file's <style scoped>.
-// The page background is deliberately NOT here: `_backdrop.scss` owns it, and
-// owns `html`'s base colour with it, because the texture layer only shows while
-// `body` stays transparent. Setting a background here would bury it.
+// Page-wide — per-component styles live in each .vue file's <style scoped>. The
+// page background is deliberately NOT here: `_backdrop.scss` owns it.
 body {
   margin: 0;
   font-family: $font-body;
@@ -96,24 +96,15 @@ a {
   }
 }
 
-// One keyboard-focus ring for the whole app. Global rather than per-component
-// because the alternative — a rule per control class — silently misses things:
-// it left the palette swatches, the vote buttons and an unclassed link with no
-// ring at all. There is no `tabindex` anywhere in `src/`, so this only ever
-// matches native controls (button / a / input).
-//
-// Two deliberate exceptions override it locally: `.btn--primary` (white, since
-// lime-on-lime reads as a halo) and `.segmented__item` (inset, because its
-// parent clips with `overflow: hidden`).
+// One keyboard-focus ring for the whole app — per-control rules silently missed
+// controls. `.btn--primary` (white) and `.segmented__item` (inset) override locally.
 :focus-visible {
   outline: 2px solid $accent-ink;
   outline-offset: 2px;
 }
 
-// Base heading typography — family + weight + line-height only. Sizes and
-// margins are kept as browser defaults here to avoid regressing screens that
-// style headings by class. Screens opting in to the fluid scale can apply
-// $fs-h*-fluid / --fs-h*-fluid on their own selectors.
+// Base heading typography — family, weight and line-height only. Sizes and margins
+// stay browser defaults so screens that style headings by class don't regress.
 h1,
 h2,
 h3 {

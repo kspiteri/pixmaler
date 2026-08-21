@@ -1,9 +1,8 @@
 @use 'tokens' as *;
 @use 'wonk' as *;
 
-// Results screen — hero winner card + a gallery of the rest ordered by overall
-// points. The :deep(.results__canvas) rule stays in the component's scoped
-// <style> since :deep only works there.
+// Results screen — hero winner card plus a gallery of the rest by overall points. The
+// `:deep(.results__canvas)` rule stays in the component's scoped <style>, where it works.
 
 .results {
   max-width: 48rem;
@@ -64,8 +63,7 @@
   &__winner-meta {
     text-align: center;
   }
-  // Size and weight only — `PlayerTag` inside owns the chip, the name and the
-  // display family, and inherits these two from here.
+  // Size and weight only — `PlayerTag` inside owns the chip, the name and the display face.
   &__winner-name {
     margin: 0;
     font-weight: 700;
@@ -121,8 +119,7 @@
   &__item-art {
     margin-bottom: $gap-2;
   }
-  // Size and weight only; the one-line clip is `PlayerTag`'s `truncate`, which has
-  // to live on the name span it owns rather than on this paragraph.
+  // Size and weight only; the one-line clip is `PlayerTag`'s `truncate`, on the span it owns.
   &__item-name {
     margin: 0;
     font-weight: 600;

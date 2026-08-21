@@ -28,9 +28,8 @@
 
   --accent-ink: #c8ff2d;
   --warn-ink: #ff8c00;
-  // Purple as ink/outline. `$primary` itself is 4.43:1 here and 4.36:1 on
-  // `$surface` — under the floor for the 12px `.btn--ghost` label, so the ink
-  // variant is a shade lighter.
+  // Purple as ink/outline. `$primary` is 4.43:1 here and 4.36:1 on `$surface` —
+  // under the floor for the 12px `.btn--ghost` label, so the ink variant lifts.
   --primary-ink: #8c7aff;
 
   // Timer ribbon fill, in urgency order. Needs 3:1 against the `$surface` track.
@@ -110,9 +109,7 @@
 }
 
 // Dark by default, the query honours the OS, the attribute blocks override it.
-//
-// **Order is load-bearing** — they tie on specificity, so the attribute blocks MUST
-// stay below the query or choosing dark on a light-set OS silently stops working.
+// **Order is load-bearing** — the attribute blocks MUST stay below the query.
 :root {
   @include dark;
 }

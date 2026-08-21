@@ -1,29 +1,22 @@
 @use 'tokens' as *;
 
-// Controlled wonk — chrome and art tilt at different volumes so a screenful of
-// cards reads as hand-placed rather than tiled.
-//
-// **Mixins and variables only, never a rule** — a rule here would reorder the
-// cascade at its first `@use`. Keep it rule-free.
-//
-// `:nth-child`, never a random angle: the server re-pushes state on every join,
-// vote and submission echo, which would re-roll the whole gallery each time.
-//
-// Standalone `rotate` / `translate`, never `transform`: the press rule owns
-// `transform`, and separate properties compose instead of clobbering.
+// Controlled wonk — chrome and art tilt at different volumes, so a screenful of
+// cards reads as hand-placed rather than tiled. **Mixins and variables only,
+// never a rule** — a rule here would reorder the cascade at its first `@use`.
+
+// `:nth-child`, never random (state re-pushes would re-roll it); standalone
+// `rotate`/`translate`, never `transform` (the press rule owns that).
 
 $wonk-chrome: 0.6deg; // a card or a row — reads as placed, not as broken
 $wonk-art: 1.5deg; // a drawing — pinned-up paper rather than a tile
 $wonk-lift: -2px; // the "picking it up" rise; matches .btn--primary's hover
 
-// A seat chip inside `PlayerTag` — larger than the chrome rung because at 20–28px a
-// 0.6° lean is invisible. Direction comes from the initial (`LEANS` in `lib/seats.ts`),
-// not the seat: rows already alternate by seat, so that would amplify one signal.
+// A seat chip inside `PlayerTag` — larger, because at 20–28px a 0.6° lean is
+// invisible. Direction comes from the initial (`LEANS`), not the seat.
 $wonk-avatar: 4deg;
 
-// Applied to the card, which is also the hover target. Any `.art-frame` inside
-// counter-rotates, since matching signs would read as one larger tilt.
-// Pass `$art: null` for a card with no artefact, so no dead selector is emitted.
+// Applied to the card, which is also the hover target; any `.art-frame` inside
+// counter-rotates. Pass `$art: null` for a card with no artefact.
 @mixin wonk($chrome: $wonk-chrome, $art: $wonk-art) {
   transition:
     rotate 160ms ease-out,
@@ -54,11 +47,8 @@ $wonk-avatar: 4deg;
     }
   }
 
-  // Halved where cards go full-width — a rotated box's bounding width grows by its
-  // *height* × sin(θ), and height is what gets big there.
-  //
-  // **Must stay above the straighten rule** — they tie on specificity, so below it
-  // cards would never come level on mobile.
+  // Halved where cards go full-width — a rotated box's width grows by height × sinθ.
+  // **Must stay above the straighten rule**, or cards never come level on mobile.
   @media (max-width: $bp-mobile) {
     &:nth-child(odd) {
       rotate: $chrome * 0.5;

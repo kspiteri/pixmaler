@@ -1,29 +1,14 @@
 // Static layout for CanvasPair.vue — the canvas pair flex row and the floating
-// tools panel chrome. Split out of the component's scoped <style> per the
-// "static layout in partials, scoped only for :deep/reactive" convention.
-//
-// What stays in CanvasPair.vue's scoped block (and must NOT move here):
-//   - :deep(.canvas-pair__*-canvas) sizing — reaches the appended <canvas>
-//   - :deep(.swatch* / .brush*) — reaches DOM built imperatively in lib/canvas.ts
-//   - the --sw swatch-size custom property (set by the reactive --sm/--lg
-//     classes, consumed by the scoped :deep(.swatch) rule)
-// :deep() only works inside a component's scoped style, so those can't live here.
+// tools panel chrome. The component's `:deep()` rules and the `--sw` swatch var
+// must stay in its scoped block: `:deep()` only works there.
 
 @use 'tokens' as *;
 @use 'chrome' as *;
 
 // ── Fixed fit-zoom shell (item 5, Pattern A) ─────────────────────────────────
-// Shared by BOTH the DRAWING phase and the /paint sandbox so they look & feel
-// identical: the pair fills its container's height on every viewport and lets
-// the editable canvas take the lion's share of the space. The row's
-// `flex-direction` is set inline from `orientationFor` (Drawing.vue / Paint.vue):
-// `row` sits the reference beside the canvas, `column` stacks it above. The
-// reference stays compact (:deep sizing in CanvasPair.vue) so the editable
-// canvas grows to the largest fitting box. `variant` no longer changes the
-// layout — only the palette button (Clear vs Ready).
+// Shared by DRAWING and /paint; `flex-direction` comes inline from `orientationFor`.
 .canvas-pair {
-  // The component root is a flex parent (see CanvasPair.vue scoped); the row
-  // fills it. `flex-direction` comes from the inline `orientation` style.
+  // The component root is a flex parent (CanvasPair.vue scoped); the row fills it.
   &__row {
     flex: 1;
     min-height: 0;
@@ -51,16 +36,8 @@
     gap: $gap-2;
   }
 
-  // On mobile the tools panel docks to the bottom (fixed, full-width), so it
-  // overlaps page content. The space it needs below the canvas is reserved
-  // *inside* <CanvasPair> (it reads the measured palette height from the shared
-  // app-layout context and pads the pair by exactly that much) for BOTH the
-  // paint sandbox and the DRAWING shell — a single JS-driven source of truth,
-  // so no CSS-var padding hack is needed here.
-  //
-  // On mobile the reference is relocated into the docked palette bar (see
-  // PaletteTools.vue), so the in-flow target column is hidden and the editable
-  // canvas claims the whole area above the dock.
+  // Mobile: the reference moves into the docked palette bar (PaletteTools.vue),
+  // so hide the in-flow column; <CanvasPair> pads for the measured dock height.
   @media (max-width: $bp-mobile) {
     .canvas-pair__target {
       display: none;
@@ -99,22 +76,19 @@
     }
   }
 
-  // Drag handle's grip — a GripVertical Lucide icon (it used to be a `⋮⋮` text
-  // hack, hence the negative letter-spacing that lived here).
+  // Drag handle's grip — a GripVertical Lucide icon.
   &__grip {
     color: $fg-30;
     display: inline-flex;
     align-items: center;
   }
   &__label {
-    // Push everything after the label (the S/M/L group) to the far end, so the
-    // handle reads `⋮ palette ........ [S|M|L]`.
+    // Push the S/M/L group that follows to the far end of the handle.
     margin-right: auto;
     white-space: nowrap;
   }
 
-  // Dock-to-default button — small pin icon on the handle bar. Sits next to
-  // the S/M/L group; both flex-shrink so the handle stays compact.
+  // Dock-to-default button — small pin icon on the handle bar, next to S/M/L.
   &__dock {
     flex-shrink: 0;
     display: inline-flex;
@@ -148,9 +122,8 @@
     gap: $gap-3;
   }
 
-  // Wraps the swatch + brush + action row so the docked bar can sit the target
-  // reference beside this whole block on mobile (drawing). On desktop / paint
-  // it's the panel's only body child and just stacks as before.
+  // Wraps swatch + brush + actions so the mobile docked bar can sit the target
+  // reference beside the whole block; elsewhere it's the only body child.
   &__controls {
     display: flex;
     flex-direction: column;
@@ -159,9 +132,8 @@
     min-width: 0;
   }
 
-  // Docked target reference (mobile DRAWING). The <canvas> is moved in here by
-  // PaletteTools; size it as a compact thumbnail next to the controls. Not a
-  // :deep() rule — this is a global partial, so the class reaches directly.
+  // Docked target reference (mobile DRAWING) — PaletteTools moves the <canvas>
+  // in here; sized as a compact thumbnail. Global partial, so no `:deep()`.
   &__target {
     flex: 0 0 auto;
     display: flex;
@@ -177,8 +149,7 @@
     }
   }
 
-  // Mobile header strip — stands in for the (drag-only, desktop) handle so the
-  // swatch-size control has a home off the brush row. Static, not draggable.
+  // Mobile header strip — static stand-in for the drag handle; hosts swatch size.
   &__mobile-head {
     display: flex;
     align-items: center;
@@ -212,10 +183,8 @@
     }
   }
 
-  // Done ("Ready") button — the DRAWING-phase primary CTA in place of Clear.
-  // Once flagged it stays fully lit (accent fill) rather than fading out like a
-  // regular disabled button, so it reads as "locked in / ready" — and it sits
-  // held down, since a raised key that can no longer be pressed reads as broken.
+  // Done ("Ready") — the DRAWING-phase primary CTA. Once flagged it stays lit and
+  // held down rather than fading, so it reads "locked in", not broken.
   &__btn--done.tools-panel__btn--flagged:disabled {
     opacity: 1;
     cursor: default;
@@ -230,18 +199,11 @@
     bottom: 0;
     left: 0;
     width: 100%;
-    // Slide up from below the fold on dock. `top: auto`/`width` aren't
-    // interpolatable against the floating state, so each state announces itself
-    // with a short entrance instead of transitioning between them. Safe to
-    // animate `transform` here — only the FLOATING panel carries an inline
-    // transform (the drag position), which a keyframe would override.
+    // An entrance, not a transition: `top: auto`/`width` don't interpolate. Safe to
+    // animate `transform` — only the FLOATING panel carries an inline one.
     animation: tools-panel-dock-in 0.22s ease-out;
-    // Hard cap the whole docked panel to a known height. The DRAWING shell
-    // reserves this same `50vh` as its `--palette-dock-h` fallback, so even if
-    // the JS height measurement never lands the canvas can never slide behind
-    // the dock — the reserve is always >= the palette. When the measurement
-    // does land it tightens the reserve to the panel's real (usually smaller)
-    // height.
+    // Hard cap; the DRAWING shell reserves this same `50vh` as its
+    // `--palette-dock-h` fallback — change both or the canvas hides behind the dock.
     max-height: 50vh;
     display: flex;
     flex-direction: column;
@@ -249,8 +211,7 @@
     border-bottom: none;
     box-shadow: $shadow-2-up;
 
-    // Sit the relocated reference beside the controls so both share the docked
-    // bar and the canvas keeps the whole space above — DRAWING and paint alike.
+    // Sit the relocated reference beside the controls; the canvas keeps the space above.
     .tools-panel__body {
       flex: 1;
       min-height: 0;
@@ -261,9 +222,8 @@
     }
   }
 
-  // Undock: fade the floating panel in at its drag position. Opacity ONLY — the
-  // position is an inline `transform`, and animating transform here would beat
-  // the inline style and snap the panel to the origin mid-animation.
+  // Undock: fade in at the drag position. Opacity ONLY — animating `transform`
+  // would beat the inline position style and snap the panel to the origin.
   &:not(&--docked) {
     animation: tools-panel-float-in 0.18s ease-out;
   }
@@ -282,10 +242,8 @@
   }
 }
 
-// The dock flip is a layout change, not decoration — with reduced motion the
-// panel simply appears in its new state. Selectors mirror the ones above rather
-// than being written short: a bare `.tools-panel` (0,1,0) would lose to
-// `.tools-panel:not(.tools-panel--docked)` (0,2,0) no matter the source order.
+// Reduced motion: the dock flip just appears. Selectors mirror the ones above —
+// a bare `.tools-panel` (0,1,0) would lose to the `:not()` rule (0,2,0).
 @media (prefers-reduced-motion: reduce) {
   .tools-panel:not(.tools-panel--docked),
   .tools-panel--docked {

@@ -1,13 +1,11 @@
 @use 'tokens' as *;
 @use 'wonk' as *;
 
-// `PlayerTag.vue` — the seat chip and a player's name as one unit. Global rather
-// than scoped for the same reason `_player-list.scss` is: it's static chrome with
-// nothing needing `:deep()`, and the component's own header explains why the
-// pairing is a component at all.
-//
-// This owns the name's **family** and the gap; the host keeps its size and weight,
-// which legitimately differ across the four sites.
+// `PlayerTag.vue` — the seat chip and a player's name as one unit. Global, not
+// scoped: static chrome with nothing needing `:deep()`.
+
+// Owns the name's **family** and the gap; the host keeps size and weight, which
+// legitimately differ across the four sites.
 
 .player-tag {
   display: inline-flex;

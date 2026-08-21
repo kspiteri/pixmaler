@@ -2,9 +2,8 @@
 @use 'chrome' as *;
 
 // ImagePicker's chrome — two cards (settings + image) shared by the Lobby's GM
-// controls and the /paint sandbox. Static, so it lives here rather than in a
-// scoped block; that also lets the preview target its imperatively-appended
-// canvas with plain descendant selectors instead of `:deep()`.
+// controls and the /paint sandbox. Static and unscoped, so the preview reaches its
+// imperatively-appended canvas with plain descendant selectors, no `:deep()`.
 
 .picker {
   display: flex;
@@ -46,9 +45,8 @@
     flex: 1;
     accent-color: $primary;
   }
-  // Readout: "12 → 40×60" plus the busy spinner. Right-aligned in a reserved
-  // slot so digit-count changes eat their own space instead of resizing the
-  // slider next to it.
+  // Readout: "12 → 40×60" plus the busy spinner. Right-aligned in a reserved slot
+  // so digit-count changes don't resize the slider beside it.
   &__scale-out {
     display: inline-flex;
     align-items: center;
@@ -58,8 +56,7 @@
     min-width: 7rem;
   }
   &__scale-val {
-    // Space Grotesk, not the display face — Fredoka's rounded numerals are hard
-    // to read at small sizes, and this is a value to be read precisely.
+    // Space Grotesk, not the display face — a value to be read precisely.
     font-family: $font-alert;
     font-weight: $fw-bold;
     width: 1.5rem;
@@ -93,8 +90,7 @@
     white-space: nowrap;
   }
 
-  // Compact dark input — the `.input` primitive at UI-chrome scale. (The colour
-  // count used to be a <select> here; it's a `.segmented` group now.)
+  // Compact dark input — the `.input` primitive at UI-chrome scale.
   &__time {
     padding: $gap-2 $gap-3;
     border-radius: $radius;
@@ -119,7 +115,7 @@
     gap: $gap-3;
   }
 
-  // Outlined tiles — Browse… and each sample thumbnail. Shared hover so the two
+  // Outlined tiles — Browse… and each sample thumbnail share a hover so the two
   // read as the same class of control. (Focus ring comes from main.scss.)
   &__browse,
   &__sample {
@@ -158,9 +154,8 @@
     list-style: none;
     margin: 0;
     padding: 0;
-    // Wrapping ribbon of aspect-true thumbnails: each button hugs its image, so
-    // portraits sit narrow and landscapes wide (the masonry-ish look). Items
-    // share a fixed thumb height, which keeps every row's baseline aligned.
+    // Wrapping ribbon of aspect-true thumbnails: each button hugs its image, and a
+    // shared thumb height keeps every row's baseline aligned.
     display: flex;
     flex-wrap: wrap;
     gap: $gap-2;
@@ -177,9 +172,8 @@
     background: transparent;
     font-size: $fs-2xs;
 
-    // Selected sample wears the accent — matches the settings toggle's open
-    // state, and is the only "which image am I painting?" cue once the panel
-    // collapses (see the summary on the toggle bar).
+    // Selected sample wears the accent — the only "which image am I painting?" cue
+    // once the panel collapses.
     &.is-selected {
       color: $accent-ink;
       border-color: $accent-ink;
@@ -201,9 +195,7 @@
   }
 
   // ── Messages + preview ────────────────────────────────────────────────────
-  // A tinted card, not just orange text: bounded and filled so it reads as an
-  // alert at a glance. The icon already carries the meaning without colour;
-  // the fill is what stops it being mistaken for another caption.
+  // A tinted card, not just orange text, so it reads as an alert at a glance.
   &__warn {
     display: flex;
     align-items: flex-start;
@@ -228,14 +220,12 @@
     font-size: $fs-sm;
   }
 
-  // Contents are appended imperatively by `reprocess()` (a <p> caption + the
-  // PixelCanvas <canvas>), so they carry no scope attribute — plain descendant
-  // selectors, no `:deep()` needed now this lives outside the component.
+  // Contents are appended imperatively by `reprocess()` (a caption + the PixelCanvas
+  // <canvas>), so they carry no scope attribute — plain selectors, no `:deep()`.
   &__preview {
     transition: opacity 0.15s;
 
-    // Re-processing: the previous target stays visible but dims, so the card
-    // keeps its height and the change reads as a refresh, not a reload.
+    // Re-processing: the previous target dims but stays, so the card keeps its height.
     &.is-busy {
       opacity: 0.4;
     }
@@ -260,8 +250,7 @@
   }
 }
 
-// Reduced motion: swap the spin for a gentle fade so there's still a "working"
-// signal without rotation.
+// Reduced motion: fade instead of spinning, so there's still a "working" signal.
 @media (prefers-reduced-motion: reduce) {
   .picker__spinner.is-on {
     animation: picker-pulse 1.2s ease-in-out infinite;

@@ -1,9 +1,8 @@
 @use 'tokens' as *;
 
 // The alert register: `.conn-banner` (self-clearing status) and `.alert-dialog`
-// (answered by the user). They can't share markup — a native <dialog> lives in
-// the browser's top layer, a banner is pinned to the page — so they share this
-// file, which keeps the aesthetic pass a single-file edit.
+// (answered by the user). They can't share markup — a native <dialog> lives in the
+// browser's top layer, a banner is pinned to the page — so they share this file.
 
 // ── LIVE STATUS ─────────────────────────────────────────────────────────────
 
@@ -33,8 +32,8 @@
   background: $surface;
   color: $fg;
 
-  // $bg, not $accent-fg — they hold the same hex today, but this is the page
-  // darkening behind the dialog, not text on lime.
+  // Not `$accent-fg` — same hex today, but this is the page darkening behind the
+  // dialog, not text on lime.
   &::backdrop {
     background: $scrim;
   }

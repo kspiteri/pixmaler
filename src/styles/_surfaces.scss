@@ -34,19 +34,14 @@
   border-bottom-color: var(--frame-hi);
   box-shadow: $shadow-1;
 
-  // The frame's inner lip. Outset on the art rather than inset on the frame: an
-  // inset shadow here would paint beneath the drawing's own background and
-  // never be seen.
+  // The frame's inner lip. Outset on the art, not inset on the frame — an inset
+  // shadow would paint beneath the drawing's own background and never be seen.
   .art-surface {
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
   }
 
-  // The winner's frame. Lime rather than a gold of its own — the crown, the vote
-  // count and the card border are already the accent, and a second metal would be
-  // the only one in the app.
-  //
-  // Themed unlike the lime *fills*: a frame reads against the card behind it, and
-  // lime on a near-white card is 1.16:1.
+  // Lime rather than a gold of its own — the crown and vote count already are.
+  // Themed unlike the lime *fills*: a frame reads against the card, where lime is 1.16:1.
   &--winner {
     --frame-base: var(--frame-winner-base);
     --frame-hi: var(--frame-winner-hi);

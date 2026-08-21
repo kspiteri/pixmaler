@@ -8,10 +8,7 @@ $font-body: 'Plus Jakarta Sans', sans-serif;
 $font-alert: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
 
 // ── Type scale ──────────────────────────────────────────────────────────────
-// Static rem sizes for chrome/UI — predictable, snap to design grid.
-// The `-fluid` variants use clamp() for headings that should breathe with the
-// viewport (mobile → desktop). Use static tokens for buttons, labels, body;
-// fluid tokens for h1/h2/hero copy.
+// Static rungs for chrome; `-fluid` clamp() rungs for headings that should breathe.
 $fs-2xs: 0.6875rem; // 11px — micro labels
 $fs-xs: 0.75rem; // 12px — meta / captions
 $fs-sm: 0.875rem; // 14px — small body, plain buttons, form labels
@@ -47,8 +44,7 @@ $lh-normal: 1.5;
 $ls-alert: 0.02em;
 
 // ── Colour ─────────────────────────────────────────────────────────────────
-// Names only — values live in `_theme.scss`. Anything reachable as `var(--x)` is
-// theme-varying; the literals below deliberately are not.
+// Names only; values live in `_theme.scss`. `var(--x)` = theme-varying, literals not.
 
 // Surface
 $bg: var(--bg); // page background
@@ -97,14 +93,8 @@ $primary-ink: var(--primary-ink);
 // history, not intent; don't re-point it at $bg.
 $scrim: rgba(14, 14, 18, 0.7);
 
-// Seat colours, by a player's index. Its own register, not a reuse of the accents —
-// each accent already means something and a filled chip would claim it.
-//
-// Generated in OKLCH, all 21 at L=0.72: uniform lightness is what guarantees 7:1
-// against $ink-on-colour and keeps the accents distinguishable. Keep it if you retune.
-//
-// **Stored in golden-angle walk order (~137° apart) — sorting by hue destroys that.**
-//
+// Seat colours, by player index. 21 hues at uniform OKLCH L=0.72 (that uniformity
+// gives 7:1 on $ink-on-colour). **Golden-angle order — sorting by hue destroys it.**
 $player-colours:
   #ff6f7d, #00c46d, #a690ff, #e48f00, #00baca, #f568c6, #98b300, #65a6ff, #ff7455, #00c099, #c67eff, #ce9c00, #00b6e1,
   #ff67a0, #61bf2a, #899cff, #fd7a00, #00bdb3, #e171e7, #b7a700, #06afff;
@@ -116,8 +106,7 @@ $primary-deep: #4d399e;
 $shadow-press: var(--shadow-press);
 
 // Depth — three rungs only: $shadow-1 (a drawing at rest), $shadow-2 / -2-up
-// (floating chrome, one value in two Y directions — the pair moves together),
-// $shadow-press above. Nothing else joins.
+// (floating chrome, one value in two Y directions — the pair moves together).
 $shadow-1: var(--shadow-1);
 $shadow-2: var(--shadow-2);
 $shadow-2-up: var(--shadow-2-up);
@@ -130,14 +119,8 @@ $gap-4: 1rem;
 $gap-5: 1.5rem;
 $gap-6: 2rem;
 
-// Radius scale — the rung says what kind of thing it is, so the scale can be
-// retuned without re-deciding every site:
-//   $radius-sm  inner / nested — something sitting inside something else
-//   $radius     controls — buttons, inputs, pills
-//   $radius-lg  containers — cards, panels, rows
-//   $radius-xl  hero only — the winner card, and nothing else
-// Artwork is the standing exception: a drawing has square corners, because a
-// physical canvas does. See `_surfaces.scss`.
+// Radius scale — the rung says what a thing *is*: sm inner/nested, plain controls,
+// lg containers, xl hero only. Artwork is the exception and takes none.
 $radius-sm: 0.5rem;
 $radius: 0.75rem;
 $radius-lg: 1rem;

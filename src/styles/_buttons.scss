@@ -39,8 +39,8 @@
       outline-color: $fg;
     }
 
-    // The offset grows by exactly what the button rises, so its bottom edge
-    // stays pinned to the page and the key reads as having left it.
+    // The offset grows by exactly what the button rises, so its bottom edge stays
+    // pinned to the page and the key reads as having left it.
     &:not(:disabled):hover {
       transform: translateY(-2px);
       box-shadow: 0 calc(var(--press) + 2px) 0 var(--press-colour);
@@ -76,8 +76,8 @@
   }
 }
 
-// One press for every control in the app: it sits on a hard offset shadow and
-// travels down onto the page by that same distance.
+// One press for every control in the app: it rests on a hard offset shadow and travels
+// down onto the page by that distance. `--press` / `--press-colour` are a variant's only knobs.
 .btn,
 .pressable {
   box-shadow: 0 var(--press, 2px) 0 var(--press-colour, #{$shadow-press});
@@ -92,6 +92,8 @@
   }
 }
 
+// Drops the easing only — the `:active` press travel stays, since on touch the
+// movement is the only feedback there is.
 @media (prefers-reduced-motion: reduce) {
   .btn {
     transition-property: background, color, border-color;

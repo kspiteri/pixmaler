@@ -1,12 +1,8 @@
 @use 'tokens' as *;
 
-// The seat chip — a player's avatar. Two consumers: `_player-tag.scss` (every chip
-// beside a name) and `_lobby.scss` (the shape picker, where a chip is a *swatch* —
-// which is why `_player-tag.scss`'s lean deliberately doesn't reach it).
-//
-// Colour comes from `--seat-colour` (the seat ramp, see `_tokens.scss`), set
-// inline by whoever renders the chip. Ink is $bg, never white — every seat in the
-// ramp clears 7:1 against $bg while white fails on all 21.
+// The seat chip — a player's avatar. Two consumers: `_player-tag.scss` (chips
+// beside a name) and `_lobby.scss` (the shape picker, where a chip is a *swatch*,
+// so the lean doesn't reach it). Ink is $bg, never white — 7:1 on all 21 seats.
 
 .avatar {
   flex-shrink: 0;
@@ -21,33 +17,20 @@
   font-weight: $fw-bold;
   font-size: $fs-sm;
   line-height: 1;
-  // Fallback silhouette only. The templates always emit an explicit
-  // `--<shape>`, so this is what a stale `avatar--undefined` from an older
-  // server would land on.
+  // Fallback silhouette only — templates always emit an explicit `--<shape>`, so
+  // this catches a stale `avatar--undefined` from an older server.
   border-radius: $radius-sm;
 
-  // The smaller chip, used inside `PlayerTag`. **Size only, deliberately** — twice
-  // over. A `border-radius` here would tie with every `--<shape>` at one class
-  // each, so nothing but declaration order would keep the shapes winning (move
-  // this block below them and `--sm --circle` silently becomes a 4px rounded
-  // square, with no error anywhere); the two `--rounded` rules below carry the
-  // radius instead. And no margin: spacing between a chip and a name belongs to
-  // `PlayerTag`'s `gap`, which is the only thing that renders this variant.
+  // The smaller chip, inside `PlayerTag`. **Size only** — a `border-radius` here
+  // would tie with every `--<shape>`, so reordering would silently flatten them.
   &--sm {
     width: 1.25rem;
     height: 1.25rem;
     font-size: $fs-xs;
   }
 
-  // ── Shapes (item 34) ──────────────────────────────────────────────────────
-  // Restricted on purpose to silhouettes that hold a centred capital at 1.75rem.
-  // A diamond, triangle or star crushes the letter, and the letter is load-
-  // bearing: it ties the chip to the name beside it. `clip-path` rather than
-  // assets — there are only three SVGs in the whole repo, and a shape library
-  // would be a new asset class for no gain at this size.
-  //
-  // `--rounded` is the default *and* written out, so the small variant can scale
-  // its own radius without any modifier reaching the other shapes.
+  // Shapes — only silhouettes that hold a centred capital at 1.75rem; a diamond or
+  // star crushes the letter. `--rounded` is written out so `--sm` can scale it.
   &--rounded {
     border-radius: $radius-sm;
   }

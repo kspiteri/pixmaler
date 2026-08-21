@@ -1,8 +1,7 @@
 @use 'tokens' as *;
 
-// DRAWING screen — static chrome only. Extracted from `Drawing.vue`'s scoped block
-// (item 20); the fixed-shell override that lived with it is now `.phase--fixed` in
-// `_phase.scss`, applied as a fallthrough class on `<PhaseLayout>`.
+// DRAWING screen — static chrome only. The fixed shell is `.phase--fixed` in
+// `_phase.scss`, applied as a fallthrough class on `<PhaseLayout>`, not here.
 
 .drawing {
   &__timer {
@@ -16,16 +15,14 @@
     font-size: 0.875rem;
   }
 
-  // `.btn--ghost` rather than primary: adding time is a correction, not the round's
-  // main action.
+  // `.btn--ghost`, not primary: adding time is a correction, not the round's main action.
   &__extend {
     padding: 0.25rem 0.625rem;
     font-size: $fs-xs;
   }
 
-  // The canvas pair fills the whole shell and the editable canvas (sized by
-  // `PixelCanvas.fitTo`) grows to the largest aspect-preserving box that fits, so
-  // the page never scrolls and the canvas is never left small.
+  // The canvas pair fills the shell and the editable canvas (`PixelCanvas.fitTo`) grows
+  // to the largest aspect-preserving box that fits, so the page never scrolls.
   &__body {
     height: 100%;
     max-width: $page-max;
@@ -36,9 +33,8 @@
     gap: $gap-4;
     overflow: hidden;
 
-    // On phones the tools panel docks to the bottom, and the space it needs is
-    // reserved *inside* `<CanvasPair>` from the measured palette height — so the
-    // shell holds no reservation here. One source of truth for "how tall is it".
+    // The docked panel's space is reserved *inside* `<CanvasPair>` from the measured
+    // palette height, so the shell reserves none — one source of truth.
     @media (max-width: $bp-mobile) {
       max-width: none;
       padding: 0;

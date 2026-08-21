@@ -3,9 +3,8 @@
 // Entry screen — page-specific layout only. Buttons, fields, and the logo
 // come from the shared partials (_buttons, _forms, _logo).
 
-// The pixel grid that used to live here is now the app-wide backdrop
-// (`_backdrop.scss`), so this screen needs no clip or local stacking. It does still
-// need a positioning context — for the corner theme toggle, not the texture.
+// The pixel grid is now the app-wide backdrop (`_backdrop.scss`), so no clip or local
+// stacking here — just a positioning context for the corner theme toggle.
 .entry {
   position: relative;
   min-height: 100vh;
@@ -64,8 +63,7 @@
 }
 
 // The name gate — shown when arriving via a room link, before joining. Lives here
-// rather than in a partial of its own: it's the other pre-room screen, and a
-// 20-line file would be exactly the thin partial item 20 exists to avoid.
+// rather than in a thin partial of its own: it's the other pre-room screen.
 .namegate {
   display: flex;
   flex-direction: column;

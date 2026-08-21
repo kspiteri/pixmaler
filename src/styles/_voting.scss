@@ -2,10 +2,9 @@
 @use 'chrome' as *;
 @use 'wonk' as *;
 
-// Voting screen — anonymised gallery. Each card has the drawing (with the
-// voter's emoji stickers on top) and a row of category vote buttons below. The
-// :deep(.voting__canvas) rule (reaching the imperatively-mounted PixelCanvas)
-// stays in the component's scoped <style> since :deep only works there.
+// Voting screen — anonymised gallery: each card holds the drawing (with the voter's
+// emoji stickers on top) and a row of category vote buttons below. The
+// `:deep(.voting__canvas)` rule stays in the component's scoped <style>, where it works.
 
 .voting {
   max-width: 42rem;
@@ -62,9 +61,8 @@
     @include wonk;
   }
 
-  // Doubles as the artefact's frame (`.art-frame` in the markup) — the stickers
-  // and the "Yours" tag are absolute against it, so they land on the drawing
-  // rather than on the frame, which is what the border being here buys.
+  // Doubles as the artefact's frame (`.art-frame` in the markup) — the stickers and the
+  // "Yours" tag are absolute against it, so they land on the drawing, not the frame.
   &__art {
     position: relative;
   }
@@ -165,8 +163,8 @@
     color: $muted;
     font-size: 0.875rem;
 
-    // Reads as a prompt once the click is free. Deliberately not `$accent-ink` —
-    // lime means "active/selected" app-wide, and this is a status.
+    // Reads as a prompt once the click is free. Not `$accent-ink`: lime means
+    // "active/selected" app-wide, and this is a status.
     &--complete {
       color: $fg;
       font-weight: $fw-semibold;

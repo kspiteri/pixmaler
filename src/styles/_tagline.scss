@@ -1,12 +1,9 @@
 @use 'tokens' as *;
 
 // `Tagline.vue` — the rotating subtitle, plus its View Transition keyframes.
-//
-// **Must be `@use`d before the page partials.** Hosts position the tagline
-// (`.entry__sub`, `.paint__sub`, `.lobby__waiting-tagline`), and unscoped they tie
-// with `.tagline` at one class each, so source order decides who wins. Scoped, this
-// rule was `0,2,0` and the host *couldn't* override it — extraction fixed that, and
-// the order is what keeps it fixed.
+
+// **Must be `@use`d before the page partials.** Hosts position the tagline and
+// tie with `.tagline` at one class each, so source order decides who wins.
 
 .tagline {
   // Margin deliberately unset: placement is the host's job.
@@ -18,10 +15,8 @@
   view-transition-name: tagline;
 }
 
-// `::view-transition-*` are document-level pseudo-elements, so these could never be
-// scoped — the variant is picked per rotation via `[data-tagline-vt]` on `<html>`.
-// Reduced motion is handled in script (we skip `startViewTransition`) and zeroed at
-// the bottom as belt-and-braces.
+// `::view-transition-*` are document-level pseudo-elements and can never be scoped.
+// The variant is picked per rotation via `[data-tagline-vt]` on `<html>`.
 ::view-transition-old(tagline),
 ::view-transition-new(tagline) {
   animation-duration: 0.4s;
@@ -91,6 +86,7 @@
   }
 }
 
+// Belt-and-braces — script already skips `startViewTransition` under reduced motion.
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(tagline),
   ::view-transition-new(tagline) {

@@ -7,15 +7,10 @@
   display: flex;
   flex-direction: column;
 
-  // DRAWING opts in as a fallthrough class on `<PhaseLayout>`. It used to be a
-  // bare `.phase` rule inside `Drawing.vue`'s scoped block, relying on PhaseLayout's
-  // root inheriting that component's scope id to stay screen-local — which worked,
-  // but silently breaks the moment PhaseLayout grows a wrapper element.
-  //
-  // `min-height` has to be reset alongside `height`: `100vh` above is *taller* than
-  // the visible viewport whenever the mobile URL bar shows, so leaving it forces the
-  // shell past the real viewport and the window scrolls even though `height` is the
-  // safe `100dvh`.
+  // DRAWING opts in as a fallthrough class on `<PhaseLayout>`.
+
+  // `min-height` must be reset alongside `height`: the `100vh` above is taller than
+  // the visible viewport while the mobile URL bar shows, so the window scrolls.
   &--fixed {
     height: var(--vh-safe);
     min-height: var(--vh-safe);
