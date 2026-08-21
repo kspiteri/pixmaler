@@ -278,14 +278,3 @@ function castVote(category: VoteCategory, submissionId: string) {
     </div>
   </PhaseLayout>
 </template>
-
-<style scoped lang="scss">
-// Static layout lives in styles/_voting.scss. Only the :deep rule reaching the
-// imperatively-mounted PixelCanvas stays here — :deep needs the scoped context.
-.voting :deep(.voting__canvas) {
-  display: block;
-  width: 100%;
-  height: auto;
-  background: #fff;
-}
-</style>

@@ -229,7 +229,7 @@ onBeforeUnmount(() => {
   <PhaseLayout>
     <template #status>
       <button
-        class="lobby__room"
+        class="lobby__room pressable no-shadow"
         type="button"
         :title="copied ? 'Copied!' : 'Click to copy the room link'"
         @click="copyLink"

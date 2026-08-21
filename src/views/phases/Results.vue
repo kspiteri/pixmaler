@@ -223,14 +223,3 @@ function playAgain() {
     <Tagline class="results__tagline" />
   </PhaseLayout>
 </template>
-
-<style scoped lang="scss">
-// Static layout lives in styles/_results.scss. Only the :deep rule reaching the
-// imperatively-mounted PixelCanvas stays here — :deep needs the scoped context.
-.results :deep(.results__canvas) {
-  display: block;
-  width: 100%;
-  height: auto;
-  background: #fff;
-}
-</style>

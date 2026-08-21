@@ -269,28 +269,3 @@ if (route === 'room' && roomCode) {
     />
   </template>
 </template>
-
-<style scoped lang="scss">
-@use './styles/tokens' as *;
-
-.namegate {
-  display: flex;
-  flex-direction: column;
-  gap: $gap-3;
-
-  &__room {
-    font-family: $font-display;
-    font-weight: 700;
-    font-size: 2rem;
-    color: $accent-ink;
-    margin: 0 0 $gap-4;
-    word-break: break-word;
-  }
-
-  &__form {
-    display: flex;
-    flex-direction: column;
-    gap: $gap-4;
-  }
-}
-</style>

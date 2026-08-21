@@ -254,7 +254,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <PhaseLayout :progress="timerPct" :progress-colour="timerColour">
+  <PhaseLayout class="phase--fixed" :progress="timerPct" :progress-colour="timerColour">
     <template #status>
       <span class="drawing__timer" :style="{ color: timerColour }">
         {{ timerText }}
@@ -288,72 +288,3 @@ onBeforeUnmount(() => {
     </div>
   </PhaseLayout>
 </template>
-
-<style scoped lang="scss">
-@use '../../styles/tokens' as *;
-
-.drawing {
-  &__timer {
-    font-family: $font-display;
-    font-weight: 700;
-    font-size: 1.05rem;
-  }
-  &__done {
-    color: $muted;
-    font-size: 0.875rem;
-  }
-  // Compact next to the countdown. `.btn--ghost` rather than primary: adding time
-  // is a correction, not the round's main action.
-  &__extend {
-    padding: 0.25rem 0.625rem;
-    font-size: $fs-xs;
-  }
-
-  &__body {
-    // ── Fixed drawing shell (item 5, Pattern A) ─────────────────────────────
-    // The drawing screen is a non-scrolling `--vh-safe` shell on every viewport:
-    // the canvas pair fills the whole shell, and the editable canvas (sized
-    // imperatively by PixelCanvas.fitTo) grows to the largest aspect-preserving
-    // box that fits — so the page never scrolls and the canvas is never left
-    // small. The "Ready" (done) control now lives inside the floating palette.
-    height: 100%;
-    max-width: $page-max;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    padding: $gap-4;
-    gap: $gap-4;
-    overflow: hidden;
-
-    @media (max-width: $bp-mobile) {
-      // On phones the tools panel docks fixed to the bottom. The space it needs
-      // is reserved *inside* <CanvasPair> now (it reads the measured palette
-      // height from the shared app-layout context and pads the canvas area by
-      // exactly that much), so the shell body itself holds no reservation here —
-      // this keeps a single source of truth for "how tall is the palette".
-      max-width: none;
-      padding: 0;
-      gap: 0;
-    }
-  }
-}
-
-// Lock the shared phase shell to the safe viewport height so the body fills it
-// exactly and nothing scrolls — the drawing surface is a fixed shell on every
-// viewport. `.phase` is PhaseLayout's root, which inherits this component's
-// scope id, so a plain selector reaches it and this only affects the DRAWING
-// screen (other phases keep `min-height: 100vh`).
-.phase {
-  // `_phase.scss` sets `min-height: 100vh` on every phase shell. On mobile
-  // `100vh` is TALLER than the visible viewport whenever the browser URL bar is
-  // shown (it counts the collapsed-bar height), so leaving that min-height in
-  // place forces `.phase` past the real viewport and the window scrolls even
-  // though `height` is the safe `100dvh`. Reset both height AND min-height to
-  // the safe value so the shell is exactly the visible viewport and nothing
-  // scrolls.
-  height: var(--vh-safe);
-  min-height: var(--vh-safe);
-  max-height: var(--vh-safe);
-  overflow: hidden;
-}
-</style>
