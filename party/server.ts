@@ -26,6 +26,7 @@ interface Env {
   // dashboard so they're tunable/testable without a code change.
   IDLE_MS?: string // wipe a room after this long with no messages (default 45 min)
   EMPTY_GRACE_MS?: string // wipe this long after the last connection closes (default 60 s)
+  VOTING_MS?: string // resolve a stalled VOTING phase after this long (default 5 min)
   // The Durable Object namespace bound in wrangler.jsonc — used by
   // routePartykitRequest in the Worker entry to address rooms.
   PixmalerServer: DurableObjectNamespace
@@ -34,6 +35,10 @@ interface Env {
 // Lifecycle window defaults (ms) if the env vars are unset/unparseable.
 const DEFAULT_IDLE_MS = 45 * 60 * 1000 // 45 min of no activity → wipe
 const DEFAULT_EMPTY_GRACE_MS = 60 * 1000 // 60 s after last tab closes → wipe
+// A backstop, not a game mechanic. VOTING is GM-ended; this exists only so an
+// absent GM can't lose the round to the idle wipe — which destroys it — instead of
+// resolving it. Deliberately generous: nobody in a real game should ever meet it.
+const DEFAULT_VOTING_MS = 5 * 60 * 1000
 
 function parseMs(value: string | undefined, fallback: number): number {
   const n = value ? Number.parseInt(value, 10) : Number.NaN
@@ -558,7 +563,9 @@ export class PixmalerServer extends Server<Env> {
     if (this.state.phase !== 'DRAWING')
       return
     this.state.phase = 'VOTING'
-    this.state.deadline = null
+    // VOTING gets its own expiry now — a backstop for an absent GM, not a game
+    // timer. `nextWake` and `onAlarm` distinguish the two phases by `state.phase`.
+    this.state.deadline = Date.now() + this.votingMs
     const cfg = this.state.config!
 
     // Build the gallery once: drop blank submissions (a player who never drew
@@ -576,13 +583,15 @@ export class PixmalerServer extends Server<Env> {
       gridW: cfg.gridW,
       gridH: cfg.gridH,
     } satisfies ServerMsg)
-    this.broadcastAll({ type: 'phase', phase: 'VOTING', deadline: null } satisfies ServerMsg)
+    this.broadcastAll({ type: 'phase', phase: 'VOTING', deadline: this.state.deadline } satisfies ServerMsg)
   }
 
   private endVoting() {
     if (this.state.phase !== 'VOTING')
       return
     this.state.phase = 'RESULTS'
+    // The VOTING backstop has done its job either way — GM-ended or expired.
+    this.state.deadline = null
     const cfg = this.state.config!
 
     // Tally per category from the frozen gallery (blanks already filtered out)
@@ -666,10 +675,16 @@ export class PixmalerServer extends Server<Env> {
     return parseMs(this.env.EMPTY_GRACE_MS, DEFAULT_EMPTY_GRACE_MS)
   }
 
+  private get votingMs(): number {
+    return parseMs(this.env.VOTING_MS, DEFAULT_VOTING_MS)
+  }
+
   // Soonest deadline we care about, or null if nothing is pending.
   private nextWake(): number | null {
     const candidates: number[] = [this.lastActivityAt + this.idleMs]
-    if (this.state.phase === 'DRAWING' && this.state.deadline !== null)
+    // Both timed phases park their expiry in `state.deadline`, so the phase check
+    // is what distinguishes them — see the matching branches in `onAlarm`.
+    if ((this.state.phase === 'DRAWING' || this.state.phase === 'VOTING') && this.state.deadline !== null)
       candidates.push(this.state.deadline)
     if (this.emptySince !== null)
       candidates.push(this.emptySince + this.emptyGraceMs)
@@ -712,6 +727,14 @@ export class PixmalerServer extends Server<Env> {
     // 1) Draw round ended.
     if (this.state.phase === 'DRAWING' && this.state.deadline !== null && now >= this.state.deadline) {
       this.endDrawing()
+      this.armAlarm()
+      return
+    }
+
+    // 1b) Voting ran out. A backstop for an absent GM: without it the round falls
+    // through to the idle wipe below, which destroys it rather than resolving it.
+    if (this.state.phase === 'VOTING' && this.state.deadline !== null && now >= this.state.deadline) {
+      this.endVoting()
       this.armAlarm()
       return
     }
