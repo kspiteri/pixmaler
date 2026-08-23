@@ -154,12 +154,26 @@ function connect(name: string) {
           state.value = { ...state.value, phase: msg.phase, deadline: msg.deadline }
         }
         // A `phase` message with DRAWING is only ever broadcast by handleStart
-        // (party/server.ts:340) — i.e. a fresh round, whose submissions the
-        // server just cleared. Drop any grid held from the previous round so
-        // Play again doesn't resurrect the last drawing. A mid-round rejoin
+        // (party/server.ts:390) — i.e. a fresh round, whose submissions, votes
+        // and gallery the server just cleared. Drop everything held from the
+        // previous round so Play again can't resurrect it. A mid-round rejoin
         // arrives as `state`, not `phase`, so a genuine restore survives.
-        if (msg.phase === 'DRAWING')
+        //
+        // All four matter, and nothing else ever clears the last three:
+        //   drawState  — otherwise the last drawing reappears on the new canvas
+        //   results    — otherwise the next RESULTS mounts against the PREVIOUS
+        //                ranking and flashes last round's winner for a frame,
+        //                spoiling the reveal
+        //   gallery    — otherwise a stale frozen gallery is voted on
+        //   voteState  — otherwise round 1's picks pre-fill round 2's vote UI as
+        //                votes the server does not have (Voting.vue's watcher
+        //                applies any truthy `picked`)
+        if (msg.phase === 'DRAWING') {
           drawState.value = null
+          results.value = null
+          gallery.value = null
+          voteState.value = null
+        }
         break
       case 'gallery': gallery.value = msg; break
       case 'vote-state': voteState.value = msg; break

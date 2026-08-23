@@ -89,11 +89,23 @@ function breakdownItems(entry: Entry) {
 // the results object changes (Play again → new round).
 let canvases: PixelCanvas[] = []
 
-const slotMap = new Map<string, HTMLElement>()
-function setSlot(submissionId: string, el: unknown) {
+// Slots are keyed per block, NOT in one shared map. The hero and gallery `v-for`s
+// can hold the same submissionId at different times (a player who was in the
+// gallery last round wins this one), Vue patches the hero block before the
+// gallery block, and function-form `:ref`s are invoked with `null` on unmount.
+// With one shared map the order on a gallery → hero move is
+// `hero SET(id)` → `gallery NULL(id)`, so the unmount-null deletes the hero
+// element that was just registered; `mountCanvases` then finds no slot for the
+// winner and skips it, leaving `$paper` in the winner frame — a blank painting.
+// Two maps keep the lifecycles independent, so neither block can unset the
+// other's element.
+const heroSlots = new Map<string, HTMLElement>()
+const gallerySlots = new Map<string, HTMLElement>()
+function setSlot(kind: 'hero' | 'gallery', submissionId: string, el: unknown) {
+  const slots = kind === 'hero' ? heroSlots : gallerySlots
   if (el instanceof HTMLElement)
-    slotMap.set(submissionId, el)
-  else slotMap.delete(submissionId)
+    slots.set(submissionId, el)
+  else slots.delete(submissionId)
 }
 
 function mountCanvases() {
@@ -101,7 +113,10 @@ function mountCanvases() {
   if (!props.results)
     return
   for (const r of props.results.ranked) {
-    const slot = slotMap.get(r.submissionId)
+    // Hero first: a submission is in `winners` or `rest`, never both, so at rest
+    // only one map holds it. During the patch that lands a new winner both may
+    // briefly, and the hero slot is the one to fill.
+    const slot = heroSlots.get(r.submissionId) ?? gallerySlots.get(r.submissionId)
     if (!slot)
       continue
     const pc = new PixelCanvas({
@@ -137,15 +152,21 @@ function playAgain() {
 <template>
   <PhaseLayout>
     <template #status>
+      <!-- Never gate the GM's only control on the payload arriving. The server
+           now replays `results` on a mid-RESULTS rejoin, but if that ever fails
+           the GM must still be able to restart the room: gating this on
+           `results` once left a reloading GM with no usable button anywhere and
+           the room unrecoverable. Non-GMs get the hint unconditionally for the
+           same reason — a rejoining player should never see a blank status bar. -->
       <button
-        v-if="results && isGm"
+        v-if="isGm"
         class="btn btn--primary results__again"
         type="button"
         @click="playAgain"
       >
         Play again
       </button>
-      <span v-else-if="results" class="results__hint">waiting for the GM…</span>
+      <span v-else class="results__hint">waiting for the GM…</span>
     </template>
 
     <div class="results" :style="{ '--art-ratio': artRatio }">
@@ -168,7 +189,7 @@ function playAgain() {
               :class="{ 'results__winner--mine': w.clientId === clientId }"
             >
               <div class="results__winner-art art-frame art-frame--winner">
-                <div :ref="el => setSlot(w.submissionId, el)" class="art-surface" />
+                <div :ref="el => setSlot('hero', w.submissionId, el)" class="art-surface" />
               </div>
               <div class="results__winner-meta">
                 <p class="results__winner-name">
@@ -202,7 +223,7 @@ function playAgain() {
             :class="{ 'results__item--mine': entry.clientId === clientId }"
           >
             <div class="results__item-art art-frame">
-              <div :ref="el => setSlot(entry.submissionId, el)" class="art-surface" />
+              <div :ref="el => setSlot('gallery', entry.submissionId, el)" class="art-surface" />
             </div>
             <p class="results__item-name">
               <PlayerTag

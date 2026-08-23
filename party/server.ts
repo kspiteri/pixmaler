@@ -4,6 +4,7 @@ import type {
   GmConfigureMsg,
   Phase,
   Player,
+  RankedResult,
   ServerMsg,
   StateMsg,
   Submission,
@@ -105,6 +106,12 @@ interface RoomState {
   // Frozen gallery for the current VOTING round — filtered (blanks dropped) and
   // shuffled once at endDrawing so the order is stable across re-sends (rejoins).
   gallery: Submission[] | null
+  // The computed ranking, retained from `endVoting` so a client that joins or
+  // reloads during RESULTS can be sent the reveal it missed. `results` is
+  // otherwise broadcast exactly once, and without this a rejoining client sits
+  // on "counting the damage…" forever — and a rejoining GM loses their only way
+  // to restart the room. Cleared on every path back out of RESULTS.
+  ranked: RankedResult[] | null
 }
 
 // Ported from PartyKit to PartyServer (standard Durable Object, deployed via
@@ -130,6 +137,7 @@ export class PixmalerServer extends Server<Env> {
     submissions: new Map(),
     votes: new Map(),
     gallery: null,
+    ranked: null,
   }
 
   // Lifecycle bookkeeping (not part of RoomState — it's wipe target). Timestamps
@@ -289,6 +297,23 @@ export class PixmalerServer extends Server<Env> {
         conn.send(JSON.stringify({ type: 'draw-state', grid: own } satisfies ServerMsg))
     }
 
+    // A client joining or reloading mid-RESULTS gets the reveal re-sent. Unlike
+    // `gallery`, `results` is broadcast exactly once (endVoting), so without this
+    // a rejoining client is stuck on "counting the damage…" indefinitely — and a
+    // rejoining GM has no usable control at all, leaving the room unrestartable.
+    // Replayed from the retained ranking rather than recomputed, so there is one
+    // source of truth and no chance of two rankings disagreeing.
+    if (this.state.phase === 'RESULTS' && this.state.ranked && this.state.config) {
+      const cfg = this.state.config
+      conn.send(JSON.stringify({
+        type: 'results',
+        ranked: this.state.ranked,
+        palette: cfg.palette,
+        gridW: cfg.gridW,
+        gridH: cfg.gridH,
+      } satisfies ServerMsg))
+    }
+
     this.broadcastAll(this.buildState())
   }
 
@@ -385,6 +410,7 @@ export class PixmalerServer extends Server<Env> {
     this.state.submissions.clear()
     this.state.votes.clear()
     this.state.gallery = null
+    this.state.ranked = null
     for (const p of this.state.players.values()) p.doneDrawing = false
 
     this.broadcastAll({ type: 'phase', phase: 'DRAWING', deadline } satisfies ServerMsg)
@@ -471,6 +497,7 @@ export class PixmalerServer extends Server<Env> {
     this.state.submissions.clear()
     this.state.votes.clear()
     this.state.gallery = null
+    this.state.ranked = null
     for (const p of this.state.players.values()) p.doneDrawing = false
     this.broadcastAll(this.buildState())
   }
@@ -543,8 +570,13 @@ export class PixmalerServer extends Server<Env> {
       })
       .sort((a, b) => b.votes - a.votes)
 
-    this.broadcastAll({ type: 'phase', phase: 'RESULTS', deadline: null } satisfies ServerMsg)
+    // `results` BEFORE `phase`, matching endDrawing's gallery-then-phase order.
+    // The other way round, the client mounts Results against whatever payload it
+    // still holds — the previous round's, since nothing else clears it — and only
+    // re-renders when the fresh one lands a frame later.
+    this.state.ranked = ranked
     this.broadcastAll({ type: 'results', ranked, palette: cfg.palette, gridW: cfg.gridW, gridH: cfg.gridH } satisfies ServerMsg)
+    this.broadcastAll({ type: 'phase', phase: 'RESULTS', deadline: null } satisfies ServerMsg)
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -666,6 +698,7 @@ export class PixmalerServer extends Server<Env> {
       submissions: new Map(),
       votes: new Map(),
       gallery: null,
+      ranked: null,
     }
     this.emptySince = null
     this.lastActivityAt = Date.now()
