@@ -178,6 +178,17 @@
       animation: voting-tally-complete 0.3s ease-out;
     }
   }
+
+  // Urgency without a new colour register: reuses the timer's danger ink, which
+  // `_theme.scss` already tunes per theme for exactly this "read it now" job.
+  &__clock {
+    font-family: $font-alert;
+    font-weight: $fw-bold;
+    font-size: $fs-sm;
+    letter-spacing: $ls-alert;
+    color: var(--timer-danger);
+  }
+
   // Shared with the cancel control beside it: same status bar, same scale.
   &__stop,
   &__cancel {

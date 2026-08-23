@@ -22,6 +22,9 @@ const props = defineProps<{
   // Needed only to resolve seat colours: `RankedResult` carries a clientId but
   // no seat, and a seat is the player's index in this array (see `lib/seats.ts`).
   players: Player[]
+  // The round's target grid. Rendered as the winner when nobody voted — see
+  // `noWinner`. Null only if the config went away, which can't happen in RESULTS.
+  targetGrid: number[] | null
 }>()
 
 // Resolve a `public/`-hosted asset path against Vite's `base` (e.g.
@@ -65,13 +68,26 @@ function withSeats(entries: Entry[]) {
   })
 }
 
+// Nobody voted. `ranked` arrives sorted descending, so a zero at the top means a
+// zero everywhere — and without this guard `e.votes === top` below is true for
+// *every* entry, which crowned the entire field and, because `rest` slices past
+// `winners`, deleted the gallery with it.
+//
+// The round still resolves: with no human winner the target image takes the hero
+// (see the template) and everyone falls into the gallery. A game called "recreate
+// art. poorly." resolving a no-vote round as the original beating all of you is
+// both the honest result and the funniest reading of it.
+const noWinner = computed(() => ranked.value.length > 0 && ranked.value[0].votes === 0)
+
 const winners = computed(() => {
   const all = ranked.value
-  if (all.length === 0)
+  if (all.length === 0 || noWinner.value)
     return []
   const top = all[0].votes
   return withSeats(all.filter(e => e.votes === top))
 })
+// Empty `winners` makes this `slice(0)` — the whole ranked field — which is exactly
+// what the no-winner case wants: nobody crowned, everybody in the gallery.
 const rest = computed(() => withSeats(ranked.value.slice(winners.value.length)))
 
 // Per-category breakdown for the hero, e.g. `[{ count: 5, icon: laugh.svg, … }, …]`.
@@ -109,6 +125,10 @@ function setSlot(kind: 'hero' | 'gallery', submissionId: string, el: unknown) {
   else slots.delete(submissionId)
 }
 
+// Slot key for the target image's canvas in the no-winner hero. Not a submissionId,
+// so it can never collide with one.
+const TARGET_SLOT = '__target__'
+
 function mountCanvases() {
   canvases = []
   if (!props.results)
@@ -131,9 +151,27 @@ function mountCanvases() {
     slot.replaceChildren(pc.canvas)
     canvases.push(pc)
   }
+  // No human winner: the target image occupies the hero instead.
+  if (noWinner.value && props.targetGrid) {
+    const slot = heroSlots.get(TARGET_SLOT)
+    if (slot) {
+      const pc = new PixelCanvas({
+        gridW: props.results.gridW,
+        gridH: props.results.gridH,
+        palette: props.results.palette,
+        targetGrid: props.targetGrid,
+        editable: false,
+      })
+      slot.replaceChildren(pc.canvas)
+      canvases.push(pc)
+    }
+  }
 }
 
-watch(() => props.results, async () => {
+// `targetGrid` is watched too: in the no-winner case it is what the hero renders,
+// and it arrives on `state`, not on the `results` payload, so the two can land in
+// either order.
+watch(() => [props.results, props.targetGrid], async () => {
   // See Voting.vue's note: `flush: "post"` doesn't strictly guarantee that
   // function-form :ref callbacks have fired before the watcher runs.
   // nextTick() twice is the public, supported way to wait for the patch.
@@ -194,13 +232,28 @@ async function endSession() {
       </p>
 
       <template v-else>
-        <!-- Hero: overall winner(s) -->
+        <!-- Hero: overall winner(s), or the target image when nobody voted -->
         <div class="results__hero">
           <p class="results__crown">
             <img :src="iconUrl('assets/icons/crown.svg')" alt="crown" class="results__crown-icon">
-            {{ winners.length > 1 ? "joint winners" : "overall winner" }}
+            {{ noWinner ? "nobody voted — the original wins" : winners.length > 1 ? "joint winners" : "overall winner" }}
           </p>
           <div class="results__winners">
+            <!-- Nobody voted, so the target takes the hero and everyone drops into
+                 the gallery below. Same frame as a real winner: it did beat them. -->
+            <div v-if="noWinner" class="results__winner">
+              <div class="results__winner-art art-frame art-frame--winner">
+                <div :ref="el => setSlot('hero', TARGET_SLOT, el)" class="art-surface" />
+              </div>
+              <div class="results__winner-meta">
+                <p class="results__winner-name">
+                  the original
+                </p>
+                <p class="results__winner-votes">
+                  undefeated
+                </p>
+              </div>
+            </div>
             <div
               v-for="{ entry: w, seat } in winners"
               :key="w.submissionId"

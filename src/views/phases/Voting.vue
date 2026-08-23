@@ -6,7 +6,7 @@
 // counts would influence later voters and ruin the social tension.
 
 import type { ClientMsg, ServerMsg, Submission, VoteCategory } from '../../lib/types'
-import { computed, inject, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import { artRatio as artRatioFor } from '../../lib/aspect'
 import { PixelCanvas } from '../../lib/canvas'
@@ -22,6 +22,10 @@ const props = defineProps<{
   // Echoed by the server on (re)join during VOTING — this voter's own picks, so
   // a reconnecting player sees their votes restored instead of a blank slate.
   voteState: VoteState | null
+  // The VOTING backstop's expiry (party/server.ts, DEFAULT_VOTING_MS). Generous and
+  // normally unreachable, so it is surfaced only in the final stretch — a clock on
+  // the whole phase would make voting feel raced, which it isn't meant to be.
+  deadline: number | null
 }>()
 
 // Resolve a `public/`-hosted asset path against Vite's `base` (e.g.
@@ -45,6 +49,31 @@ const isGm = computed(() => props.gmClientId === clientId)
 const artRatio = computed(() =>
   props.gallery ? artRatioFor(props.gallery.gridW, props.gallery.gridH) : '1 / 1',
 )
+
+// Countdown for the backstop. A 1 s interval is plenty — this is a warning, not the
+// drawing phase's frame-accurate clock, so no rAF. `null` until the final stretch,
+// which is what keeps it out of the way for the whole normal phase.
+const WARN_AT_SECONDS = 30
+const secondsLeft = ref<number | null>(null)
+let tick: ReturnType<typeof setInterval> | undefined
+
+function readClock() {
+  if (props.deadline === null) {
+    secondsLeft.value = null
+    return
+  }
+  const remaining = Math.max(0, Math.ceil((props.deadline - Date.now()) / 1000))
+  secondsLeft.value = remaining <= WARN_AT_SECONDS ? remaining : null
+}
+
+onMounted(() => {
+  readClock()
+  tick = setInterval(readClock, 1000)
+})
+onBeforeUnmount(() => clearInterval(tick))
+// The GM can extend nothing here, but the deadline still moves on a rejoin (the
+// server re-sends it), so re-read rather than trusting the mount-time value.
+watch(() => props.deadline, readClock)
 
 // Per-client gallery order. The drawings are shuffled locally so no two players
 // see the same arrangement (purely cosmetic — votes carry the submissionId, so
@@ -209,6 +238,12 @@ function castVote(category: VoteCategory, submissionId: string) {
     <template #status>
       <span class="voting__tally" :class="{ 'voting__tally--complete': allVoted }">
         {{ allVoted ? 'the votes are in…' : `${votedCount} of ${totalVoters} voted` }}
+      </span>
+      <!-- Only present in the final stretch, so it reads as a warning rather than a
+           clock. `role="status"` because a deadline nobody can see coming is worse
+           than no deadline — and this must not be sight-only. -->
+      <span v-if="secondsLeft !== null" class="voting__clock" role="status">
+        {{ secondsLeft }}s to vote
       </span>
       <button
         v-if="isGm && gallery"

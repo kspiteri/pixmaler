@@ -300,12 +300,14 @@ if (route === 'room' && roomCode) {
         :voted-count="state.votedCount"
         :total-voters="state.totalVoters"
         :vote-state="voteState"
+        :deadline="state.deadline"
       />
       <Results
         v-else-if="state.phase === 'RESULTS'"
         :results="results"
         :gm-client-id="state.gmClientId"
         :players="state.players"
+        :target-grid="state.config?.targetGrid ?? null"
       />
     </template>
 
