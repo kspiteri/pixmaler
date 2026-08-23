@@ -7,11 +7,12 @@ import type { AvatarShape, ClientMsg, ServerMsg } from './lib/types'
 import PartySocket from 'partysocket'
 import { onMounted, provide, ref, shallowRef } from 'vue'
 import AlertDialog from './components/AlertDialog.vue'
+import Logo from './components/Logo.vue'
 import { askAlert, currentDialog, settleDialog } from './lib/dialog'
 import { clientIdKey, socketKey } from './lib/keys'
 import { normaliseShape } from './lib/types'
-import { wordPair } from './lib/words'
 
+import { wordPair } from './lib/words'
 import Entry from './views/Entry.vue'
 import Paint from './views/Paint.vue'
 import Drawing from './views/phases/Drawing.vue'
@@ -234,6 +235,7 @@ if (route === 'room' && roomCode) {
          branch below it describes a room the server has already forgotten.
          Deliberately bare for now — `14` owns making it feel like part of the game. -->
     <div v-if="sessionClosed" class="page page--narrow session-closed">
+      <Logo />
       <p class="label label--eyebrow">
         room closed
       </p>
@@ -243,8 +245,8 @@ if (route === 'room' && roomCode) {
       <p class="session-closed__note">
         this session ended after sitting idle. the room code is free again.
       </p>
-      <a class="btn btn--primary" :href="baseUrl">
-        Start a new game
+      <a class="btn btn--primary" type="button" :href="baseUrl">
+        Go back to homepage
       </a>
     </div>
 
