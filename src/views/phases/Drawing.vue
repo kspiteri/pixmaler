@@ -25,6 +25,7 @@ import {
 import CanvasPair from '../../components/CanvasPair.vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import { orientationFor } from '../../lib/aspect'
+import { askConfirm } from '../../lib/dialog'
 import { clientIdKey, socketKey } from '../../lib/keys'
 
 type State = Extract<ServerMsg, { type: 'state' }>
@@ -64,6 +65,16 @@ const canExtend = computed(() => props.state.extensionsLeft > 0)
 
 function extendTime() {
   const msg: ClientMsg = { type: 'gm:extendTime' }
+  socket.send(JSON.stringify(msg))
+}
+
+// Always confirmed: cancelling throws everyone back to the lobby mid-paint and
+// their drawings are gone. There is no state in which that warning is untrue, so
+// unlike Voting's end-round confirm this one is never suppressed.
+async function cancelRound() {
+  if (!await askConfirm('Cancel this round? Everyone goes back to the lobby and the drawings are lost.'))
+    return
+  const msg: ClientMsg = { type: 'gm:cancelRound' }
   socket.send(JSON.stringify(msg))
 }
 
@@ -286,6 +297,15 @@ onBeforeUnmount(() => {
         @click="extendTime"
       >
         +15s
+      </button>
+      <button
+        v-if="isGm"
+        class="btn btn--ghost drawing__cancel"
+        type="button"
+        title="Abandon this round and return everyone to the lobby"
+        @click="cancelRound"
+      >
+        Cancel round
       </button>
     </template>
 

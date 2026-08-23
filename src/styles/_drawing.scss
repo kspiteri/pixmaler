@@ -22,7 +22,10 @@
   }
 
   // `.btn--ghost`, not primary: adding time is a correction, not the round's main action.
-  &__extend {
+  // Shared, not duplicated: both sit in `.phase__status` and must match the bar's
+  // scale rather than `.btn`'s default size.
+  &__extend,
+  &__cancel {
     padding: 0.25rem 0.625rem;
     font-size: $fs-xs;
   }

@@ -85,6 +85,16 @@ async function stopVoting() {
   socket.send(JSON.stringify(msg))
 }
 
+// Unconditionally confirmed, unlike stopVoting above: that suppresses its dialog
+// once everyone has voted because the warning stops being true, whereas cancelling
+// always destroys work everyone else did. Nothing makes that consequence untrue.
+async function cancelRound() {
+  if (!await askConfirm('Cancel this round? Everyone goes back to the lobby and the drawings are lost.'))
+    return
+  const msg: ClientMsg = { type: 'gm:cancelRound' }
+  socket.send(JSON.stringify(msg))
+}
+
 // Local-only — not echoed by the server during VOTING. One submissionId per
 // category (null until cast). We trust our own optimistic update because the
 // server only rejects self-votes / wrong-phase / unknown categories.
@@ -207,6 +217,15 @@ function castVote(category: VoteCategory, submissionId: string) {
         @click="stopVoting"
       >
         End voting
+      </button>
+      <button
+        v-if="isGm"
+        class="btn btn--ghost voting__cancel"
+        type="button"
+        title="Abandon this round and return everyone to the lobby"
+        @click="cancelRound"
+      >
+        Cancel round
       </button>
     </template>
 

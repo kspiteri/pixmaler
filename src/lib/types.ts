@@ -114,6 +114,16 @@ export interface GmPlayAgainMsg {
   type: 'gm:playAgain'
 }
 
+// GM-only, DRAWING/VOTING-only. Abandons the round in flight and returns everyone
+// to the lobby — for when the target image renders broken and the round is
+// unplayable. Deliberately its own message rather than reusing `gm:playAgain`:
+// the two share a teardown but carry opposite intents, and only a distinct type
+// lets the server phase-guard each correctly and lets the client tell players
+// their round was cancelled rather than finished.
+export interface GmCancelRoundMsg {
+  type: 'gm:cancelRound'
+}
+
 export interface GmTransferMsg {
   type: 'gm:transfer'
   toClientId: string
@@ -131,6 +141,7 @@ export type ClientMsg
     | GmStopVotingMsg
     | GmExtendTimeMsg
     | GmPlayAgainMsg
+    | GmCancelRoundMsg
     | GmTransferMsg
 
 // ── Server → Client ──────────────────────────────────────────────────────────

@@ -178,7 +178,9 @@
       animation: voting-tally-complete 0.3s ease-out;
     }
   }
-  &__stop {
+  // Shared with the cancel control beside it: same status bar, same scale.
+  &__stop,
+  &__cancel {
     font-size: 0.875rem;
     padding: 0.5rem 0.875rem;
   }

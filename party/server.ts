@@ -210,6 +210,7 @@ export class PixmalerServer extends Server<Env> {
       case 'gm:stopVoting': this.handleStopVoting(sender); break
       case 'gm:extendTime': this.handleExtendTime(sender); break
       case 'gm:playAgain': this.handlePlayAgain(sender); break
+      case 'gm:cancelRound': this.handleCancelRound(sender); break
     }
 
     // Re-arm the lifecycle alarm after every message: the activity stamp moved,
@@ -488,9 +489,19 @@ export class PixmalerServer extends Server<Env> {
     this.endVoting()
   }
 
-  private handlePlayAgain(conn: Connection) {
-    if (!this.isGm(conn))
-      return
+  // The teardown shared by "Play again" and "Cancel round". Everything a round in
+  // flight holds is dropped here, including the target image: both callers want it
+  // gone, and cancel especially — the motivating case is the image having rendered
+  // broken, so the GM must re-pick. `roundSeconds` and `extensions` are reset by
+  // handleStart rather than here, so LOBBY keeps reporting the last round's values
+  // until a new one is configured.
+  //
+  // The DO alarm needs no explicit handling: onMessage re-arms after every handler,
+  // and with phase ≠ DRAWING and a null deadline `nextWake` falls through to the
+  // idle wake, which is far enough from the old draw deadline to clear
+  // ARM_TOLERANCE_MS and genuinely rewrite. A stale fire is a no-op anyway —
+  // onAlarm and endDrawing both re-check `phase === 'DRAWING'`.
+  private resetToLobby() {
     this.state.phase = 'LOBBY'
     this.state.config = null
     this.state.deadline = null
@@ -500,6 +511,28 @@ export class PixmalerServer extends Server<Env> {
     this.state.ranked = null
     for (const p of this.state.players.values()) p.doneDrawing = false
     this.broadcastAll(this.buildState())
+  }
+
+  // RESULTS-only, and that guard is load-bearing. The button only exists on the
+  // results screen, but a GM with a stale RESULTS tab open in another window can
+  // click it while the room has moved on — and unguarded this nulled the `config`
+  // they had just chosen in the lobby, silently losing their image.
+  private handlePlayAgain(conn: Connection) {
+    if (!this.isGm(conn))
+      return
+    if (this.state.phase !== 'RESULTS')
+      return
+    this.resetToLobby()
+  }
+
+  // Abandon a round in flight. DRAWING and VOTING only — from RESULTS the round is
+  // already over and `gm:playAgain` is the right message.
+  private handleCancelRound(conn: Connection) {
+    if (!this.isGm(conn))
+      return
+    if (this.state.phase !== 'DRAWING' && this.state.phase !== 'VOTING')
+      return
+    this.resetToLobby()
   }
 
   // ── Phase transitions ──────────────────────────────────────────────────────
