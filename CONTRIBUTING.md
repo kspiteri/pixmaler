@@ -15,6 +15,16 @@ You need **both** servers to play — the frontend talks to the Worker over a We
 - **`.env.local`** — Vite's. `VITE_PARTYKIT_HOST=127.0.0.1:1999` in dev. (The var keeps its historical name.)
 - **`.dev.vars`** — `wrangler dev`'s. `PIXMALER_DEV=1` lifts the server's "min 2 players + GM" start gate so the whole flow can be driven solo across two browsers. Never deployed.
 
+The server's lifecycle windows are env-overridable too, which is the only sane way to test them — the defaults are measured in minutes. All three are read per-call from `this.env`, so `wrangler dev` picks up a `.dev.vars` change on reload:
+
+| Var | Default | What it bounds |
+|---|---|---|
+| `VOTING_MS` | 5 min | Backstop that resolves a stalled VOTING phase. A safety net, not a mechanic — an absent GM used to lose the round to the idle wipe instead. Surfaces to players only in the last 30 s. |
+| `IDLE_MS` | 45 min | No messages for this long → the room is wiped and every open tab is dropped onto the closed screen. |
+| `EMPTY_GRACE_MS` | 60 s | Wipe this long after the last connection closes, so a room code reuses clean. |
+
+Set one low (`VOTING_MS=20000`) rather than waiting, and remember a wipe is deliberately destructive: it clears the players, the GM and the round.
+
 > The server runs on **PartyServer + `wrangler`**, configured in `wrangler.jsonc`. There is no `partykit` dependency and no `partykit.json` — the managed PartyKit host was blocked by a shared-zone cap and replaced. If a round won't pick up server edits, check for a leftover process on the port: `lsof -nP -iTCP:1999 -sTCP:LISTEN`.
 
 The solo `/pixmaler/paint` sandbox needs only `pnpm dev` — no socket.
@@ -66,6 +76,8 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 - **Inject infrastructure, prop data.** `socket` and `clientId` are `provide`/`inject`ed once at connection; reactive game state flows down as props. No Pinia.
 - **`PixelCanvas` is imperative** — it owns its `<canvas>` and is instantiated in `onMounted`/watchers, not driven by reactivity.
 - **The server is authoritative** for phase, timer, submissions, and votes. Client state is a view of the server's truth — derive from the latest `state` message rather than holding local state that can drift.
+- **Broadcast the payload before the phase flip.** `endDrawing` sends `gallery` then `phase`; `endVoting` sends `results` then `phase`. That order is deliberate — flipping the phase first mounts the incoming screen against whatever payload the client still holds, which is the *previous* round's, and that was the root of the blank-winner bug (`13` item 48). A new phase that carries data follows the same order.
+- **Clear per-round client state when a round starts.** `App.vue`'s `phase === 'DRAWING'` branch nulls `drawState`, `results`, `gallery` and `voteState`. Nothing else clears them, and a payload outliving its round is a whole family of bugs — a stale ranking flashing last round's winner, round 1's votes pre-filling round 2's vote UI. Anything new you cache from a server message belongs in that reset.
 - **antfu gotcha:** `ts/no-use-before-define` — declare `useTemplateRef`/`ref`s *above* any `watch`/`computed` that references them.
 
 ## Structure
@@ -83,7 +95,7 @@ party/          # PartyServer Durable Object (server.ts); config in wrangler.jso
 1. Branch off `main`.
 2. Keep it focused.
 3. Run `pnpm lint` and `pnpm typecheck`.
-4. Verify in dev with **both** servers running. Test a reconnect (reload mid-game) if you touched anything stateful.
+4. Verify in dev with **both** servers running. Test a reconnect (reload mid-game) if you touched anything stateful — and reload during **RESULTS** specifically, which used to strand the room (`13` item 54). If you touched a phase transition, also drive the two rounds that look like nothing: one where **nobody draws**, and one where people draw but **nobody votes**.
 5. Open a PR describing what changed and how you verified it. Note protocol changes explicitly.
 
 No test suite yet — manual verification against the dev servers is the bar. Describe what you tested. (Wiring a runner is [`13-technical.md`](./docs/.plans/13-technical.md) item 31, deliberately unscheduled.)
@@ -101,4 +113,6 @@ GitHub Pages is static-only and can't host the server. Set `VITE_PARTYKIT_HOST` 
 
 ## Plans
 
-Working plans live in the gitignored [`docs/.plans/`](./docs/.plans/README.md). Three are active: **01** is the general plan (architecture, state machine, pipeline, protocol, locked-in decisions), **13** is the only backlog for behaviour/data/server work, and **14** is the only backlog for anything visual. File new work accordingly.
+Working plans live in the gitignored [`docs/.plans/`](./docs/.plans/README.md). Three are standing: **01** is the general plan (architecture, state machine, pipeline, protocol, locked-in decisions), **13** is the only backlog for behaviour/data/server work, and **14** is the only backlog for anything visual. File new work accordingly — behaviour to `13`, pixels and copy to `14`, a game-rule change to `01`.
+
+**15** is a transient register, not a fourth backlog: it holds the findings from a design critique and routes each into its owning plan. It archives once emptied. Item numbers are shared across all of them and never reused, so check `.plans/README.md` for the next free one before filing.
