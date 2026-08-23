@@ -16,6 +16,7 @@ import PlayerList from '../../components/PlayerList.vue'
 import PlayerTag from '../../components/PlayerTag.vue'
 import Tagline from '../../components/Tagline.vue'
 import { PixelCanvas } from '../../lib/canvas'
+import { askConfirm } from '../../lib/dialog'
 import { clientIdKey, socketKey } from '../../lib/keys'
 import { seatFor } from '../../lib/seats'
 import { AVATAR_SHAPES } from '../../lib/types'
@@ -181,6 +182,15 @@ function startGame() {
   socket.send(JSON.stringify({ type: 'gm:start' } satisfies ClientMsg))
 }
 
+// Ends the whole session, not just the round — everyone lands on the closed screen
+// and the room code is released. Always confirmed: it is irreversible and it acts
+// on everybody, so there is no state in which the warning is untrue.
+async function endSession() {
+  if (!await askConfirm('End the session for everyone? The room closes and this code is released.'))
+    return
+  socket.send(JSON.stringify({ type: 'gm:endSession' } satisfies ClientMsg))
+}
+
 // ── Non-GM target preview ────────────────────────────────────────────────────
 //
 // PixelCanvas is imperative, so we render it into a slot div and rebuild on
@@ -236,6 +246,15 @@ onBeforeUnmount(() => {
       >
         Room: <span class="lobby__code">{{ roomCode }}</span>
         <span class="lobby__copy">{{ copied ? "copied!" : "copy link" }}</span>
+      </button>
+      <button
+        v-if="isGm"
+        class="btn btn--ghost lobby__end"
+        type="button"
+        title="Close the room for everyone and release this code"
+        @click="endSession"
+      >
+        End session
       </button>
     </template>
 

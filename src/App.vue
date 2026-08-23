@@ -82,6 +82,13 @@ const voteState = shallowRef<VoteStateMsg | null>(null)
 // DRAWING so a page reload restores their drawing. Null until/unless received.
 const drawState = shallowRef<DrawStateMsg | null>(null)
 const connectionStatus = ref<'connecting' | 'connected' | 'reconnecting'>('connecting')
+// Terminal. The server wiped the room out from under us (45 min idle), so this
+// client's slot no longer exists and nothing it sends will be honoured. Unlike a
+// dropped socket this is not recoverable by reconnecting — the room is gone — so
+// we stop trying and say so.
+const sessionClosed = ref(false)
+// The app root, for the way out of a closed room. Matches `Paint.vue` / `Taglines.vue`.
+const baseUrl = `${import.meta.env.BASE_URL.replace(/\/+$/, '')}/`
 
 // ── Connect (only when on the room route) ────────────────────────────────────
 
@@ -133,6 +140,10 @@ function connect(name: string) {
   })
 
   socket.addEventListener('close', () => {
+    // A close after `session-closed` is our own deliberate teardown, not a blip —
+    // don't contradict the closed screen with a "Reconnecting…" banner.
+    if (sessionClosed.value)
+      return
     // partysocket auto-reconnects, so a close is "reconnecting", not dead — the
     // next `open` flips it back to connected (and re-sends `join`, reclaiming
     // the slot by clientId). Surface it so players see a blip rather than a
@@ -178,6 +189,14 @@ function connect(name: string) {
       case 'gallery': gallery.value = msg; break
       case 'vote-state': voteState.value = msg; break
       case 'draw-state': drawState.value = msg; break
+      case 'session-closed':
+        // Terminal, and the order matters: set the flag before closing so the
+        // `close` handler above knows this teardown was deliberate. Closing stops
+        // partysocket's auto-reconnect, which would otherwise re-join us to a
+        // pristine room as a brand-new player — and silently make us its GM.
+        sessionClosed.value = true
+        socket.close()
+        break
       case 'results': results.value = msg; break
       case 'done-status':
         if (state.value) {
@@ -211,10 +230,28 @@ if (route === 'room' && roomCode) {
   <Taglines v-else-if="route === 'taglines'" />
 
   <template v-else-if="route === 'room'">
+    <!-- Session closed: terminal, and checked before everything else because every
+         branch below it describes a room the server has already forgotten.
+         Deliberately bare for now — `14` owns making it feel like part of the game. -->
+    <div v-if="sessionClosed" class="page page--narrow session-closed">
+      <p class="label label--eyebrow">
+        room closed
+      </p>
+      <p class="session-closed__room">
+        {{ roomCode }}
+      </p>
+      <p class="session-closed__note">
+        this session ended after sitting idle. the room code is free again.
+      </p>
+      <a class="btn btn--primary" :href="baseUrl">
+        Start a new game
+      </a>
+    </div>
+
     <!-- Name gate: shown before connecting when the player has no stored name.
          No socket is opened until they submit, so bots that just load the URL
          never become ghost players. Empty submit accepts the random name. -->
-    <div v-if="showNameGate" class="page page--narrow namegate">
+    <div v-else-if="showNameGate" class="page page--narrow namegate">
       <p class="label label--eyebrow">
         joining room
       </p>

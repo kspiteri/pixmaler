@@ -11,6 +11,7 @@ import PlayerTag from '../../components/PlayerTag.vue'
 import Tagline from '../../components/Tagline.vue'
 import { artRatio as artRatioFor } from '../../lib/aspect'
 import { PixelCanvas } from '../../lib/canvas'
+import { askConfirm } from '../../lib/dialog'
 import { clientIdKey, socketKey } from '../../lib/keys'
 import { seatFor } from '../../lib/seats'
 import { VOTE_CATEGORIES } from '../../lib/types'
@@ -147,6 +148,15 @@ function playAgain() {
   const msg: ClientMsg = { type: 'gm:playAgain' }
   socket.send(JSON.stringify(msg))
 }
+
+// Ends the whole session rather than starting another round. Always confirmed: it
+// closes the room for everyone and releases the code.
+async function endSession() {
+  if (!await askConfirm('End the session for everyone? The room closes and this code is released.'))
+    return
+  const msg: ClientMsg = { type: 'gm:endSession' }
+  socket.send(JSON.stringify(msg))
+}
 </script>
 
 <template>
@@ -166,7 +176,16 @@ function playAgain() {
       >
         Play again
       </button>
-      <span v-else class="results__hint">waiting for the GM…</span>
+      <button
+        v-if="isGm"
+        class="btn btn--ghost"
+        type="button"
+        title="Close the room for everyone and release this code"
+        @click="endSession"
+      >
+        End session
+      </button>
+      <span v-if="!isGm" class="results__hint">waiting for the GM…</span>
     </template>
 
     <div class="results" :style="{ '--art-ratio': artRatio }">

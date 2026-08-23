@@ -84,3 +84,29 @@
     gap: $gap-4;
   }
 }
+
+// Terminal screen for a room the server has wiped. Shares the name gate's shape
+// deliberately — both are "you are not in a game yet" states on the room route, so
+// they should read as the same kind of screen. Intentionally plain: `14` owns making
+// this feel like part of the game rather than an error page.
+.session-closed {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-3;
+
+  &__room {
+    margin: 0;
+    font-family: $font-display;
+    font-weight: 700;
+    font-size: 2rem;
+    color: $accent-ink;
+    word-break: break-word;
+  }
+
+  &__note {
+    margin: 0 0 $gap-4;
+    color: $muted;
+    font-family: $font-body;
+    line-height: $lh-normal;
+  }
+}

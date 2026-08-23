@@ -211,6 +211,7 @@ export class PixmalerServer extends Server<Env> {
       case 'gm:extendTime': this.handleExtendTime(sender); break
       case 'gm:playAgain': this.handlePlayAgain(sender); break
       case 'gm:cancelRound': this.handleCancelRound(sender); break
+      case 'gm:endSession': this.handleEndSession(sender); break
     }
 
     // Re-arm the lifecycle alarm after every message: the activity stamp moved,
@@ -535,6 +536,22 @@ export class PixmalerServer extends Server<Env> {
     this.resetToLobby()
   }
 
+  // Ends the session for everyone. LOBBY and RESULTS only — between rounds, where
+  // "we're done playing" is a real intent. Mid-round the equivalent is
+  // `gm:cancelRound`, which abandons the round but keeps the room usable; ending a
+  // session from DRAWING would throw away work and the room in one click.
+  //
+  // The teardown is `wipeState()` itself: it already broadcasts `session-closed`
+  // and drops every connection, so a deliberate end and an idle expiry are the
+  // same event from the client's side, differing only in who caused it.
+  private handleEndSession(conn: Connection) {
+    if (!this.isGm(conn))
+      return
+    if (this.state.phase !== 'LOBBY' && this.state.phase !== 'RESULTS')
+      return
+    this.wipeState()
+  }
+
   // ── Phase transitions ──────────────────────────────────────────────────────
 
   private endDrawing() {
@@ -718,6 +735,18 @@ export class PixmalerServer extends Server<Env> {
   // Reset the room to a pristine LOBBY (as if the code were never used) and
   // cancel any pending alarm. Used by both wipe paths.
   private wipeState(): void {
+    // Tell anyone still watching, before we forget they exist. The idle path can
+    // fire with live connections, and every field their client depends on —
+    // `players`, `connMap`, `gmClientId` — is about to be cleared, after which
+    // everything they send is silently dropped by the phase and GM guards. The
+    // empty path only fires with `connMap.size === 0`, so there this is a no-op.
+    this.broadcastAll({ type: 'session-closed' } satisfies ServerMsg)
+    // Then drop them. The client closes its own socket on `session-closed` to stop
+    // partysocket reconnecting, but the room must not depend on client cooperation
+    // to let go — an old bundle, or a client that ignores the message, would
+    // otherwise re-join a pristine room and silently become its GM.
+    for (const conn of this.getConnections())
+      conn.close(1000, 'session closed')
     this.state = {
       phase: 'LOBBY',
       players: new Map(),

@@ -124,6 +124,17 @@ export interface GmCancelRoundMsg {
   type: 'gm:cancelRound'
 }
 
+// GM-only, LOBBY/RESULTS-only. Ends the session for everyone: the room is wiped and
+// every client is dropped onto the closed screen. Only offered between rounds —
+// mid-round the right control is `gm:cancelRound`, which keeps the room alive.
+//
+// This is the deliberate twin of the idle wipe: same teardown, same
+// `session-closed` broadcast, same terminal screen. The difference is only that
+// somebody chose it.
+export interface GmEndSessionMsg {
+  type: 'gm:endSession'
+}
+
 export interface GmTransferMsg {
   type: 'gm:transfer'
   toClientId: string
@@ -142,6 +153,7 @@ export type ClientMsg
     | GmExtendTimeMsg
     | GmPlayAgainMsg
     | GmCancelRoundMsg
+    | GmEndSessionMsg
     | GmTransferMsg
 
 // ── Server → Client ──────────────────────────────────────────────────────────
@@ -242,6 +254,18 @@ export interface DrawStateMsg {
   grid: number[] // palette indices; -1 = untouched
 }
 
+// Broadcast from `wipeState()` — the room has been reset and this client's slot no
+// longer exists. Terminal: the client stops reconnecting and shows a closed screen.
+//
+// Needed because a wipe is otherwise invisible. The idle path (45 min of no
+// messages) can fire with live connections, and `wipeState` clears `players` and
+// `connMap` without telling anyone, so a watching client keeps rendering a room the
+// server has forgotten. Every action it sends is then silently dropped by the phase
+// and GM guards — a zombie tab that looks fine and does nothing.
+export interface SessionClosedMsg {
+  type: 'session-closed'
+}
+
 export type ServerMsg
   = | StateMsg
     | PhaseMsg
@@ -251,3 +275,4 @@ export type ServerMsg
     | ErrorMsg
     | VoteStateMsg
     | DrawStateMsg
+    | SessionClosedMsg
