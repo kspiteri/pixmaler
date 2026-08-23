@@ -12,6 +12,7 @@ import type {
 } from '../src/lib/types'
 import { routePartykitRequest, Server } from 'partyserver'
 import { normaliseShape, VOTE_CATEGORIES } from '../src/lib/types'
+import { adjectives, wordPair } from '../src/lib/words'
 
 // Bindings available on `this.env`. `PIXMALER_DEV=1` (local only, via .dev.vars)
 // relaxes the lobby start gate so the whole flow can be tested solo.
@@ -39,6 +40,13 @@ const DEFAULT_EMPTY_GRACE_MS = 60 * 1000 // 60 s after last tab closes → wipe
 // absent GM can't lose the round to the idle wipe — which destroys it — instead of
 // resolving it. Deliberately generous: nobody in a real game should ever meet it.
 const DEFAULT_VOTING_MS = 5 * 60 * 1000
+
+// Name length cap. Enforced server-side on BOTH write paths: `types.ts` documents
+// the clamp as deliberate hardening because a name reaches the DOM as a class name,
+// and until now `handleRename` clamped while `handleJoin` stored the raw value — so
+// the cap was really only the `maxlength="24"` on three inputs, which any crafted or
+// stale client walks straight past.
+const NAME_MAX_LEN = 24
 
 function parseMs(value: string | undefined, fallback: number): number {
   const n = value ? Number.parseInt(value, 10) : Number.NaN
@@ -258,7 +266,12 @@ export class PixmalerServer extends Server<Env> {
       const isFirst = this.state.players.size === 0
       const player: Player = {
         clientId: msg.clientId,
-        name: msg.name,
+        // Normalised and de-duplicated here, in the NEW-player branch only — the
+        // reconnect branch above deliberately never re-applies `msg.name`, which is
+        // what keeps a returning player from being suffixed against themselves.
+        // An empty name falls back to a random pair, matching what the client's
+        // name gate offers rather than storing "" and rendering a '?' chip.
+        name: this.uniqueName(msg.name.trim().slice(0, NAME_MAX_LEN) || wordPair(), msg.clientId),
         // Derived in buildState; per-player flag here is intentionally unused.
         isGm: false,
         connected: true,
@@ -335,11 +348,62 @@ export class PixmalerServer extends Server<Env> {
     const player = this.state.players.get(clientId)
     if (!player)
       return
-    const name = msg.name.trim().slice(0, 24)
+    const name = msg.name.trim().slice(0, NAME_MAX_LEN)
     if (!name)
       return
-    player.name = name
+    player.name = this.uniqueName(name, clientId)
     this.broadcastAll(this.buildState())
+  }
+
+  // Names are unique per room, compared case- and whitespace-insensitively —
+  // `keith` and `Keith ` are the same person to everyone in the room, and the game
+  // ends in a one-shot name reveal. The STORED name keeps its original casing.
+  //
+  // `exceptClientId` is what makes this safe from `handleRename` (you may keep your
+  // own name), and it is why the `handleJoin` call sits in the new-player branch
+  // only: a reconnecting player must never be compared against themselves. Called
+  // before that branch it would re-decorate on every reconnect blip — `Keith` →
+  // `feral-Keith` → `crusty-feral-Keith` — and partysocket reconnects unprompted, so
+  // a flaky phone would ratchet a name forever.
+  private uniqueName(base: string, exceptClientId: string): string {
+    const taken = new Set<string>()
+    for (const p of this.state.players.values()) {
+      if (p.clientId !== exceptClientId)
+        taken.add(p.name.trim().toLowerCase())
+    }
+    if (!taken.has(base.trim().toLowerCase()))
+      return base
+
+    // `adjective-Name`, matching the room code's own shape (`feral-crayon`) so a
+    // decorated name reads as part of the game's vocabulary rather than as an error.
+    // The list is blunt on purpose — `crusty`, `janky`, `greasy` — which is the house
+    // voice ("draw badly, vote honestly", "monet, hates you right now"), and Keith's
+    // call. Swap to `nouns` if it ever needs to be gentler; nothing else changes.
+    //
+    // Retried rather than picked once: with 63 adjectives a single pick collides with
+    // another decorated player ~50% of the time within about ten of them, which would
+    // reproduce the exact bug this exists to fix. Random start, full rotation, so
+    // every adjective is tried without biasing toward the head of the list.
+    const start = Math.floor(Math.random() * adjectives.length)
+    for (let i = 0; i < adjectives.length; i++) {
+      const adj = adjectives[(start + i) % adjectives.length]
+      // Clamp the BASE, not the result: prefixing first and clamping after would cut
+      // the *name* off its own tail, and with a long adjective could drop it entirely.
+      const stem = base.trimStart().slice(0, NAME_MAX_LEN - adj.length - 1)
+      const candidate = `${adj}-${stem}`
+      if (!taken.has(candidate.toLowerCase()))
+        return candidate
+    }
+
+    // All 63 adjectives taken — needs 63 players sharing one name, so unreachable in
+    // practice. Counter suffix rather than a second prefix: `2-Keith` reads as a typo,
+    // `Keith-2` reads as a fallback. Exists so the function can never fail to return.
+    for (let n = 2; ; n++) {
+      const tail = `-${n}`
+      const candidate = `${base.slice(0, NAME_MAX_LEN - tail.length).trimEnd()}${tail}`
+      if (!taken.has(candidate.toLowerCase()))
+        return candidate
+    }
   }
 
   private handleShape(msg: Extract<ClientMsg, { type: 'shape' }>, conn: Connection) {

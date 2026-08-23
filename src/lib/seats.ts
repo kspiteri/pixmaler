@@ -87,7 +87,16 @@ export interface Seat {
 export function seatFor(seat: number, player: Pick<Player, 'name' | 'shape'>): Seat | null {
   if (seat < 0)
     return null
-  const initial = player.name.trim().charAt(0).toUpperCase() || '?'
+  // Code points, not UTF-16 code units. `charAt(0)` returned the lone high
+  // surrogate for any astral character, so every emoji in a block collapsed to one
+  // unpaired surrogate — 🎨 and 🎭 both rendered the same tofu glyph AND, because
+  // 0xD83C % 4 === 0, both landed on the same lean. A whole-block collapse, not a
+  // one-off pair: U+1F300–U+1F3FF all share \uD83C, U+1F400–U+1F7FF share \uD83D,
+  // and regional-indicator flags share \uD83C too.
+  //
+  // The '?' fallback is load-bearing, not defensive padding: without it an
+  // all-whitespace name gives codePointAt(0) === undefined below.
+  const initial = [...player.name.trim()][0]?.toUpperCase() ?? '?'
   return {
     colour: `var(--player-colour-${seat % SEAT_COUNT})`,
     initial,
@@ -97,6 +106,7 @@ export function seatFor(seat: number, player: Pick<Player, 'name' | 'shape'>): S
     // `avatar--undefined`. Harmless today only because `--rounded` carries no
     // rule of its own; normalising keeps the declared type honest regardless.
     shape: normaliseShape(player.shape),
-    lean: LEANS[initial.charCodeAt(0) % LEANS.length],
+    // Non-null is safe: `initial` is guaranteed non-empty by the '?' fallback.
+    lean: LEANS[initial.codePointAt(0)! % LEANS.length],
   }
 }
