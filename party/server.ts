@@ -626,10 +626,9 @@ export class PixmalerServer extends Server<Env> {
   private endDrawing() {
     if (this.state.phase !== 'DRAWING')
       return
+    // Set early so `endVoting`'s own phase guard passes on the nobody-drew path
+    // below. Nothing is broadcast until we know which way this round resolves.
     this.state.phase = 'VOTING'
-    // VOTING gets its own expiry now — a backstop for an absent GM, not a game
-    // timer. `nextWake` and `onAlarm` distinguish the two phases by `state.phase`.
-    this.state.deadline = Date.now() + this.votingMs
     const cfg = this.state.config!
 
     // Build the gallery once: drop blank submissions (a player who never drew
@@ -639,6 +638,23 @@ export class PixmalerServer extends Server<Env> {
     this.state.gallery = [...this.state.submissions.entries()]
       .filter(([, grid]) => grid.some(cell => cell !== -1))
       .map(([clientId, grid]): Submission => ({ submissionId: clientId, grid }))
+
+    // Nobody drew anything. VOTING would be a phase in which no one can act: no
+    // cards to vote on, so `votedCount` can never rise, `allVoted` can never fire,
+    // and the GM's End-voting confirm stays armed over an empty screen until the
+    // backstop expires. Skip it entirely — RESULTS already knows how to resolve a
+    // field with no winner in it, and the target image takes the hero.
+    //
+    // Clients see DRAWING → RESULTS directly: the transient VOTING above is never
+    // broadcast, so there is no flicker through a phase nobody could use.
+    if (this.state.gallery.length === 0) {
+      this.endVoting()
+      return
+    }
+
+    // VOTING gets its own expiry — a backstop for an absent GM, not a game timer.
+    // `nextWake` and `onAlarm` distinguish the two timed phases by `state.phase`.
+    this.state.deadline = Date.now() + this.votingMs
 
     this.broadcastAll({
       type: 'gallery',

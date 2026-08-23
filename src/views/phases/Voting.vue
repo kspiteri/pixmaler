@@ -285,7 +285,12 @@ function castVote(category: VoteCategory, submissionId: string) {
         </p>
       </header>
 
-      <div v-if="gallery" class="voting__grid">
+      <!-- `ordered.length`, not just `gallery`: a truthy gallery message with zero
+           submissions rendered a 0-height grid under the heading — a void, with no
+           fallback, because the `v-else` below only covers "no gallery yet". The
+           server now skips VOTING entirely when nobody drew, so this is unreachable
+           by design; it stays guarded so the hole can't come back. -->
+      <div v-if="gallery && ordered.length" class="voting__grid">
         <div
           v-for="sub in ordered"
           :key="sub.submissionId"
@@ -326,6 +331,9 @@ function castVote(category: VoteCategory, submissionId: string) {
         </div>
       </div>
 
+      <p v-else-if="gallery" class="voting__waiting">
+        nobody drew anything…
+      </p>
       <p v-else class="voting__waiting">
         hanging the exhibition…
       </p>

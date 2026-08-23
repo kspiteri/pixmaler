@@ -68,16 +68,18 @@ function withSeats(entries: Entry[]) {
   })
 }
 
-// Nobody voted. `ranked` arrives sorted descending, so a zero at the top means a
-// zero everywhere — and without this guard `e.votes === top` below is true for
-// *every* entry, which crowned the entire field and, because `rest` slices past
-// `winners`, deleted the gallery with it.
+// Nobody drew at all. The server skips VOTING in this case (see endDrawing), so this
+// arrives straight from DRAWING with an empty ranked field.
+const nobodyDrew = computed(() => ranked.value.length === 0)
+// No human winner — either nobody drew, or people drew and nobody voted. `ranked`
+// arrives sorted descending, so a zero at the top means a zero everywhere; without
+// this guard `e.votes === top` below matched *every* entry, which crowned the whole
+// field and, because `rest` slices past `winners`, deleted the gallery with it.
 //
-// The round still resolves: with no human winner the target image takes the hero
-// (see the template) and everyone falls into the gallery. A game called "recreate
-// art. poorly." resolving a no-vote round as the original beating all of you is
-// both the honest result and the funniest reading of it.
-const noWinner = computed(() => ranked.value.length > 0 && ranked.value[0].votes === 0)
+// Either way the target image takes the hero and everyone falls into the gallery. A
+// game called "recreate art. poorly." resolving these as the original beating all of
+// you is both the honest result and the funniest reading of it.
+const noWinner = computed(() => nobodyDrew.value || ranked.value[0].votes === 0)
 
 const winners = computed(() => {
   const all = ranked.value
@@ -236,7 +238,7 @@ async function endSession() {
         <div class="results__hero">
           <p class="results__crown">
             <img :src="iconUrl('assets/icons/crown.svg')" alt="crown" class="results__crown-icon">
-            {{ noWinner ? "nobody voted — the original wins" : winners.length > 1 ? "joint winners" : "overall winner" }}
+            {{ noWinner ? (nobodyDrew ? "nobody drew — the original wins" : "nobody voted — the original wins") : winners.length > 1 ? "joint winners" : "overall winner" }}
           </p>
           <div class="results__winners">
             <!-- Nobody voted, so the target takes the hero and everyone drops into
@@ -250,7 +252,7 @@ async function endSession() {
                   the original
                 </p>
                 <p class="results__winner-votes">
-                  undefeated
+                  {{ nobodyDrew ? "unchallenged" : "undefeated" }}
                 </p>
               </div>
             </div>
