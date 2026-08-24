@@ -76,6 +76,9 @@ async function transferGm(p: Player) {
           <template v-if="!p.connected" #suffix>
             <span class="player-list__offline"> [offline]</span>
           </template>
+          <template v-else-if="p.spectating" #suffix>
+            <span class="player-list__offline"> [watching]</span>
+          </template>
         </PlayerTag>
         <span v-if="p.isGm" class="player-list__pill">GM</span>
         <button

@@ -164,6 +164,20 @@ export interface Player {
   isGm: boolean
   connected: boolean
   doneDrawing: boolean
+  // Joined after the round had already started, so they sit this one out: no
+  // canvas, no vote, and — the point of the flag — **excluded from both progress
+  // denominators**, so "X of Y done" and "X of Y voted" can't jump backwards when
+  // somebody arrives mid-round. That backwards jump is also why `allVoted` could
+  // un-fire, which is what forced item 59's notification into a non-latching
+  // channel; with spectators excluded it becomes a fact that can't retract.
+  //
+  // Cleared for everyone when the next round starts — wherever `doneDrawing` is
+  // cleared, which is the discipline that keeps the two in step.
+  //
+  // Set only in `handleJoin`'s new-player branch: a reconnecting player keeps
+  // whatever they were, so a mid-round refresh can't demote a real competitor to a
+  // spectator, and a returning spectator stays one.
+  spectating: boolean
   // Chosen in the lobby, persisted in the player's own localStorage, and echoed
   // here so *other* clients can draw their chip. Always a valid AvatarShape —
   // the server normalises on the way in.
