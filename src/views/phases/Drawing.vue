@@ -304,6 +304,11 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown)
   window.removeEventListener('resize', onResize)
+  // `{ once: true }` above only self-removes when the listener actually fires, and the socket
+  // outlives this component — it is created in `App.vue` and survives every phase change. So
+  // without this line each DRAWING round left another listener holding an unmounted scope
+  // alive, growing with exactly the play-again / cancel loop items 50 and 55 are about.
+  socket.removeEventListener('close', cancelTimers)
   cancelTimers()
 })
 </script>
