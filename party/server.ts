@@ -276,6 +276,9 @@ export class PixmalerServer extends Server<Env> {
         isGm: false,
         connected: true,
         doneDrawing: false,
+        // A round already in flight means they missed it. Only reachable here, in
+        // the new-player branch, so a reconnect never changes what someone is.
+        spectating: this.state.phase !== 'LOBBY',
         shape: normaliseShape(msg.shape),
       }
       if (isFirst) {
@@ -482,7 +485,9 @@ export class PixmalerServer extends Server<Env> {
     this.state.votes.clear()
     this.state.gallery = null
     this.state.ranked = null
-    for (const p of this.state.players.values()) p.doneDrawing = false
+    // Cleared together, deliberately: a new round makes everyone a competitor again,
+    // and keeping the two resets on one line is what stops them drifting apart.
+    for (const p of this.state.players.values()) { p.doneDrawing = false; p.spectating = false }
 
     this.broadcastAll({ type: 'phase', phase: 'DRAWING', deadline } satisfies ServerMsg)
     // Round-end fires from the DO alarm at `deadline` (armed by onMessage after
@@ -491,7 +496,8 @@ export class PixmalerServer extends Server<Env> {
 
   private handleDrawDone(conn: Connection) {
     const player = this.playerByConn(conn)
-    if (!player || this.state.phase !== 'DRAWING')
+    // A spectator has no canvas, so a `draw:done` from one is drift or tampering.
+    if (!player || player.spectating || this.state.phase !== 'DRAWING')
       return
     player.doneDrawing = true
     this.broadcastDoneStatus()
@@ -499,7 +505,9 @@ export class PixmalerServer extends Server<Env> {
 
   private handleSubmit(msg: Extract<ClientMsg, { type: 'draw:submit' }>, conn: Connection) {
     const player = this.playerByConn(conn)
-    if (!player || this.state.phase !== 'DRAWING')
+    // Same as `draw:done`: a spectator sits the round out, so their grid must never
+    // reach `submissions` — otherwise they'd appear in the gallery and be votable.
+    if (!player || player.spectating || this.state.phase !== 'DRAWING')
       return
     // submissionId === clientId — the vote self-check in handleVote relies on this.
     // Note: we do NOT set `doneDrawing` here. Submission is automatic and
@@ -511,7 +519,9 @@ export class PixmalerServer extends Server<Env> {
 
   private handleVote(msg: Extract<ClientMsg, { type: 'vote:cast' }>, conn: Connection) {
     const voter = this.playerByConn(conn)
-    if (!voter || this.state.phase !== 'VOTING')
+    // A spectator watches this round's reveal but does not judge it. Also keeps the
+    // voting denominator honest: they were never counted, so they cannot be waited on.
+    if (!voter || voter.spectating || this.state.phase !== 'VOTING')
       return
     // Ignore unknown categories (protocol drift / tampering).
     if (!VOTE_CATEGORIES.some(c => c.id === msg.category))
@@ -521,6 +531,16 @@ export class PixmalerServer extends Server<Env> {
       conn.send(JSON.stringify({ type: 'error', message: 'Cannot vote for yourself.' } satisfies ServerMsg))
       return
     }
+    // The target must be in this round's frozen gallery. Without this a crafted or
+    // stale client could vote for any string: `endVoting`'s tally silently skips an
+    // id it doesn't recognise (the `if (bd)` guard), but `votingProgress` counts
+    // *keys*, so two junk casts made the sender count as fully voted — enough to
+    // force `allVoted` and suppress the GM's End-voting confirm without voting for
+    // anyone. Ignored rather than answered with `error`, matching the unknown-category
+    // guard above: both are tamper-or-drift paths, and neither is reachable from the
+    // UI, which only renders a button per gallery card.
+    if (!this.state.gallery?.some(s => s.submissionId === msg.submissionId))
+      return
     // One vote per voter per category — `set` overwrites the previous pick in
     // that category, so voters can change their mind.
     this.state.votes.set(voteKey(voter.clientId, msg.category), msg.submissionId)
@@ -579,7 +599,7 @@ export class PixmalerServer extends Server<Env> {
     this.state.votes.clear()
     this.state.gallery = null
     this.state.ranked = null
-    for (const p of this.state.players.values()) p.doneDrawing = false
+    for (const p of this.state.players.values()) { p.doneDrawing = false; p.spectating = false }
     this.broadcastAll(this.buildState())
   }
 
@@ -900,7 +920,9 @@ export class PixmalerServer extends Server<Env> {
   // then drops leaves both counts. The GM is included: they draw and are ranked
   // like everyone else (their submission lands in the gallery).
   private drawProgress(): { doneCount: number, totalDrawing: number } {
-    const present = [...this.state.players.values()].filter(p => p.connected)
+    // Spectators are excluded from both halves: they joined mid-round, and counting
+    // them would make "X of Y done" jump backwards the moment somebody arrives.
+    const present = [...this.state.players.values()].filter(p => p.connected && !p.spectating)
     return {
       doneCount: present.filter(p => p.doneDrawing).length,
       totalDrawing: present.length,
@@ -916,7 +938,9 @@ export class PixmalerServer extends Server<Env> {
       const voterId = voterOf(key)
       perVoter.set(voterId, (perVoter.get(voterId) ?? 0) + 1)
     }
-    const present = [...this.state.players.values()].filter(p => p.connected)
+    // Same exclusion as drawProgress: a mid-round arrival must not make `allVoted`
+    // un-fire, which is what previously ruled out any latching GM notification.
+    const present = [...this.state.players.values()].filter(p => p.connected && !p.spectating)
     const votedCount = present.filter(
       p => (perVoter.get(p.clientId) ?? 0) >= VOTE_CATEGORIES.length,
     ).length
