@@ -25,12 +25,20 @@ import {
 import CanvasPair from '../../components/CanvasPair.vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import { orientationFor } from '../../lib/aspect'
+import { PixelCanvas } from '../../lib/canvas'
 import { askConfirm } from '../../lib/dialog'
 import { clientIdKey, socketKey } from '../../lib/keys'
 
 type State = Extract<ServerMsg, { type: 'state' }>
 
-const props = defineProps<{ state: State, initialGrid: number[] | null }>()
+const props = defineProps<{
+  state: State
+  initialGrid: number[] | null
+  // Joined mid-round: watch, don't draw. The server already refuses this client's
+  // `draw:submit` and `draw:done` and leaves them out of the done tally, so this
+  // flag only decides what they see — it is not the enforcement.
+  spectating: boolean
+}>()
 
 const socket = inject(socketKey)!.value!
 const clientId = inject(clientIdKey)!
@@ -57,6 +65,28 @@ const doneText = computed(() =>
 )
 
 const pairRef = useTemplateRef<InstanceType<typeof CanvasPair>>('pair')
+
+// Spectator-only: the reference, rendered read-only. Same shape as the lobby's
+// non-GM preview — `PixelCanvas` is imperative, so it is mounted into a slot
+// rather than driven by reactivity, and re-mounted if the config changes under it.
+const watchSlot = useTemplateRef<HTMLElement>('watchSlot')
+let watchCanvas: PixelCanvas | null = null
+
+watch([() => props.spectating, () => props.state.config, watchSlot], () => {
+  if (!props.spectating || !watchSlot.value || !props.state.config) {
+    watchCanvas = null
+    return
+  }
+  const cfg = props.state.config
+  watchCanvas = new PixelCanvas({
+    gridW: cfg.gridW,
+    gridH: cfg.gridH,
+    palette: cfg.palette,
+    targetGrid: cfg.targetGrid,
+    editable: false,
+  })
+  watchSlot.value.replaceChildren(watchCanvas.canvas)
+}, { immediate: true, flush: 'post' })
 
 // GM-only. The step and the cap live on the server; this only reports whether the
 // button is still worth showing.
@@ -309,7 +339,18 @@ onBeforeUnmount(() => {
       </button>
     </template>
 
-    <div class="drawing__body">
+    <!-- Spectators get the reference and the room's progress, but no canvas: they
+         joined after this round started. Showing the target is deliberate and
+         harmless — the GM picks a new image next round, so there is nothing to
+         leak, and it beats a blank wait for up to two minutes. -->
+    <div v-if="spectating" class="drawing__body drawing__body--watching">
+      <p class="drawing__watching-note">
+        you joined mid-round — watching this one, drawing the next
+      </p>
+      <div ref="watchSlot" class="drawing__watching-target" />
+    </div>
+
+    <div v-else class="drawing__body">
       <CanvasPair
         ref="pair"
         :grid-w="config.gridW"
