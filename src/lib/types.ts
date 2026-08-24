@@ -303,6 +303,24 @@ export interface Player {
   isGm: boolean
   connected: boolean
   doneDrawing: boolean
+  // Painted at least one cell this round. **Sticky**: it stays true even after the
+  // player clears the canvas, and that is the whole point.
+  //
+  // `draw:submit` is a debounced mirror of the canvas, so clearing sends an
+  // all-`-1` grid. The gallery used to be filtered on grid *content*, so a player
+  // who cleared to start over and ran out of time was dropped from voting **and**
+  // results with no feedback — they had drawn, and the round forgot. Filtering on
+  // this flag instead keeps them in: their card is blank, but it exists.
+  //
+  // Deliberately not "has a non-blank grid": that conflates *didn't participate*
+  // with *participated and wiped it*, which are different things and get different
+  // treatment on the reveal.
+  //
+  // Cleared for everyone when the next round starts — in the same statement as
+  // `doneDrawing` and `spectating`, which is the discipline that keeps the three
+  // in step. A per-round flag with its own forgotten reset is what produced the
+  // blank-winner and phantom-vote bugs.
+  drewThisRound: boolean
   // Joined after the round had already started, so they sit this one out: no
   // canvas, no vote, and — the point of the flag — **excluded from both progress
   // denominators**, so "X of Y done" and "X of Y voted" can't jump backwards when

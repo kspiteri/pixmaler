@@ -280,6 +280,9 @@ export class PixmalerServer extends Server<Env> {
         isGm: false,
         connected: true,
         doneDrawing: false,
+        // Sticky per-round participation. A mid-round joiner is a spectator, so
+        // this stays false for them either way.
+        drewThisRound: false,
         // A round already in flight means they missed it. Only reachable here, in
         // the new-player branch, so a reconnect never changes what someone is.
         spectating: this.state.phase !== 'LOBBY',
@@ -489,9 +492,10 @@ export class PixmalerServer extends Server<Env> {
     this.state.votes.clear()
     this.state.gallery = null
     this.state.ranked = null
-    // Cleared together, deliberately: a new round makes everyone a competitor again,
-    // and keeping the two resets on one line is what stops them drifting apart.
-    for (const p of this.state.players.values()) { p.doneDrawing = false; p.spectating = false }
+    // Cleared together, deliberately: a new round makes everyone a competitor again
+    // with nothing drawn yet, and keeping all three resets on one line is what stops
+    // them drifting apart.
+    for (const p of this.state.players.values()) { p.doneDrawing = false; p.spectating = false; p.drewThisRound = false }
 
     this.broadcastAll({ type: 'phase', phase: 'DRAWING', deadline } satisfies ServerMsg)
     // Round-end fires from the DO alarm at `deadline` (armed by onMessage after
@@ -533,6 +537,13 @@ export class PixmalerServer extends Server<Env> {
     // social signal driven only by the player clicking "I'm done", which
     // sends a separate `draw:done` message.
     this.state.submissions.set(player.clientId, msg.grid)
+
+    // Sticky, and only ever set — never cleared here. Clearing the canvas sends an
+    // all-`-1` grid through this same path, so unsetting on a blank submission would
+    // reintroduce the bug: the player would drop out of the gallery for having wiped
+    // work they did do. The only reset is at round start.
+    if (!player.drewThisRound && msg.grid.some(cell => cell !== -1))
+      player.drewThisRound = true
   }
 
   private handleVote(msg: Extract<ClientMsg, { type: 'vote:cast' }>, conn: Connection) {
@@ -558,6 +569,13 @@ export class PixmalerServer extends Server<Env> {
     // guard above: both are tamper-or-drift paths, and neither is reachable from the
     // UI, which only renders a button per gallery card.
     if (!this.state.gallery?.some(s => s.submissionId === msg.submissionId))
+      return
+    // A wiped canvas is shown on the reveal but is not a candidate — it carries no
+    // drawing to judge. The gallery now includes it (see `endDrawing`), so this is
+    // the guard that keeps it out of the tally. Ignored rather than answered,
+    // matching the two guards above: the UI renders no vote control on a blank card,
+    // so reaching here means drift or tampering.
+    if (this.state.gallery.find(s => s.submissionId === msg.submissionId)?.grid.every(cell => cell === -1))
       return
     // One vote per voter per category — `set` overwrites the previous pick in
     // that category, so voters can change their mind.
@@ -617,7 +635,7 @@ export class PixmalerServer extends Server<Env> {
     this.state.votes.clear()
     this.state.gallery = null
     this.state.ranked = null
-    for (const p of this.state.players.values()) { p.doneDrawing = false; p.spectating = false }
+    for (const p of this.state.players.values()) { p.doneDrawing = false; p.spectating = false; p.drewThisRound = false }
     this.broadcastAll(this.buildState())
   }
 
@@ -666,11 +684,16 @@ export class PixmalerServer extends Server<Env> {
       return
     const cfg = this.state.config!
 
-    // Build the gallery once, and **before touching state** — drop blank
-    // submissions (a player who never drew leaves an all-`-1` grid — nothing to
-    // vote on). Order is left as-is; anonymising the display order is done
-    // per-client in Voting.vue. Frozen for the round so rejoins and results read
-    // a consistent set.
+    // Build the gallery once, and **before touching state**. Membership is now
+    // `drewThisRound`, not grid content: a player who painted and then cleared has
+    // an all-`-1` grid at the deadline, and filtering on content dropped them from
+    // voting *and* results with no feedback. The flag keeps them in — their card is
+    // blank, but it exists. Someone who never touched the canvas still has no flag
+    // and stays out, so a round nobody drew in still produces an empty gallery and
+    // skips VOTING below.
+    //
+    // Order is left as-is; anonymising the display order is done per-client in
+    // Voting.vue. Frozen for the round so rejoins and results read a consistent set.
     //
     // The ordering is deliberate and load-bearing. This used to run *after*
     // `phase` moved to VOTING, so anything thrown here left the room mid-mutation:
@@ -680,7 +703,7 @@ export class PixmalerServer extends Server<Env> {
     // silently discarding every submission. Computing first means a throw leaves
     // the round untouched and the retry re-enters the same branch.
     const gallery = [...this.state.submissions.entries()]
-      .filter(([, grid]) => grid.some(cell => cell !== -1))
+      .filter(([clientId]) => this.state.players.get(clientId)?.drewThisRound)
       .map(([clientId, grid]): Submission => ({ submissionId: clientId, grid }))
 
     // Set early so `endVoting`'s own phase guard passes on the nobody-drew path
