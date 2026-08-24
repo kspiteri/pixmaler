@@ -167,14 +167,27 @@ export type ClientMsg
 //   512 leaves headroom without admitting the million-cell case.
 // - **Palette.** `COLOUR_OPTIONS` offers 8/16/24/32, and median-cut may return
 //   fewer than asked for. 64 is generous.
-// - **Draw seconds.** The picker's own `min="30" max="600"`. Enforced exactly,
-//   because unlike the others this one is server-meaningful: it becomes the
-//   round deadline, so an unbounded value is an unbounded round.
+// - **Draw seconds.** 30 s is a deliberate floor on a *playable* round, not just a
+//   safety bound. It is enforced on both sides for different
+//   reasons: the picker clamps so the constraint is visible the moment you cross
+//   it, and the server clamps so a stale client can never put a shorter round on
+//   the wire.
+//
+//   It **clamps rather than rejects**, the same choice `normaliseShape` and
+//   `rename`'s 24-char slice already make. Rejecting was a real bug: HTML `min`
+//   does not stop a typed value, so a GM testing with 20 s had the whole config
+//   dropped and a Start button that silently did nothing.
 export const GRID_MAX_SIDE = 512
 export const GRID_MAX_CELLS = GRID_MAX_SIDE * GRID_MAX_SIDE
 export const PALETTE_MAX_LEN = 64
 export const DRAW_SECONDS_MIN = 30
 export const DRAW_SECONDS_MAX = 600
+
+// Exported so the picker can clamp the same way, and the input can't offer a
+// value the server would silently change.
+export function clampDrawSeconds(v: number): number {
+  return Math.min(DRAW_SECONDS_MAX, Math.max(DRAW_SECONDS_MIN, Math.round(v)))
+}
 
 const isStr = (v: unknown): v is string => typeof v === 'string'
 const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v)
@@ -242,7 +255,10 @@ export function parseClientMsg(raw: string): ClientMsg | null {
       const { gridW, gridH, palette, targetGrid, drawSeconds } = m
       if (!isSide(gridW) || !isSide(gridH) || !isPalette(palette))
         return null
-      if (!isInt(drawSeconds) || drawSeconds < DRAW_SECONDS_MIN || drawSeconds > DRAW_SECONDS_MAX)
+      // Clamped, not rejected — a number out of range is a typo, and dropping the
+      // whole config over it leaves the GM with a Start button that does nothing.
+      // Still requires a finite number: `"120"` or `NaN` is a broken client, not a typo.
+      if (typeof drawSeconds !== 'number' || !Number.isFinite(drawSeconds))
         return null
       // The target is a fully quantised image, so unlike a player's grid it has
       // no `-1` holes and its length is exact.
@@ -250,7 +266,7 @@ export function parseClientMsg(raw: string): ClientMsg | null {
         return null
       if (!targetGrid.every(c => c >= 0 && c < palette.length))
         return null
-      return { type: 'gm:configure', gridW, gridH, palette, targetGrid, drawSeconds }
+      return { type: 'gm:configure', gridW, gridH, palette, targetGrid, drawSeconds: clampDrawSeconds(drawSeconds) }
     }
 
     case 'draw:submit':

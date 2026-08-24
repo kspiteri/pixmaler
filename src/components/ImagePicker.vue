@@ -15,6 +15,7 @@ import {
 
   processImage,
 } from '../lib/pipeline'
+import { clampDrawSeconds, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN } from '../lib/types'
 
 // The bundled sample images (`public/assets/<name>.png`). Add a sample by
 // dropping the png in and appending an entry to `samples` below.
@@ -39,7 +40,18 @@ const emit = defineEmits<{
 
 const scale = ref(DEFAULT_SCALE)
 const colorCount = ref(DEFAULT_COLOR_COUNT)
-const drawSecs = ref(120)
+const DEFAULT_DRAW_SECONDS = 120
+const drawSecs = ref(DEFAULT_DRAW_SECONDS)
+// The floor is stated in the label, and applied here on commit. HTML `min` does
+// not stop a typed value, so without this a GM testing with 20 s had the whole
+// config rejected server-side and saw only a Start button that did nothing.
+function commitDrawSecs() {
+  // An emptied input yields NaN through `v-model.number`, which would otherwise
+  // clamp to NaN and put an unstartable config on the wire.
+  drawSecs.value = Number.isFinite(drawSecs.value)
+    ? clampDrawSeconds(drawSecs.value)
+    : DEFAULT_DRAW_SECONDS
+}
 // `status` carries user-facing *messages* (errors) only; in-flight processing is
 // `busy`, so the spinner never has to sniff the message string.
 const status = ref('')
@@ -239,11 +251,14 @@ onMounted(() => {
         </div>
 
         <label v-if="showDrawSeconds" class="picker__setting picker__setting--inline">
-          <span class="picker__setting-label">Draw seconds</span>
+          <!-- The floor is stated here rather than discovered by a round refusing
+               to start, which is how it was found in the first place. -->
+          <span class="picker__setting-label">Draw seconds (min: {{ DRAW_SECONDS_MIN }}s)</span>
           <input
             v-model.number="drawSecs"
             class="picker__time"
-            type="number" min="30" max="600"
+            type="number" :min="DRAW_SECONDS_MIN" :max="DRAW_SECONDS_MAX"
+            @change="commitDrawSecs"
           >
         </label>
       </div>
