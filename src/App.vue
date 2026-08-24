@@ -62,6 +62,10 @@ function storedShape(): AvatarShape {
   return normaliseShape(localStorage.getItem('pixmaler:shape'))
 }
 
+function reloadPage() {
+  window.location.reload()
+}
+
 // ── Reactive room state ──────────────────────────────────────────────────────
 
 // `shallowRef` because we never mutate inner fields — we always replace the
@@ -245,8 +249,11 @@ if (route === 'room' && roomCode) {
       <p class="session-closed__note">
         this session ended after sitting idle. the room code is free again.
       </p>
-      <a class="btn btn--primary" type="button" :href="baseUrl">
-        Go back to homepage
+      <button class="btn btn--primary" type="button" @click="reloadPage">
+        Restart this room (as GM)
+      </button>
+      <a class="btn btn--ghost" type="button" :href="baseUrl">
+        Back to homepage
       </a>
     </div>
 
