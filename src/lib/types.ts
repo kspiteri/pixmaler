@@ -156,6 +156,129 @@ export type ClientMsg
     | GmEndSessionMsg
     | GmTransferMsg
 
+// ── Inbound validation ───────────────────────────────────────────────────────
+
+// Bounds for anything a client can put on the wire. Derived from what the UI can
+// actually produce rather than invented:
+//
+// - **Grid side.** `gridSizeFor` is `round(source * scale * 0.01)`, the picker's
+//   scale slider tops out at 50, and `SOURCE_MAX_SIDE` normalises the long edge
+//   to 768 — so the largest legitimate side is `round(768 * 50 * 0.01)` = 384.
+//   512 leaves headroom without admitting the million-cell case.
+// - **Palette.** `COLOUR_OPTIONS` offers 8/16/24/32, and median-cut may return
+//   fewer than asked for. 64 is generous.
+// - **Draw seconds.** The picker's own `min="30" max="600"`. Enforced exactly,
+//   because unlike the others this one is server-meaningful: it becomes the
+//   round deadline, so an unbounded value is an unbounded round.
+export const GRID_MAX_SIDE = 512
+export const GRID_MAX_CELLS = GRID_MAX_SIDE * GRID_MAX_SIDE
+export const PALETTE_MAX_LEN = 64
+export const DRAW_SECONDS_MIN = 30
+export const DRAW_SECONDS_MAX = 600
+
+const isStr = (v: unknown): v is string => typeof v === 'string'
+const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v)
+const isSide = (v: unknown): v is number => isInt(v) && v >= 1 && v <= GRID_MAX_SIDE
+
+// Palette entries reach the DOM as CSS custom-property values and the canvas as
+// fill styles, so the shape is checked rather than trusted — the same argument
+// `normaliseShape` makes about class names, one rung down.
+const HEX_COLOUR = /^#[0-9a-f]{6}$/i
+function isPalette(v: unknown): v is string[] {
+  return Array.isArray(v) && v.length >= 1 && v.length <= PALETTE_MAX_LEN
+    && v.every(c => isStr(c) && HEX_COLOUR.test(c))
+}
+
+// Cells are palette indices. The *upper* bound depends on the live palette, so
+// only the server can check it; this is the structural half — an integer array
+// inside the hard cap.
+function isCells(v: unknown, maxLen: number): v is number[] {
+  return Array.isArray(v) && v.length <= maxLen && v.every(isInt)
+}
+
+/**
+ * Parse a raw inbound frame into a `ClientMsg`, or `null` if it is not one.
+ *
+ * Replaces `JSON.parse(raw) as ClientMsg`, which was a compile-time promise with
+ * no runtime check behind it: a well-formed JSON object of *any* shape reached
+ * the handlers. An unguarded `grid` then made `endDrawing`'s gallery build throw
+ * after it had already moved `phase`, so the alarm retry resolved the round with
+ * an empty gallery and silently discarded every submission.
+ *
+ * Deliberately **constructs** each message rather than narrowing the input, so
+ * unknown extra properties cannot ride along into room state and back out over a
+ * broadcast.
+ *
+ * Cannot throw: every check is a `typeof`, an `Array.isArray`, or a regex on a
+ * value already proven to be a string. Same discipline as `normaliseShape`.
+ *
+ * **Structural only.** Anything that needs the room's config — does this grid
+ * match the round's dimensions, is every cell inside the round's palette — is
+ * checked server-side, which is the only place that knows.
+ */
+export function parseClientMsg(raw: string): ClientMsg | null {
+  let parsed: unknown
+  try { parsed = JSON.parse(raw) }
+  catch { return null }
+  if (typeof parsed !== 'object' || parsed === null)
+    return null
+  const m = parsed as Record<string, unknown>
+
+  switch (m.type) {
+    case 'join':
+      return isStr(m.clientId) && isStr(m.name)
+        ? { type: 'join', clientId: m.clientId, name: m.name, shape: normaliseShape(m.shape) }
+        : null
+
+    case 'rename':
+      return isStr(m.name) ? { type: 'rename', name: m.name } : null
+
+    // `normaliseShape` clamps rather than rejects, so this cannot fail — matching
+    // what `handleShape` already did with the value.
+    case 'shape':
+      return { type: 'shape', shape: normaliseShape(m.shape) }
+
+    case 'gm:configure': {
+      const { gridW, gridH, palette, targetGrid, drawSeconds } = m
+      if (!isSide(gridW) || !isSide(gridH) || !isPalette(palette))
+        return null
+      if (!isInt(drawSeconds) || drawSeconds < DRAW_SECONDS_MIN || drawSeconds > DRAW_SECONDS_MAX)
+        return null
+      // The target is a fully quantised image, so unlike a player's grid it has
+      // no `-1` holes and its length is exact.
+      if (!isCells(targetGrid, GRID_MAX_CELLS) || targetGrid.length !== gridW * gridH)
+        return null
+      if (!targetGrid.every(c => c >= 0 && c < palette.length))
+        return null
+      return { type: 'gm:configure', gridW, gridH, palette, targetGrid, drawSeconds }
+    }
+
+    case 'draw:submit':
+      return isCells(m.grid, GRID_MAX_CELLS) ? { type: 'draw:submit', grid: m.grid } : null
+
+    case 'vote:cast':
+      return isStr(m.submissionId) && VOTE_CATEGORIES.some(c => c.id === m.category)
+        ? { type: 'vote:cast', category: m.category as VoteCategory, submissionId: m.submissionId }
+        : null
+
+    case 'gm:transfer':
+      return isStr(m.toClientId) ? { type: 'gm:transfer', toClientId: m.toClientId } : null
+
+    // Bodiless: the type is the whole payload, so there is nothing left to check.
+    case 'gm:start':
+    case 'draw:done':
+    case 'gm:stopVoting':
+    case 'gm:extendTime':
+    case 'gm:playAgain':
+    case 'gm:cancelRound':
+    case 'gm:endSession':
+      return { type: m.type }
+
+    default:
+      return null
+  }
+}
+
 // ── Server → Client ──────────────────────────────────────────────────────────
 
 export interface Player {

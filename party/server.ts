@@ -11,7 +11,7 @@ import type {
   VoteCategory,
 } from '../src/lib/types'
 import { routePartykitRequest, Server } from 'partyserver'
-import { normaliseShape, VOTE_CATEGORIES } from '../src/lib/types'
+import { normaliseShape, parseClientMsg, VOTE_CATEGORIES } from '../src/lib/types'
 import { adjectives, wordPair } from '../src/lib/words'
 
 // Bindings available on `this.env`. `PIXMALER_DEV=1` (local only, via .dev.vars)
@@ -203,11 +203,15 @@ export class PixmalerServer extends Server<Env> {
 
   // ── Message handler ────────────────────────────────────────────────────────
   onMessage(sender: Connection, raw: string) {
-    let msg: ClientMsg
-    try { msg = JSON.parse(raw) as ClientMsg }
-    catch { return }
+    // Structural validation up front, so no handler can be reached by a payload
+    // of the wrong shape. This used to be `JSON.parse(raw) as ClientMsg`, which
+    // checked nothing at runtime — see `parseClientMsg` for what that cost.
+    const msg = parseClientMsg(raw)
+    if (msg === null)
+      return
 
     // Any message counts as activity — pushes back the idle-wipe deadline.
+    // Deliberately after validation: a malformed frame must not keep a room alive.
     this.lastActivityAt = Date.now()
 
     switch (msg.type) {
@@ -509,6 +513,20 @@ export class PixmalerServer extends Server<Env> {
     // reach `submissions` — otherwise they'd appear in the gallery and be votable.
     if (!player || player.spectating || this.state.phase !== 'DRAWING')
       return
+
+    // Contextual half of the payload check. `parseClientMsg` proved this is an
+    // integer array inside the hard cap, but only the room knows the round's
+    // dimensions and palette — and this grid is broadcast verbatim to everyone in
+    // the `gallery` message, so a wrong length or an out-of-range index would
+    // reach every other player's renderer.
+    const cfg = this.state.config
+    if (!cfg || msg.grid.length !== cfg.gridW * cfg.gridH)
+      return
+    // -1 is "unpainted", which is why this floor is -1 and not 0 — unlike
+    // `targetGrid`, a player's grid legitimately has holes.
+    if (msg.grid.some(cell => cell < -1 || cell >= cfg.palette.length))
+      return
+
     // submissionId === clientId — the vote self-check in handleVote relies on this.
     // Note: we do NOT set `doneDrawing` here. Submission is automatic and
     // high-frequency now (debounced on every stroke); `doneDrawing` is a
@@ -646,18 +664,29 @@ export class PixmalerServer extends Server<Env> {
   private endDrawing() {
     if (this.state.phase !== 'DRAWING')
       return
+    const cfg = this.state.config!
+
+    // Build the gallery once, and **before touching state** — drop blank
+    // submissions (a player who never drew leaves an all-`-1` grid — nothing to
+    // vote on). Order is left as-is; anonymising the display order is done
+    // per-client in Voting.vue. Frozen for the round so rejoins and results read
+    // a consistent set.
+    //
+    // The ordering is deliberate and load-bearing. This used to run *after*
+    // `phase` moved to VOTING, so anything thrown here left the room mid-mutation:
+    // VOTING, holding DRAWING's now-past deadline, with `gallery` unassigned and
+    // nothing broadcast. The DO alarm retry then matched the VOTING-expiry branch
+    // instead of the DRAWING one and resolved the round off an empty gallery,
+    // silently discarding every submission. Computing first means a throw leaves
+    // the round untouched and the retry re-enters the same branch.
+    const gallery = [...this.state.submissions.entries()]
+      .filter(([, grid]) => grid.some(cell => cell !== -1))
+      .map(([clientId, grid]): Submission => ({ submissionId: clientId, grid }))
+
     // Set early so `endVoting`'s own phase guard passes on the nobody-drew path
     // below. Nothing is broadcast until we know which way this round resolves.
     this.state.phase = 'VOTING'
-    const cfg = this.state.config!
-
-    // Build the gallery once: drop blank submissions (a player who never drew
-    // leaves an all-`-1` grid — nothing to vote on). Order is left as-is;
-    // anonymising the display order is done per-client in Voting.vue. Frozen
-    // for the round so rejoins and results read a consistent set.
-    this.state.gallery = [...this.state.submissions.entries()]
-      .filter(([, grid]) => grid.some(cell => cell !== -1))
-      .map(([clientId, grid]): Submission => ({ submissionId: clientId, grid }))
+    this.state.gallery = gallery
 
     // Nobody drew anything. VOTING would be a phase in which no one can act: no
     // cards to vote on, so `votedCount` can never rise, `allVoted` can never fire,
