@@ -5,7 +5,7 @@
 
 import type { AvatarShape, ClientMsg, ServerMsg } from './lib/types'
 import PartySocket from 'partysocket'
-import { onMounted, provide, ref, shallowRef } from 'vue'
+import { computed, onMounted, provide, ref, shallowRef } from 'vue'
 import AlertDialog from './components/AlertDialog.vue'
 import Logo from './components/Logo.vue'
 import { askAlert, currentDialog, settleDialog } from './lib/dialog'
@@ -109,13 +109,23 @@ const showNameGate = ref(false)
 const nameInput = ref('')
 const randomName = wordPair()
 
+// One identity for the whole module: `provide`, the `join` payload, and the
+// spectator lookup below all read the same value rather than re-deriving it.
+const myClientId = getOrCreateClientId()
+
+// Joined mid-round, so this client sits the round out — no canvas, no vote, and
+// excluded from both progress denominators server-side. Derived from `state`
+// rather than tracked separately, so there is no extra reset to forget.
+const spectating = computed(() =>
+  state.value?.players.find(p => p.clientId === myClientId)?.spectating ?? false,
+)
+
 if (route === 'room' && roomCode) {
-  provide(clientIdKey, getOrCreateClientId())
+  provide(clientIdKey, myClientId)
   provide(socketKey, socketRef)
 
   const existing = storedName()
   if (existing) {
-    // Returning player / refresh — skip the gate, reconnect seamlessly.
     connect(existing)
   }
   else {
@@ -131,7 +141,7 @@ function submitName() {
 }
 
 function connect(name: string) {
-  const clientId = getOrCreateClientId()
+  const clientId = myClientId
 
   // `party` matches the kebab-cased Durable Object binding name
   // (PixmalerServer → "pixmaler-server"); routePartykitRequest routes on it.
@@ -299,7 +309,12 @@ if (route === 'room' && roomCode) {
       </div>
 
       <Lobby v-if="state.phase === 'LOBBY'" :state="state" />
-      <Drawing v-else-if="state.phase === 'DRAWING' && state.config" :state="state" :initial-grid="drawState?.grid ?? null" />
+      <Drawing
+        v-else-if="state.phase === 'DRAWING' && state.config"
+        :state="state"
+        :initial-grid="drawState?.grid ?? null"
+        :spectating="spectating"
+      />
       <Voting
         v-else-if="state.phase === 'VOTING'"
         :gallery="gallery"
@@ -308,6 +323,7 @@ if (route === 'room' && roomCode) {
         :total-voters="state.totalVoters"
         :vote-state="voteState"
         :deadline="state.deadline"
+        :spectating="spectating"
       />
       <Results
         v-else-if="state.phase === 'RESULTS'"
