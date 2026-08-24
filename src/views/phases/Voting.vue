@@ -26,6 +26,10 @@ const props = defineProps<{
   // normally unreachable, so it is surfaced only in the final stretch — a clock on
   // the whole phase would make voting feel raced, which it isn't meant to be.
   deadline: number | null
+  // Joined mid-round: they see the gallery but don't judge it. The server already
+  // refuses their `vote:cast` and leaves them out of the tally, so this only
+  // decides what they see.
+  spectating: boolean
 }>()
 
 // Resolve a `public/`-hosted asset path against Vite's `base` (e.g.
@@ -267,10 +271,13 @@ function castVote(category: VoteCategory, submissionId: string) {
     <div class="voting" :style="{ '--art-ratio': artRatio }">
       <header class="voting__head">
         <p class="voting__eyebrow">
-          vote for the funniest and the best
+          {{ spectating ? "you joined mid-round — watch this one" : "vote for the funniest and the best" }}
         </p>
         <p class="voting__hint">
-          <template v-if="allCast">
+          <template v-if="spectating">
+            you're in for the next round.
+          </template>
+          <template v-else-if="allCast">
             your votes are in. waiting for the rest.
           </template>
           <template v-else>
@@ -310,7 +317,7 @@ function castVote(category: VoteCategory, submissionId: string) {
             <span v-if="sub.submissionId === clientId" class="voting__tag">Yours</span>
           </div>
 
-          <div v-if="sub.submissionId !== clientId" class="voting__cats">
+          <div v-if="!spectating && sub.submissionId !== clientId" class="voting__cats">
             <button
               v-for="c in VOTE_CATEGORIES"
               :key="c.id"
