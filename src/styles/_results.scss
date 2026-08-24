@@ -130,6 +130,40 @@
     color: $muted;
     font-size: 0.75rem;
   }
+  // Stands in for the score on a wiped canvas. Italic rather than a new colour —
+  // it is a different *kind* of statement, not a different severity, and every
+  // accent in this system already carries a meaning.
+  &__item-wiped {
+    margin: 0.125rem 0 0;
+    color: $muted;
+    font-size: 0.75rem;
+    font-style: italic;
+  }
+
+  // Roll call of players who never drew. Deliberately unlike `__gallery` — no frames,
+  // no grid, no score — because none of these entries is rankable and anything
+  // card-shaped would imply they were.
+  &__nodraw {
+    margin: $gap-5 0 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-2;
+    text-align: center;
+  }
+
+  &__nodraw-item {
+    color: $muted;
+    font-size: 0.875rem;
+    // The chip is inline with the sentence, so it needs to sit on the text baseline
+    // rather than the line box.
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $gap-2;
+    flex-wrap: wrap;
+  }
 
   &__hint {
     color: $fg-35;

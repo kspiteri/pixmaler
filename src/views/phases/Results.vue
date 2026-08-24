@@ -4,7 +4,7 @@
 // ordered by overall points. Each drawing appears exactly once. The GM gets a
 // "Play again" button that returns the room to LOBBY.
 
-import type { ClientMsg, Player, ServerMsg } from '../../lib/types'
+import type { ClientMsg, Player, RankedResult, ServerMsg } from '../../lib/types'
 import { computed, inject, nextTick, onBeforeUnmount, watch } from 'vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import PlayerTag from '../../components/PlayerTag.vue'
@@ -68,6 +68,28 @@ function withSeats(entries: Entry[]) {
   })
 }
 
+// Players who were competing and never put a mark down. They are absent from `ranked`
+// entirely — `endDrawing` filters the gallery on `drewThisRound` — so they are derived
+// from the roster here instead, which needs **no protocol change**: `drewThisRound`
+// already rides on `Player`, and it survives until the next round starts, so it still
+// tells the truth by the time RESULTS renders.
+//
+// Deriving rather than appending to `ranked` is the point. `nobodyDrew` above infers
+// "nobody drew" from `ranked` being empty, so putting non-drawers in there would make
+// it permanently false and silently break the zero-submission reveal.
+//
+// Spectators are excluded: they joined after the round started, so they were never
+// asked to draw. Disconnected players are *not* excluded — they were in the room and
+// they did not draw, which is exactly what this says.
+const neverDrew = computed(() =>
+  props.players
+    .filter(p => !p.spectating && !p.drewThisRound)
+    .map((p) => {
+      const found = seats.value.get(p.clientId)
+      return { player: p, seat: found ? seatFor(found.seat, found.player) : null }
+    }),
+)
+
 // Nobody drew at all. The server skips VOTING in this case (see endDrawing), so this
 // arrives straight from DRAWING with an empty ranked field.
 const nobodyDrew = computed(() => ranked.value.length === 0)
@@ -91,6 +113,11 @@ const winners = computed(() => {
 // Empty `winners` makes this `slice(0)` — the whole ranked field — which is exactly
 // what the no-winner case wants: nobody crowned, everybody in the gallery.
 const rest = computed(() => withSeats(ranked.value.slice(winners.value.length)))
+
+// A player who drew and then cleared.
+function isWiped(entry: RankedResult): boolean {
+  return entry.grid.every(cell => cell === -1)
+}
 
 // Per-category breakdown for the hero, e.g. `[{ count: 5, icon: laugh.svg, … }, …]`.
 // Falls back to 0 for any missing category so a stale/old-shape results payload
@@ -307,11 +334,26 @@ async function endSession() {
                 truncate
               />
             </p>
-            <p class="results__item-votes">
+            <p v-if="isWiped(entry)" class="results__item-wiped">
+              wiped their canvas
+            </p>
+            <p v-else class="results__item-votes">
               {{ entry.votes }} pt{{ entry.votes === 1 ? "" : "s" }}
             </p>
           </div>
         </div>
+
+        <!-- Players who never drew get shown here -->
+        <ul v-if="neverDrew.length" class="results__nodraw">
+          <li
+            v-for="{ player, seat } in neverDrew"
+            :key="player.clientId"
+            class="results__nodraw-item"
+          >
+            <PlayerTag v-if="seat" :seat="seat" :name="player.name" />
+            seems to have lost their paint brush
+          </li>
+        </ul>
       </template>
     </div>
 

@@ -13,6 +13,7 @@
 //     this button doesn't gate it.
 
 import type { ClientMsg, ServerMsg } from '../../lib/types'
+import { TriangleAlert } from '@lucide/vue'
 import {
   computed,
   inject,
@@ -22,6 +23,7 @@ import {
   useTemplateRef,
   watch,
 } from 'vue'
+import AlertToast from '../../components/AlertToast.vue'
 import CanvasPair from '../../components/CanvasPair.vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import { orientationFor } from '../../lib/aspect'
@@ -204,8 +206,26 @@ function sendSubmit(grid: number[]) {
   socket.send(JSON.stringify({ type: 'draw:submit', grid } satisfies ClientMsg))
 }
 
+// Whether the canvas currently has nothing on it. Drives the late warning below.
+// Seeded true because a fresh round starts empty; a restored grid corrects it on
+// mount, and every stroke corrects it from here.
+const canvasBlank = ref(true)
+
+// Shown only in the closing stretch, and only over an empty canvas. A blank canvas
+// is normal for most of the round, so warning early would be noise — and by
+// definition there is nothing underneath to obscure. 20 s is the existing
+// `--timer-danger` threshold rather than a new number.
+const BLANK_WARN_AT = 20
+const warnBlank = computed(() =>
+  !props.spectating
+  && canvasBlank.value
+  && secondsLeft.value !== null
+  && secondsLeft.value <= BLANK_WARN_AT,
+)
+
 function onCanvasUpdate(grid: number[]) {
   latestGrid = grid
+  canvasBlank.value = grid.every(cell => cell === -1)
   if (resubmitTimer)
     clearTimeout(resubmitTimer)
   resubmitTimer = setTimeout(() => {
@@ -369,6 +389,12 @@ onBeforeUnmount(() => {
         @update="onCanvasUpdate"
         @done="flagDone"
       />
+      <AlertToast v-if="warnBlank" class="drawing__blank-warn">
+        <template #icon>
+          <TriangleAlert class="toast__icon" :size="16" aria-hidden="true" />
+        </template>
+        hello? your canvas is empty!
+      </AlertToast>
     </div>
   </PhaseLayout>
 </template>

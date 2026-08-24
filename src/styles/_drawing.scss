@@ -21,6 +21,21 @@
     font-size: 0.875rem;
   }
 
+  // Placement only — the look is `.toast` in the alert register. Overlaid rather
+  // than in flow because `.phase--fixed` has a hard height budget and the canvas
+  // takes what is left, so an element in the column would shrink the drawing area
+  // for a message that is usually absent.
+  //
+  // Pinned to the **top**, not the bottom. It was at the bottom first and read as an
+  // afterthought down by the browser chrome; the top is where the eye already goes
+  // for the clock, and on mobile the palette docks at the bottom so the top is the
+  // free edge.
+  &__blank-warn {
+    position: absolute;
+    inset-inline: $gap-4;
+    top: $gap-3;
+    z-index: 1;
+  }
   // `.btn--ghost`, not primary: adding time is a correction, not the round's main action.
   // Shared, not duplicated: both sit in `.phase__status` and must match the bar's
   // scale rather than `.btn`'s default size.
@@ -62,6 +77,9 @@
   // The canvas pair fills the shell and the editable canvas (`PixelCanvas.fitTo`) grows
   // to the largest aspect-preserving box that fits, so the page never scrolls.
   &__body {
+    // Positioning context for `__blank-warn`, which is overlaid so it costs the
+    // canvas no height.
+    position: relative;
     height: 100%;
     max-width: $page-max;
     margin: 0 auto;

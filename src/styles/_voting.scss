@@ -30,6 +30,13 @@
     font-size: 0.875rem;
     text-wrap: balance;
   }
+  // Only rendered when somebody wiped their canvas. Quieter than `__hint` — this is
+  // reconciling two counts, not instructing, so it must not compete with the eyebrow.
+  &__wiped {
+    margin: $gap-1 0 0;
+    color: $fg-35;
+    font-size: $fs-2xs;
+  }
   &__hint-cat {
     display: inline-flex;
     vertical-align: middle;

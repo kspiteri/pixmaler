@@ -203,8 +203,21 @@ function setSlot(submissionId: string, el: unknown) {
   else slotMap.delete(submissionId)
 }
 
+// A wiped canvas is in the gallery so the reveal can acknowledge its author, but it
+// is not a candidate — there is nothing on it to judge, and the server refuses a
+// vote for one. Filtered out here rather than server-side so RESULTS still receives
+// it: this is the only screen where an unvotable card would be dead weight.
+function isBlank(sub: Submission): boolean {
+  return sub.grid.every(cell => cell === -1)
+}
+
+// How many drew and then wiped it. Stated in the header so the count people voted
+// on matches the count they see on the reveal — otherwise an extra entry appears
+// from nowhere and reads as "was there a card I couldn't see?".
+const wipedCount = computed(() => (props.gallery?.submissions ?? []).filter(isBlank).length)
+
 watch(() => props.gallery, async () => {
-  const subs = props.gallery?.submissions ?? []
+  const subs = (props.gallery?.submissions ?? []).filter(s => !isBlank(s))
   // Reshuffle only on a genuinely new submission set (new round); a rejoin
   // re-send of the same set keeps the existing order so cards don't jump.
   if (!sameSet(ordered.value, subs)) {
@@ -289,6 +302,13 @@ function castVote(category: VoteCategory, submissionId: string) {
               :class="{ 'voting__hint-cat--done': myVotes[c.id] }"
             ><img :src="iconUrl(c.icon)" :alt="c.label" class="voting__hint-icon"></span>
           </template>
+        </p>
+        <!-- Only when somebody wiped. Keeps the count people vote on equal to the
+             count on the reveal, so a blank entry there doesn't read as a card they
+             were never shown. Anonymous by design — the gallery is, and naming the
+             worst performer before a single vote is cast would be a partial leak. -->
+        <p v-if="wipedCount" class="voting__wiped">
+          {{ ordered.length }} to judge — {{ wipedCount === 1 ? 'one player wiped theirs' : `${wipedCount} players wiped theirs` }}
         </p>
       </header>
 
