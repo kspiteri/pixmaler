@@ -1,0 +1,73 @@
+name: Bug report
+description: Something went wrong while playing. Anyone is welcome to file one.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. The fields below exist because bugs in a live party game are
+        often not what they look like — the same symptom ("my drawing was blank") has had
+        three completely different causes. The context is what tells them apart.
+
+        Don't worry if you can't fill everything in. What happened, and on which screen,
+        is enough.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      placeholder: My drawing showed up blank in the results, even though I'd painted it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect instead?
+      placeholder: I expected to see my drawing in the gallery.
+
+  - type: dropdown
+    id: screen
+    attributes:
+      label: Which screen were you on?
+      options:
+        - Joining / entering my name
+        - Lobby (waiting to start)
+        - Drawing
+        - Voting
+        - Results
+        - Paint sandbox (/paint)
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: room
+    attributes:
+      label: Room code
+      description: The word pair, like `feral-crayon`. Helps line the report up with server logs.
+      placeholder: feral-crayon
+
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      description: Phone or laptop, and which browser. Phone bugs are the ones we can least easily reproduce.
+      placeholder: iPhone 14, Safari
+    validations:
+      required: true
+
+  - type: input
+    id: players
+    attributes:
+      label: How many people were in the room?
+      description: Several bugs only appear at particular player counts, or when someone leaves mid-round.
+      placeholder: '5'
+
+  - type: checkboxes
+    id: repeat
+    attributes:
+      label: Did it happen more than once?
+      options:
+        - label: It happened again when we played another round
+        - label: Someone else in the room saw it too
