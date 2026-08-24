@@ -1,8 +1,11 @@
 @use 'tokens' as *;
 
-// The alert register: `.conn-banner` (self-clearing status) and `.alert-dialog`
-// (answered by the user). They can't share markup — a native <dialog> lives in the
-// browser's top layer, a banner is pinned to the page — so they share this file.
+// The alert register: `.conn-banner` (self-clearing status), `.toast` (self-clearing
+// warning, scoped to one phase) and `.alert-dialog` (answered by the user). They
+// can't share markup — a native <dialog> lives in the browser's top layer, a banner
+// is pinned to the page, a toast is placed by whatever hosts it — so they share this
+// file instead. What they *do* share is the alert voice: `$font-alert`,
+// `$fw-semibold`, `$ls-alert`.
 
 // ── LIVE STATUS ─────────────────────────────────────────────────────────────
 
@@ -20,6 +23,67 @@
   letter-spacing: $ls-alert;
   color: $accent-fg;
   background: $accent;
+}
+
+// ── TOAST ───────────────────────────────────────────────────────────────────
+
+// Self-clearing like `.conn-banner`, but scoped to a single phase, carrying a warning
+// rather than connection state, and **dismissable** — the banner is not, because it
+// reports something the user cannot change. Rendered by `AlertToast.vue`.
+//
+// Owns only its *look*. The host positions it, because the host is what knows its own
+// layout budget (`.phase--fixed` has none to spare).
+//
+// Border rather than a filled background: `$warn-ink` filled would compete with the
+// timer, which is already showing the danger ink at the moment this appears.
+.toast {
+  display: flex;
+  align-items: center;
+  gap: $gap-2;
+  margin: 0;
+  padding: $gap-2 $gap-3;
+  border: 1px solid $warn-ink;
+  border-radius: $radius-lg;
+  background: $surface;
+  box-shadow: $shadow-2;
+  color: $fg;
+  font-family: $font-alert;
+  font-weight: $fw-semibold;
+  font-size: $fs-sm;
+  letter-spacing: $ls-alert;
+  // The whole surface dismisses, so it must take pointer events. Over a canvas that
+  // means it can swallow the start of a stroke — one tap, which also clears the
+  // obstruction. An ✕-only hit area avoided that but made dismissal fiddly on a phone.
+  cursor: pointer;
+
+  &__icon {
+    flex: none;
+    color: $warn-ink;
+  }
+
+  // Takes the free space so the ✕ is pushed to the trailing edge and the text stays
+  // optically centred between the two icons.
+  &__msg {
+    flex: 1;
+    text-align: center;
+    text-wrap: balance;
+  }
+
+  &__dismiss {
+    flex: none;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: $muted;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      color: $fg;
+    }
+  }
 }
 
 // ── MODAL ───────────────────────────────────────────────────────────────────
