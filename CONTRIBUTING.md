@@ -111,8 +111,33 @@ pnpm wr:deploy  # realtime server → Cloudflare Workers
 
 GitHub Pages is static-only and can't host the server. Set `VITE_PARTYKIT_HOST` at build time to the production host (`pixmaler.cold-hill-30d3.workers.dev`) so the deployed frontend talks to the deployed server — the value is inlined at build time, not read at runtime.
 
+### Cutting a release
+
+Three things carry the version and they drift silently if you only bump one — `package.json` sat at `0.1.0` while the tags were at `0.3.3`, which made the version-numbered milestones fiction for a while.
+
+```bash
+# 1. bump the manifest to the version you are about to cut
+#    (edit package.json "version")
+# 2. deploy both targets, since Pages and the Worker deploy separately
+pnpm build && pnpm wr:deploy
+# 3. tag it — the tag is what https://github.com/kspiteri/pixmaler/tags shows
+git tag 0.3.4 && git push origin 0.3.4
+```
+
+Then **close the matching milestone** on GitHub. Milestones are version numbers (`0.3.4`, `0.4.0`, …), ordered by severity — the more severe the work, the earlier the release it lands in. An issue with no milestone is deliberately not scheduled; the parked long-term work stays in `docs/.plans/` rather than sitting on the board looking actionable.
+
+Bump the **patch** for fixes inside the current line, the **minor** for a themed release with its own milestone. The roadmap as of `0.3.3`: `0.3.4` session and server robustness · `0.3.5` image pipeline correctness · `0.4.0` server refactor · `0.5.0` accessibility · `0.6.0` the reveal · `0.7.0` audio and polish · `1.0.0` personality pass.
+
 ## Plans
 
 Working plans live in the gitignored [`docs/.plans/`](./docs/.plans/README.md). Three are standing: **01** is the general plan (architecture, state machine, pipeline, protocol, locked-in decisions), **13** is the only backlog for behaviour/data/server work, and **14** is the only backlog for anything visual. File new work accordingly — behaviour to `13`, pixels and copy to `14`, a game-rule change to `01`.
 
 **15** is a transient register, not a fourth backlog: it holds the findings from a design critique and routes each into its owning plan. It archives once emptied. Item numbers are shared across all of them and never reused, so check `.plans/README.md` for the next free one before filing.
+
+**[GitHub Issues](https://github.com/kspiteri/pixmaler/issues) own status; the plans own reasoning.** Adopted 2026-08-24. An issue says whether something is open, being worked on, or done. The plan says *why* — the measurements, the rejected alternatives, and the predictions that turned out wrong. An issue body is a summary plus a pointer into the plan; nothing in an issue should be the only copy of a decision.
+
+Component is a label (`area:drawing`, `area:server`, `area:pipeline`, `area:a11y`, …) rather than a container, so an item spanning two areas carries both and still closes as one unit. Priority is a milestone (`1.0`, `post-1.0`, `deferred`). Issue titles carry the plan id in brackets — `[56] Clearing the canvas…` — because archived plans cite plan ids and those citations have to keep resolving.
+
+Shipped items live in each plan's `NN-name.done.md` sibling, split out when closed work had grown to 52 % of the plans' prose. Items not yet migrated to Issues use positional status: in `NN-name.md` means open, in `NN-name.done.md` means shipped.
+
+**Anyone can report a bug** through the form in [`.github/ISSUE_TEMPLATE/`](./.github/ISSUE_TEMPLATE/) — no need to know the codebase. It asks for room code, phase, device and player count, because the 2026-08-23 playtest showed two of six reports were not what they first looked like, purely for want of that context.
