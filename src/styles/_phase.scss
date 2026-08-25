@@ -1,6 +1,7 @@
 @use 'tokens' as *;
 
-// Shared in-room phase shell — top progress bar + status bar + body.
+// Shared in-room phase shell — top progress bar + status bar + body — plus the
+// fallback that replaces a phase view when one throws.
 
 .phase {
   min-height: 100vh;
@@ -49,5 +50,23 @@
   &__body {
     flex: 1;
     min-height: 0;
+  }
+}
+
+// Fallback rendered by `PhaseBoundary.vue`. Borrows the session-closed screen's shape
+// deliberately: both replace an entire view with a short message and one action, so
+// they should read as the same kind of screen. The copy carries the whole difference -
+// that one says the room is gone, this one says the round is still running. Buttons
+// stretch, as they do there, rather than being hand-aligned here.
+.phase-error {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-3;
+
+  &__note {
+    margin: 0 0 $gap-4;
+    color: $muted;
+    font-family: $font-body;
+    line-height: $lh-normal;
   }
 }

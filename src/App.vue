@@ -8,6 +8,7 @@ import PartySocket from 'partysocket'
 import { computed, onMounted, provide, ref, shallowRef } from 'vue'
 import AlertDialog from './components/AlertDialog.vue'
 import Logo from './components/Logo.vue'
+import PhaseBoundary from './components/PhaseBoundary.vue'
 import { askAlert, currentDialog, settleDialog } from './lib/dialog'
 import { clientIdKey, socketKey } from './lib/keys'
 import { normaliseShape } from './lib/types'
@@ -308,30 +309,38 @@ if (route === 'room' && roomCode) {
         Reconnecting…
       </div>
 
-      <Lobby v-if="state.phase === 'LOBBY'" :state="state" />
-      <Drawing
-        v-else-if="state.phase === 'DRAWING' && state.config"
-        :state="state"
-        :initial-grid="drawState?.grid ?? null"
-        :spectating="spectating"
-      />
-      <Voting
-        v-else-if="state.phase === 'VOTING'"
-        :gallery="gallery"
-        :gm-client-id="state.gmClientId"
-        :voted-count="state.votedCount"
-        :total-voters="state.totalVoters"
-        :vote-state="voteState"
-        :deadline="state.deadline"
-        :spectating="spectating"
-      />
-      <Results
-        v-else-if="state.phase === 'RESULTS'"
-        :results="results"
-        :gm-client-id="state.gmClientId"
-        :players="state.players"
-        :target-grid="state.config?.targetGrid ?? null"
-      />
+      <!-- Keyed by phase so the boundary remounts when the server moves the room on,
+           which clears a captured error. Without that reset a crash in DRAWING would
+           still be showing its fallback through VOTING and RESULTS - the same
+           forgotten-reset shape as the per-round flags on the server. The banner above
+           sits outside it deliberately: connection state is exactly what a player
+           wants to see while a view is broken. -->
+      <PhaseBoundary :key="state.phase">
+        <Lobby v-if="state.phase === 'LOBBY'" :state="state" />
+        <Drawing
+          v-else-if="state.phase === 'DRAWING' && state.config"
+          :state="state"
+          :initial-grid="drawState?.grid ?? null"
+          :spectating="spectating"
+        />
+        <Voting
+          v-else-if="state.phase === 'VOTING'"
+          :gallery="gallery"
+          :gm-client-id="state.gmClientId"
+          :voted-count="state.votedCount"
+          :total-voters="state.totalVoters"
+          :vote-state="voteState"
+          :deadline="state.deadline"
+          :spectating="spectating"
+        />
+        <Results
+          v-else-if="state.phase === 'RESULTS'"
+          :results="results"
+          :gm-client-id="state.gmClientId"
+          :players="state.players"
+          :target-grid="state.config?.targetGrid ?? null"
+        />
+      </PhaseBoundary>
     </template>
 
     <!-- The app's only dialog instance (lib/dialog.ts). Outside the phase chain
