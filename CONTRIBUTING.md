@@ -154,13 +154,13 @@ No secrets. That is the point.
 ### Cutting a release
 
 1. Review the open **Release PR**. release-please has already written the version into `package.json` and the entry into `CHANGELOG.md`, derived from the conventional-commit types since the last release.
-2. **`pnpm wr:deploy`** — server first.
+2. **`pnpm wr:deploy` — but only if the server actually changed.** Check with `git diff <last-tag>..HEAD -- party/ src/lib/types.ts`. A Worker deploy **ends every game in progress**, so this is not a ritual: skip it when that diff is empty. When it is not empty, deploy *before* merging — the frontend inlines `VITE_PARTYKIT_HOST` at build time, and a newer server tolerates older clients while the reverse does not.
 3. **Merge the Release PR.** That tags it, publishes the GitHub release, and deploys Pages.
-4. **Close the matching milestone.**
+4. **Close the milestone the release completes** — if it completes one.
 
-Milestones are version numbers (`0.3.4`, `0.4.0`, …) ordered by severity — the more severe the work, the earlier the release it lands in. An issue with no milestone is deliberately not scheduled; parked long-term work stays in `docs/.plans/` rather than sitting on the board looking actionable.
+Milestones name **themes, not versions**: `Image pipeline`, `Server refactor`, `Accessibility`, `Results Polish`, `Audio and more polish`, `Onboarding`, `1.0.0`. They are ordered by severity — the more severe the work, the earlier the release it lands in — but the version is never chosen, because release-please derives it from the commit types. So a milestone may span several releases, and a release may close none. An issue with no milestone is deliberately not scheduled; parked long-term work stays in `docs/.plans/` rather than sitting on the board looking actionable.
 
-Version numbers come from the commits, so the roadmap is a plan rather than a promise: `0.3.5` image pipeline correctness · `0.4.0` server refactor · `0.5.0` accessibility · `0.6.0` the reveal · `0.7.0` audio and polish · `0.8.0` onboarding · `1.0.0` personality pass. **Pre-1.0 a `feat` bumps the minor and a `!` never forces 1.0** (`bump-minor-pre-major`), so reaching 1.0 stays a deliberate act.
+**Pre-1.0 a `feat` bumps the minor and a `!` never forces 1.0** (`bump-minor-pre-major`), so reaching 1.0 stays a deliberate act.
 
 ## Plans
 
@@ -170,7 +170,7 @@ Working plans live in the gitignored [`docs/.plans/`](./docs/.plans/README.md). 
 
 **[GitHub Issues](https://github.com/kspiteri/pixmaler/issues) own status; the plans own reasoning.** Adopted 2026-08-24. An issue says whether something is open, being worked on, or done. The plan says *why* — the measurements, the rejected alternatives, and the predictions that turned out wrong. An issue body is a summary plus a pointer into the plan; nothing in an issue should be the only copy of a decision.
 
-Component is a label (`area:drawing`, `area:server`, `area:pipeline`, `area:a11y`, …) rather than a container, so an item spanning two areas carries both and still closes as one unit. Priority is a milestone (`1.0`, `post-1.0`, `deferred`). Issue titles carry the plan id in brackets — `[56] Clearing the canvas…` — because archived plans cite plan ids and those citations have to keep resolving.
+Component is a label (`area:drawing`, `area:server`, `area:pipeline`, `area:a11y`, …) rather than a container, so an item spanning two areas carries both and still closes as one unit. Priority is **which milestone it sits in**, and those are ordered by severity rather than by date; no milestone at all means unscheduled. Issue titles carry the plan id in brackets — `[56] Clearing the canvas…` — because archived plans cite plan ids and those citations have to keep resolving.
 
 Shipped items live in each plan's `NN-name.done.md` sibling, split out when closed work had grown to 52 % of the plans' prose. Items not yet migrated to Issues use positional status: in `NN-name.md` means open, in `NN-name.done.md` means shipped.
 

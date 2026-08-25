@@ -100,16 +100,18 @@ jobs:
           {
             echo "### Pages is live at \`${{ needs.release.outputs.tag }}\`"
             echo
-            echo "The **Worker is not deployed by CI**. If you have not already run it:"
+            echo "The **Worker is not deployed by CI** — and it only needs deploying when"
+            echo "the server changed, i.e. \`party/\` or \`src/lib/types.ts\`. A Worker deploy"
+            echo "**ends every game in progress**, so skip it when nothing there moved:"
             echo
             echo '```bash'
             echo "pnpm wr:deploy"
             echo '```'
             echo
-            echo "Ideally that happens *before* merging the Release PR — the frontend"
-            echo "inlines \`VITE_PARTYKIT_HOST\` at build time, so Pages is now serving"
-            echo "clients against whichever server is currently live. A newer server"
-            echo "tolerates older clients; the reverse does not."
+            echo "When it *is* needed, it belongs *before* merging the Release PR — the"
+            echo "frontend inlines \`VITE_PARTYKIT_HOST\` at build time, so Pages is now"
+            echo "serving clients against whichever server is currently live. A newer"
+            echo "server tolerates older clients; the reverse does not."
             echo
-            echo "Then close the **${{ needs.release.outputs.tag }}** milestone."
+            echo "Then close the milestone this release completes, if it completes one."
           } >> "$GITHUB_STEP_SUMMARY"
