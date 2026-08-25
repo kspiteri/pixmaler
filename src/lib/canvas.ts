@@ -21,6 +21,22 @@ export interface CanvasOptions {
 
 const CELL_SIZE = 14 // px per grid cell at 1× scale — scales up on large screens
 
+// Checkerboard for unpainted cells on an **editable** canvas only.
+//
+// `$paper` is `#ffffff` and the palette is median-cut from the GM's photo, so it
+// almost always contains a white. Leaving unpainted cells transparent therefore made
+// white paint pixel-identical to nothing at all: a player could not see their own
+// strokes, and the finished drawing read as blank to the whole room.
+//
+// Only on editable canvases. On gallery and results cards an unpainted region is part
+// of the composition, and a checkerboard there would be noise — the fix belongs where
+// the mistake is made, not where it is displayed.
+//
+// Deliberately close together: enough to separate "nothing" from white, far too little
+// to compete with a drawing.
+const EMPTY_LIGHT = '#ffffff'
+const EMPTY_DARK = '#f1f1f4'
+
 // Brush sizing (see `./aspect` — `brushMaxFor` / `defaultBrushFor`) scales with
 // grid resolution so the brush stays proportional to the image: small grids
 // still get a 1-cell brush, large ones get a usefully chunky one.
@@ -197,16 +213,33 @@ export class PixelCanvas {
 
   // ── Rendering ──────────────────────────────────────────────────────────────
 
+  // Paint an unpainted cell's ground. On an editable canvas that is a checkerboard so
+  // white paint is distinguishable from nothing (see EMPTY_LIGHT/EMPTY_DARK); on a
+  // read-only one it stays transparent so `$paper` shows through as before.
+  private paintEmptyCell(cx: number, cy: number) {
+    const x = cx * CELL_SIZE
+    const y = cy * CELL_SIZE
+    if (!this.opts.editable) {
+      this.ctx.clearRect(x, y, CELL_SIZE, CELL_SIZE)
+      return
+    }
+    this.ctx.fillStyle = (cx + cy) % 2 === 0 ? EMPTY_LIGHT : EMPTY_DARK
+    this.ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE)
+  }
+
   render() {
     const { gridW, gridH, palette } = this.opts
     const ctx = this.ctx
-    // Clear first so untouched (-1) cells leave the canvas's bg visible.
+    // Clear first: on a read-only canvas untouched (-1) cells leave the element's own
+    // background visible, which is what `paintEmptyCell` preserves.
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
     for (let y = 0; y < gridH; y++) {
       for (let x = 0; x < gridW; x++) {
         const idx = this.grid[y * gridW + x] ?? 0
-        if (idx < 0)
+        if (idx < 0) {
+          this.paintEmptyCell(x, y)
           continue
+        }
         ctx.fillStyle = palette[idx] ?? '#000'
         ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
       }
@@ -215,12 +248,11 @@ export class PixelCanvas {
 
   // Repaint a single cell to its underlying grid colour. Used by the hover-
   // restore path so we don't re-render the whole canvas on every mousemove.
-  // For untouched (-1) cells we clear instead of fill so the bg shows through.
   private repaintCell(cx: number, cy: number) {
     const { gridW, palette } = this.opts
     const idx = this.grid[cy * gridW + cx] ?? 0
     if (idx < 0) {
-      this.ctx.clearRect(cx * CELL_SIZE, cy * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+      this.paintEmptyCell(cx, cy)
       return
     }
     this.ctx.fillStyle = palette[idx] ?? '#000'
