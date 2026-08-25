@@ -1,0 +1,54 @@
+name: CI
+
+# Lint and typecheck on every push and PR. Nothing here deploys — releasing and
+# deploying both live in release.yml, driven by release-please.
+#
+# Lint is not optional cosmetics: @antfu/eslint-config also does the formatting in this
+# repo (CONTRIBUTING records "no separate Prettier"), so an absent lint step is an
+# absent formatting step. It also gates the commit-msg hook's script, which is what
+# keeps commit messages parseable — and release-please derives the version from those.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      # Explicit, though `pnpm build` would also catch it — a type error failing inside
+      # a step called "Build" reports the wrong thing.
+      - name: Typecheck
+        run: pnpm typecheck
+
+      # Catches a broken Vite/SCSS build that typecheck alone misses: neither lint nor
+      # vue-tsc compiles the stylesheets, so an undefined SCSS token passes both.
+      - name: Build
+        env:
+          VITE_PARTYKIT_HOST: ${{ vars.VITE_PARTYKIT_HOST }}
+        run: pnpm build

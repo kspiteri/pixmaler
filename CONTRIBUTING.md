@@ -100,33 +100,67 @@ party/          # PartyServer Durable Object (server.ts); config in wrangler.jso
 
 No test suite yet — manual verification against the dev servers is the bar. Describe what you tested. (Wiring a runner is [`13-technical.md`](./docs/.plans/13-technical.md) item 31, deliberately unscheduled.)
 
-## Deploy
+## Commit messages
 
-Two independent targets:
+**[Conventional Commits](https://www.conventionalcommits.org), enforced by a `commit-msg` hook.** Not a style preference: release-please derives the next version from commit types, so an unparseable message silently drops out of both the release notes and the version calculation.
 
-```bash
-pnpm build      # → dist/, GitHub Pages serves under /pixmaler/ (CI does this on push to main)
-pnpm wr:deploy  # realtime server → Cloudflare Workers
+```
+type(scope)?!?: subject
+
+fix(voting): show the confirmation while the cursor rests on the button
+feat(lobby): explain the GM's job to whoever holds the role
+refactor(server)!: split the room into modules
 ```
 
-GitHub Pages is static-only and can't host the server. Set `VITE_PARTYKIT_HOST` at build time to the production host (`pixmaler.cold-hill-30d3.workers.dev`) so the deployed frontend talks to the deployed server — the value is inlined at build time, not read at runtime.
+`feat` bumps the **minor**, `fix` and `perf` the **patch**, a `!` or a `BREAKING CHANGE:` body line the **major**. `refactor` · `build` · `ci` appear in the notes without bumping; `docs` · `test` · `chore` · `style` are hidden from them entirely.
+
+Scope is optional and mirrors the `area:*` labels on the tracker — `lobby`, `drawing`, `voting`, `results`, `server`, `pipeline`, `a11y`, `canvas` — so a note and an issue describe the same place. A new scope warns rather than fails; add it to [`scripts/commit-msg.mjs`](./scripts/commit-msg.mjs) so the next person sees it.
+
+The hook also refuses a capitalised subject, a trailing full stop, a subject over 72 characters, and a description too short to be a useful release-note line. When it refuses it prints the whole grammar, so you never have to look it up. `--no-verify` bypasses it, at the cost of that commit vanishing from the notes.
+
+There is no commitlint dependency: the grammar is small, and a bespoke check can print this repo's own scopes and say what each type does to the version, which is the part that stops the mistake recurring.
+
+## Deploy
+
+Two targets, deployed two different ways — deliberately.
+
+| | How | When |
+|---|---|---|
+| **Pages** (frontend) | automatic, by [`release.yml`](./.github/workflows/release.yml) | merging the Release PR |
+| **Worker** (realtime server) | `pnpm wr:deploy`, by hand | whenever you choose, ideally just **before** merging |
+
+[`ci.yml`](./.github/workflows/ci.yml) runs lint, typecheck and build on every push and PR, and deploys nothing.
+
+### Why the Worker is manual
+
+- **No Cloudflare credential leaves your laptop.** `wrangler` uses the OAuth token cached by `wrangler login`, so CI needs no API token — nothing to scope, rotate or leak. IP-filtering such a token to GitHub was considered and rejected: GitHub publishes ~7,280 CIDRs for Actions covering roughly 28 million addresses, they change without notice, and the allowlist contains every other GitHub user's runners, so a leaked token would still work from anybody else's workflow.
+- **A Worker deploy ends every game in progress.** `RoomState` is entirely in memory — `ctx.storage` holds alarms and nothing else, and full persistence is deliberately deferred — so redeploying drops every player mid-round. Choosing that moment by hand beats hoping a workflow picked a good one.
+- **One maintainer.** Remembering one command is cheaper than verifying a pipeline ran.
+
+### Order matters: server before frontend
+
+The frontend inlines `VITE_PARTYKIT_HOST` at **build** time, so the moment Pages publishes, new clients are talking to whatever server is currently live. Deploy the Worker **first** and an updated server briefly serves older clients, which it tolerates. The other way round — a new client against an old server — does not hold, and on a protocol change it breaks live rooms.
+
+`release.yml` prints the reminder on the Pages run summary, so it lands on the very deploy that changed what clients are running.
+
+Required repo config, under Settings → Secrets and variables → Actions:
+
+| | Name | Value |
+|---|---|---|
+| Variable | `VITE_PARTYKIT_HOST` | bare host, e.g. `pixmaler.cold-hill-30d3.workers.dev` — no protocol, no trailing slash |
+
+No secrets. That is the point.
 
 ### Cutting a release
 
-Three things carry the version and they drift silently if you only bump one — `package.json` sat at `0.1.0` while the tags were at `0.3.3`, which made the version-numbered milestones fiction for a while.
+1. Review the open **Release PR**. release-please has already written the version into `package.json` and the entry into `CHANGELOG.md`, derived from the conventional-commit types since the last release.
+2. **`pnpm wr:deploy`** — server first.
+3. **Merge the Release PR.** That tags it, publishes the GitHub release, and deploys Pages.
+4. **Close the matching milestone.**
 
-```bash
-# 1. bump the manifest to the version you are about to cut
-#    (edit package.json "version")
-# 2. deploy both targets, since Pages and the Worker deploy separately
-pnpm build && pnpm wr:deploy
-# 3. tag it — the tag is what https://github.com/kspiteri/pixmaler/tags shows
-git tag 0.3.4 && git push origin 0.3.4
-```
+Milestones are version numbers (`0.3.4`, `0.4.0`, …) ordered by severity — the more severe the work, the earlier the release it lands in. An issue with no milestone is deliberately not scheduled; parked long-term work stays in `docs/.plans/` rather than sitting on the board looking actionable.
 
-Then **close the matching milestone** on GitHub. Milestones are version numbers (`0.3.4`, `0.4.0`, …), ordered by severity — the more severe the work, the earlier the release it lands in. An issue with no milestone is deliberately not scheduled; the parked long-term work stays in `docs/.plans/` rather than sitting on the board looking actionable.
-
-Bump the **patch** for fixes inside the current line, the **minor** for a themed release with its own milestone. The roadmap as of `0.3.3`: `0.3.4` session and server robustness · `0.3.5` image pipeline correctness · `0.4.0` server refactor · `0.5.0` accessibility · `0.6.0` the reveal · `0.7.0` audio and polish · `1.0.0` personality pass.
+Version numbers come from the commits, so the roadmap is a plan rather than a promise: `0.3.5` image pipeline correctness · `0.4.0` server refactor · `0.5.0` accessibility · `0.6.0` the reveal · `0.7.0` audio and polish · `0.8.0` onboarding · `1.0.0` personality pass. **Pre-1.0 a `feat` bumps the minor and a `!` never forces 1.0** (`bump-minor-pre-major`), so reaching 1.0 stays a deliberate act.
 
 ## Plans
 

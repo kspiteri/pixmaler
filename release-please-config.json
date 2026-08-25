@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "node",
+      "package-name": "pixmaler",
+      "changelog-path": "CHANGELOG.md",
+      "include-component-in-tag": false,
+      "include-v-in-tag": false,
+      "draft": false,
+      "prerelease": false,
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": false,
+      "changelog-sections": [
+        { "type": "feat", "section": "New" },
+        { "type": "fix", "section": "Fixes" },
+        { "type": "perf", "section": "Fixes" },
+        { "type": "refactor", "section": "Under the hood" },
+        { "type": "build", "section": "Under the hood" },
+        { "type": "ci", "section": "Under the hood" },
+        { "type": "docs", "section": "Under the hood", "hidden": true },
+        { "type": "test", "section": "Under the hood", "hidden": true },
+        { "type": "chore", "section": "Under the hood", "hidden": true },
+        { "type": "style", "section": "Under the hood", "hidden": true }
+      ]
+    }
+  }
+}

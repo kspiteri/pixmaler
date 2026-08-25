@@ -1,0 +1,115 @@
+name: Release
+
+# release-please keeps a "Release PR" open that accumulates every conventional commit
+# landing on main, with the version in package.json and CHANGELOG.md already written.
+# **Merging that PR is the release**: the action tags it, publishes the GitHub release,
+# and then deploys Pages.
+#
+# The **Worker is deployed by hand**, with `pnpm wr:deploy`, and deliberately so:
+#
+#   - No Cloudflare credential ever leaves the laptop. `wrangler` locally uses the OAuth
+#     token from `wrangler login`, so CI needs no API token and there is no secret to
+#     scope, rotate or leak.
+#   - A Worker deploy **ends every game in progress** — RoomState is entirely in memory
+#     (`ctx.storage` holds alarms and nothing else). Choosing the moment by hand beats
+#     hoping a workflow picked a good one.
+#   - One maintainer. Remembering one command is cheaper than verifying a pipeline ran.
+#
+# **Deploy the Worker BEFORE merging the Release PR.** The frontend inlines
+# VITE_PARTYKIT_HOST at build time, so once Pages publishes, new clients are talking to
+# whatever server is live. Server first means an updated server briefly serving older
+# clients, which it tolerates; the reverse does not hold.
+#
+# Required repo config (Settings -> Secrets and variables -> Actions):
+#   Variable  VITE_PARTYKIT_HOST   bare host, e.g. pixmaler.cold-hill-30d3.workers.dev
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      released: ${{ steps.release.outputs.release_created }}
+      tag: ${{ steps.release.outputs.tag_name }}
+    steps:
+      # On a normal push this only opens or updates the Release PR. It sets
+      # `release_created` on the push that *merges* that PR, which is the release.
+      - id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  pages:
+    needs: release
+    if: needs.release.outputs.released == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # The tag, not main: main has already moved on by the time this runs.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.tag }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Build
+        env:
+          VITE_PARTYKIT_HOST: ${{ vars.VITE_PARTYKIT_HOST }}
+        run: pnpm build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+      # The Worker half is manual, so say so where it cannot be missed — on the run
+      # summary of the very deploy that just changed what clients are running.
+      - name: Remind about the Worker
+        run: |
+          {
+            echo "### Pages is live at \`${{ needs.release.outputs.tag }}\`"
+            echo
+            echo "The **Worker is not deployed by CI**. If you have not already run it:"
+            echo
+            echo '```bash'
+            echo "pnpm wr:deploy"
+            echo '```'
+            echo
+            echo "Ideally that happens *before* merging the Release PR — the frontend"
+            echo "inlines \`VITE_PARTYKIT_HOST\` at build time, so Pages is now serving"
+            echo "clients against whichever server is currently live. A newer server"
+            echo "tolerates older clients; the reverse does not."
+            echo
+            echo "Then close the **${{ needs.release.outputs.tag }}** milestone."
+          } >> "$GITHUB_STEP_SUMMARY"
