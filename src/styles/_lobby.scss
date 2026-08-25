@@ -151,18 +151,22 @@
   }
   &__preview {
     margin-top: $gap-4;
-
-    :deep(p) {
-      margin: 0 0 $gap-2;
-      color: $muted;
-      font-size: 0.75rem;
-    }
-    :deep(canvas) {
-      max-width: 280px;
-      height: auto;
-      border-radius: $radius-sm;
-      border: 1px solid $border;
-    }
+  }
+  &__preview-label {
+    margin: 0 0 $gap-2;
+    color: $muted;
+    font-size: 0.75rem;
+  }
+  // Plain descendant, not `:deep()`. This is a global partial — `Lobby.vue` has no
+  // `<style>` block — so the previous `:deep(p)` / `:deep(canvas)` rules were never
+  // valid selectors and never matched. The canvas was being sized by inline styles in
+  // `renderPreview` instead; those are gone now, so this rule is load-bearing.
+  &__preview-canvas canvas {
+    display: block;
+    max-width: 280px;
+    height: auto;
+    border-radius: $radius-sm;
+    border: 1px solid $border;
   }
 
   // Stack on narrow screens.

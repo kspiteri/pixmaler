@@ -200,14 +200,17 @@ async function endSession() {
 
 const previewSlot = useTemplateRef<HTMLDivElement>('previewSlot')
 
+// Only the canvas is built here now — the label lives in the template, where it can
+// carry a class. It used to be a `document.createElement('p')` with no class at all,
+// leaning on a `:deep(p)` rule that never matched: `_lobby.scss` is a global partial,
+// so `:deep()` is not a selector the browser understands.
 function renderPreview(config: State['config']) {
   if (!previewSlot.value)
     return
-  previewSlot.value.replaceChildren()
-  if (!config)
+  if (!config) {
+    previewSlot.value.replaceChildren()
     return
-  const label = document.createElement('p')
-  label.textContent = `Target image (${config.gridW}×${config.gridH}):`
+  }
   const previewPc = new PixelCanvas({
     gridW: config.gridW,
     gridH: config.gridH,
@@ -215,16 +218,29 @@ function renderPreview(config: State['config']) {
     targetGrid: config.targetGrid,
     editable: false,
   })
-  previewPc.canvas.style.maxWidth = '280px'
-  previewPc.canvas.style.height = 'auto'
-  previewSlot.value.append(label, previewPc.canvas)
+  previewSlot.value.replaceChildren(previewPc.canvas)
 }
 
+// `previewSlot` and `isGm` are watch **sources**, not just values read inside — that is
+// the whole fix. Previously only `config` was watched:
+//
+//   - `immediate: true` fires during `setup()`, before mount, so the very first run saw
+//     `previewSlot.value === null` and bailed. (`flush: 'post'` governs reactive
+//     re-triggers, not the immediate invocation.)
+//   - Nothing re-ran when the ref populated, because the ref was dereferenced inside
+//     the callback rather than tracked.
+//   - So it stayed empty until `config`'s *identity* changed — and since the server
+//     sends `config` inside every `state` message, each one a fresh `JSON.parse`, any
+//     unrelated push (a join, a rename, a shape change) was what finally drew it.
+//
+// Tracking the ref also fixes GM transfer, which the old version got wrong too: the
+// `v-else` branch mounts, the slot appears, and no `config` change accompanies it.
+// Same shape as `Drawing.vue`'s spectator-canvas watcher, which had it right.
 watch(
-  () => props.state.config,
-  (config) => {
+  [() => props.state.config, isGm, previewSlot],
+  () => {
     if (!isGm.value)
-      renderPreview(config)
+      renderPreview(props.state.config)
   },
   { immediate: true, flush: 'post' },
 )
@@ -337,7 +353,20 @@ onBeforeUnmount(() => {
               waiting for the GM…
             </p>
           </div>
-          <div ref="previewSlot" class="lobby__preview" />
+          <div class="lobby__preview">
+            <!-- The placeholder reserves the space so an unconfigured preview reads as
+                 waiting rather than broken. That ambiguity is part of why the render
+                 race this replaced went unnoticed — an empty box looked normal. -->
+            <p class="lobby__preview-label">
+              <template v-if="state.config">
+                Target image ({{ state.config.gridW }}×{{ state.config.gridH }}):
+              </template>
+              <template v-else>
+                the target image will appear here
+              </template>
+            </p>
+            <div ref="previewSlot" class="lobby__preview-canvas" />
+          </div>
           <div class="lobby__tagline">
             <Tagline class="lobby__waiting-tagline" />
           </div>
