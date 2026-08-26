@@ -60,9 +60,12 @@ export class PixelCanvas {
   // Cells currently shown as a hover preview, keyed by `y * gridW + x` → original
   // palette index. We restore these when the hover moves or the cursor leaves.
   private hoverCells: Map<number, number> = new Map()
-  // Cell currently highlighted by an outline marker (used on read-only canvases
-  // so a cursor over the reference shows which cell it's pointing at).
+  // Cell the crosshair marker currently sits on (used on read-only canvases so a
+  // cursor over the editable canvas shows which cell it's pointing at).
   private markerCell: { x: number, y: number } | null = null
+  // Halo stroke width, in canvas px, of the marker as last drawn — recorded so
+  // the restore repaints exactly the band that was painted (see drawMarkerAt).
+  private markerHalo = 0
   // Snapshots of the grid pushed at the start of each stroke. `undo()` pops.
   private undoStack: number[][] = []
   private static UNDO_DEPTH = 30
@@ -131,15 +134,21 @@ export class PixelCanvas {
   //     works as long as the box keeps the grid's aspect ratio, which a single
   //     shared `scale` guarantees (no squish);
   //   - pixels stay crisp via `image-rendering: pixelated`.
-  // Scale is snapped to an integer when ≥ 1 so every cell is the same number of
-  // display pixels (no uneven 3px/4px columns); sub-1× grids fall back to a
-  // fractional scale so a tiny container still fits without overflow.
+  //
+  // The scale is deliberately NOT snapped to a whole number of display pixels
+  // per cell. It used to be, so that every cell was the same width — but
+  // flooring discards everything below the next whole pixel-per-cell, and on a
+  // dense grid that is most of the canvas: 384 cells in a 1082px slot fit at
+  // 2.818 px/cell and floored to 2, losing 29% of the width and 44% of the area.
+  // The cost of not snapping is that adjacent cells can differ by one display
+  // pixel. That is invisible at the sizes where it applies — and the surface is
+  // already a heavy resample, since the bitmap is a fixed CELL_SIZE px per cell
+  // regardless of how small the cell lands on screen.
   fitTo(availW: number, availH: number) {
     const { gridW, gridH } = this.opts
     if (gridW <= 0 || gridH <= 0 || availW <= 0 || availH <= 0)
       return
-    const raw = Math.min(availW / gridW, availH / gridH)
-    const scale = raw >= 1 ? Math.floor(raw) : raw
+    const scale = Math.min(availW / gridW, availH / gridH)
     this.canvas.style.width = `${gridW * scale}px`
     this.canvas.style.height = `${gridH * scale}px`
   }
@@ -261,7 +270,7 @@ export class PixelCanvas {
 
   // ── Marker (read-only hover indicator) ─────────────────────────────────────
 
-  // Show or move an outline marker at the given cell. Pass null to clear.
+  // Show or move the marker at the given cell. Pass null to clear.
   // Used on read-only canvases so a cursor reveals which cell it's over.
   showMarker(cell: { x: number, y: number } | null) {
     if (this.markerCell)
@@ -271,62 +280,70 @@ export class PixelCanvas {
       this.drawMarkerAt(cell.x, cell.y)
   }
 
-  // The marker can spill into neighbouring cells when scaled up to hit the
-  // display-pixel minimum, so restoring just one cell isn't enough. Compute
-  // the bounding cell range covered by a marker centred on (cx, cy) and
-  // repaint each one.
+  // The crosshair spans the full width and height of the canvas, so restoring
+  // it means repainting one full column band and one full row band — not a
+  // bounding box around the cell.
+  //
+  // Uses `markerHalo` as recorded when the marker was *drawn*, not as recomputed
+  // now: the reference canvas is sized in viewport units, so a resize between
+  // draw and restore would otherwise leave a sliver of halo behind.
   private restoreMarkerArea(cx: number, cy: number) {
     const { gridW, gridH } = this.opts
-    const rect = this.canvas.getBoundingClientRect()
-    const displayW = rect.width || this.canvas.width
-    const canvasPxPerDisplayPx = this.canvas.width / displayW
-    const minSize = Math.max(CELL_SIZE, Math.ceil(16 * canvasPxPerDisplayPx))
-    // Halo `lineWidth` strokes half-outside the rect; account for the full
-    // outer extent or the halo gets left behind on the next move.
-    const haloWidth = Math.max(2, Math.round(3 * canvasPxPerDisplayPx))
-    const outerPad = Math.ceil(haloWidth / 2) + 1
-    const half = minSize / 2
-    const cxPx = cx * CELL_SIZE + CELL_SIZE / 2
-    const cyPx = cy * CELL_SIZE + CELL_SIZE / 2
-    const x0 = Math.max(0, Math.floor((cxPx - half - outerPad) / CELL_SIZE))
-    const y0 = Math.max(0, Math.floor((cyPx - half - outerPad) / CELL_SIZE))
-    const x1 = Math.min(gridW - 1, Math.floor((cxPx + half + outerPad) / CELL_SIZE))
-    const y1 = Math.min(gridH - 1, Math.floor((cyPx + half + outerPad) / CELL_SIZE))
-    for (let y = y0; y <= y1; y++) {
+    // `+ 1` covers the halo's outer edge, which strokes half outside the line's
+    // nominal width.
+    const pad = Math.ceil(this.markerHalo / 2 / CELL_SIZE) + 1
+    const x0 = Math.max(0, cx - pad)
+    const x1 = Math.min(gridW - 1, cx + pad)
+    const y0 = Math.max(0, cy - pad)
+    const y1 = Math.min(gridH - 1, cy + pad)
+    for (let y = 0; y < gridH; y++) {
       for (let x = x0; x <= x1; x++) {
+        this.repaintCell(x, y)
+      }
+    }
+    for (let y = y0; y <= y1; y++) {
+      for (let x = 0; x < gridW; x++) {
         this.repaintCell(x, y)
       }
     }
   }
 
-  // Draw a marker on the cell — used as a reference indicator driven by
-  // another canvas's hover. Sized so it occupies at least ~MIN display pixels
-  // regardless of how much the canvas is CSS-scaled down. On a tiny reference
-  // image the marker spills into neighbouring cells; on a large one it stays
-  // close to a single cell. Bright stroke + dark halo for contrast.
+  // Draw the reference marker: a crosshair through the cell, spanning the whole
+  // canvas on both axes. Driven by the editable canvas's hover.
+  //
+  // Deliberately not a box around the cell. A box has to be inflated to a
+  // minimum apparent size to stay visible on a shrunken reference, which made it
+  // ~24 cells wide on a dense grid, and `strokeRect` then clipped it against the
+  // canvas bounds — so near an edge the visible box slid inward and pointed at a
+  // cell up to 6 off. A full-span line cannot clip along its length, so the
+  // intersection stays exact at any grid density, out to the last row and column.
+  //
+  // Bright core over a dark halo. Not themed: it sits on the artwork, not the
+  // page, so it has to read against any palette colour.
   private drawMarkerAt(cx: number, cy: number) {
     const ctx = this.ctx
     const cxPx = cx * CELL_SIZE + CELL_SIZE / 2
     const cyPx = cy * CELL_SIZE + CELL_SIZE / 2
 
-    // Convert "minimum display size" into canvas-pixels. If the canvas hasn't
-    // been laid out yet (rect.width 0), fall back to one cell.
-    const MIN_DISPLAY_PX = 16
-    const rect = this.canvas.getBoundingClientRect()
-    const displayW = rect.width || this.canvas.width
-    const canvasPxPerDisplayPx = this.canvas.width / displayW
-    const minSize = Math.max(CELL_SIZE, Math.ceil(MIN_DISPLAY_PX * canvasPxPerDisplayPx))
-    const half = minSize / 2
+    // The reference canvas is CSS-scaled down hard (a 346-cell grid is a 4844px
+    // bitmap in a ~240px box), so a fixed *apparent* thickness has to be
+    // expressed in canvas px. 1:1 before first layout, when the rect is still 0.
+    const displayW = this.canvas.getBoundingClientRect().width
+    const ratio = displayW ? this.canvas.width / displayW : 1
+    this.markerHalo = Math.max(2, Math.round(3 * ratio))
 
     ctx.save()
-    // Black halo, cyan on top. Not themed: it sits on the artwork, not the page, so
-    // it has to read against any palette colour.
-    ctx.lineWidth = Math.max(2, Math.round(3 * canvasPxPerDisplayPx))
+    ctx.beginPath()
+    ctx.moveTo(cxPx, 0)
+    ctx.lineTo(cxPx, this.canvas.height)
+    ctx.moveTo(0, cyPx)
+    ctx.lineTo(this.canvas.width, cyPx)
+    ctx.lineWidth = this.markerHalo
     ctx.strokeStyle = '#000'
-    ctx.strokeRect(cxPx - half, cyPx - half, minSize, minSize)
-    ctx.lineWidth = Math.max(1, Math.round(canvasPxPerDisplayPx))
+    ctx.stroke()
+    ctx.lineWidth = Math.max(1, Math.round(ratio))
     ctx.strokeStyle = '#0ff'
-    ctx.strokeRect(cxPx - half, cyPx - half, minSize, minSize)
+    ctx.stroke()
     ctx.restore()
   }
 
