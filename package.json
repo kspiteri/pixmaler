@@ -10,6 +10,7 @@
     "typecheck": "vue-tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "test": "vitest run",
     "wr:dev": "wrangler dev",
     "wr:deploy": "wrangler deploy",
     "prepare": "simple-git-hooks"
@@ -32,6 +33,7 @@
     "simple-git-hooks": "catalog:dev",
     "typescript": "catalog:dev",
     "vite": "catalog:dev",
+    "vitest": "catalog:dev",
     "vue-tsc": "catalog:dev",
     "wrangler": "catalog:dev"
   },

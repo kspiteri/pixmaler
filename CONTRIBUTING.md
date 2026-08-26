@@ -51,6 +51,7 @@ pnpm preview      # preview the built dist
 pnpm typecheck    # vue-tsc --noEmit + tsc -p tsconfig.worker.json (no build)
 pnpm lint         # eslint .
 pnpm lint:fix     # eslint . --fix
+pnpm test         # vitest run (unit tests in test/)
 pnpm wr:deploy    # deploy the realtime server to Cloudflare
 ```
 
@@ -66,6 +67,8 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 **Git hooks** — `simple-git-hooks` + `lint-staged` run `eslint --fix` on staged files at pre-commit, installed by the `prepare` script on `pnpm install`. If they don't fire, run `pnpm exec simple-git-hooks`.
 
 **Types** — `strict` is on. `pnpm build` runs `vue-tsc --noEmit` first, so a type error fails the build; `pnpm typecheck` also covers `party/` against Workers globals via `tsconfig.worker.json`. Keep the tree green.
+
+**Tests** — `pnpm test` runs Vitest over `test/`. Coverage is deliberately narrow: the pure, load-bearing math that a plausible refactor could silently break. `test/pipeline.test.ts` pins the image pipeline's geometry — the grid size for a source and scale, and the rule that grid cell `(x, y)` reads source pixel `(x, y)`. That second one is the invariant whose absence caused #4, where the right column and bottom row of every image were being discarded. Canvas rendering and component behaviour aren't unit tested; verify those in the browser.
 
 ## Conventions
 
