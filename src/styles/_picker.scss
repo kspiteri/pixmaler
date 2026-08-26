@@ -194,6 +194,99 @@
     line-height: $lh-snug;
   }
 
+  // ── Crop framing ──────────────────────────────────────────────────────────
+  // The whole source, with the kept region cut out of a dimmed overlay. Geometry
+  // is set inline as percentages by the component, so nothing here measures.
+  &__crop {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-2;
+  }
+  // Label and shape control sit as one pair, matching the Colours row above —
+  // the crop is a setting in the settings card, so it should read like the rest
+  // of them. Deliberately not `space-between`: that pushed the buttons to the far
+  // edge of the card, where they read as unrelated to the word "Framing".
+  &__crop-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: $gap-2;
+  }
+  &__crop-hint {
+    margin: 0;
+    color: $fg-60;
+    font-size: $fs-xs;
+  }
+  &__crop-frame {
+    position: relative;
+    align-self: start;
+    max-width: 240px;
+    border-radius: $radius-sm;
+    overflow: hidden;
+    cursor: grab;
+    // The drag is ours — stop touch from scrolling the settings panel instead.
+    touch-action: none;
+    line-height: 0;
+
+    &:active {
+      cursor: grabbing;
+    }
+    // Nothing to reframe (the crop already fills the source on both axes).
+    &.is-static {
+      cursor: default;
+    }
+    &:focus-visible {
+      outline: 2px solid $accent-ink;
+      outline-offset: 2px;
+    }
+  }
+  &__crop-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    // The source is decoration here; the crop window is the information.
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+  // Dims the whole image; the window below punches back through by sitting on top
+  // with no background, ringed so its edge is unambiguous against any photo.
+  &__crop-shade {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+  }
+  &__crop-window {
+    position: absolute;
+    // Cheaper than compositing a real cut-out, and reads the same: the kept
+    // region is the only part at full brightness.
+    backdrop-filter: brightness(2.2);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.6),
+      inset 0 0 0 1px $paper;
+    pointer-events: none;
+  }
+
+  &__crop-zoom {
+    display: flex;
+    align-items: center;
+    gap: $gap-2;
+    max-width: 240px;
+
+    input {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+  &__crop-zoom-val {
+    flex: 0 0 auto;
+    min-width: 3.5ch;
+    color: $fg-60;
+    font-size: $fs-xs;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
   // ── Messages + preview ────────────────────────────────────────────────────
   // A tinted card, not just orange text, so it reads as an alert at a glance.
   &__warn {

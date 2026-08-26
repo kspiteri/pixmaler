@@ -1,18 +1,27 @@
 <script setup lang="ts">
 // Image picker — used by the GM controls (with `showPreview`/`showMobileWarn`/
 // `showDrawSeconds`) and the /paint sandbox (without). Owns the file input,
-// scale/colour controls, sample buttons, and runs the pipeline on change.
+// scale/colour/ratio controls, sample buttons, and runs the pipeline on change.
 
+import type { CropSelection, TargetRatioId } from '../lib/aspect'
 import type { PickerMeta, PipelineResult } from '../lib/pipeline'
 import { Loader2, TriangleAlert } from '@lucide/vue'
-import { computed, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import {
+  CROP_MIN_ZOOM,
+  cropRect,
+  DEFAULT_RATIO,
+  FULL_CROP,
+  nearestRatioFor,
+  TARGET_RATIO_IDS,
+  TARGET_RATIOS,
+} from '../lib/aspect'
 import { PixelCanvas } from '../lib/canvas'
 import {
   DEFAULT_COLOR_COUNT,
   DEFAULT_SCALE,
   gridSizeFor,
   isMobileWarning,
-
   processImage,
 } from '../lib/pipeline'
 import { clampDrawSeconds, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN } from '../lib/types'
@@ -40,6 +49,17 @@ const emit = defineEmits<{
 
 const scale = ref(DEFAULT_SCALE)
 const colorCount = ref(DEFAULT_COLOR_COUNT)
+// Target shape. Preselected from the loaded image's own framing (see
+// `nearestRatioFor`) so the GM only sees a crop when they ask for one.
+const ratio = ref<TargetRatioId>(DEFAULT_RATIO)
+// What part of the source to keep. Source-relative, so switching ratio keeps the
+// GM's framing instead of snapping back to centre.
+const crop = ref<CropSelection>({ ...FULL_CROP })
+// Natural size of the loaded image, read once on adopt. Needed to resolve the
+// crop against the source and to lay the overlay out at the right shape.
+const naturalDims = ref<{ w: number, h: number } | null>(null)
+// Object URL for the crop widget's preview. Revoked whenever it is replaced.
+const sourceUrl = ref('')
 const DEFAULT_DRAW_SECONDS = 120
 const drawSecs = ref(DEFAULT_DRAW_SECONDS)
 // The floor is stated in the label, and applied here on commit. HTML `min` does
@@ -107,6 +127,106 @@ const gridPreview = computed(() => {
   return `${gridW}×${gridH}`
 })
 
+// ── Crop widget ───────────────────────────────────────────────────────────────
+//
+// The widget shows the whole source with the kept region cut out of a dimmed
+// overlay. Geometry is computed as percentages of the image box, so the widget
+// needs no measurement and stays correct at any rendered size — the same reason
+// `CropSelection` is source-relative rather than in pixels.
+
+const cropBox = computed(() => {
+  const dims = naturalDims.value
+  if (!dims)
+    return null
+  const { sx, sy, sw, sh } = cropRect(dims.w, dims.h, ratio.value, crop.value)
+  return {
+    left: `${(sx / dims.w) * 100}%`,
+    top: `${(sy / dims.h) * 100}%`,
+    width: `${(sw / dims.w) * 100}%`,
+    height: `${(sh / dims.h) * 100}%`,
+  }
+})
+
+// True when the crop can actually be moved — a maximal crop of the image's own
+// shape fills it on both axes, so there is nothing to drag and the hint should
+// say so rather than inviting a no-op.
+const cropMovable = computed(() => {
+  const dims = naturalDims.value
+  if (!dims)
+    return false
+  const { sw, sh } = cropRect(dims.w, dims.h, ratio.value, crop.value)
+  return sw < dims.w || sh < dims.h
+})
+
+const cropFrame = useTemplateRef<HTMLElement>('cropFrame')
+
+// Drag to pan. The pointer is captured so a fast drag that leaves the widget
+// keeps steering it, and the centre is written straight from the pointer's
+// position within the frame — `cropRect` clamps, so no edge handling here.
+function onCropPointerDown(e: PointerEvent) {
+  if (!cropMovable.value)
+    return
+  const frame = cropFrame.value
+  if (!frame)
+    return
+  try { frame.setPointerCapture(e.pointerId) }
+  catch { /* best-effort; dragging still works without capture */ }
+  e.preventDefault()
+  moveCropTo(e)
+}
+
+function onCropPointerMove(e: PointerEvent) {
+  // `buttons` rather than a local flag: if the button was released off-widget
+  // and we missed the up, this stops steering instead of sticking to the cursor.
+  if (e.buttons === 0 || !cropMovable.value)
+    return
+  moveCropTo(e)
+}
+
+// Both writers clamp the centre to the image. `cropRect` already clamps the
+// resolved rect, but letting `cx`/`cy` drift outside 0-1 would mean a drag past
+// the edge needs the same distance dragged back before anything moves again.
+function setCropCentre(cx: number, cy: number) {
+  crop.value = {
+    ...crop.value,
+    cx: Math.min(1, Math.max(0, cx)),
+    cy: Math.min(1, Math.max(0, cy)),
+  }
+  scheduleReprocess()
+}
+
+function moveCropTo(e: PointerEvent) {
+  const frame = cropFrame.value
+  if (!frame)
+    return
+  const box = frame.getBoundingClientRect()
+  if (!box.width || !box.height)
+    return
+  setCropCentre((e.clientX - box.left) / box.width, (e.clientY - box.top) / box.height)
+}
+
+function onCropZoom(e: Event) {
+  crop.value = { ...crop.value, zoom: Number((e.target as HTMLInputElement).value) / 100 }
+  scheduleReprocess()
+}
+
+// Keyboard path for the crop, so framing is not pointer-only. One step is 2% of
+// the source, which is a visible nudge at any image size.
+function onCropKeyDown(e: KeyboardEvent) {
+  const step = 0.02
+  const delta: Record<string, [number, number]> = {
+    ArrowLeft: [-step, 0],
+    ArrowRight: [step, 0],
+    ArrowUp: [0, -step],
+    ArrowDown: [0, step],
+  }
+  const move = delta[e.key]
+  if (!move || !cropMovable.value)
+    return
+  e.preventDefault()
+  setCropCentre(crop.value.cx + move[0], crop.value.cy + move[1])
+}
+
 function sampleUrl(name: SampleName) {
   return `${import.meta.env.BASE_URL}assets/${name}.png`
 }
@@ -124,7 +244,7 @@ async function reprocess() {
   emit('processing')
 
   try {
-    const result = await processImage(cachedFile, scale.value, colorCount.value)
+    const result = await processImage(cachedFile, scale.value, colorCount.value, ratio.value, crop.value)
     if (myRun !== runId)
       return // stale
 
@@ -165,16 +285,39 @@ function scheduleReprocess() {
   debounceTimer = setTimeout(reprocess, 150)
 }
 
-watch([scale, colorCount], scheduleReprocess)
+watch([scale, colorCount, ratio], scheduleReprocess)
+
+// Adopt a newly-chosen image: preselect the ratio closest to its own framing and
+// reset the crop to the whole frame, so the first render matches how the GM
+// framed it and any crop is a deliberate second choice. Costs one extra decode;
+// the pipeline's own decode dominates.
+async function adoptFile(file: File, label: string) {
+  cachedFile = file
+  sourceLabel.value = label
+  crop.value = { ...FULL_CROP }
+  if (sourceUrl.value)
+    URL.revokeObjectURL(sourceUrl.value)
+  sourceUrl.value = URL.createObjectURL(file)
+  try {
+    const bitmap = await createImageBitmap(file)
+    naturalDims.value = { w: bitmap.width, h: bitmap.height }
+    ratio.value = nearestRatioFor(bitmap.width, bitmap.height)
+    bitmap.close()
+  }
+  catch {
+    // Undecodable here means undecodable in the pipeline too, which reports it
+    // properly — leave the ratio alone and let `reprocess` surface the error.
+    naturalDims.value = null
+  }
+  reprocess()
+}
 
 function onFileChange() {
   const file = fileInput.value?.files?.[0]
   if (!file)
     return
-  cachedFile = file
   selected.value = null
-  sourceLabel.value = file.name
-  reprocess()
+  adoptFile(file, file.name)
 }
 
 async function loadSample(name: SampleName) {
@@ -183,12 +326,13 @@ async function loadSample(name: SampleName) {
     if (!res.ok)
       throw new Error(`${res.status} ${res.statusText}`)
     const blob = await res.blob()
-    cachedFile = new File([blob], `${name}.png`, { type: blob.type || 'image/png' })
     selected.value = name
-    sourceLabel.value = samples.find(s => s.name === name)?.label ?? name
     if (fileInput.value)
       fileInput.value.value = ''
-    reprocess()
+    await adoptFile(
+      new File([blob], `${name}.png`, { type: blob.type || 'image/png' }),
+      samples.find(s => s.name === name)?.label ?? name,
+    )
   }
   catch (err) {
     status.value = `Could not load sample "${name}": ${err}`
@@ -198,6 +342,11 @@ async function loadSample(name: SampleName) {
 onMounted(() => {
   if (props.autoLoadSample)
     loadSample(props.autoLoadSample)
+})
+
+onBeforeUnmount(() => {
+  if (sourceUrl.value)
+    URL.revokeObjectURL(sourceUrl.value)
 })
 </script>
 
@@ -261,6 +410,66 @@ onMounted(() => {
             @change="commitDrawSecs"
           >
         </label>
+      </div>
+
+      <!-- Crop framing. Renders only once an image is loaded and measured — the
+           upload and samples in the next card are what put one there. Shape and
+           crop are one decision, so they stay together: shape decides what the
+           frame can be, the drag decides where it sits. -->
+      <div v-if="sourceUrl && naturalDims" class="picker__crop">
+        <div class="picker__crop-head">
+          <span id="picker-ratio" class="picker__setting-label">Framing</span>
+          <!-- Preselected from the image's own proportions (`nearestRatioFor`);
+               these are an override, not a required step. -->
+          <div class="segmented" role="group" aria-labelledby="picker-ratio">
+            <button
+              v-for="id in TARGET_RATIO_IDS"
+              :key="id"
+              class="segmented__item"
+              :class="{ 'segmented__item--active': ratio === id }"
+              type="button"
+              :aria-label="`${TARGET_RATIOS[id].label} ${id}`"
+              :aria-pressed="ratio === id"
+              @click="ratio = id"
+            >
+              {{ TARGET_RATIOS[id].label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- The frame is the interactive element, so it takes the tabindex and the
+             keyboard handler; the overlay and window inside it are decoration. -->
+        <div
+          ref="cropFrame"
+          class="picker__crop-frame"
+          :class="{ 'is-static': !cropMovable }"
+          :tabindex="cropMovable ? 0 : -1"
+          role="application"
+          :aria-label="`Framing: ${TARGET_RATIOS[ratio].label}. Arrow keys reframe.`"
+          @pointerdown="onCropPointerDown"
+          @pointermove="onCropPointerMove"
+          @keydown="onCropKeyDown"
+        >
+          <img class="picker__crop-img" :src="sourceUrl" :alt="`${sourceLabel} — full frame`">
+          <div class="picker__crop-shade" />
+          <div v-if="cropBox" class="picker__crop-window" :style="cropBox" />
+        </div>
+
+        <label class="picker__crop-zoom">
+          <span class="picker__sr">Crop size</span>
+          <input
+            type="range"
+            :min="Math.round(CROP_MIN_ZOOM * 100)"
+            max="100"
+            :value="Math.round(crop.zoom * 100)"
+            @input="onCropZoom"
+          >
+          <span class="picker__crop-zoom-val">{{ Math.round(crop.zoom * 100) }}%</span>
+        </label>
+
+        <p class="picker__crop-hint">
+          {{ cropMovable ? 'drag or use arrow keys to reframe' : 'this shape uses the whole image' }}
+        </p>
       </div>
     </div>
 

@@ -9,8 +9,19 @@
 // Shared by DRAWING and /paint; `flex-direction` comes inline from `orientationFor`.
 .canvas-pair {
   // The component root is a flex parent (CanvasPair.vue scoped); the row fills it.
+  //
+  // `min-width: 0` is load-bearing, not boilerplate. A flex item defaults to
+  // `min-width: auto`, meaning it refuses to shrink below its *content*. The
+  // editable canvas has an explicit pixel width (PixelCanvas.fitTo), so without
+  // this the row was pinned to the canvas's width and grew past its own parent —
+  // and `.drawing__body` clips overflow rather than scrolling it, so the
+  // rightmost columns of a wide grid became unreachable: the cursor stopped at
+  // the window edge, not the canvas edge, and the reference marker correctly
+  // reported a cell the player could not see they were on. Worst in the `column`
+  // orientation, where the row gets the full viewport width to overflow from.
   &__row {
     flex: 1;
+    min-width: 0;
     min-height: 0;
     display: flex;
     flex-wrap: nowrap;
