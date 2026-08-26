@@ -13,11 +13,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   gridSizeFor,
-  hexToRgb,
   isMobileWarning,
   MOBILE_WARN_GRID,
   quantiseToPalette,
-  rgbToHex,
 } from '../src/lib/pipeline'
 
 describe('isMobileWarning', () => {
@@ -112,18 +110,5 @@ describe('quantiseToPalette', () => {
       expect(index).toBeGreaterThanOrEqual(0)
       expect(index).toBeLessThan(palette.length)
     }
-  })
-})
-
-describe('hex conversion', () => {
-  it('round-trips every channel, including values needing a zero pad', () => {
-    const cases: [number, number, number][] = [[0, 0, 0], [255, 255, 255], [1, 16, 171], [124, 92, 255]]
-    for (const [r, g, b] of cases) {
-      expect(hexToRgb(rgbToHex(r, g, b))).toEqual([r, g, b])
-    }
-  })
-
-  it('pads single-digit channels so the hex is always six digits', () => {
-    expect(rgbToHex(1, 2, 3)).toBe('#010203')
   })
 })

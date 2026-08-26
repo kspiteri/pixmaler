@@ -68,7 +68,18 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 
 **Types** — `strict` is on. `pnpm build` runs `vue-tsc --noEmit` first, so a type error fails the build; `pnpm typecheck` also covers `party/` against Workers globals via `tsconfig.worker.json`. Keep the tree green.
 
-**Tests** — `pnpm test` runs Vitest over `test/`. Coverage is deliberately narrow: the pure, load-bearing math that a plausible refactor could silently break. `test/pipeline.test.ts` pins the image pipeline's geometry — the grid size for a source and scale, and the rule that grid cell `(x, y)` reads source pixel `(x, y)`. That second one is the invariant whose absence caused #4, where the right column and bottom row of every image were being discarded. Canvas rendering and component behaviour aren't unit tested; verify those in the browser.
+**Tests** — `pnpm test` runs Vitest over `test/`. Coverage is deliberately narrow: pure, load-bearing logic that a plausible refactor could silently break. Nothing here needs a DOM, which is why the modules under test are shaped the way they are — `src/lib/palette.ts` and `party/tally.ts` both exist because the logic in them was worth testing and was trapped inside something that needed a canvas or a Durable Object.
+
+| Suite | Guards |
+|---|---|
+| `types.test.ts` | `parseClientMsg` — the wire's trust boundary. It must never throw, and must *construct* its result so unknown properties can't ride into room state. |
+| `tally.test.ts` | Who wins a round, and what a player ends up called. A dropped voter's votes must not count, or the tally disagrees with the "N of M voted" the GM decided on. |
+| `palette.test.ts` | Median cut, near-duplicate merging, swatch ordering. `paletteSortOrder` must return a permutation — the caller remaps `targetGrid` through it, so a lost index repaints cells the wrong colour. |
+| `pipeline.test.ts` | Grid geometry, and the rule that grid cell `(x, y)` reads source pixel `(x, y)` — the invariant whose absence caused #4, where the right column and bottom row of every image were discarded. |
+| `aspect.test.ts` | Brush sizing, `--art-ratio`, the row/column choice, and the three target shapes with their crop math. |
+| `seats.test.ts` | Seat colour, initial and lean. The initial is taken by code point, not `charAt(0)` — see the file header for the emoji collapse that caused. |
+
+When you add a test, make it fail first: revert the fix it guards and check it goes red. Several of these were written that way, and two of them caught mutations that a green-only run would have missed. Canvas rendering and component behaviour are not unit tested — verify those in the browser.
 
 ## Conventions
 
