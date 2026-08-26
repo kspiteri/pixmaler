@@ -437,10 +437,9 @@ export interface SessionClosedMsg {
   type: 'session-closed'
 }
 
-// The deployed Worker's identity, sent once per connection (#25). From
-// Cloudflare's version-metadata binding, never `package.json` — the Worker is
-// deployed before the Release PR merges, so `package.json` lags at that point.
-// Empty fields mean the binding is absent, which is itself the signal.
+// The deployed Worker's identity, sent once per connection (#25). From Cloudflare's
+// version-metadata binding, never `package.json`, which lags because the Worker is
+// deployed before the Release PR merges. Empty fields mean the binding is absent.
 export interface VersionMsg {
   type: 'version'
   id: string

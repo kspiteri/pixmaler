@@ -1,11 +1,6 @@
-// Ratio-aware helpers shared by the canvas surface.
-//
-// Three sites in the codebase depend on the grid's aspect: brush sizing scales
-// with the longest side (canvas.ts), the `--art-ratio` CSS var preserves image
-// shape in Voting/Results slots, and (incoming, item 5) the drawing shell flips
-// its `flex-direction` between row and column based on how the grid compares to
-// the viewport. Centralising them here keeps the math in one place — and unit-
-// testable — so item 5 can consume `orientationFor` without reinventing it.
+// Ratio-aware helpers shared by the canvas surface: brush sizing scales with the
+// longest side (canvas.ts), `--art-ratio` preserves image shape in the Voting and
+// Results slots, and the drawing shell flips `flex-direction` via `orientationFor`.
 
 // Maximum brush size for a given grid, scaled by the longest side and clamped
 // to a usable range. Small grids top out around 8 (a single cell dominates the
@@ -50,18 +45,9 @@ export function orientationFor(
 }
 
 // ── Target ratios ─────────────────────────────────────────────────────────────
-//
-// A target is one of three shapes, never an arbitrary one. The GM picks; an
-// upload is centre-cropped to fit.
-//
-// This is a layout constraint before it is an aesthetic one. The drawing shell
-// fits the editable canvas into whatever box the viewport leaves, and an
-// arbitrary source ratio meant that box and the grid could disagree by any
-// amount — a 2.25:1 panorama left the canvas either heavily letterboxed or, when
-// the shell tried to fill the width, overflowing its own parent and getting
-// clipped by `.drawing__body`, which put the last columns of the grid outside the
-// window where no cursor could reach them. Three known shapes make the fit
-// predictable.
+// A target is one of three shapes, never arbitrary — a layout constraint before an
+// aesthetic one. An arbitrary source ratio let the fit box and the grid disagree by any
+// amount: a 2.25:1 panorama overflowed `.drawing__body`, clipping the last columns.
 
 export const TARGET_RATIOS = {
   portrait: { label: '2:3', w: 2, h: 3 },
@@ -76,12 +62,9 @@ export const TARGET_RATIO_IDS: TargetRatioId[] = ['portrait', 'square', 'landsca
 
 export const DEFAULT_RATIO: TargetRatioId = 'landscape'
 
-// Which of the three shapes a source is closest to, used to preselect the
-// picker so the GM's own framing is the default and a crop is opt-in.
-//
-// Compared in log space so "one step away from square" is the same distance in
-// either direction. On a raw `w / h` compare, 3:2 sits 0.5 above 1.0 while 2:3
-// sits only 0.33 below it, so every square-ish portrait would round to landscape.
+// Preselects the picker, so the GM's own framing is the default and a crop is opt-in.
+// Compared in log space: on a raw `w / h` compare 3:2 sits 0.5 above square while 2:3
+// sits 0.33 below, so every square-ish portrait would round to landscape.
 export function nearestRatioFor(sourceW: number, sourceH: number): TargetRatioId {
   if (sourceW <= 0 || sourceH <= 0)
     return DEFAULT_RATIO
@@ -103,14 +86,9 @@ export function ratioBox(id: TargetRatioId, maxSide: number): { w: number, h: nu
   return { w: Math.max(1, Math.round(w * unit)), h: Math.max(1, Math.round(h * unit)) }
 }
 
-// What the GM chose to keep of the source, in source-relative terms so it stays
-// meaningful across ratio changes and never depends on the display size of the
-// widget that produced it.
-//
-// `cx`/`cy` are the crop's centre as a fraction of the source (0-1). `zoom` is
-// the crop's size as a fraction of the largest rect of that ratio that fits:
-// 1 keeps as much of the image as the shape allows, smaller values close in on a
-// detail.
+// Source-relative so it survives a ratio change and never depends on the display size
+// of the widget that produced it. `cx`/`cy` are the centre as a fraction of the source;
+// `zoom` is the size as a fraction of the largest rect of that ratio that fits.
 export interface CropSelection {
   cx: number
   cy: number
@@ -120,15 +98,13 @@ export interface CropSelection {
 // The whole image, as centred as its shape allows.
 export const FULL_CROP: CropSelection = { cx: 0.5, cy: 0.5, zoom: 1 }
 
-// A crop can never be smaller than this fraction of the maximal rect — past
-// about a third, a target is a few dozen source pixels blown up to a grid and
-// the palette derivation has nothing left to work with.
+// Past about a third of the maximal rect, a target is a few dozen source pixels blown
+// up to a grid and the palette derivation has nothing left to work with.
 export const CROP_MIN_ZOOM = 0.3
 
-// The largest rect of the ratio's shape that fits inside `srcW × srcH`.
-//
-// Cover rather than letterbox on purpose: padding would put flat bands in the
-// target, and players would spend their two minutes painting them.
+// Largest rect of the ratio's shape that fits inside `srcW × srcH`. Cover, not
+// letterbox: padding would put flat bands in the target and players would spend their
+// two minutes painting them.
 export function maxCropSize(
   srcW: number,
   srcH: number,
@@ -144,11 +120,9 @@ export function maxCropSize(
     : { sw: srcW, sh: Math.max(1, Math.round(srcW / target)) }
 }
 
-// Resolve a selection against a source, as a `drawImage` source rect.
-//
-// The rect is clamped to stay wholly inside the image, so a centre dragged past
-// an edge slides along it instead of sampling transparent pixels off the side —
-// which would otherwise reach the target as a black band.
+// Resolved as a `drawImage` source rect, clamped wholly inside the image: a centre
+// dragged past an edge slides along it instead of sampling off the side, which would
+// reach the target as a black band.
 export function cropRect(
   srcW: number,
   srcH: number,

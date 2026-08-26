@@ -21,19 +21,9 @@ export interface CanvasOptions {
 
 const CELL_SIZE = 14 // px per grid cell at 1× scale — scales up on large screens
 
-// Checkerboard for unpainted cells on an **editable** canvas only.
-//
-// `$paper` is `#ffffff` and the palette is median-cut from the GM's photo, so it
-// almost always contains a white. Leaving unpainted cells transparent therefore made
-// white paint pixel-identical to nothing at all: a player could not see their own
-// strokes, and the finished drawing read as blank to the whole room.
-//
-// Only on editable canvases. On gallery and results cards an unpainted region is part
-// of the composition, and a checkerboard there would be noise — the fix belongs where
-// the mistake is made, not where it is displayed.
-//
-// Deliberately close together: enough to separate "nothing" from white, far too little
-// to compete with a drawing.
+// Checkerboard for unpainted cells on **editable** canvases only. `$paper` is `#ffffff`
+// and the palette is median-cut from the GM's photo, so unpainted-as-transparent made
+// white paint identical to nothing at all — nobody could see their own strokes.
 const EMPTY_LIGHT = '#ffffff'
 const EMPTY_DARK = '#f1f1f4'
 
@@ -135,15 +125,9 @@ export class PixelCanvas {
   //     shared `scale` guarantees (no squish);
   //   - pixels stay crisp via `image-rendering: pixelated`.
   //
-  // The scale is deliberately NOT snapped to a whole number of display pixels
-  // per cell. It used to be, so that every cell was the same width — but
-  // flooring discards everything below the next whole pixel-per-cell, and on a
-  // dense grid that is most of the canvas: 384 cells in a 1082px slot fit at
-  // 2.818 px/cell and floored to 2, losing 29% of the width and 44% of the area.
-  // The cost of not snapping is that adjacent cells can differ by one display
-  // pixel. That is invisible at the sizes where it applies — and the surface is
-  // already a heavy resample, since the bitmap is a fixed CELL_SIZE px per cell
-  // regardless of how small the cell lands on screen.
+  // The scale is deliberately NOT snapped to whole display pixels per cell: flooring
+  // 384 cells in a 1082px slot from 2.818 to 2 px/cell lost 29% of the width. The cost
+  // is that adjacent cells can differ by one display pixel, invisible at these sizes.
   fitTo(availW: number, availH: number) {
     const { gridW, gridH } = this.opts
     if (gridW <= 0 || gridH <= 0 || availW <= 0 || availH <= 0)
@@ -280,13 +264,9 @@ export class PixelCanvas {
       this.drawMarkerAt(cell.x, cell.y)
   }
 
-  // The crosshair spans the full width and height of the canvas, so restoring
-  // it means repainting one full column band and one full row band — not a
-  // bounding box around the cell.
-  //
-  // Uses `markerHalo` as recorded when the marker was *drawn*, not as recomputed
-  // now: the reference canvas is sized in viewport units, so a resize between
-  // draw and restore would otherwise leave a sliver of halo behind.
+  // The crosshair spans the full canvas, so a restore repaints one column band and one
+  // row band, not a box. Uses `markerHalo` as recorded when the marker was *drawn* — a
+  // resize between draw and restore would otherwise leave a sliver of halo behind.
   private restoreMarkerArea(cx: number, cy: number) {
     const { gridW, gridH } = this.opts
     // `+ 1` covers the halo's outer edge, which strokes half outside the line's
@@ -308,26 +288,17 @@ export class PixelCanvas {
     }
   }
 
-  // Draw the reference marker: a crosshair through the cell, spanning the whole
-  // canvas on both axes. Driven by the editable canvas's hover.
-  //
-  // Deliberately not a box around the cell. A box has to be inflated to a
-  // minimum apparent size to stay visible on a shrunken reference, which made it
-  // ~24 cells wide on a dense grid, and `strokeRect` then clipped it against the
-  // canvas bounds — so near an edge the visible box slid inward and pointed at a
-  // cell up to 6 off. A full-span line cannot clip along its length, so the
-  // intersection stays exact at any grid density, out to the last row and column.
-  //
-  // Bright core over a dark halo. Not themed: it sits on the artwork, not the
-  // page, so it has to read against any palette colour.
+  // A crosshair through the cell spanning both axes, driven by the editable canvas's
+  // hover. Not a box: inflated to stay visible on a shrunken reference one reached ~24
+  // cells wide, and `strokeRect` clipped it, pointing at a cell up to 6 off near edges.
   private drawMarkerAt(cx: number, cy: number) {
     const ctx = this.ctx
     const cxPx = cx * CELL_SIZE + CELL_SIZE / 2
     const cyPx = cy * CELL_SIZE + CELL_SIZE / 2
 
-    // The reference canvas is CSS-scaled down hard (a 346-cell grid is a 4844px
-    // bitmap in a ~240px box), so a fixed *apparent* thickness has to be
-    // expressed in canvas px. 1:1 before first layout, when the rect is still 0.
+    // The reference canvas is CSS-scaled down hard (a 346-cell grid is a 4844px bitmap
+    // in a ~240px box), so a fixed *apparent* thickness must be expressed in canvas px.
+    // 1:1 before first layout, when the rect is still 0.
     const displayW = this.canvas.getBoundingClientRect().width
     const ratio = displayW ? this.canvas.width / displayW : 1
     this.markerHalo = Math.max(2, Math.round(3 * ratio))
@@ -339,6 +310,7 @@ export class PixelCanvas {
     ctx.moveTo(0, cyPx)
     ctx.lineTo(this.canvas.width, cyPx)
     ctx.lineWidth = this.markerHalo
+    // Not themed: this sits on the artwork, so it must read against any palette colour.
     ctx.strokeStyle = '#000'
     ctx.stroke()
     ctx.lineWidth = Math.max(1, Math.round(ratio))
