@@ -34,8 +34,8 @@ interface Env {
   EMPTY_GRACE_MS?: string // wipe this long after the last connection closes (default 60 s)
   VOTING_MS?: string // resolve a stalled VOTING phase after this long (default 5 min)
   // Injected by Cloudflare (see `version_metadata` in wrangler.jsonc). Optional:
-  // `wrangler dev` does not always provide it, and a missing version must never
-  // stop a room working.
+  // `wrangler dev` does not always provide it, and a missing version must never stop
+  // a room working.
   CF_VERSION_METADATA?: { id: string, tag: string, timestamp: string }
   // The Durable Object namespace bound in wrangler.jsonc — used by
   // routePartykitRequest in the Worker entry to address rooms.
@@ -111,13 +111,9 @@ export class PixmalerServer extends Server<Env> {
 
   // ── Connection lifecycle ───────────────────────────────────────────────────
   onConnect(conn: Connection, _ctx: ConnectionContext) {
-    // Don't send `state` here — the client hasn't told us who they are yet
-    // (no `join` message processed), so the snapshot would be stale and could
-    // cause the first joiner to render an empty-lobby with no GM controls.
-    // `handleJoin` broadcasts a fresh state to everyone once the client has
-    // identified itself.
-    //
-    // The version is safe to send now: it describes the Worker, not the player.
+    // No `state` here: the client hasn't identified itself yet, so the snapshot would
+    // be stale — `handleJoin` broadcasts one once it has. The version is safe to send
+    // now, since it describes the Worker rather than the player.
     const v = this.env.CF_VERSION_METADATA
     conn.send(JSON.stringify({
       type: 'version',
@@ -168,9 +164,8 @@ export class PixmalerServer extends Server<Env> {
   }
 
   // ── Room lifecycle (DO alarm) ────────────────────────────────────────────
-  // A single alarm drives four deadlines (one alarm slot per DO): the draw round
-  // end, the VOTING backstop, the empty-room grace wipe and the idle wipe. The
-  // decisions live in `./alarm`; this keeps only what needs the Durable Object.
+  // One slot, four deadlines: draw end, VOTING backstop, empty-room grace, idle wipe.
+  // The decisions live in `./alarm`; this keeps only what needs the Durable Object.
 
   private get idleMs(): number {
     return parseMs(this.env.IDLE_MS, DEFAULT_IDLE_MS)
@@ -212,8 +207,8 @@ export class PixmalerServer extends Server<Env> {
   // Fired by the runtime when the alarm is due. Idempotent (alarms auto-retry):
   // `alarmAction` re-checks every condition before naming a branch.
   async onAlarm(): Promise<void> {
-    // The slot just fired and is now empty — forget what we armed for so the next
-    // `armAlarm` definitely writes rather than coalescing against a stale value.
+    // The slot just fired and is empty — forget the target so the next `armAlarm`
+    // writes rather than coalescing against a stale value.
     this.armedFor = null
 
     switch (alarmAction(this.state, this.clock())) {
@@ -258,9 +253,9 @@ export class PixmalerServer extends Server<Env> {
     )
   }
 
-  // The effect surface handed to the handler modules (#19). Built per call rather
-  // than cached: `this.state` is reassigned wholesale by `wipeState`, so a cached
-  // ctx would keep pointing at the wiped room.
+  // The effect surface handed to the handler modules (#19). Built per call, not
+  // cached: `wipeState` reassigns `this.state` wholesale, so a cached ctx would keep
+  // pointing at the wiped room.
   private ctxFor(): RoomCtx {
     return {
       state: this.state,

@@ -1,7 +1,6 @@
-// DRAWING-phase handlers.
-//
-// Part of #19. `draw:submit` is high-frequency — the client debounces it on every
-// stroke — so this is the hottest path on the server.
+// DRAWING-phase handlers (#19). `draw:submit` is high-frequency — the client
+// debounces it on every stroke — so this is the hottest path on the server, and it
+// broadcasts nothing.
 
 import type { ClientMsg } from '../src/lib/types'
 import type { RoomConn, RoomCtx } from './ctx'
@@ -24,33 +23,28 @@ export function handleSubmit(
 ) {
   const { state } = ctx
   const player = playerByConn(state, conn.id)
-  // Same as `draw:done`: a spectator sits the round out, so their grid must never
-  // reach `submissions` — otherwise they'd appear in the gallery and be votable.
+  // A spectator's grid must never reach `submissions`, or they appear in the gallery
+  // and become votable.
   if (!player || player.spectating || state.phase !== 'DRAWING')
     return
 
-  // Contextual half of the payload check. `parseClientMsg` proved this is an
-  // integer array inside the hard cap, but only the room knows the round's
-  // dimensions and palette — and this grid is broadcast verbatim to everyone in the
-  // `gallery` message, so a wrong length or an out-of-range index would reach every
-  // other player's renderer.
+  // Contextual half of the payload check: `parseClientMsg` proved this is an integer
+  // array inside the hard cap, but only the room knows its dimensions and palette,
+  // and this grid is broadcast verbatim to every other player's renderer.
   const cfg = state.config
   if (!cfg || msg.grid.length !== cfg.gridW * cfg.gridH)
     return
-  // -1 is "unpainted", which is why this floor is -1 and not 0 — unlike
-  // `targetGrid`, a player's grid legitimately has holes.
+  // Floor is -1, not 0: unlike `targetGrid`, a player's grid legitimately has holes.
   if (msg.grid.some(cell => cell < -1 || cell >= cfg.palette.length))
     return
 
-  // submissionId === clientId — the vote self-check in `handleVote` relies on this.
-  // `doneDrawing` is deliberately NOT set here: submission is automatic, and the
-  // flag is a social signal driven only by the player clicking "I'm done".
+  // submissionId === clientId — the vote self-check relies on it. `doneDrawing` is
+  // deliberately not set here; that flag is driven only by the player clicking it.
   state.submissions.set(player.clientId, msg.grid)
 
-  // Sticky, and only ever set — never cleared here. Clearing the canvas sends an
-  // all-`-1` grid through this same path, so unsetting on a blank submission would
-  // drop the player from the gallery for having wiped work they did do. The only
-  // reset is at round start.
+  // Sticky, only ever set. Clearing the canvas sends an all-`-1` grid down this same
+  // path, so unsetting would drop the player from the gallery for wiping work they
+  // did do. The only reset is at round start.
   if (!player.drewThisRound && msg.grid.some(cell => cell !== -1))
     player.drewThisRound = true
 }

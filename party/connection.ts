@@ -1,8 +1,6 @@
-// Connection lifecycle: join, reconnect, rename, shape, close.
-//
-// Part of #19. `handleJoin` carries the reconnect rules, and most of them exist
-// because a reconnect is not a new player: partysocket reconnects unprompted, so
-// anything re-applied here fires on every network blip.
+// Connection lifecycle: join, reconnect, rename, shape, close (#19). Most of
+// `handleJoin`'s rules exist because a reconnect is not a new player — partysocket
+// reconnects unprompted, so anything re-applied here fires on every network blip.
 
 import type { ClientMsg, Player, ServerMsg, VoteCategory } from '../src/lib/types'
 import type { RoomConn, RoomCtx } from './ctx'
@@ -17,28 +15,18 @@ export function handleJoin(
   msg: Extract<ClientMsg, { type: 'join' }>,
 ) {
   const { state } = ctx
-  // Someone's here — cancel any pending empty-room wipe.
-  ctx.markOccupied()
+  ctx.markOccupied() // somebody is here — cancel any pending empty-room wipe
   state.connMap.set(conn.id, msg.clientId)
 
   const existing = state.players.get(msg.clientId)
   if (existing) {
     existing.connected = true
-    // The client's localStorage is the source of truth for its own shape, but
-    // **only the lobby may apply it.** Past LOBBY the shape is locked exactly like
-    // `name`, which this branch deliberately does not re-apply either — without
-    // this guard the lock had only one of its two halves: `handleShape` refuses
-    // mid-game messages, but a plain reconnect walked straight past it, because
-    // `storedShape()` is re-read on every socket `open`. Two tabs and a reload were
-    // enough to repaint a RESULTS chip mid-reveal.
-    //
-    // Skipping the assignment (rather than defaulting) also stops a reconnect that
-    // carries no shape — an older bundle, or localStorage evicted by the browser —
-    // from silently resetting a chosen shape to `rounded` mid-game.
+    // Only the lobby may apply a stored shape. `handleShape` refuses mid-game
+    // messages, but `storedShape()` is re-read on every socket open, so without this
+    // a plain reconnect walked past that lock and repainted a RESULTS chip mid-reveal.
     if (state.phase === 'LOBBY')
       existing.shape = normaliseShape(msg.shape)
-    // The original GM reclaims the role on reconnect, even if an auto-promote gave
-    // it to someone else while they were gone.
+    // Reclaims from a caretaker that an auto-promote installed while they were gone.
     if (msg.clientId === state.originalGmClientId)
       state.gmClientId = msg.clientId
   }
@@ -46,22 +34,20 @@ export function handleJoin(
     const isFirst = state.players.size === 0
     const player: Player = {
       clientId: msg.clientId,
-      // De-duplicated in the NEW-player branch only — the reconnect branch above
-      // never re-applies `msg.name`, which is what keeps a returning player from
-      // being suffixed against themselves. An empty name falls back to a random
-      // pair, matching the client's name gate rather than storing "".
+      // De-duplicated in this branch only: the reconnect branch never re-applies
+      // `msg.name`, which is what stops a returning player being suffixed against
+      // themselves. An empty name falls back to a random pair, not "".
       name: uniqueName(
         msg.name.trim().slice(0, NAME_MAX_LEN) || wordPair(),
         msg.clientId,
         state.players.values(),
       ),
-      // Derived in buildState; the per-player flag here is intentionally unused.
-      isGm: false,
+      isGm: false, // derived in buildState
       connected: true,
       doneDrawing: false,
       drewThisRound: false,
-      // A round already in flight means they missed it. Only reachable in this
-      // branch, so a reconnect never changes what someone is.
+      // A round in flight means they missed it. Only set here, so a reconnect never
+      // changes what someone is.
       spectating: state.phase !== 'LOBBY',
       shape: normaliseShape(msg.shape),
     }
@@ -72,8 +58,8 @@ export function handleJoin(
     state.players.set(msg.clientId, player)
   }
 
-  // Rejoining mid-VOTING needs the gallery to vote — it is broadcast once at
-  // `endDrawing`, so re-send the frozen copy to this client alone.
+  // The gallery is broadcast once at `endDrawing`, so re-send the frozen copy to a
+  // client that needs it to vote.
   if (state.phase === 'VOTING' && state.gallery && state.config) {
     const cfg = state.config
     ctx.send(conn, {
@@ -84,8 +70,7 @@ export function handleJoin(
       gridH: cfg.gridH,
     } satisfies ServerMsg)
 
-    // Echo back this voter's OWN picks so the client rehydrates its vote UI. Only
-    // their votes — never anyone else's, since tallies stay hidden until RESULTS.
+    // Their OWN picks only, so the vote UI rehydrates — tallies stay hidden.
     const own: Partial<Record<VoteCategory, string>> = {}
     for (const [key, subId] of state.votes.entries()) {
       if (voterOf(key) === msg.clientId)
@@ -94,19 +79,16 @@ export function handleJoin(
     ctx.send(conn, { type: 'vote-state', votes: own })
   }
 
-  // Rejoining mid-DRAWING gets their own latest auto-submitted grid back, so a
-  // reload restores the drawing instead of a blank canvas.
+  // So a reload restores the drawing instead of a blank canvas.
   if (state.phase === 'DRAWING') {
     const own = state.submissions.get(msg.clientId)
     if (own)
       ctx.send(conn, { type: 'draw-state', grid: own })
   }
 
-  // Joining or reloading mid-RESULTS gets the reveal re-sent. Unlike `gallery`,
   // `results` is broadcast exactly once, so without this a rejoining client sits on
-  // "counting the damage…" indefinitely — and a rejoining GM has no usable control
-  // at all, leaving the room unrestartable. Replayed from the retained ranking
-  // rather than recomputed, so two rankings can never disagree.
+  // "counting the damage…" and a rejoining GM cannot restart the room. Replayed from
+  // the retained ranking, never recomputed, so two rankings cannot disagree.
   if (state.phase === 'RESULTS' && state.ranked && state.config) {
     const cfg = state.config
     ctx.send(conn, {
@@ -121,8 +103,7 @@ export function handleJoin(
   ctx.broadcastState()
 }
 
-// Renaming is only meaningful before the game starts; names are revealed in
-// RESULTS, so locking them at LOBBY keeps the reveal honest.
+// LOBBY-only: names are revealed in RESULTS, so locking them keeps the reveal honest.
 export function handleRename(
   ctx: RoomCtx,
   conn: RoomConn,
@@ -142,9 +123,9 @@ export function handleRename(
   ctx.broadcastState()
 }
 
-// LOBBY-only for the same reason as `rename`: the chip is shown in RESULTS, so a
-// shape change after the drawings are in would rewrite identity after the fact. The
-// picker only exists in the lobby UI; this is the enforcement.
+// LOBBY-only for the same reason as `rename`: the chip shows in RESULTS, so a later
+// change would rewrite identity after the fact. The picker only exists in the lobby;
+// this is the enforcement.
 export function handleShape(
   ctx: RoomCtx,
   conn: RoomConn,
@@ -161,15 +142,13 @@ export function handleShape(
   ctx.broadcastState()
 }
 
-// A dropped connection. The player is kept in the roster with `connected: false` —
-// never removed — which is what makes a seat stable for the room's whole life and
-// lets a reconnect reclaim the same slot.
+// The player stays in the roster with `connected: false`, never removed — that is what
+// keeps a seat stable for the room's life and lets a reconnect reclaim the same slot.
 export function handleClose(ctx: RoomCtx, connId: string) {
   const { state } = ctx
   const clientId = state.connMap.get(connId)
   state.connMap.delete(connId)
-  // `connMap` is the authoritative live-connection count, and the closing
-  // connection is already gone from it.
+  // `connMap` is the authoritative live count, and the closing conn is already gone.
   if (state.connMap.size === 0)
     ctx.markEmpty()
   const player = clientId ? state.players.get(clientId) : undefined
