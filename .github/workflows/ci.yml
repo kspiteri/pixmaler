@@ -1,7 +1,7 @@
 name: CI
 
-# Lint and typecheck on every push and PR. Nothing here deploys — releasing and
-# deploying both live in release.yml, driven by release-please.
+# Lint, typecheck, test and build on every push and PR. Nothing here deploys —
+# releasing and deploying both live in release.yml, driven by release-please.
 #
 # Lint is not optional cosmetics: @antfu/eslint-config also does the formatting in this
 # repo (CONTRIBUTING records "no separate Prettier"), so an absent lint step is an
@@ -45,6 +45,15 @@ jobs:
       # a step called "Build" reports the wrong thing.
       - name: Typecheck
         run: pnpm typecheck
+
+      # Before Build: faster, and a failing assertion names the behaviour that broke
+      # where a failing build only says the build broke. The suites are mostly
+      # characterisation tests guarding invariants that look like tidy-up targets —
+      # `endDrawing` computing its gallery before mutating state, `buildState`
+      # deriving `isGm` rather than trusting it, spectators excluded from progress.
+      # They are only a safety net if they run without being remembered.
+      - name: Test
+        run: pnpm test
 
       # Catches a broken Vite/SCSS build that typecheck alone misses: neither lint nor
       # vue-tsc compiles the stylesheets, so an undefined SCSS token passes both.
