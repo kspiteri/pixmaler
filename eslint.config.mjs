@@ -8,7 +8,6 @@ export default antfu({
     html: true,
   },
   ignores: [
-    'src/lib/vendor/**',
     'dist',
     '.partykit',
   ],

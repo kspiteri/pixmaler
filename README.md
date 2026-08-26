@@ -25,7 +25,7 @@ A game master uploads any image. It's quantized in the browser into chunky, limi
 - [PartyServer](https://github.com/cloudflare/partyserver) on Cloudflare Durable Objects for realtime rooms, deployed with `wrangler`
 - `partysocket` WebSocket client (auto-reconnect)
 - `unique-names-generator` for memorable room codes and for de-duplicating player names, both from a custom curated word list
-- Client-side image pipeline: median-cut palette derivation + near-duplicate merge, then [pixelit](https://github.com/giventofly/pixelit) (vendored, MIT) for the pixelation pass. No server image processing, no image storage.
+- Client-side image pipeline: one exact downscale to the grid, median-cut palette derivation + near-duplicate merge, then per-cell quantisation. No dependencies, no server image processing, no image storage.
 
 ## Setup
 
