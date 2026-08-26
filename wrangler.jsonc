@@ -11,6 +11,12 @@
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["PixmalerServer"] }
   ],
+  // The deployed Worker's own identity (id / tag / timestamp), injected by
+  // Cloudflare. Reported to clients on connect so client/server drift is visible
+  // — see #25. Deliberately NOT package.json's version: the release order
+  // deploys the Worker before merging the Release PR, so package.json still holds
+  // the previous version at that point and would misreport.
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
   // Public (non-secret) config. ALLOWED_ORIGINS: web origins allowed to connect
   // in prod (guardOrigin). IDLE_MS / EMPTY_GRACE_MS: room-lifecycle windows in
   // ms (armAlarm/onAlarm) — tweak in the dashboard to test without a redeploy.

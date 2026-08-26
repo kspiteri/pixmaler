@@ -29,6 +29,10 @@ interface Env {
   IDLE_MS?: string // wipe a room after this long with no messages (default 45 min)
   EMPTY_GRACE_MS?: string // wipe this long after the last connection closes (default 60 s)
   VOTING_MS?: string // resolve a stalled VOTING phase after this long (default 5 min)
+  // Injected by Cloudflare (see `version_metadata` in wrangler.jsonc). Optional:
+  // `wrangler dev` does not always provide it, and a missing version must never
+  // stop a room working.
+  CF_VERSION_METADATA?: { id: string, tag: string, timestamp: string }
   // The Durable Object namespace bound in wrangler.jsonc — used by
   // routePartykitRequest in the Worker entry to address rooms.
   PixmalerServer: DurableObjectNamespace
@@ -150,12 +154,21 @@ export class PixmalerServer extends Server<Env> {
   }
 
   // ── Connection lifecycle ───────────────────────────────────────────────────
-  onConnect(_conn: Connection, _ctx: ConnectionContext) {
+  onConnect(conn: Connection, _ctx: ConnectionContext) {
     // Don't send `state` here — the client hasn't told us who they are yet
     // (no `join` message processed), so the snapshot would be stale and could
     // cause the first joiner to render an empty-lobby with no GM controls.
     // `handleJoin` broadcasts a fresh state to everyone once the client has
     // identified itself.
+    //
+    // The version is safe to send now: it describes the Worker, not the player.
+    const v = this.env.CF_VERSION_METADATA
+    conn.send(JSON.stringify({
+      type: 'version',
+      id: v?.id ?? '',
+      tag: v?.tag ?? '',
+      timestamp: v?.timestamp ?? '',
+    } satisfies ServerMsg))
   }
 
   onClose(conn: Connection) {

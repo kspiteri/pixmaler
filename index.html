@@ -14,6 +14,12 @@
       content="A real-time party game: redraw a pixelated image against the clock, then vote on the funniest results."
     />
 
+    <!-- Deploy identity, for spotting client/server drift (#25). The client value
+         is stamped at build time by the `pixmaler-client-version` Vite plugin; the
+         server value is written on connect, so empty means "not connected". -->
+    <meta name="pixmaler:client" content="%PIXMALER_CLIENT_VERSION%" />
+    <meta name="pixmaler:server" content="" />
+
     <!-- Open Graph / social preview. Absolute URLs — link-unfurl bots don't
          resolve relative paths, and they read these tags from the static HTML
          without executing the app JS (so they never open a game socket). Keeps

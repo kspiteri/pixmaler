@@ -229,6 +229,12 @@ function connect(name: string) {
         console.warn('[pixmaler] server error:', msg.message)
         askAlert(msg.message)
         break
+      case 'version': {
+        // Composed here rather than server-side so the wire keeps the raw fields.
+        const el = document.querySelector('meta[name="pixmaler:server"]')
+        el?.setAttribute('content', [msg.timestamp, msg.id, msg.tag].filter(Boolean).join(' · '))
+        break
+      }
     }
   })
 }
