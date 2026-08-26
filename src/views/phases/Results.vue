@@ -68,22 +68,33 @@ function withSeats(entries: Entry[]) {
   })
 }
 
-// Players who were competing and never put a mark down. They are absent from `ranked`
-// entirely — `endDrawing` filters the gallery on `drewThisRound` — so they are derived
-// from the roster here instead, which needs **no protocol change**: `drewThisRound`
-// already rides on `Player`, and it survives until the next round starts, so it still
-// tells the truth by the time RESULTS renders.
+// Players who were competing and never put a mark down.
 //
-// Deriving rather than appending to `ranked` is the point. `nobodyDrew` above infers
-// "nobody drew" from `ranked` being empty, so putting non-drawers in there would make
-// it permanently false and silently break the zero-submission reveal.
+// Derived by subtracting `ranked` from the roster, NOT by reading `drewThisRound`.
+// The flag is authoritative server-side — `endDrawing` filters the gallery on it —
+// but it never reaches the client reliably: `handleSubmit` sets it silently, because
+// it fires on every stroke, and nothing between the last submission and RESULTS
+// broadcasts `state`. So the roster the client holds still says `false` for everyone
+// who drew, and this list named the entire field as having lost their paint brush.
+// A vote masked it, since `handleVote` does broadcast state — which is why it only
+// showed up in rounds where somebody drew but nobody voted.
+//
+// `ranked` cannot go stale the same way: it arrives in the very `results` message
+// that makes this screen render, and it contains exactly the gallery — i.e. exactly
+// the players whose `drewThisRound` was set. Subtracting it needs no protocol change
+// and no extra broadcast.
+//
+// Deriving rather than appending to `ranked` is still the point. `nobodyDrew` below
+// infers "nobody drew" from `ranked` being empty, so putting non-drawers in there
+// would make it permanently false and silently break the zero-submission reveal.
 //
 // Spectators are excluded: they joined after the round started, so they were never
 // asked to draw. Disconnected players are *not* excluded — they were in the room and
 // they did not draw, which is exactly what this says.
+const drewIds = computed(() => new Set(ranked.value.map(e => e.clientId)))
 const neverDrew = computed(() =>
   props.players
-    .filter(p => !p.spectating && !p.drewThisRound)
+    .filter(p => !p.spectating && !drewIds.value.has(p.clientId))
     .map((p) => {
       const found = seats.value.get(p.clientId)
       return { player: p, seat: found ? seatFor(found.seat, found.player) : null }
