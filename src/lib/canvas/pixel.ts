@@ -1,6 +1,10 @@
-// Drawing canvas: cell rendering, swatch, square brush, mouse + touch input.
+// The editable drawing surface: cell rendering, hover preview, the read-only crosshair
+// marker, undo, and unified pointer input. Geometry lives in `./grid`, the swatch and
+// brush widgets in `./tools`.
 
-import { brushMaxFor, defaultBrushFor } from './aspect'
+import type { Cell } from './grid'
+import { brushMaxFor, defaultBrushFor } from '../aspect'
+import { brushFootprint, cellAt, indexOf, linePath, xyOf } from './grid'
 
 export interface CanvasOptions {
   gridW: number
@@ -97,37 +101,25 @@ export class PixelCanvas {
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
-  // Returns the current grid. Untouched cells remain `-1` on the wire so
-  // read-only renderers can draw them as transparent (showing the canvas's
-  // white background through), keeping submitted drawings looking like
-  // strokes on paper rather than filled onto palette[0].
+  // Untouched cells stay `-1` on the wire so read-only renderers draw them transparent,
+  // keeping submitted drawings looking like strokes on paper rather than filled onto
+  // `palette[0]`.
   getGrid(): number[] {
     return [...this.grid]
   }
 
-  // Replace the whole grid. Notifies via `onUpdate`, exactly like a stroke or an
-  // `undo()` does: its only callers are the destructive Clear actions, and both
-  // the wire-side state (DRAWING's auto-submit) and any UI mirroring `canUndo()`
-  // have to catch up the same way. Without the notify, clearing mid-round left
-  // the server holding the pre-clear drawing until the next stroke.
+  // Notifies via `onUpdate`, exactly like a stroke or an `undo()`: its only callers are
+  // the destructive Clear actions, and both the wire state and any UI mirroring
+  // `canUndo()` have to catch up. Without it, clearing left the server on the old grid.
   setGrid(grid: number[]) {
     this.grid = [...grid]
     this.render()
     this.opts.onUpdate?.(this.getGrid())
   }
 
-  // Fit the canvas's DISPLAY size (CSS width/height) into the given available
-  // box while preserving the grid's aspect ratio (Pattern A — Piskel-style
-  // fit-zoom). The drawing bitmap (`canvas.width/height`) is never touched, so:
-  //   - pointer→cell mapping stays correct — `eventCell` reads
-  //     `getBoundingClientRect()` and divides per axis, so any display size
-  //     works as long as the box keeps the grid's aspect ratio, which a single
-  //     shared `scale` guarantees (no squish);
-  //   - pixels stay crisp via `image-rendering: pixelated`.
-  //
-  // The scale is deliberately NOT snapped to whole display pixels per cell: flooring
-  // 384 cells in a 1082px slot from 2.818 to 2 px/cell lost 29% of the width. The cost
-  // is that adjacent cells can differ by one display pixel, invisible at these sizes.
+  // Fits the canvas's DISPLAY size to the available box, preserving the grid's aspect. The
+  // bitmap is untouched, so cells stay crisp and `cellAt` keeps mapping. The scale is NOT
+  // snapped to whole pixels per cell — flooring 2.818 to 2 lost 29% of the width.
   fitTo(availW: number, availH: number) {
     const { gridW, gridH } = this.opts
     if (gridW <= 0 || gridH <= 0 || availW <= 0 || availH <= 0)
@@ -327,36 +319,27 @@ export class PixelCanvas {
     if (this.locked)
       return
     const { gridW, gridH, palette } = this.opts
-    const half = Math.floor(this.brushSize / 2)
     const next = new Map<number, number>()
 
-    for (let dy = -half; dy < this.brushSize - half; dy++) {
-      for (let dx = -half; dx < this.brushSize - half; dx++) {
-        const nx = cx + dx; const ny = cy + dy
-        if (nx < 0 || nx >= gridW || ny < 0 || ny >= gridH)
-          continue
-        const key = ny * gridW + nx
-        // Capture original colour from the *grid* (not the canvas), so we
-        // never accidentally remember a previously-painted hover preview.
-        next.set(key, this.grid[key] ?? 0)
-      }
+    for (const key of brushFootprint(cx, cy, this.brushSize, gridW, gridH)) {
+      // Capture original colour from the *grid* (not the canvas), so we
+      // never accidentally remember a previously-painted hover preview.
+      next.set(key, this.grid[key] ?? 0)
     }
 
     // Restore any cells that were in the previous hover but not the new one.
     for (const [key] of this.hoverCells) {
       if (!next.has(key)) {
-        const cy2 = Math.floor(key / gridW)
-        const cx2 = key - cy2 * gridW
-        this.repaintCell(cx2, cy2)
+        const { x, y } = xyOf(key, gridW)
+        this.repaintCell(x, y)
       }
     }
 
     // Paint preview cells in the selected colour.
     this.ctx.fillStyle = palette[this.selectedColor] ?? '#000'
     for (const [key] of next) {
-      const cy2 = Math.floor(key / gridW)
-      const cx2 = key - cy2 * gridW
-      this.ctx.fillRect(cx2 * CELL_SIZE, cy2 * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+      const { x, y } = xyOf(key, gridW)
+      this.ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
     }
 
     this.hoverCells = next
@@ -367,9 +350,8 @@ export class PixelCanvas {
       return
     const { gridW } = this.opts
     for (const [key] of this.hoverCells) {
-      const cy = Math.floor(key / gridW)
-      const cx = key - cy * gridW
-      this.repaintCell(cx, cy)
+      const { x, y } = xyOf(key, gridW)
+      this.repaintCell(x, y)
     }
     this.hoverCells.clear()
   }
@@ -382,10 +364,9 @@ export class PixelCanvas {
     // we handle all pointer movement ourselves.
     el.style.touchAction = 'none'
 
-    // Unified Pointer Events (mouse + touch + pen in one path). On pointerdown
-    // we `setPointerCapture`, so every subsequent pointermove/up is delivered to
-    // this canvas even when the cursor leaves it — fixing the bug where dragging
-    // off the canvas and back (button still held) silently stopped painting.
+    // Unified Pointer Events (mouse + touch + pen in one path). `setPointerCapture` on
+    // pointerdown keeps every later move and up coming here even off-element, which is
+    // what fixed dragging off the canvas and back silently stopping the stroke.
     el.addEventListener('pointerdown', (e) => {
       if (this.locked)
         return
@@ -415,11 +396,9 @@ export class PixelCanvas {
           this.opts.onHover?.(this.cursorCell)
         }
         else {
-          // Pen lifts off the paper: while out of bounds we paint nothing (no
-          // edge-clamp smear), and reset the stroke so re-entry begins a fresh
-          // segment rather than drawing a line across the off-canvas gap.
-          // Capture still delivers these moves, so re-entry resumes without a
-          // new click.
+          // Pen lifts off the paper: paint nothing while out (no edge-clamp smear) and
+          // reset the stroke, so re-entry starts a fresh segment instead of drawing across
+          // the gap. Capture still delivers these moves, so it resumes without a new click.
           this.resetStroke()
           this.cursorCell = null
           this.opts.onHover?.(null)
@@ -446,10 +425,9 @@ export class PixelCanvas {
     el.addEventListener('pointerup', endStroke)
     el.addEventListener('pointercancel', endStroke)
 
-    // Pointer leaving the element hides the hover preview. An in-progress stroke
-    // is NOT ended (capture keeps delivering moves so the user can drag back in
-    // and continue) — but pointermove handles the "paint nothing while out"
-    // behaviour; here we just clear the visual preview/marker.
+    // Hides the hover preview only. An in-progress stroke is NOT ended — capture keeps
+    // delivering moves so a drag can come back in — and `pointermove` already handles
+    // painting nothing while out.
     el.addEventListener('pointerleave', () => {
       this.clearHover()
       if (!this.painting) {
@@ -486,20 +464,15 @@ export class PixelCanvas {
     this.paintLine(x, y)
   }
 
-  private eventCell(clientX: number, clientY: number): { x: number, y: number } {
-    const rect = this.canvas.getBoundingClientRect()
-    const scaleX = this.opts.gridW / rect.width
-    const scaleY = this.opts.gridH / rect.height
-    return {
-      x: Math.floor((clientX - rect.left) * scaleX),
-      y: Math.floor((clientY - rect.top) * scaleY),
-    }
+  private eventCell(clientX: number, clientY: number): Cell {
+    const { gridW, gridH } = this.opts
+    return cellAt(clientX, clientY, this.canvas.getBoundingClientRect(), gridW, gridH)
   }
 
-  // Bresenham line from last position to current — fills gaps on fast drags.
+  // Fills gaps on fast drags. Clamps first, so a pointer that left the canvas paints
+  // along the edge rather than off it.
   private paintLine(cx: number, cy: number) {
     const { gridW, gridH } = this.opts
-    // Clamp to grid bounds before doing anything.
     cx = Math.max(0, Math.min(gridW - 1, cx))
     cy = Math.max(0, Math.min(gridH - 1, cy))
 
@@ -510,141 +483,31 @@ export class PixelCanvas {
       return
     }
 
-    // Walk Bresenham line from last→current.
-    let x0 = this.lastCx; let y0 = this.lastCy
-    const x1 = cx; const y1 = cy
-    const dx = Math.abs(x1 - x0); const dy = Math.abs(y1 - y0)
-    const sx = x0 < x1 ? 1 : -1; const sy = y0 < y1 ? 1 : -1
-    let err = dx - dy
-    while (true) {
-      this.paintCell(x0, y0)
-      if (x0 === x1 && y0 === y1)
-        break
-      const e2 = 2 * err
-      if (e2 > -dy) { err -= dy; x0 += sx }
-      if (e2 < dx) { err += dx; y0 += sy }
-    }
+    for (const { x, y } of linePath(this.lastCx, this.lastCy, cx, cy))
+      this.paintCell(x, y)
 
     this.lastCx = cx
     this.lastCy = cy
   }
 
   private paintCell(cx: number, cy: number) {
-    const { gridW, gridH } = this.opts
-    const cell = cy * gridW + cx
+    const { gridW, gridH, palette } = this.opts
+    const cell = indexOf(cx, cy, gridW)
     if (cell === this.lastCell)
       return
     this.lastCell = cell
 
-    const half = Math.floor(this.brushSize / 2)
     let changed = false
-    for (let dy = -half; dy < this.brushSize - half; dy++) {
-      for (let dx = -half; dx < this.brushSize - half; dx++) {
-        const nx = cx + dx; const ny = cy + dy
-        if (nx < 0 || nx >= gridW || ny < 0 || ny >= gridH)
-          continue
-        const i = ny * gridW + nx
-        if (this.grid[i] !== this.selectedColor) {
-          this.grid[i] = this.selectedColor
-          this.ctx.fillStyle = this.opts.palette[this.selectedColor]
-          this.ctx.fillRect(nx * CELL_SIZE, ny * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-          changed = true
-        }
+    for (const i of brushFootprint(cx, cy, this.brushSize, gridW, gridH)) {
+      if (this.grid[i] !== this.selectedColor) {
+        this.grid[i] = this.selectedColor
+        const { x, y } = xyOf(i, gridW)
+        this.ctx.fillStyle = palette[this.selectedColor]
+        this.ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+        changed = true
       }
     }
     if (changed)
       this.opts.onUpdate?.(this.getGrid())
   }
-}
-
-// ── Swatch UI ─────────────────────────────────────────────────────────────────
-
-export interface SwatchHandle {
-  element: HTMLElement
-  // Outline the swatch matching `index` to indicate "this is the colour at the
-  // cell currently under the cursor". Pass null to clear.
-  highlight: (index: number | null) => void
-}
-
-export function buildSwatch(
-  palette: string[],
-  onSelect: (index: number) => void,
-): SwatchHandle {
-  // Builds a 4-column grid of clickable colour buttons. Behaviour lives
-  // here; appearance (sizes, gaps, borders) lives in the consuming Vue
-  // component's scoped CSS via :deep(.swatch__cell) etc.
-
-  const wrap = document.createElement('div')
-  wrap.className = 'swatch'
-
-  const cells: HTMLElement[] = []
-  let selectedIndex = 0
-  let highlightedIndex: number | null = null
-
-  function applyState() {
-    cells.forEach((cell, i) => {
-      cell.classList.toggle('swatch__cell--selected', i === selectedIndex)
-      cell.classList.toggle(
-        'swatch__cell--highlighted',
-        i !== selectedIndex && i === highlightedIndex,
-      )
-    })
-  }
-
-  palette.forEach((hex, i) => {
-    const cell = document.createElement('button')
-    cell.type = 'button'
-    cell.className = 'swatch__cell'
-    // Background colour is per-instance and not stylable from CSS without
-    // CSS custom properties — inline is the right escape hatch here.
-    cell.style.background = hex
-    cell.title = hex
-    cell.addEventListener('click', () => {
-      selectedIndex = i
-      applyState()
-      onSelect(i)
-    })
-    cells.push(cell)
-    wrap.appendChild(cell)
-  })
-
-  // Apply initial state (first swatch selected by default).
-  applyState()
-
-  return {
-    element: wrap,
-    highlight: (index: number | null) => {
-      if (index === highlightedIndex)
-        return
-      highlightedIndex = index
-      applyState()
-    },
-  }
-}
-
-// ── Brush size controls ───────────────────────────────────────────────────────
-
-export function buildBrushControls(pc: PixelCanvas): HTMLElement {
-  // Behaviour only — appearance lives in the consuming Vue component's CSS.
-  const wrap = document.createElement('div')
-  wrap.className = 'brush'
-
-  const slider = document.createElement('input')
-  slider.className = 'brush__slider'
-  slider.type = 'range'
-  slider.min = '1'
-  slider.max = String(pc.getBrushMax())
-  slider.value = String(pc.getBrushSize())
-
-  const label = document.createElement('span')
-  label.className = 'brush__label'
-  label.textContent = `brush: ${pc.getBrushSize()}`
-
-  slider.addEventListener('input', () => {
-    pc.setBrushSize(Number.parseInt(slider.value, 10))
-    label.textContent = `brush: ${pc.getBrushSize()}`
-  })
-
-  wrap.append(slider, label)
-  return wrap
 }
