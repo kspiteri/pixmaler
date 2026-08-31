@@ -141,7 +141,7 @@ Two targets, deployed two different ways — deliberately.
 | **Pages** (frontend) | automatic, by [`release.yml`](./.github/workflows/release.yml) | merging the Release PR |
 | **Worker** (realtime server) | `pnpm wr:deploy`, by hand | whenever you choose, ideally just **before** merging |
 
-[`ci.yml`](./.github/workflows/ci.yml) runs lint, typecheck and build on every push and PR, and deploys nothing.
+[`ci.yml`](./.github/workflows/ci.yml) runs lint, typecheck, test and build on every push and PR, and deploys nothing.
 
 ### Why the Worker is manual
 
