@@ -9,7 +9,7 @@ import type { ClientMsg, ServerMsg, Submission, VoteCategory } from '../../lib/t
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import { artRatio as artRatioFor } from '../../lib/aspect'
-import { PixelCanvas } from '../../lib/canvas'
+import { PixelCanvas } from '../../lib/canvas/pixel'
 import { askConfirm } from '../../lib/dialog'
 import { clientIdKey, socketKey } from '../../lib/keys'
 import { VOTE_CATEGORIES } from '../../lib/types'

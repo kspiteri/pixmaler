@@ -16,7 +16,7 @@ import {
   TARGET_RATIO_IDS,
   TARGET_RATIOS,
 } from '../lib/aspect'
-import { PixelCanvas } from '../lib/canvas'
+import { PixelCanvas } from '../lib/canvas/pixel'
 import {
   DEFAULT_COLOR_COUNT,
   DEFAULT_SCALE,

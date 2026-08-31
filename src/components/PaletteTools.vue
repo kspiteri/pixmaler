@@ -3,7 +3,7 @@
 // can be dragged (desktop) or dock full-width to the bottom (mobile). The swatch
 // and brush are imperative DOM built by the parent; we only mount them in slots.
 
-import type { PixelCanvas } from '../lib/canvas'
+import type { PixelCanvas } from '../lib/canvas/pixel'
 import { Check, GripVertical, Pin, Trash2, Undo2 } from '@lucide/vue'
 import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { setPaletteHeight, useAppLayout } from '../lib/appLayout'
@@ -340,7 +340,7 @@ function clear() {
 
 <style scoped lang="scss">
 // Swatch/brush `:deep()` overrides plus the reactive `--sw` size var — the DOM
-// is mounted imperatively by `lib/canvas.ts`, and `:deep()` only works in a
+// is mounted imperatively by `lib/canvas/pixel.ts`, and `:deep()` only works in a
 // scoped block. Static tools-panel chrome lives in `_tools-panel.scss`.
 @use '../styles/tokens' as *;
 

@@ -27,7 +27,7 @@ import AlertToast from '../../components/AlertToast.vue'
 import CanvasPair from '../../components/CanvasPair.vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import { orientationFor } from '../../lib/aspect'
-import { PixelCanvas } from '../../lib/canvas'
+import { PixelCanvas } from '../../lib/canvas/pixel'
 import { askConfirm } from '../../lib/dialog'
 import { clientIdKey, socketKey } from '../../lib/keys'
 

@@ -5,7 +5,8 @@
 
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
 import { useAppLayout } from '../lib/appLayout'
-import { buildBrushControls, buildSwatch, PixelCanvas } from '../lib/canvas'
+import { PixelCanvas } from '../lib/canvas/pixel'
+import { buildBrushControls, buildSwatch } from '../lib/canvas/tools'
 import PaletteTools from './PaletteTools.vue'
 
 interface Props {
@@ -222,7 +223,7 @@ onBeforeUnmount(() => {
 
 <style scoped lang="scss">
 // Canvas-pair `:deep()` overrides — the `<canvas>` elements are mounted
-// imperatively by `lib/canvas.ts`, and `:deep()` only works in a scoped block.
+// imperatively by `lib/canvas/pixel.ts`, and `:deep()` only works in a scoped block.
 // Static flex layout for the row lives in `_tools-panel.scss`.
 @use '../styles/tokens' as *;
 
