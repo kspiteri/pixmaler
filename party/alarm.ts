@@ -24,15 +24,15 @@ export interface LifecycleClock {
 export const ARM_TOLERANCE_MS = 5000
 
 // Both timed phases park their expiry in `state.deadline`, so the phase check is what
-// distinguishes them. Never actually returns null — the idle candidate is always
-// present — but the nullable signature is kept to match the caller's guard.
-export function nextWake(state: RoomState, clock: LifecycleClock): number | null {
+// distinguishes them. The idle candidate is unconditional, which is what makes the return
+// non-nullable — an idle window is always configured (`parseMs` supplies a default).
+export function nextWake(state: RoomState, clock: LifecycleClock): number {
   const candidates: number[] = [clock.lastActivityAt + clock.idleMs]
   if ((state.phase === 'DRAWING' || state.phase === 'VOTING') && state.deadline !== null)
     candidates.push(state.deadline)
   if (clock.emptySince !== null)
     candidates.push(clock.emptySince + clock.emptyGraceMs)
-  return candidates.length ? Math.min(...candidates) : null
+  return Math.min(...candidates)
 }
 
 export function shouldArm(when: number, armedFor: number | null): boolean {

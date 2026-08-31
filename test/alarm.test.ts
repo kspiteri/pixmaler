@@ -76,6 +76,18 @@ describe('nextWake', () => {
   it('slides the idle deadline with activity', () => {
     expect(nextWake(state(), clock({ lastActivityAt: NOW + 10_000 }))).toBe(NOW + 10_000 + IDLE)
   })
+
+  // The signature is non-nullable (#29), and this is what makes that safe: the idle
+  // candidate is unconditional, so there is always a real deadline to wake for.
+  // Asserted finite, not merely numeric — `Math.min()` of nothing is `Infinity`.
+  it('always returns a finite deadline, whatever the room is doing', () => {
+    for (const phase of ['LOBBY', 'DRAWING', 'VOTING', 'RESULTS'] as const) {
+      for (const deadline of [null, NOW + 1000] as const) {
+        for (const emptySince of [null, NOW] as const)
+          expect(Number.isFinite(nextWake(state({ phase, deadline }), clock({ emptySince })))).toBe(true)
+      }
+    }
+  })
 })
 
 describe('shouldArm', () => {
