@@ -1,13 +1,9 @@
-// Generic pointer-driven drag for floating UI elements.
+// Generic pointer-driven drag for floating UI elements. Returns `x`/`y` refs (panel
+// top-left, viewport coordinates) and a `start` handler for the drag *handle*. Coarse
+// pointers are skipped by default — mobile anchors the panel at its default spot.
 //
-// Returns `x` / `y` refs (panel top-left in viewport coordinates) and a
-// `start` handler to attach to the drag *handle*. Skips coarse pointers
-// (touch) by default — mobile gets the panel anchored at its default spot
-// for now; revisit when the mobile pass lands.
-//
-// `setPointerCapture` keeps drag events flowing even when the pointer moves
-// over other elements (e.g. the canvas underneath), so painting handlers
-// don't fight us mid-drag.
+// `setPointerCapture` keeps drag events flowing when the pointer crosses other elements,
+// so the canvas's painting handlers underneath don't fight us mid-drag.
 
 import { onBeforeUnmount, ref } from 'vue'
 

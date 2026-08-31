@@ -1,20 +1,9 @@
-// Shared app-layout context — a tiny singleton reactive store for viewport
-// facts that more than one component needs to agree on.
+// Shared app-layout context: a tiny reactive singleton for viewport facts more than one
+// component must agree on — `isMobile` (matchMedia-backed) and `paletteHeight`.
 //
-// Two facts live here today:
-//   • `isMobile`      — are we below the mobile breakpoint (matchMedia-backed).
-//   • `paletteHeight` — the docked palette's measured height in px (mobile only;
-//                       0 when the palette floats / is absent).
-//
-// Why a shared store rather than props / a CSS var:
-//   The DRAWING screen has to reconcile two independently-owned pieces — the
-//   floating <PaletteTools> panel (which knows its own rendered height) and the
-//   <CanvasPair> surface (which must size the editable canvas to whatever space
-//   is left). Threading the palette height through a CSS custom property meant
-//   only CSS could consume it; CanvasPair's JS fit-zoom (PixelCanvas.fitTo)
-//   couldn't. Publishing it here lets CanvasPair compute the allowed canvas
-//   area directly, and keeps `isMobile` in one place instead of each component
-//   spinning up its own matchMedia listener.
+// A store rather than a CSS custom property because `CanvasPair` needs the palette's
+// height in *JS* to size the canvas via `PixelCanvas.fitTo`, and a CSS var is only
+// readable from CSS. It also keeps one matchMedia listener instead of one per component.
 
 import { ref } from 'vue'
 

@@ -2,34 +2,16 @@
 
 export type Phase = 'LOBBY' | 'DRAWING' | 'VOTING' | 'RESULTS'
 
-// Avatar shapes — the silhouette a player picks for their seat chip in the
-// lobby. Runtime array, not just a union, because the **server validates against
-// it**: the value reaches the DOM as a class name, so an unchecked string is an
-// injection route. Same reason `rename` clamps to 24 chars.
-//
-// Deliberately restricted to shapes that hold a centred capital at 28 px. A
-// diamond, triangle or star crushes the letter, and the letter is doing real
-// work — it maps the chip to the name beside it. If a future custom-avatar
-// feature drops the letter, that constraint lifts and this list can grow.
-//
-// `rounded` is the default because it is what the chip already looked like, so a
-// player who never opens the picker sees no change.
+// Avatar shapes for the seat chip. A runtime array, not just a union, because the
+// **server validates against it** — the value reaches the DOM as a class name. Restricted
+// to shapes that hold a centred capital at 28 px, since the letter maps chip to name.
 export const AVATAR_SHAPES = ['rounded', 'square', 'circle', 'hexagon', 'octagon', 'leaf'] as const
 export type AvatarShape = typeof AVATAR_SHAPES[number]
 export const DEFAULT_AVATAR_SHAPE: AvatarShape = 'rounded'
 
-// The one place a shape is validated, deliberately beside the list it checks and
-// in the module both sides already import — same reasoning as `VOTE_CATEGORIES`
-// above ("shared … so they can't drift apart"). This predicate is a security
-// boundary: the value ends up as a class name on every other player's screen, so
-// the server runs it on everything inbound and the client runs it on whatever
-// localStorage hands back. Two copies would mean the next rule added here (case
-// folding, a legacy alias) only lands on one side.
-//
-// Clamps rather than rejects, matching `rename`'s 24-char slice. `includes` on a
-// real array compares with SameValueZero, so this coerces nothing, triggers no
-// getters and cannot throw — `undefined`, `null`, numbers, objects and
-// prototype-flavoured keys all fall through to the default.
+// The only place a shape is validated, kept beside the list it checks and in the module
+// both sides import — the value becomes a class name on every other player's screen, so
+// two copies would mean the next rule added lands on one side only. Clamps, never throws.
 export function normaliseShape(shape: unknown): AvatarShape {
   return AVATAR_SHAPES.includes(shape as AvatarShape)
     ? shape as AvatarShape
@@ -85,10 +67,9 @@ export interface DrawDoneMsg {
 
 export type VoteCategory = 'funniest' | 'best'
 
-// Vote categories in display order. Shared by client (buttons, stickers) and
-// server (tally) so they can't drift apart.
-// Icon paths are relative (no leading `/`) so they resolve under the Vite
-// `base` (`/pixmaler/`) when consumers prepend `import.meta.env.BASE_URL`.
+// Display order, shared by client (buttons, stickers) and server (tally) so they cannot
+// drift. Icon paths are relative so they resolve under the Vite `base` once a consumer
+// prepends `import.meta.env.BASE_URL`.
 export const VOTE_CATEGORIES: { id: VoteCategory, label: string, icon: string }[] = [
   { id: 'funniest', label: 'Funniest', icon: 'assets/icons/laugh.svg' },
   { id: 'best', label: 'Best', icon: 'assets/icons/star.svg' },
@@ -114,23 +95,16 @@ export interface GmPlayAgainMsg {
   type: 'gm:playAgain'
 }
 
-// GM-only, DRAWING/VOTING-only. Abandons the round in flight and returns everyone
-// to the lobby — for when the target image renders broken and the round is
-// unplayable. Deliberately its own message rather than reusing `gm:playAgain`:
-// the two share a teardown but carry opposite intents, and only a distinct type
-// lets the server phase-guard each correctly and lets the client tell players
-// their round was cancelled rather than finished.
+// GM-only, DRAWING/VOTING-only. Abandons a round in flight for when the target image
+// renders broken. Its own message rather than reusing `gm:playAgain`: they share a
+// teardown but carry opposite intents, and only a distinct type phase-guards correctly.
 export interface GmCancelRoundMsg {
   type: 'gm:cancelRound'
 }
 
-// GM-only, LOBBY/RESULTS-only. Ends the session for everyone: the room is wiped and
-// every client is dropped onto the closed screen. Only offered between rounds —
-// mid-round the right control is `gm:cancelRound`, which keeps the room alive.
-//
-// This is the deliberate twin of the idle wipe: same teardown, same
-// `session-closed` broadcast, same terminal screen. The difference is only that
-// somebody chose it.
+// GM-only, LOBBY/RESULTS-only. Wipes the room and drops every client onto the closed
+// screen — the deliberate twin of the idle wipe, differing only in that somebody chose
+// it. Mid-round the right control is `gm:cancelRound`, which keeps the room alive.
 export interface GmEndSessionMsg {
   type: 'gm:endSession'
 }
@@ -158,28 +132,16 @@ export type ClientMsg
 
 // ── Inbound validation ───────────────────────────────────────────────────────
 
-// Bounds for anything a client can put on the wire. Derived from what the UI can
-// actually produce rather than invented:
-//
-// - **Grid side.** `gridSizeFor` is `round(source * scale * 0.01)`, the picker's
-//   scale slider tops out at 50, and `SOURCE_MAX_SIDE` normalises the long edge
-//   to 768 — so the largest legitimate side is `round(768 * 50 * 0.01)` = 384.
-//   512 leaves headroom without admitting the million-cell case.
-// - **Palette.** `COLOUR_OPTIONS` offers 8/16/24/32, and median-cut may return
-//   fewer than asked for. 64 is generous.
-// - **Draw seconds.** 30 s is a deliberate floor on a *playable* round, not just a
-//   safety bound. It is enforced on both sides for different
-//   reasons: the picker clamps so the constraint is visible the moment you cross
-//   it, and the server clamps so a stale client can never put a shorter round on
-//   the wire.
-//
-//   It **clamps rather than rejects**, the same choice `normaliseShape` and
-//   `rename`'s 24-char slice already make. Rejecting was a real bug: HTML `min`
-//   does not stop a typed value, so a GM testing with 20 s had the whole config
-//   dropped and a Start button that silently did nothing.
-export const GRID_MAX_SIDE = 512
+// Bounds for anything a client can put on the wire, derived from what the UI can
+// actually produce rather than invented. The largest legitimate grid side is
+// `round(768 * 50 * 0.01)` = 384, from `SOURCE_MAX_SIDE` and the scale slider's cap.
+export const GRID_MAX_SIDE = 512 // headroom over 384, without admitting a million cells
 export const GRID_MAX_CELLS = GRID_MAX_SIDE * GRID_MAX_SIDE
-export const PALETTE_MAX_LEN = 64
+export const PALETTE_MAX_LEN = 64 // the picker offers 8/16/24/32; median cut may return fewer
+
+// A floor on a *playable* round, enforced on both sides: the picker clamps to make the
+// limit visible, the server clamps so a stale client cannot shorten a round. Clamps
+// rather than rejects — HTML `min` lets a typed value through, which dropped whole configs.
 export const DRAW_SECONDS_MIN = 30
 export const DRAW_SECONDS_MAX = 600
 
@@ -209,26 +171,9 @@ function isCells(v: unknown, maxLen: number): v is number[] {
   return Array.isArray(v) && v.length <= maxLen && v.every(isInt)
 }
 
-/**
- * Parse a raw inbound frame into a `ClientMsg`, or `null` if it is not one.
- *
- * Replaces `JSON.parse(raw) as ClientMsg`, which was a compile-time promise with
- * no runtime check behind it: a well-formed JSON object of *any* shape reached
- * the handlers. An unguarded `grid` then made `endDrawing`'s gallery build throw
- * after it had already moved `phase`, so the alarm retry resolved the round with
- * an empty gallery and silently discarded every submission.
- *
- * Deliberately **constructs** each message rather than narrowing the input, so
- * unknown extra properties cannot ride along into room state and back out over a
- * broadcast.
- *
- * Cannot throw: every check is a `typeof`, an `Array.isArray`, or a regex on a
- * value already proven to be a string. Same discipline as `normaliseShape`.
- *
- * **Structural only.** Anything that needs the room's config — does this grid
- * match the round's dimensions, is every cell inside the round's palette — is
- * checked server-side, which is the only place that knows.
- */
+// Parses a raw frame into a `ClientMsg`, or `null`. Replaces an unchecked cast that let
+// arbitrary objects reach the handlers. **Constructs** each message rather than narrowing,
+// so unknown properties cannot ride into room state and out over a broadcast.
 export function parseClientMsg(raw: string): ClientMsg | null {
   let parsed: unknown
   try { parsed = JSON.parse(raw) }
@@ -303,37 +248,13 @@ export interface Player {
   isGm: boolean
   connected: boolean
   doneDrawing: boolean
-  // Painted at least one cell this round. **Sticky**: it stays true even after the
-  // player clears the canvas, and that is the whole point.
-  //
-  // `draw:submit` is a debounced mirror of the canvas, so clearing sends an
-  // all-`-1` grid. The gallery used to be filtered on grid *content*, so a player
-  // who cleared to start over and ran out of time was dropped from voting **and**
-  // results with no feedback — they had drawn, and the round forgot. Filtering on
-  // this flag instead keeps them in: their card is blank, but it exists.
-  //
-  // Deliberately not "has a non-blank grid": that conflates *didn't participate*
-  // with *participated and wiped it*, which are different things and get different
-  // treatment on the reveal.
-  //
-  // Cleared for everyone when the next round starts — in the same statement as
-  // `doneDrawing` and `spectating`, which is the discipline that keeps the three
-  // in step. A per-round flag with its own forgotten reset is what produced the
-  // blank-winner and phantom-vote bugs.
+  // Painted at least one cell this round. **Sticky** — clearing the canvas sends an
+  // all-`-1` grid, and filtering the gallery on grid *content* dropped anyone who
+  // cleared to start over from voting and results. Their card is blank, but it exists.
   drewThisRound: boolean
-  // Joined after the round had already started, so they sit this one out: no
-  // canvas, no vote, and — the point of the flag — **excluded from both progress
-  // denominators**, so "X of Y done" and "X of Y voted" can't jump backwards when
-  // somebody arrives mid-round. That backwards jump is also why `allVoted` could
-  // un-fire, which is what forced item 59's notification into a non-latching
-  // channel; with spectators excluded it becomes a fact that can't retract.
-  //
-  // Cleared for everyone when the next round starts — wherever `doneDrawing` is
-  // cleared, which is the discipline that keeps the two in step.
-  //
-  // Set only in `handleJoin`'s new-player branch: a reconnecting player keeps
-  // whatever they were, so a mid-round refresh can't demote a real competitor to a
-  // spectator, and a returning spectator stays one.
+  // Joined after the round started, so they sit it out and are **excluded from both
+  // progress denominators** — otherwise "X of Y done" jumps backwards on a mid-round
+  // arrival, which is what let `allVoted` un-fire. Set only for genuinely new players.
   spectating: boolean
   // Chosen in the lobby, persisted in the player's own localStorage, and echoed
   // here so *other* clients can draw their chip. Always a valid AvatarShape —
@@ -425,14 +346,9 @@ export interface DrawStateMsg {
   grid: number[] // palette indices; -1 = untouched
 }
 
-// Broadcast from `wipeState()` — the room has been reset and this client's slot no
-// longer exists. Terminal: the client stops reconnecting and shows a closed screen.
-//
-// Needed because a wipe is otherwise invisible. The idle path (45 min of no
-// messages) can fire with live connections, and `wipeState` clears `players` and
-// `connMap` without telling anyone, so a watching client keeps rendering a room the
-// server has forgotten. Every action it sends is then silently dropped by the phase
-// and GM guards — a zombie tab that looks fine and does nothing.
+// Broadcast from `wipeState()` — this client's slot no longer exists, so it stops
+// reconnecting and shows the closed screen. Needed because a wipe is otherwise invisible:
+// the idle path can fire with live connections, leaving a zombie tab rendering a dead room.
 export interface SessionClosedMsg {
   type: 'session-closed'
 }
