@@ -1,5 +1,5 @@
 // Ratio-aware helpers shared by the canvas surface: brush sizing scales with the
-// longest side (canvas.ts), `--art-ratio` preserves image shape in the Voting and
+// longest side (`canvas/pixel.ts`), `--art-ratio` preserves image shape in the Voting and
 // Results slots, and the drawing shell flips `flex-direction` via `orientationFor`.
 
 // Maximum brush size for a given grid, scaled by the longest side and clamped
@@ -25,10 +25,9 @@ export function artRatio(gridW: number, gridH: number): string {
   return `${gridW} / ${gridH}`
 }
 
-// Orientation for a two-pane layout (reference + editable canvas) that wants
-// the editable canvas to occupy the largest possible area of the viewport.
-// Returns `'row'` when the viewport is wider than the grid ratio (so canvases
-// sit side by side) and `'column'` when the viewport is taller (stack them).
+// Orientation for the two-pane layout, so the editable canvas claims the largest area of
+// the viewport: `'row'` when the viewport is wider than the grid ratio (canvases side by
+// side), `'column'` when it is taller (stacked).
 export function orientationFor(
   gridW: number,
   gridH: number,

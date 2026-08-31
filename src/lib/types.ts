@@ -248,10 +248,6 @@ export interface Player {
   isGm: boolean
   connected: boolean
   doneDrawing: boolean
-  // Painted at least one cell this round. **Sticky** — clearing the canvas sends an
-  // all-`-1` grid, and filtering the gallery on grid *content* dropped anyone who
-  // cleared to start over from voting and results. Their card is blank, but it exists.
-  drewThisRound: boolean
   // Joined after the round started, so they sit it out and are **excluded from both
   // progress denominators** — otherwise "X of Y done" jumps backwards on a mid-round
   // arrival, which is what let `allVoted` un-fire. Set only for genuinely new players.
