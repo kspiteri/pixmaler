@@ -5,8 +5,8 @@
 // — `gm:playAgain` from a stale RESULTS tab used to null the `config` the GM had
 // just chosen in the lobby, silently losing their image.
 
-import type { RoomState } from '../party/state'
-import type { GmConfigureMsg, Phase, Player } from '../src/lib/types'
+import type { RoomPlayer, RoomState } from '../party/state'
+import type { GmConfigureMsg, Phase } from '../src/lib/types'
 import { describe, expect, it } from 'vitest'
 import {
   handleCancelRound,
@@ -30,7 +30,7 @@ const config = {
 const ALL_PHASES: Phase[] = ['LOBBY', 'DRAWING', 'VOTING', 'RESULTS']
 
 // A room where `gm` holds the role. Other players are seated alongside.
-function harness(players: Player[] = [], over: Partial<RoomState> = {}) {
+function harness(players: RoomPlayer[] = [], over: Partial<RoomState> = {}) {
   return room([player('gm'), ...players], { gmClientId: 'gm', originalGmClientId: 'gm', ...over })
 }
 

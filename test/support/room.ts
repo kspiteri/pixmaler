@@ -5,11 +5,11 @@
 // that. Not a `*.test.ts`, so vitest does not collect it.
 
 import type { RoomConn, RoomCtx } from '../../party/ctx'
-import type { RoomState } from '../../party/state'
-import type { Player, ServerMsg } from '../../src/lib/types'
+import type { RoomPlayer, RoomState } from '../../party/state'
+import type { ServerMsg } from '../../src/lib/types'
 import { buildState, drawProgress, freshRoomState } from '../../party/state'
 
-export function player(clientId: string, over: Partial<Player> = {}): Player {
+export function player(clientId: string, over: Partial<RoomPlayer> = {}): RoomPlayer {
   return {
     clientId,
     name: clientId,
@@ -48,16 +48,11 @@ export interface HarnessOpts {
   votingMs?: number
 }
 
-/**
- * A room with `players` seated and `connMap` wired so each has a `conn-<clientId>`
- * connection. `over` patches any `RoomState` field — phase, gallery, config, gmClientId.
- *
- * `endVoting` and `resetToLobby` are NOT stubbed: they are real functions in
- * `party/phases.ts`, so a handler that calls one really transitions and a test can
- * assert on the resulting state instead of on a call count.
- */
+// `players` are seated with `connMap` wired so each has a `conn-<clientId>`. `over` patches
+// any `RoomState` field. `endVoting` and `resetToLobby` are NOT stubbed — they are the real
+// functions, so a handler that calls one really transitions and a test can assert on state.
 export function harness(
-  players: Player[] = [],
+  players: RoomPlayer[] = [],
   over: Partial<RoomState> = {},
   opts: HarnessOpts = {},
 ): Harness {

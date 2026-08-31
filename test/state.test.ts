@@ -7,13 +7,12 @@
 // spectators are excluded from both progress readouts so a mid-round arrival
 // cannot make a count go backwards or un-fire `allVoted`.
 
-import type { RoomState } from '../party/state'
-import type { Player } from '../src/lib/types'
+import type { RoomPlayer, RoomState } from '../party/state'
 import { describe, expect, it } from 'vitest'
 import { buildState, drawProgress, freshRoomState, MAX_EXTENSIONS, votingProgress } from '../party/state'
 import { voteKey } from '../party/tally'
 
-function player(clientId: string, over: Partial<Player> = {}): Player {
+function player(clientId: string, over: Partial<RoomPlayer> = {}): RoomPlayer {
   return {
     clientId,
     name: clientId,
@@ -27,7 +26,7 @@ function player(clientId: string, over: Partial<Player> = {}): Player {
   }
 }
 
-function room(players: Player[] = [], over: Partial<RoomState> = {}) {
+function room(players: RoomPlayer[] = [], over: Partial<RoomState> = {}) {
   const state = freshRoomState()
   for (const p of players) state.players.set(p.clientId, p)
   return Object.assign(state, over)
@@ -102,7 +101,7 @@ describe('drawProgress', () => {
 
 describe('votingProgress', () => {
   // A voter counts as finished only once they have voted in EVERY category.
-  function withVotes(players: Player[], votes: [string, string, 'funniest' | 'best'][]) {
+  function withVotes(players: RoomPlayer[], votes: [string, string, 'funniest' | 'best'][]) {
     const s = room(players)
     for (const [voter, sub, cat] of votes) s.votes.set(voteKey(voter, cat), sub)
     return s
@@ -169,17 +168,23 @@ describe('buildState', () => {
     expect(byId.get('b')).toBe(false)
   })
 
+  it('never ships `drewThisRound`, which is server-only bookkeeping', () => {
+    // #27: it is set by `handleSubmit` without a broadcast, so on the wire it was stale
+    // from the last stroke until somebody voted. `endDrawing` is its only reader.
+    const s = room([player('a', { drewThisRound: true }), player('b')])
+    for (const p of buildState(s).players)
+      expect(p).not.toHaveProperty('drewThisRound')
+  })
+
   it('marks nobody as GM when the role is vacant', () => {
     const s = room([player('a', { isGm: true })], { gmClientId: '' })
     expect(buildState(s).players.every(p => !p.isGm)).toBe(true)
   })
 
   it('emits players in insertion order, which is what makes a seat stable', () => {
-    // Seats are derived from array index (see src/lib/seats.ts), so sorting here
-    // would re-seat everyone below a moved row and change their colour.
-    //
-    // Names are deliberately anti-alphabetical: with ascending ones a sort would
-    // be a no-op and this would pass against the very bug it guards.
+    // Seats are derived from array index (see src/lib/seats.ts), so sorting here would
+    // re-seat everyone below a moved row. Names are deliberately anti-alphabetical: with
+    // ascending ones a sort would be a no-op and this would pass against its own bug.
     const s = room([player('zeta'), player('alpha'), player('mid')])
     expect(buildState(s).players.map(p => p.clientId)).toEqual(['zeta', 'alpha', 'mid'])
   })

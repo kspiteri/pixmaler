@@ -3,8 +3,8 @@
 // blip — which is how a phone waking a suspended tab used to repaint its own avatar
 // mid-reveal, and how a flaky connection could ratchet a name forever.
 
-import type { RoomState } from '../party/state'
-import type { ClientMsg, GalleryMsg, GmConfigureMsg, Player, ResultsMsg } from '../src/lib/types'
+import type { RoomPlayer, RoomState } from '../party/state'
+import type { ClientMsg, GalleryMsg, GmConfigureMsg, ResultsMsg } from '../src/lib/types'
 import { describe, expect, it } from 'vitest'
 import { handleClose, handleJoin, handleRename, handleShape } from '../party/connection'
 import { voteKey } from '../party/tally'
@@ -32,7 +32,7 @@ function join(clientId: string, over: { name?: string, shape?: string } = {}) {
 }
 
 // A room where `seated` are already present and connected via `conn-<clientId>`.
-function harness(seated: Player[] = [], over: Partial<RoomState> = {}) {
+function harness(seated: RoomPlayer[] = [], over: Partial<RoomState> = {}) {
   return room(seated, over)
 }
 

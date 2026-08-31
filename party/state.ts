@@ -10,9 +10,14 @@ import { voterOf } from './tally'
 export const EXTEND_STEP_MS = 15_000
 export const MAX_EXTENSIONS = 2
 
+// The server's player carries one field the wire does not: `drewThisRound` decides
+// gallery membership in `endDrawing` and has no client reader, and broadcasting it meant
+// shipping a value that is stale between the last stroke and RESULTS (#27).
+export type RoomPlayer = Player & { drewThisRound: boolean }
+
 export interface RoomState {
   phase: Phase
-  players: Map<string, Player> // keyed by clientId; conn.id lives in connMap
+  players: Map<string, RoomPlayer> // keyed by clientId; conn.id lives in connMap
   connMap: Map<string, string> // conn.id → clientId
   gmClientId: string
   // First claimer of GM. Reclaims the role on reconnect, even after an auto-promote.
@@ -52,7 +57,7 @@ export function freshRoomState(): RoomState {
 
 // Via `connMap` rather than by scanning players, which is why a reconnect under the
 // same clientId reclaims the same slot.
-export function playerByConn(state: RoomState, connId: string): Player | undefined {
+export function playerByConn(state: RoomState, connId: string): RoomPlayer | undefined {
   const clientId = state.connMap.get(connId)
   return clientId ? state.players.get(clientId) : undefined
 }
@@ -106,8 +111,10 @@ export function votingProgress(state: RoomState): { votedCount: number, totalVot
 }
 
 export function buildState(state: RoomState): StateMsg {
-  // Derived here rather than stored per player, so it cannot drift from gmClientId.
-  const players = [...state.players.values()].map(p => ({
+  // `isGm` is derived here so it cannot drift from `gmClientId`, and `drewThisRound` is
+  // dropped here rather than at each write: this is the one place the room becomes a wire
+  // payload, so it is the one place that has to stay honest (#27).
+  const players: Player[] = [...state.players.values()].map(({ drewThisRound: _, ...p }) => ({
     ...p,
     isGm: p.clientId === state.gmClientId,
   }))

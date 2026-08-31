@@ -4,15 +4,15 @@
 // rigging a round are exercised without a Durable Object, a socket, or a browser.
 // Written before the rest of #19 moves handlers, so they lock current behaviour.
 
-import type { RoomState } from '../party/state'
-import type { GmConfigureMsg, Player, Submission } from '../src/lib/types'
+import type { RoomPlayer, RoomState } from '../party/state'
+import type { GmConfigureMsg, Submission } from '../src/lib/types'
 import { describe, expect, it } from 'vitest'
 import { voteKey } from '../party/tally'
 import { handleStopVoting, handleVote } from '../party/voting'
 import { player, harness as room } from './support/room'
 
 // Every case here starts in VOTING with a frozen gallery.
-function harness(players: Player[], gallery: Submission[], over: Partial<RoomState> = {}) {
+function harness(players: RoomPlayer[], gallery: Submission[], over: Partial<RoomState> = {}) {
   return room(players, { phase: 'VOTING', gallery, ...over })
 }
 

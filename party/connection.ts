@@ -2,8 +2,9 @@
 // `handleJoin`'s rules exist because a reconnect is not a new player — partysocket
 // reconnects unprompted, so anything re-applied here fires on every network blip.
 
-import type { ClientMsg, Player, ServerMsg, VoteCategory } from '../src/lib/types'
+import type { ClientMsg, ServerMsg, VoteCategory } from '../src/lib/types'
 import type { RoomConn, RoomCtx } from './ctx'
+import type { RoomPlayer } from './state'
 import { normaliseShape } from '../src/lib/types'
 import { wordPair } from '../src/lib/words'
 import { autoPromoteGm } from './state'
@@ -32,7 +33,7 @@ export function handleJoin(
   }
   else {
     const isFirst = state.players.size === 0
-    const player: Player = {
+    const player: RoomPlayer = {
       clientId: msg.clientId,
       // De-duplicated in this branch only: the reconnect branch never re-applies
       // `msg.name`, which is what stops a returning player being suffixed against

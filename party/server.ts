@@ -55,14 +55,9 @@ function parseMs(value: string | undefined, fallback: number): number {
   return Number.isFinite(n) && n > 0 ? n : fallback
 }
 
-// Origin allowlist for incoming connections / requests. This is CSWSH / casual-
-// abuse hygiene — NOT authentication (a non-browser client can forge or omit
-// `Origin`). Browsers can't forge it, so it blocks other websites and stray
-// frontends. See docs/.plans/09-server-hardening.md.
-//
-// In dev (PIXMALER_DEV) everything is allowed so `wr:dev` + local smoke-tests
-// work. In prod we require `Origin` to match the allowlist (a missing Origin is
-// rejected). Returns a 403 Response to block, or undefined to allow.
+// Origin allowlist — CSWSH and casual-abuse hygiene, **not** authentication: a non-browser
+// client can forge or omit `Origin`, but a browser cannot, so it blocks other sites. Dev
+// allows all; prod requires a match. See docs/.plans/09-server-hardening.md.
 const DEFAULT_ALLOWED_ORIGIN = 'https://kspiteri.github.io'
 
 function guardOrigin(req: Request, env: Env): Response | undefined {
@@ -81,15 +76,9 @@ function guardOrigin(req: Request, env: Env): Response | undefined {
   return new Response('Forbidden origin', { status: 403 })
 }
 
-// Ported from PartyKit to PartyServer (standard Durable Object, deployed via
-// wrangler). State is in-memory: the DO stays warm while anyone is connected.
-// Room lifecycle (idle / empty-room cleanup) + the draw-round deadline are
-// driven by a single DO **alarm** (see armAlarm/onAlarm) rather than setTimeout,
-// so the round still ends and stale rooms still get wiped even across an
-// eviction. NOTE: full state persistence (Tier 2) is still deferred — if a DO is
-// evicted mid-game its in-memory state is lost; that's acceptable (idle/empty
-// rooms are what get evicted, and those are what we wipe anyway). See
-// docs/.plans/10-room-lifecycle.md + 07-partyserver-port.md.
+// Standard Durable Object, ported from PartyKit. State is in-memory and lost on eviction
+// — deferred deliberately, since evicted rooms are the ones we wipe anyway — and a single
+// alarm drives the round deadline and lifecycle wipes. See docs/.plans/10-room-lifecycle.md.
 export class PixmalerServer extends Server<Env> {
   private state: RoomState = freshRoomState()
 
@@ -196,7 +185,7 @@ export class PixmalerServer extends Server<Env> {
 
   private armAlarm(): void {
     const when = nextWake(this.state, this.clock())
-    if (when === null || !shouldArm(when, this.armedFor))
+    if (!shouldArm(when, this.armedFor))
       return
     this.armedFor = when
     this.ctx.storage.setAlarm(when).catch(err =>
@@ -232,16 +221,13 @@ export class PixmalerServer extends Server<Env> {
   // Reset the room to a pristine LOBBY (as if the code were never used) and
   // cancel any pending alarm. Used by both wipe paths.
   private wipeState(): void {
-    // Tell anyone still watching, before we forget they exist. The idle path can
-    // fire with live connections, and every field their client depends on —
-    // `players`, `connMap`, `gmClientId` — is about to be cleared, after which
-    // everything they send is silently dropped by the phase and GM guards. The
-    // empty path only fires with `connMap.size === 0`, so there this is a no-op.
+    // Tell anyone still watching before we forget they exist: the idle path can fire with
+    // live connections, and every field their client depends on is about to be cleared,
+    // after which their messages are silently dropped. A no-op on the empty path.
     this.broadcastAll({ type: 'session-closed' } satisfies ServerMsg)
-    // Then drop them. The client closes its own socket on `session-closed` to stop
-    // partysocket reconnecting, but the room must not depend on client cooperation
-    // to let go — an old bundle, or a client that ignores the message, would
-    // otherwise re-join a pristine room and silently become its GM.
+    // Then drop them. The client closes its own socket on `session-closed`, but the room
+    // must not depend on client cooperation — an old bundle would otherwise re-join a
+    // pristine room and silently become its GM.
     for (const conn of this.getConnections())
       conn.close(1000, 'session closed')
     this.state = freshRoomState()
@@ -285,14 +271,9 @@ export class PixmalerServer extends Server<Env> {
 }
 
 // ── Worker entry ───────────────────────────────────────────────────────────
-// Routes /parties/:server/:room WebSocket + HTTP requests to the Durable
-// Object. `routePartykitRequest` kebab-cases the binding class name, so
-// PixmalerServer is reachable as the party name "pixmaler-server" (see the
-// client's PartySocket `party` option in src/App.vue).
-//
-// onBeforeConnect guards WebSocket upgrades; onBeforeRequest guards plain HTTP
-// (the room existence check). Both run the same origin allowlist so neither
-// door is left open. Returning a Response short-circuits with that status.
+// Routes /parties/:server/:room to the Durable Object. `routePartykitRequest` kebab-cases
+// the class name, so PixmalerServer is the party "pixmaler-server" (see App.vue). The
+// WebSocket and HTTP guards run the same allowlist, so neither door is left open.
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     return (

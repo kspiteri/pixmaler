@@ -5,8 +5,8 @@
 // against the round's own config — is the guard that keeps a crafted payload out of
 // everyone else's renderer.
 
-import type { RoomState } from '../party/state'
-import type { GmConfigureMsg, Player } from '../src/lib/types'
+import type { RoomPlayer, RoomState } from '../party/state'
+import type { GmConfigureMsg } from '../src/lib/types'
 import { describe, expect, it } from 'vitest'
 import { handleDrawDone, handleSubmit } from '../party/drawing'
 import { player, harness as room } from './support/room'
@@ -21,7 +21,7 @@ const config = {
   drawSeconds: 60,
 } satisfies GmConfigureMsg
 
-function harness(players: Player[], over: Partial<RoomState> = {}) {
+function harness(players: RoomPlayer[], over: Partial<RoomState> = {}) {
   return room(players, { phase: 'DRAWING', config, ...over })
 }
 
@@ -153,6 +153,18 @@ describe('handleSubmit', () => {
     handleSubmit(h.ctx, h.conn('conn-a'), submit([1, 1, 1, 1]))
     expect(h.state.submissions.get('a')).toEqual([1, 1, 1, 1])
     expect(h.state.submissions.size).toBe(1)
+  })
+
+  it('still accepts strokes after the player has flagged themselves done', () => {
+    // "I'm done" is a social ping, not a submit — the player keeps painting if they want,
+    // and whatever is on the canvas at the deadline is what goes to VOTING. Guarding
+    // submissions on `doneDrawing` would silently freeze their drawing at the flag.
+    const h = harness([player('a')])
+    handleSubmit(h.ctx, h.conn('conn-a'), submit([0, 0, 0, 0]))
+    handleDrawDone(h.ctx, h.conn('conn-a'))
+    handleSubmit(h.ctx, h.conn('conn-a'), submit([1, 1, 1, 1]))
+    expect(h.state.submissions.get('a')).toEqual([1, 1, 1, 1])
+    expect(h.state.players.get('a')!.doneDrawing).toBe(true)
   })
 
   it('broadcasts nothing — submission is silent', () => {
