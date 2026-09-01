@@ -355,6 +355,11 @@ export interface SessionClosedMsg {
   type: 'session-closed'
 }
 
+// Broadcast right after `resetToLobby` when the GM abandoned a round mid-game.
+export interface RoundCancelledMsg {
+  type: 'round-cancelled'
+}
+
 // The deployed Worker's identity, sent once per connection (#25). From Cloudflare's
 // version-metadata binding, never `package.json`, which lags because the Worker is
 // deployed before the Release PR merges. Empty fields mean the binding is absent.
@@ -383,5 +388,6 @@ export type ServerMsg
     | VoteStateMsg
     | DrawStateMsg
     | SessionClosedMsg
+    | RoundCancelledMsg
     | TargetMsg
     | VersionMsg

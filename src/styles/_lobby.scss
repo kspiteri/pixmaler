@@ -94,6 +94,12 @@
     }
   }
 
+  &__notice {
+    margin: $gap-4 auto 0;
+    max-width: 34rem;
+    width: calc(100% - #{$gap-6});
+  }
+
   &__body {
     flex: 1;
     display: grid;

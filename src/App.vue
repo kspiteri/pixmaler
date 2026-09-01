@@ -96,6 +96,11 @@ const connectionStatus = ref<'connecting' | 'connected' | 'reconnecting'>('conne
 // dropped socket this is not recoverable by reconnecting — the room is gone — so
 // we stop trying and say so.
 const sessionClosed = ref(false)
+// The GM abandoned the round in flight (#16), so LOBBY owes everyone a reason: their
+// canvas emptied and their drawing is gone. Held here rather than in `Lobby.vue` because
+// the message arrives while `Drawing.vue` is still mounted — the lobby view does not exist
+// yet to receive it. Cleared when the next round starts, or when the player dismisses it.
+const roundCancelled = ref(false)
 // The app root, for the way out of a closed room. Matches `Paint.vue` / `Taglines.vue`.
 const baseUrl = `${import.meta.env.BASE_URL.replace(/\/+$/, '')}/`
 
@@ -205,6 +210,7 @@ function connect(name: string) {
         //                votes the server does not have (Voting.vue's watcher
         //                applies any truthy `picked`)
         if (msg.phase === 'DRAWING') {
+          roundCancelled.value = false
           drawState.value = null
           results.value = null
           gallery.value = null
@@ -214,6 +220,7 @@ function connect(name: string) {
       case 'gallery': gallery.value = msg; break
       case 'vote-state': voteState.value = msg; break
       case 'draw-state': drawState.value = msg; break
+      case 'round-cancelled': roundCancelled.value = true; break
       case 'session-closed':
         // Terminal, and the order matters: set the flag before closing so the
         // `close` handler above knows this teardown was deliberate. Closing stops
@@ -338,7 +345,13 @@ if (route === 'room' && roomCode) {
            sits outside it deliberately: connection state is exactly what a player
            wants to see while a view is broken. -->
       <PhaseBoundary :key="state.phase">
-        <Lobby v-if="state.phase === 'LOBBY'" :state="state" :target-grid="targetGrid" />
+        <Lobby
+          v-if="state.phase === 'LOBBY'"
+          :state="state"
+          :target-grid="targetGrid"
+          :round-cancelled="roundCancelled"
+          @dismiss-cancelled="roundCancelled = false"
+        />
         <Drawing
           v-else-if="state.phase === 'DRAWING' && state.config && targetGrid"
           :state="state"

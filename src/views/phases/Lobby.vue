@@ -9,7 +9,9 @@ import type {
   GmConfigureMsg,
   ServerMsg,
 } from '../../lib/types'
+import { CircleSlash } from '@lucide/vue'
 import { computed, inject, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
+import AlertToast from '../../components/AlertToast.vue'
 import ImagePicker from '../../components/ImagePicker.vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import PlayerList from '../../components/PlayerList.vue'
@@ -27,6 +29,16 @@ const props = defineProps<{
   state: State
   // Held by App.vue rather than read off `state.config`, which no longer carries it (#35).
   targetGrid: number[] | null
+  // The GM abandoned the last round, so this lobby needs to say why everyone is here and
+  // their drawing isn't (#16). Owned by App.vue: the `round-cancelled` message arrives
+  // before this view exists.
+  roundCancelled: boolean
+}>()
+
+const emit = defineEmits<{
+  // Clears the flag in App.vue, which unmounts the toast. Kept up there so a dismissal
+  // sticks — a toast that owned its own dismissal would come back on any remount.
+  dismissCancelled: []
 }>()
 
 const socket = inject(socketKey)!.value!
@@ -277,6 +289,17 @@ onBeforeUnmount(() => {
         End session
       </button>
     </template>
+
+    <AlertToast
+      v-if="roundCancelled"
+      class="lobby__notice"
+      @dismiss="emit('dismissCancelled')"
+    >
+      <template #icon>
+        <CircleSlash class="toast__icon" :size="16" aria-hidden="true" />
+      </template>
+      the round was cancelled and you lost your drawing,<br>a new round will soon begin...
+    </AlertToast>
 
     <div class="lobby__body">
       <aside class="lobby__players">

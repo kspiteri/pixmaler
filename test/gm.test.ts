@@ -153,6 +153,14 @@ describe('handlePlayAgain', () => {
     }
   })
 
+  it('does not claim the round was cancelled — the room finished it', () => {
+    // Both paths share `resetToLobby`, so the notice has to come from the cancel handler
+    // rather than the reset, or Play again would apologise for a round that ran fine.
+    const h = harness([], { phase: 'RESULTS', config, ranked: [], gallery: [] })
+    handlePlayAgain(h.ctx, h.conn('conn-gm'))
+    expect(h.broadcasts.map(m => m.type)).toEqual(['state'])
+  })
+
   it('refuses a non-GM', () => {
     const h = harness([player('rando')], { phase: 'RESULTS', config })
     handlePlayAgain(h.ctx, h.conn('conn-rando'))
@@ -180,6 +188,22 @@ describe('handleCancelRound', () => {
       expect(h.state.phase).toBe(phase)
       expect(h.state.config).toEqual(config)
     }
+  })
+
+  it('says why the room is back in the lobby, after the state that puts it there', () => {
+    // Order is the point (#16): a client still rendering DRAWING has no lobby in which to
+    // show the notice, so the state must land first.
+    for (const phase of ['DRAWING', 'VOTING'] as const) {
+      const h = harness([], { phase, config })
+      handleCancelRound(h.ctx, h.conn('conn-gm'))
+      expect(h.broadcasts.map(m => m.type)).toEqual(['state', 'round-cancelled'])
+    }
+  })
+
+  it('stays quiet when it refuses, so nobody is told about a round still running', () => {
+    const h = harness([player('rando')], { phase: 'DRAWING', config })
+    handleCancelRound(h.ctx, h.conn('conn-rando'))
+    expect(h.broadcasts).toEqual([])
   })
 
   it('refuses a non-GM', () => {

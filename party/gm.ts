@@ -64,6 +64,9 @@ export function handleCancelRound(ctx: RoomCtx, conn: RoomConn) {
   if (ctx.state.phase !== 'DRAWING' && ctx.state.phase !== 'VOTING')
     return
   resetToLobby(ctx)
+  // Broadcast rather than sent to the others, because the GM's own tab may be a stale one
+  // that only just learned the round is over, and one message is cheaper than two paths.
+  ctx.broadcast({ type: 'round-cancelled' })
 }
 
 // LOBBY and RESULTS only — between rounds, where "we're done" is a real intent.
