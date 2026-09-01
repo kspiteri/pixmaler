@@ -119,15 +119,36 @@ describe('rgbToHsl', () => {
 })
 
 describe('medianCut', () => {
-  it('splits to a power of two buckets', () => {
+  it('splits to exactly the requested bucket count', () => {
     expect(medianCut(ramp(64), 0)).toHaveLength(1)
-    expect(medianCut(ramp(64), 1)).toHaveLength(2)
-    expect(medianCut(ramp(64), 4)).toHaveLength(16)
+    expect(medianCut(ramp(64), 1)).toHaveLength(1)
+    expect(medianCut(ramp(64), 2)).toHaveLength(2)
+    expect(medianCut(ramp(64), 16)).toHaveLength(16)
+  })
+
+  it('honours counts that are not powers of two — issue #28', () => {
+    // The old signature took a depth and halved at every level, so it could only ever
+    // return 2**n buckets. This is the whole point of the priority queue.
+    for (const count of [3, 7, 24, 30])
+      expect(medianCut(ramp(64), count)).toHaveLength(count)
+  })
+
+  it('stops short when the cloud runs out of colours to separate', () => {
+    // Three distinct colours cannot make eight buckets. A zero-range bucket has
+    // nothing left to split, so the loop ends rather than returning empties.
+    const pixels: Rgb[] = [[0, 0, 0], [0, 0, 0], [10, 10, 10], [20, 20, 20]]
+    expect(medianCut(pixels, 8)).toHaveLength(3)
+  })
+
+  it('never returns an empty bucket for a non-empty cloud', () => {
+    // Load-bearing: an empty bucket would average to NaN in `derivePalette`.
+    for (const bucket of medianCut(ramp(30), 24))
+      expect(bucket.length).toBeGreaterThan(0)
   })
 
   it('keeps every pixel — buckets partition the input', () => {
     const pixels = ramp(64)
-    const total = medianCut(pixels, 4).reduce((n, b) => n + b.length, 0)
+    const total = medianCut(pixels, 16).reduce((n, b) => n + b.length, 0)
     expect(total).toBe(64)
   })
 
@@ -136,7 +157,7 @@ describe('medianCut', () => {
     // Anything needing the original order has to copy first.
     const pixels: Rgb[] = [[255, 0, 0], [0, 0, 0], [128, 0, 0]]
     const before = [...pixels]
-    medianCut(pixels, 1)
+    medianCut(pixels, 2)
     expect(pixels).not.toEqual(before)
     expect(pixels).toHaveLength(3)
   })
@@ -149,27 +170,33 @@ describe('medianCut', () => {
     // Blue varies across the full range, red and green not at all, so the split
     // must separate low blue from high blue.
     const pixels: Rgb[] = [[10, 10, 0], [10, 10, 255], [10, 10, 10], [10, 10, 240]]
-    const [low, high] = medianCut(pixels, 1)
+    const [low, high] = medianCut(pixels, 2)
     expect(Math.max(...low.map(p => p[2]))).toBeLessThan(Math.min(...high.map(p => p[2])))
   })
 })
 
 describe('derivePalette', () => {
-  it('returns one colour per non-empty bucket', () => {
+  it('returns exactly as many colours as asked for', () => {
     expect(derivePalette(ramp(64), 16)).toHaveLength(16)
     expect(derivePalette(ramp(64), 8)).toHaveLength(8)
   })
 
-  it('rounds the request up to a power of two, so 24 can yield 32', () => {
-    // Depth is ceil(log2(colorCount)), so a non-power-of-two request overshoots.
-    // The picker offers 24; this is what it actually produces.
-    expect(derivePalette(ramp(64), 24)).toHaveLength(32)
+  it('honours a request that is not a power of two — issue #28', () => {
+    // Was: depth = ceil(log2(24)) = 5, so a request for 24 silently produced 32. The
+    // picker offers 24 and the swatch now matches it.
+    expect(derivePalette(ramp(64), 24)).toHaveLength(24)
+    expect(derivePalette(ramp(64), 20)).toHaveLength(20)
+  })
+
+  it('falls short only when the image has fewer distinct colours', () => {
+    // Two colours cannot make sixteen; `withClassics` tops the swatch up instead.
+    expect(derivePalette([[0, 0, 0], [255, 255, 255]], 16)).toHaveLength(2)
   })
 
   it('averages each bucket rather than picking a member', () => {
-    // Two pixels, depth 1 → one bucket each, so each colour survives exactly.
+    // Two pixels, two buckets → one each, so each colour survives exactly.
     expect(derivePalette([[0, 0, 0], [10, 20, 30]], 2)).toEqual([[0, 0, 0], [10, 20, 30]])
-    // Both in one bucket at depth 0 → the mean.
+    // Both in one bucket at a count of 1 → the mean.
     expect(derivePalette([[0, 0, 0], [10, 20, 30]], 1)).toEqual([[5, 10, 15]])
   })
 
@@ -185,6 +212,10 @@ describe('derivePalette', () => {
 
   it('never returns an empty palette for a non-empty cloud', () => {
     expect(derivePalette([[7, 7, 7]], 16).length).toBeGreaterThan(0)
+  })
+
+  it('returns nothing for an empty cloud rather than a NaN colour', () => {
+    expect(derivePalette([], 16)).toEqual([])
   })
 })
 
@@ -267,30 +298,89 @@ describe('paletteSortOrder', () => {
 describe('withClassics', () => {
   it('keeps the derived colours as the prefix, so grid indices stay valid', () => {
     const derived: Rgb[] = [[10, 20, 30], [40, 50, 60]]
-    expect(withClassics(derived).slice(0, derived.length)).toEqual(derived)
+    expect(withClassics(derived, 8).slice(0, derived.length)).toEqual(derived)
   })
 
-  it('appends every classic when none is close to a derived colour', () => {
-    expect(withClassics([[120, 130, 125]])).toHaveLength(1 + CLASSICS.length)
+  it('fills the swatch out to the requested count', () => {
+    expect(withClassics([[120, 130, 125]], 4)).toHaveLength(4)
+  })
+
+  it('adds nothing once the derived colours fill the count', () => {
+    // The count is the whole swatch, so an image with enough colour of its own spends
+    // every slot on itself and gets no classics at all.
+    const derived: Rgb[] = [[120, 130, 125], [10, 200, 10]]
+    expect(withClassics(derived, 2)).toEqual(derived)
+    expect(withClassics(derived, 1)).toEqual(derived)
+  })
+
+  it('has enough candidates to fill the picker\'s largest count', () => {
+    // 32 is the most the picker offers, and an all-white upload derives exactly one
+    // colour — which also dedupes the white candidate away. 31 candidates would leave
+    // the player one slot short, so the ramp has to carry more than that.
+    expect(CLASSICS.length).toBeGreaterThan(32)
+    expect(withClassics([[255, 255, 255]], 32)).toHaveLength(32)
+  })
+
+  it('keeps every candidate distinguishable from the others', () => {
+    // Load-bearing for the fill: a candidate closer than the dedupe distance to an
+    // earlier one can never be used, so the ramp would quietly stop filling.
+    for (let i = 0; i < CLASSICS.length; i++) {
+      for (let j = i + 1; j < CLASSICS.length; j++)
+        expect(colorDist(CLASSICS[i], CLASSICS[j])).toBeGreaterThanOrEqual(CLASSIC_DEDUPE_DIST ** 2)
+    }
+  })
+
+  it('leads with the six base colours, coarsest first', () => {
+    // The fill is greedy from the front, so a two-slot gap must yield black and white
+    // rather than black and the grey next to it.
+    expect(withClassics([[120, 130, 125]], 3)).toEqual([[120, 130, 125], [0, 0, 0], [255, 255, 255]])
   })
 
   it('drops a classic the image already covers', () => {
-    // Pure black is a classic; a derived near-black makes it redundant.
-    const out = withClassics([[2, 2, 2]])
-    expect(out).toHaveLength(CLASSICS.length) // black dropped, 5 added
+    // Pure black is a classic; a derived near-black makes it redundant, and the ramp
+    // fills the freed slot from further down instead.
+    const out = withClassics([[2, 2, 2]], 32)
+    expect(out).toHaveLength(32)
     expect(out).not.toContainEqual([0, 0, 0])
   })
 
   it('uses the dedupe distance as its cutoff', () => {
     const justInside: Rgb = [CLASSIC_DEDUPE_DIST - 2, 0, 0]
     const justOutside: Rgb = [CLASSIC_DEDUPE_DIST + 2, 0, 0]
-    expect(withClassics([justInside])).not.toContainEqual([0, 0, 0])
-    expect(withClassics([justOutside])).toContainEqual([0, 0, 0])
+    expect(withClassics([justInside], 8)).not.toContainEqual([0, 0, 0])
+    expect(withClassics([justOutside], 8)).toContainEqual([0, 0, 0])
   })
 
   it('does not mutate the derived palette', () => {
     const derived: Rgb[] = [[10, 20, 30]]
-    withClassics(derived)
+    withClassics(derived, 8)
     expect(derived).toEqual([[10, 20, 30]])
+  })
+})
+
+// The three stages compose into the number the GM actually sees, so the promise the
+// picker makes is only kept by the composition — issue #28 was that nothing checked it.
+describe('the swatch the pipeline builds', () => {
+  const swatchFor = (pixels: Rgb[], count: number) =>
+    withClassics(mergeNearDuplicates(derivePalette(pixels, count)), count)
+
+  it('never hands back more colours than the GM asked for', () => {
+    for (const count of [8, 16, 24, 32])
+      expect(swatchFor(ramp(200), count)).toHaveLength(count)
+  })
+
+  it('fills the count even when the image has nothing to give', () => {
+    // A single flat colour — the all-white upload case. The image supplies one swatch
+    // and the ramp supplies the other 31.
+    const flat: Rgb[] = Array.from({ length: 100 }, () => [90, 60, 40] as Rgb)
+    expect(swatchFor(flat, 32)).toHaveLength(32)
+    expect(swatchFor(flat, 8)).toHaveLength(8)
+  })
+
+  it('still cannot exceed the count it was given', () => {
+    // The ramp is longer than the largest request, so the cap is what holds the line.
+    const flat: Rgb[] = Array.from({ length: 100 }, () => [90, 60, 40] as Rgb)
+    for (const count of [1, 2, 5, 8, 16, 24, 32])
+      expect(swatchFor(flat, count)).toHaveLength(count)
   })
 })
