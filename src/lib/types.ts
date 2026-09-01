@@ -43,13 +43,19 @@ export interface RenameMsg {
   name: string
 }
 
-export interface GmConfigureMsg {
-  type: 'gm:configure'
+// The round's settings, small enough to ride on every `state`. The target grid is not
+// here: it never changes mid-round and dominates the payload, so it travels once in its
+// own `TargetMsg` instead of being re-sent on every vote and join.
+export interface RoundConfig {
   gridW: number
   gridH: number
   palette: string[] // hex colours
-  targetGrid: number[] // palette indices, length gridW*gridH
   drawSeconds: number
+}
+
+export interface GmConfigureMsg extends RoundConfig {
+  type: 'gm:configure'
+  targetGrid: number[] // palette indices, length gridW*gridH
 }
 
 export interface GmStartMsg {
@@ -263,7 +269,7 @@ export interface StateMsg {
   phase: Phase
   players: Player[]
   gmClientId: string
-  config: GmConfigureMsg | null
+  config: RoundConfig | null
   deadline: number | null // unix ms
   // The round's *current* length, growing with each extension. `config.drawSeconds`
   // is where it starts; the countdown bar divides by this instead, or it pins at
@@ -359,6 +365,14 @@ export interface VersionMsg {
   timestamp: string // ISO; the field that answers "is the server older than the frontend?"
 }
 
+// The image players are copying. Sent once when the GM configures a round, and to a
+// joining client that arrives after — never on a routine `state`, which is why `config`
+// carries only `RoundConfig`. Clients hold it until `config` goes null.
+export interface TargetMsg {
+  type: 'target'
+  grid: number[] // palette indices, length gridW*gridH
+}
+
 export type ServerMsg
   = | StateMsg
     | PhaseMsg
@@ -369,4 +383,5 @@ export type ServerMsg
     | VoteStateMsg
     | DrawStateMsg
     | SessionClosedMsg
+    | TargetMsg
     | VersionMsg
