@@ -55,8 +55,10 @@ function onResult(next: PipelineResult, nextMeta: PickerMeta) {
 const summary = computed(() => {
   if (!result.value || !meta.value)
     return ''
-  const { gridW, gridH } = result.value
-  return [meta.value.source, `${gridW}×${gridH}`, `${meta.value.colours} colours`]
+  const { gridW, gridH, palette } = result.value
+  // The palette that came back, not the count the GM asked for: a flat image cannot
+  // always fill that count (see `withClassics`), and the caption must not claim it did.
+  return [meta.value.source, `${gridW}×${gridH}`, `${palette.length} colours`]
     .filter(Boolean)
     .join(' · ')
 })

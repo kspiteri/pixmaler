@@ -269,7 +269,7 @@ async function reprocess() {
       previewSlot.value.replaceChildren(label, pc.canvas)
     }
 
-    emit('result', result, { source: sourceLabel.value, colours: colorCount.value })
+    emit('result', result, { source: sourceLabel.value })
   }
   catch (err) {
     if (myRun !== runId)
