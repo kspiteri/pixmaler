@@ -201,6 +201,24 @@ describe('handleJoin — targeted re-sends', () => {
     expect(h.sent.find(s => s.msg.type === 'vote-state')!.msg).toEqual({ type: 'vote-state', votes: {} })
   })
 
+  it('sends the target grid to the arrival only, never to the room', () => {
+    // #35: everyone already present has it. Broadcasting it on every join is what made a
+    // `state` message 92% target grid.
+    const h = harness([player('a')], { phase: 'DRAWING', config })
+    handleJoin(h.ctx, h.conn('conn-b'), join('b'))
+    const targeted = h.sent.filter(s => s.msg.type === 'target')
+    expect(targeted).toHaveLength(1)
+    expect(targeted[0].connId).toBe('conn-b')
+    expect(targeted[0].msg).toEqual({ type: 'target', grid: config.targetGrid })
+    expect(h.broadcasts.filter(m => m.type === 'target')).toEqual([])
+  })
+
+  it('sends no target when no round is configured', () => {
+    const h = harness([player('a')])
+    handleJoin(h.ctx, h.conn('conn-b'), join('b'))
+    expect(h.sent.filter(s => s.msg.type === 'target')).toEqual([])
+  })
+
   it('restores the joiner\'s own grid mid-DRAWING', () => {
     const h = harness([player('a')], { phase: 'DRAWING', config })
     // Someone else's submission is inserted FIRST, so a lookup that ignores the

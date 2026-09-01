@@ -8,9 +8,19 @@
 // cannot make a count go backwards or un-fire `allVoted`.
 
 import type { RoomPlayer, RoomState } from '../party/state'
+import type { GmConfigureMsg } from '../src/lib/types'
 import { describe, expect, it } from 'vitest'
 import { buildState, drawProgress, freshRoomState, MAX_EXTENSIONS, votingProgress } from '../party/state'
 import { voteKey } from '../party/tally'
+
+const config = {
+  type: 'gm:configure',
+  gridW: 2,
+  gridH: 2,
+  palette: ['#000000', '#ffffff'],
+  targetGrid: [0, 1, 1, 0],
+  drawSeconds: 60,
+} satisfies GmConfigureMsg
 
 function player(clientId: string, over: Partial<RoomPlayer> = {}): RoomPlayer {
   return {
@@ -174,6 +184,30 @@ describe('buildState', () => {
     const s = room([player('a', { drewThisRound: true }), player('b')])
     for (const p of buildState(s).players)
       expect(p).not.toHaveProperty('drewThisRound')
+  })
+
+  it('never ships the target grid, which cannot change mid-round', () => {
+    // #35: re-sending it on every vote and join was 92% of a `state` message. It travels
+    // once in a `target` message instead.
+    const s = room([player('a')], { config })
+    const out = buildState(s).config
+    expect(out).not.toHaveProperty('targetGrid')
+    expect(out).not.toHaveProperty('type')
+  })
+
+  it('still ships the settings a client needs on every update', () => {
+    const s = room([player('a')], { config })
+    expect(buildState(s).config).toEqual({
+      gridW: config.gridW,
+      gridH: config.gridH,
+      palette: config.palette,
+      drawSeconds: config.drawSeconds,
+    })
+  })
+
+  it('reports no config once the room leaves a round behind', () => {
+    // The client keys its held grid off this: `config: null` clears it.
+    expect(buildState(room([player('a')])).config).toBeNull()
   })
 
   it('marks nobody as GM when the role is vacant', () => {

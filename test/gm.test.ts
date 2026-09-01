@@ -42,6 +42,31 @@ describe('handleConfigure', () => {
     expect(h.stateBroadcasts()).toBe(1)
   })
 
+  it('broadcasts the target grid before the state that references it', () => {
+    // #35: `state.config` no longer carries the grid, so a client seeing a config it has
+    // no grid for would render nothing. Per-connection ordering makes "target first" safe.
+    const h = harness()
+    handleConfigure(h.ctx, h.conn('conn-gm'), config)
+    const kinds = h.broadcasts.map(m => m.type)
+    expect(kinds).toEqual(['target', 'state'])
+    expect(h.broadcasts[0]).toEqual({ type: 'target', grid: config.targetGrid })
+  })
+
+  it('re-broadcasts the target on every configure, so the lobby preview stays live', () => {
+    const h = harness()
+    handleConfigure(h.ctx, h.conn('conn-gm'), config)
+    handleConfigure(h.ctx, h.conn('conn-gm'), { ...config, targetGrid: [1, 0, 0, 1] })
+    const targets = h.broadcasts.filter(m => m.type === 'target')
+    expect(targets).toHaveLength(2)
+    expect(targets.at(-1)).toEqual({ type: 'target', grid: [1, 0, 0, 1] })
+  })
+
+  it('sends no target when it refuses the configure', () => {
+    const h = harness([player('rando')])
+    handleConfigure(h.ctx, h.conn('conn-rando'), config)
+    expect(h.broadcasts.filter(m => m.type === 'target')).toEqual([])
+  })
+
   it('refuses a non-GM', () => {
     const h = harness([player('rando')])
     handleConfigure(h.ctx, h.conn('conn-rando'), config)
