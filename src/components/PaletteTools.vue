@@ -23,7 +23,6 @@ interface Props {
   // reference). If null / not laid out, we fall back to (16, 16).
   anchor?: HTMLElement | null
   // DRAWING only — whether this player has flagged themselves done. When true
-  // the Done button reads as flagged and is disabled.
   flaggedDone?: boolean
   // Whether the canvas has anything on its undo stack — parent-supplied because
   // `PixelCanvas.canUndo()` is imperative.
@@ -320,17 +319,25 @@ function clear() {
               <button
                 v-else
                 class="btn btn--primary tools-panel__btn tools-panel__btn--done"
-                :class="{ 'tools-panel__btn--flagged': flaggedDone }"
                 type="button"
-                title="Ready"
-                :aria-label="flaggedDone ? 'Flagged as ready' : 'Ready'"
                 :aria-pressed="flaggedDone"
                 :disabled="flaggedDone"
                 @click="emit('done')"
               >
                 <Check :size="18" />
+                <span>{{ flaggedDone ? "ready!" : 'mark as ready' }}</span>
               </button>
             </div>
+          </div>
+          <div v-if="variant === 'drawing'" class="tools-panel__hint">
+            <p>
+              {{
+                flaggedDone
+                  ? 'the room knows'
+                  : "tell the room you're ready"
+              }}
+            </p>
+            <p>saved as you draw, good or not</p>
           </div>
         </div>
       </div>

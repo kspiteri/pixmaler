@@ -24,8 +24,10 @@
     border-color 0.15s;
 
   &:disabled {
-    opacity: 0.3;
+    opacity: 0.45;
     cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
   }
 
   &--primary {

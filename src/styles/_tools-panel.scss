@@ -194,13 +194,30 @@
     }
   }
 
-  // Done ("Ready") — the DRAWING-phase primary CTA. Once flagged it stays lit and
-  // held down rather than fading, so it reads "locked in", not broken.
-  &__btn--done.tools-panel__btn--flagged:disabled {
-    opacity: 1;
-    cursor: default;
-    transform: translateY(var(--press));
-    box-shadow: 0 0 0 var(--press-colour);
+  // The DRAWING-phase primary CTA. Takes twice Undo's width because it carries a label
+  // and Undo does not. `/paint` is untouched: its row is two icon buttons, evenly split.
+  &__btn--done {
+    flex: 2;
+    font-size: $fs-sm;
+    white-space: nowrap;
+  }
+
+  // Caption under the actions row. The paragraphs need an explicit margin: there is no
+  // global `p` reset, so the browser default of `1em` top and bottom left ~44px of dead
+  // space around two 11px lines — in a panel that is capped at `50vh` when docked.
+  &__hint {
+    margin: $gap-2 0 0;
+    color: $fg-60;
+    font-size: $fs-2xs;
+    text-align: center;
+
+    p {
+      margin: 0;
+
+      + p {
+        margin-top: 0.35rem;
+      }
+    }
   }
 
   // ── Mobile: dock to the bottom, full-width ──────────────────────────────────

@@ -63,7 +63,7 @@ const restoredGrid = computed(() => {
 })
 const deadline = computed(() => props.state.deadline)
 const doneText = computed(() =>
-  `${props.state.doneCount} of ${props.state.totalDrawing} done`,
+  `${props.state.doneCount} of ${props.state.totalDrawing} ready`,
 )
 
 const pairRef = useTemplateRef<InstanceType<typeof CanvasPair>>('pair')
