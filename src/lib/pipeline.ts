@@ -27,12 +27,12 @@ export interface PipelineResult {
   sourceH: number
 }
 
-// What the picker was pointed at, emitted alongside the result. Lets a caller
-// caption the current selection (see Paint's collapsed settings summary).
+// What the picker was pointed at, emitted alongside the result. Lets a caller caption
+// the current selection (see Paint's collapsed settings summary). The colour count is
+// deliberately absent: `PipelineResult.palette` is the truth, and the request is not.
 export interface PickerMeta {
   /** Human-readable source: a sample's label, or the uploaded file's name. */
   source: string
-  colours: number
 }
 
 export const DEFAULT_COLOR_COUNT = 16
@@ -76,7 +76,7 @@ export function quantiseToPalette(
 export async function processImage(
   file: File,
   scale: number, // cells per 100 source px, 1-50; clamped if out of range
-  colorCount: number,
+  colorCount: number, // swatch length; exact unless the image has fewer distinct colours
   ratio: TargetRatioId,
   crop: CropSelection = FULL_CROP,
 ): Promise<PipelineResult> {
@@ -108,8 +108,9 @@ export async function processImage(
   sampleCtx.drawImage(sourceCanvas, 0, 0, sourceW, sourceH, 0, 0, gridW, gridH)
   const sampleData = sampleCtx.getImageData(0, 0, gridW, gridH).data
 
-  // ── Step 2: derive the palette from that same downscale. Classics are appended for
-  // the swatch afterwards, so the target itself uses only image-derived colours.
+  // ── Step 2: derive the palette from that same downscale. The target uses only
+  // image-derived colours; classics top the swatch up to `colorCount` afterwards if
+  // the image could not fill it.
   const samplePixels: Rgb[] = []
   for (let i = 0; i < sampleData.length; i += 4) {
     samplePixels.push([sampleData[i], sampleData[i + 1], sampleData[i + 2]])
@@ -120,8 +121,9 @@ export async function processImage(
   // Indices map into `derived` (which is the prefix of the wire palette below).
   const targetGrid = quantiseToPalette(sampleData, gridW, gridH, derived)
 
-  // Derived first so targetGrid indices stay valid; classics are swatch-only.
-  const fullPalette = withClassics(derived)
+  // Derived first so targetGrid indices stay valid; classics are swatch-only, and only
+  // as many as it takes to reach the count the GM asked for.
+  const fullPalette = withClassics(derived, colorCount)
 
   // Reorder so the swatch reads like a paint tray; targetGrid indices are remapped to
   // point at the same colours in their new positions.

@@ -143,7 +143,7 @@ export type ClientMsg
 // `round(768 * 50 * 0.01)` = 384, from `SOURCE_MAX_SIDE` and the scale slider's cap.
 export const GRID_MAX_SIDE = 512 // headroom over 384, without admitting a million cells
 export const GRID_MAX_CELLS = GRID_MAX_SIDE * GRID_MAX_SIDE
-export const PALETTE_MAX_LEN = 64 // the picker offers 8/16/24/32; median cut may return fewer
+export const PALETTE_MAX_LEN = 64 // the picker offers 8/16/24/32, exactly; headroom over 32
 
 // A floor on a *playable* round, enforced on both sides: the picker clamps to make the
 // limit visible, the server clamps so a stale client cannot shorten a round. Clamps

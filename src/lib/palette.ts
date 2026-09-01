@@ -6,15 +6,43 @@
 // 0-255 per channel, no alpha — a target is fully opaque.
 export type Rgb = [number, number, number]
 
-// Appended to the player's swatch after the derived palette, never part of the target,
-// so there is always a black, a white and a primary to reach for.
-export const CLASSICS: Rgb[] = [
+// The fallback swatch: what fills the slots the image itself cannot. Six base colours —
+// black, white and the primaries — plus a ramp between each neighbouring pair, walked as
+// a ring so yellow closes back to black. 6 + 6 × 5 = 36 candidates, which is what it
+// takes to fill the picker's largest count for a single-colour upload: an all-white
+// image supplies one swatch and dedupes the white candidate away, so 31 would leave the
+// player one short of 32.
+//
+// **The order is load-bearing.** `withClassics` fills greedily from the front, so the
+// six base colours come first, then every pair's midpoint, then progressively finer
+// steps — a two-slot gap gets black and white, not black and a near-black grey.
+const CLASSIC_BASE: Rgb[] = [
   [0, 0, 0], // black
   [255, 255, 255], // white
   [220, 50, 50], // red
   [50, 180, 50], // green
   [50, 100, 220], // blue
   [230, 210, 50], // yellow
+]
+
+// Where to cut each pair, coarsest first: the midpoint, then the third-points, then the
+// sixth-points. Every step is at least `CLASSIC_DEDUPE_DIST` from its neighbours — the
+// tightest pair, green to blue, is 188 units across, so a sixth of it is 31.
+const CLASSIC_STEPS = [3 / 6, 2 / 6, 4 / 6, 1 / 6, 5 / 6]
+
+function mix([r1, g1, b1]: Rgb, [r2, g2, b2]: Rgb, t: number): Rgb {
+  return [
+    Math.round(r1 + (r2 - r1) * t),
+    Math.round(g1 + (g2 - g1) * t),
+    Math.round(b1 + (b2 - b1) * t),
+  ]
+}
+
+export const CLASSICS: Rgb[] = [
+  ...CLASSIC_BASE,
+  ...CLASSIC_STEPS.flatMap(t =>
+    CLASSIC_BASE.map((from, i) => mix(from, CLASSIC_BASE[(i + 1) % CLASSIC_BASE.length], t)),
+  ),
 ]
 
 // How close a classic must be to a derived colour to be dropped as a duplicate, in
@@ -101,43 +129,97 @@ export function paletteSortOrder(palette: Rgb[]): number[] {
 
 // ── Median-cut quantisation ───────────────────────────────────────────────────
 
-// Splits the cloud on its widest channel, halving at the median, to `2 ** depth`
-// buckets. **Sorts `pixels` in place** — the caller owns a throwaway array from
-// `getImageData`, so copying 262144 triples to preserve order would be waste.
-export function medianCut(pixels: Rgb[], depth: number): Rgb[][] {
-  if (depth === 0 || pixels.length === 0)
-    return [pixels]
+// One bucket, as a half-open range over the shared pixel array. `ch` and `range`
+// describe its widest channel; `priority` is population × that range, so the next
+// split goes to the bucket carrying the most colour error rather than simply the most
+// pixels. That is what lets a small, chromatically distant region — one red object in
+// a green scene — earn its own entry instead of being averaged into mud.
+interface Box {
+  lo: number
+  hi: number
+  ch: number
+  range: number
+  priority: number
+}
 
+// Channel ties go to red, then green. The choice has to be deterministic for a given
+// cloud, or the same image yields a different palette between runs.
+function measure(pixels: Rgb[], lo: number, hi: number): Box {
   let minR = 255; let maxR = 0; let minG = 255; let maxG = 0; let minB = 255; let maxB = 0
-  for (const [r, g, b] of pixels) {
+  for (let i = lo; i < hi; i++) {
+    const [r, g, b] = pixels[i]
     if (r < minR)
-      minR = r; if (r > maxR)
+      minR = r
+    if (r > maxR)
       maxR = r
     if (g < minG)
-      minG = g; if (g > maxG)
+      minG = g
+    if (g > maxG)
       maxG = g
     if (b < minB)
-      minB = b; if (b > maxB)
+      minB = b
+    if (b > maxB)
       maxB = b
   }
   const rangeR = maxR - minR; const rangeG = maxG - minG; const rangeB = maxB - minB
-  const ch = rangeR >= rangeG && rangeR >= rangeB ? 0 : rangeG >= rangeB ? 1 : 2
-
-  pixels.sort((a, b) => a[ch] - b[ch])
-  const mid = pixels.length >> 1
-  return [
-    ...medianCut(pixels.slice(0, mid), depth - 1),
-    ...medianCut(pixels.slice(mid), depth - 1),
-  ]
+  let ch = 0; let range = rangeR
+  if (rangeG > range) {
+    ch = 1
+    range = rangeG
+  }
+  if (rangeB > range) {
+    ch = 2
+    range = rangeB
+  }
+  return { lo, hi, ch, range, priority: (hi - lo) * range }
 }
 
-// Mean colour per non-empty bucket. `colorCount` is a target, not a guarantee: depth is
-// `ceil(log2(colorCount))`, so 24 yields up to 32 before merging. `PALETTE_MAX_LEN` on
-// the wire is what actually bounds it.
+// Sorts the box's own span on its widest channel and halves it at the median.
+// `Array.prototype.sort` cannot address a sub-range, hence the copy out and back —
+// still a single pass over that span rather than the whole cloud.
+function splitBox(pixels: Rgb[], box: Box): [Box, Box] {
+  const span = pixels.slice(box.lo, box.hi)
+  span.sort((a, b) => a[box.ch] - b[box.ch])
+  for (let i = 0; i < span.length; i++)
+    pixels[box.lo + i] = span[i]
+  const mid = box.lo + (span.length >> 1)
+  return [measure(pixels, box.lo, mid), measure(pixels, mid, box.hi)]
+}
+
+// Splits the cloud into **exactly** `count` buckets, halving whichever bucket carries
+// the most colour error each time — so any count works, not only powers of two.
+// Returns fewer only when the cloud runs out of distinct colours to separate.
+// **Sorts `pixels` in place** — the caller owns a throwaway array from `getImageData`,
+// so copying 262144 triples to preserve order would be waste.
+export function medianCut(pixels: Rgb[], count: number): Rgb[][] {
+  if (count <= 1 || pixels.length === 0)
+    return [pixels]
+
+  const boxes = [measure(pixels, 0, pixels.length)]
+  while (boxes.length < count) {
+    // Linear scan rather than a heap: `count` is bounded by `PALETTE_MAX_LEN`, so this
+    // is a few thousand comparisons against sorting up to 262144 pixels.
+    let best = 0
+    for (let i = 1; i < boxes.length; i++) {
+      if (boxes[i].priority > boxes[best].priority)
+        best = i
+    }
+    // Every bucket holds a single colour, so there is nothing left to separate. Stop
+    // short of `count` and let `withClassics` make up the difference.
+    if (boxes[best].priority === 0)
+      break
+    const [low, high] = splitBox(pixels, boxes[best])
+    boxes[best] = low
+    boxes.push(high)
+  }
+  return boxes.map(b => pixels.slice(b.lo, b.hi))
+}
+
+// Mean colour per non-empty bucket, so the palette is exactly `colorCount` long when
+// the image can supply that many distinct colours, and shorter when it cannot.
+// `mergeNearDuplicates` may then shorten it further.
 export function derivePalette(pixels: Rgb[], colorCount: number): Rgb[] {
-  const depth = Math.ceil(Math.log2(colorCount))
-  const buckets = medianCut(pixels, depth)
-  return buckets
+  return medianCut(pixels, colorCount)
     .filter(b => b.length > 0)
     .map((bucket) => {
       const sum = bucket.reduce((acc, [r, g, b]) => [acc[0] + r, acc[1] + g, acc[2] + b], [0, 0, 0])
@@ -179,11 +261,14 @@ export function mergeNearDuplicates(palette: Rgb[], thresholdSquared = 400): Rgb
   return out
 }
 
-// Derived colours stay first so `targetGrid` indices remain valid; classics are
-// appended only when far enough from all of them to earn a separate swatch.
-export function withClassics(derived: Rgb[]): Rgb[] {
+// Derived colours stay first so `targetGrid` indices remain valid. Classics only fill
+// the swatch out to `targetLen`, and only when far enough from every derived colour to
+// earn a slot — a rich image gets none, a two-tone graphic gets several.
+export function withClassics(derived: Rgb[], targetLen: number): Rgb[] {
   const full = [...derived]
   for (const classic of CLASSICS) {
+    if (full.length >= targetLen)
+      break
     if (!full.some(c => colorDist(c, classic) < CLASSIC_DEDUPE_DIST ** 2))
       full.push(classic)
   }
