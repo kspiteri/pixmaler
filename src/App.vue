@@ -263,20 +263,27 @@ if (route === 'room' && roomCode) {
   <template v-else-if="route === 'room'">
     <!-- Session closed: terminal, and checked before everything else because every
          branch below it describes a room the server has already forgotten.
-         Deliberately bare for now — `14` owns making it feel like part of the game. -->
+         Deliberately bare for now — `14` owns making it feel like part of the game.
+
+         The copy names no cause on purpose. `wipeState` is one funnel for two events -
+         the idle alarm and the GM's own "End session" - and `session-closed` carries no
+         reason, so anything cause-specific here is wrong half the time (#18): this said
+         "after sitting idle" to a GM who had just chosen to end the room. Telling them
+         apart needs a flag on the message, which is a protocol change and a Worker
+         deploy; an ending that reads as an ending does not. -->
     <div v-if="sessionClosed" class="page page--narrow session-closed">
       <Logo />
       <p class="label label--eyebrow">
-        room closed
+        gallery closed
       </p>
       <p class="session-closed__room">
         {{ roomCode }}
       </p>
       <p class="session-closed__note">
-        this session ended after sitting idle. the room code is free again.
+        the exhibition came down and the room code is free again.
       </p>
       <button class="btn btn--primary" type="button" @click="reloadPage">
-        Restart this room (as GM)
+        Reopen (first player will be GM)
       </button>
       <a class="btn btn--ghost" type="button" :href="baseUrl">
         Back to homepage

@@ -1,3 +1,4 @@
+@use 'screen' as *;
 @use 'tokens' as *;
 
 // Shared in-room phase shell — top progress bar + status bar + body — plus the
@@ -53,20 +54,18 @@
   }
 }
 
-// Fallback rendered by `PhaseBoundary.vue`. Borrows the session-closed screen's shape
-// deliberately: both replace an entire view with a short message and one action, so
-// they should read as the same kind of screen. The copy carries the whole difference -
+// Fallback rendered by `PhaseBoundary.vue`, on the shared `interstitial` recipe: both it
+// and the closed-room screen replace an entire view with a short message and one action,
+// so they should read as the same kind of screen. The copy carries the whole difference -
 // that one says the room is gone, this one says the round is still running. Buttons
 // stretch, as they do there, rather than being hand-aligned here.
+//
+// Shared through the mixin rather than a component deliberately: the boundary must render
+// no children, or a throw inside the fallback defeats the fallback. See `_screen.scss`.
 .phase-error {
-  display: flex;
-  flex-direction: column;
-  gap: $gap-3;
+  @include interstitial;
 
   &__note {
-    margin: 0 0 $gap-4;
-    color: $muted;
-    font-family: $font-body;
-    line-height: $lh-normal;
+    @include interstitial-note;
   }
 }

@@ -1,0 +1,38 @@
+@use 'tokens' as *;
+
+// The interstitial recipe: a whole screen replaced by one short message and one action.
+// Three of them exist — the name gate and the closed room (`_entry`), and the phase-error
+// fallback (`_phase`). They are deliberately the same kind of screen, so the shape lives
+// here once and the copy carries the whole difference between them.
+//
+// **Emits no CSS on purpose**, as `_chrome` does: a rule here would land wherever the
+// first `@use` resolves and reorder the cascade.
+//
+// Shared as CSS rather than as a component, which is not an oversight. `PhaseBoundary.vue`
+// renders one of these *as an error boundary*, so it must render no child components and
+// read no props — a fallback that can throw is worse than no fallback. A mixin cannot
+// fail at runtime; an `<Interstitial>` could.
+@mixin interstitial {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-3;
+}
+
+// The room code — the largest thing on the screen, because it is the one part worth
+// reading out to somebody. Margin is left to the caller: the name gate leads into a
+// form, the closed room into a line of prose.
+@mixin interstitial-code {
+  font-family: $font-display;
+  font-weight: 700;
+  font-size: 2rem;
+  color: $accent-ink;
+  word-break: break-word;
+}
+
+// The single explanatory line, and the gap between it and whatever action follows.
+@mixin interstitial-note {
+  margin: 0 0 $gap-4;
+  color: $muted;
+  font-family: $font-body;
+  line-height: $lh-normal;
+}
