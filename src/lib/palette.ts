@@ -16,13 +16,15 @@ export type Rgb = [number, number, number]
 // **The order is load-bearing.** `withClassics` fills greedily from the front, so the
 // six base colours come first, then every pair's midpoint, then progressively finer
 // steps — a two-slot gap gets black and white, not black and a near-black grey.
-const CLASSIC_BASE: Rgb[] = [
-  [0, 0, 0], // black
-  [255, 255, 255], // white
-  [220, 50, 50], // red
-  [50, 180, 50], // green
-  [50, 100, 220], // blue
-  [230, 210, 50], // yellow
+// Named because the picker offers these six as background choices too, and a bare colour
+// swatch needs a label a screen reader can announce.
+export const CLASSIC_BASE: { name: string, rgb: Rgb }[] = [
+  { name: 'black', rgb: [0, 0, 0] },
+  { name: 'white', rgb: [255, 255, 255] },
+  { name: 'red', rgb: [220, 50, 50] },
+  { name: 'green', rgb: [50, 180, 50] },
+  { name: 'blue', rgb: [50, 100, 220] },
+  { name: 'yellow', rgb: [230, 210, 50] },
 ]
 
 // Where to cut each pair, coarsest first: the midpoint, then the third-points, then the
@@ -38,10 +40,12 @@ function mix([r1, g1, b1]: Rgb, [r2, g2, b2]: Rgb, t: number): Rgb {
   ]
 }
 
+const BASE_RGB: Rgb[] = CLASSIC_BASE.map(c => c.rgb)
+
 export const CLASSICS: Rgb[] = [
-  ...CLASSIC_BASE,
+  ...BASE_RGB,
   ...CLASSIC_STEPS.flatMap(t =>
-    CLASSIC_BASE.map((from, i) => mix(from, CLASSIC_BASE[(i + 1) % CLASSIC_BASE.length], t)),
+    BASE_RGB.map((from, i) => mix(from, BASE_RGB[(i + 1) % BASE_RGB.length], t)),
   ),
 ]
 

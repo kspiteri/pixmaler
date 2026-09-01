@@ -39,6 +39,9 @@ export const DEFAULT_COLOR_COUNT = 16
 export const DEFAULT_SCALE = 8 // cells per 100 source px; range 1-50
 export const MOBILE_WARN_GRID = 64 // warn if computed grid longest side exceeds this
 export const SOURCE_MAX_SIDE = 768 // normalise uploads so the slider behaves consistently
+// What shows through a transparent upload. White because line art and logos — the PNGs
+// that carry an alpha channel — are drawn for a light page; the GM can change it.
+export const DEFAULT_BACKGROUND = '#ffffff'
 
 // ── Main pipeline ─────────────────────────────────────────────────────────────
 
@@ -79,6 +82,7 @@ export async function processImage(
   colorCount: number, // swatch length; exact unless the image has fewer distinct colours
   ratio: TargetRatioId,
   crop: CropSelection = FULL_CROP,
+  background: string = DEFAULT_BACKGROUND, // CSS colour behind a transparent upload
 ): Promise<PipelineResult> {
   const bitmap = await createImageBitmap(file)
 
@@ -92,7 +96,15 @@ export async function processImage(
   const sourceCanvas = document.createElement('canvas')
   sourceCanvas.width = sourceW
   sourceCanvas.height = sourceH
-  sourceCanvas.getContext('2d')!.drawImage(bitmap, sx, sy, sw, sh, 0, 0, sourceW, sourceH)
+  const sourceCtx = sourceCanvas.getContext('2d')!
+  // Flatten onto an opaque background *before* anything samples it. `getImageData` hands
+  // back RGB 0,0,0 for a fully transparent pixel and `quantiseToPalette` reads no alpha,
+  // so without this every transparent region quantises to black — a logo on alpha came
+  // out as one black mass. Filling first also blends anti-aliased edges properly instead
+  // of darkening them towards black.
+  sourceCtx.fillStyle = background
+  sourceCtx.fillRect(0, 0, sourceW, sourceH)
+  sourceCtx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, sourceW, sourceH)
   bitmap.close()
 
   // ── Step 1: downscale the source to exactly the grid, in one step. A `gridW × gridH`
@@ -161,4 +173,40 @@ export function unsupportedImage(file: File): UnsupportedImage | null {
   if (file.type && !file.type.startsWith('image/'))
     return 'not-image'
   return null
+}
+
+// Whether any pixel is less than fully opaque, which is the only case where the
+// background choice changes the target. Unlike the rest of this section it needs a DOM —
+// there is no way to ask an `ImageBitmap` directly.
+//
+// Scanned at `SOURCE_MAX_SIDE`, the same cap `processImage` normalises to, so this is an
+// upper bound on what the grid could ever sample at any scale rather than a guess: a
+// transparent region too small to survive here cannot reach the target either. Callers
+// run it once per adopted file — re-checking per run would let a marginal region flip the
+// answer as the scale slider moves.
+//
+// A PNG's alpha *channel* is not the question. Screenshots are routinely saved as RGBA
+// with every pixel opaque, so reading the header would report transparency for images
+// that have none; only the pixels know.
+export function hasTransparency(bitmap: ImageBitmap): boolean {
+  const shrink = Math.min(1, SOURCE_MAX_SIDE / Math.max(bitmap.width, bitmap.height))
+  const w = Math.max(1, Math.round(bitmap.width * shrink))
+  const h = Math.max(1, Math.round(bitmap.height * shrink))
+
+  const canvas = document.createElement('canvas')
+  canvas.width = w
+  canvas.height = h
+  const ctx = canvas.getContext('2d')!
+  // Whole bitmap → whole canvas, so every pixel of the canvas comes from the image and
+  // the fresh canvas's own transparency cannot be mistaken for the image's.
+  ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, 0, 0, w, h)
+
+  const { data } = ctx.getImageData(0, 0, w, h)
+  // Returns on the first hit, so a transparent background — which usually starts at the
+  // top-left — costs a few reads. Only a fully opaque image pays for the whole scan.
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] < 255)
+      return true
+  }
+  return false
 }

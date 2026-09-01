@@ -17,10 +17,13 @@ import {
   TARGET_RATIOS,
 } from '../lib/aspect'
 import { PixelCanvas } from '../lib/canvas/pixel'
+import { CLASSIC_BASE, rgbToHex } from '../lib/palette'
 import {
+  DEFAULT_BACKGROUND,
   DEFAULT_COLOR_COUNT,
   DEFAULT_SCALE,
   gridSizeFor,
+  hasTransparency,
   isMobileWarning,
   processImage,
   unsupportedImage,
@@ -56,6 +59,11 @@ const ratio = ref<TargetRatioId>(DEFAULT_RATIO)
 // What part of the source to keep. Source-relative, so switching ratio keeps the
 // GM's framing instead of snapping back to centre.
 const crop = ref<CropSelection>({ ...FULL_CROP })
+// What shows through a transparent upload, and whether this image has any. Deliberately
+// sticky: the choice survives loading an opaque image in between, so a GM who set it once
+// gets it back on the next transparent upload rather than starting from white again.
+const background = ref(DEFAULT_BACKGROUND)
+const hasAlpha = ref(false)
 // Natural size of the loaded image, read once on adopt. Needed to resolve the
 // crop against the source and to lay the overlay out at the right shape.
 const naturalDims = ref<{ w: number, h: number } | null>(null)
@@ -88,6 +96,10 @@ const COLOUR_OPTIONS: { value: number, label: string }[] = [
   { value: 24, label: 'A bit more colours' },
   { value: 32, label: 'A lot more colours' },
 ]
+
+// The six anchors of the fill ramp, reused as background choices: whatever the GM picks
+// is a colour the swatch can also express, so a player can paint the background back in.
+const BACKGROUND_OPTIONS = CLASSIC_BASE.map(({ name, rgb }) => ({ name, hex: rgbToHex(...rgb) }))
 
 defineExpose({ getDrawSeconds: () => drawSecs.value })
 
@@ -245,7 +257,14 @@ async function reprocess() {
   emit('processing')
 
   try {
-    const result = await processImage(cachedFile, scale.value, colorCount.value, ratio.value, crop.value)
+    const result = await processImage(
+      cachedFile,
+      scale.value,
+      colorCount.value,
+      ratio.value,
+      crop.value,
+      background.value,
+    )
     if (myRun !== runId)
       return // stale
 
@@ -291,7 +310,7 @@ function scheduleReprocess() {
   debounceTimer = setTimeout(reprocess, 150)
 }
 
-watch([scale, colorCount, ratio], scheduleReprocess)
+watch([scale, colorCount, ratio, background], scheduleReprocess)
 
 // Adopt a newly-chosen image: preselect the ratio closest to its own framing and
 // reset the crop to the whole frame, so the first render matches how the GM
@@ -308,12 +327,16 @@ async function adoptFile(file: File, label: string) {
     const bitmap = await createImageBitmap(file)
     naturalDims.value = { w: bitmap.width, h: bitmap.height }
     ratio.value = nearestRatioFor(bitmap.width, bitmap.height)
+    // Once per file, while the bitmap is already decoded and open. Nothing later in the
+    // run can change the answer, so no reprocess re-checks it.
+    hasAlpha.value = hasTransparency(bitmap)
     bitmap.close()
   }
   catch {
     // Undecodable here means undecodable in the pipeline too, which reports it
     // properly — leave the ratio alone and let `reprocess` surface the error.
     naturalDims.value = null
+    hasAlpha.value = false
   }
   // prevent double `reprocess` calls
   scheduleReprocess()
@@ -434,6 +457,24 @@ onBeforeUnmount(() => {
         </label>
       </div>
 
+      <!-- Only rendered for an upload that actually has transparent pixels -->
+      <div v-if="hasAlpha" class="picker__setting picker__setting--inline">
+        <span id="picker-bg" class="picker__setting-label">Alpha Colour</span>
+        <div class="picker__bg-list" role="group" aria-labelledby="picker-bg">
+          <button
+            v-for="opt in BACKGROUND_OPTIONS"
+            :key="opt.name"
+            class="picker__bg"
+            :class="{ 'is-active': background === opt.hex }"
+            type="button"
+            :style="{ background: opt.hex }"
+            :aria-label="`${opt.name} background`"
+            :aria-pressed="background === opt.hex"
+            @click="background = opt.hex"
+          />
+        </div>
+      </div>
+
       <!-- Crop framing. Renders only once an image is loaded and measured — the
            upload and samples in the next card are what put one there. Shape and
            crop are one decision, so they stay together: shape decides what the
@@ -472,7 +513,14 @@ onBeforeUnmount(() => {
           @pointermove="onCropPointerMove"
           @keydown="onCropKeyDown"
         >
-          <img class="picker__crop-img" :src="sourceUrl" :alt="`${sourceLabel} — full frame`">
+          <!-- Tinted with the chosen background so a transparent upload previews the way
+               it will actually be sampled, rather than against the card. -->
+          <img
+            class="picker__crop-img"
+            :src="sourceUrl"
+            :style="{ background }"
+            :alt="`${sourceLabel} — full frame`"
+          >
           <div class="picker__crop-shade" />
           <div v-if="cropBox" class="picker__crop-window" :style="cropBox" />
         </div>
