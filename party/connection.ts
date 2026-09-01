@@ -101,6 +101,11 @@ export function handleJoin(
     } satisfies ServerMsg)
   }
 
+  // Only the arrival needs the grid; everyone else already has it, which is the whole
+  // point of keeping it out of `state` (#35).
+  if (state.config)
+    ctx.send(conn, { type: 'target', grid: state.config.targetGrid })
+
   ctx.broadcastState()
 }
 

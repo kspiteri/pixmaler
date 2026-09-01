@@ -2,7 +2,7 @@
 // here is a function of `RoomState` alone — no connections, no broadcasts, no
 // Durable Object — so the rules deciding what players see are directly testable.
 
-import type { GmConfigureMsg, Phase, Player, RankedResult, StateMsg, Submission } from '../src/lib/types'
+import type { GmConfigureMsg, Phase, Player, RankedResult, RoundConfig, StateMsg, Submission } from '../src/lib/types'
 import { VOTE_CATEGORIES } from '../src/lib/types'
 import { voterOf } from './tally'
 
@@ -110,6 +110,16 @@ export function votingProgress(state: RoomState): { votedCount: number, totalVot
   }
 }
 
+// The wire's view of the round settings: everything except the target grid, which travels
+// once in a `target` message (#35). Dropped here rather than at each write, for the same
+// reason as `drewThisRound` — one boundary to keep honest.
+export function roundConfig(config: GmConfigureMsg | null): RoundConfig | null {
+  if (!config)
+    return null
+  const { type: _t, targetGrid: _g, ...rest } = config
+  return rest
+}
+
 export function buildState(state: RoomState): StateMsg {
   // `isGm` is derived here so it cannot drift from `gmClientId`, and `drewThisRound` is
   // dropped here rather than at each write: this is the one place the room becomes a wire
@@ -123,7 +133,7 @@ export function buildState(state: RoomState): StateMsg {
     phase: state.phase,
     players,
     gmClientId: state.gmClientId,
-    config: state.config,
+    config: roundConfig(state.config),
     deadline: state.deadline,
     roundSeconds: state.roundSeconds,
     extensionsLeft: Math.max(0, MAX_EXTENSIONS - state.extensions),

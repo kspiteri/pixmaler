@@ -15,6 +15,9 @@ export function handleConfigure(
   if (!isGm(ctx.state, conn.id) || ctx.state.phase !== 'LOBBY')
     return
   ctx.state.config = msg
+  // Target first, then state: per-connection ordering guarantees a client never sees a
+  // config it has no grid for. Re-sent on every configure, so the lobby preview stays live.
+  ctx.broadcast({ type: 'target', grid: msg.targetGrid })
   ctx.broadcastState()
 }
 
