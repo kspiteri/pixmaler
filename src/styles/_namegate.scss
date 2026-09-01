@@ -1,0 +1,24 @@
+@use 'screen' as *;
+@use 'tokens' as *;
+
+// The name gate — shown when arriving via a room link, before joining. Its own partial
+// rather than a corner of `_entry.scss` now that its markup moved out of `App.vue` too:
+// the screen and its styles sit together, as they do for its sibling `_session-closed`.
+//
+// Shares the closed screen's shape through `interstitial`: both are "you are not in a
+// game" states on the room route.
+.namegate {
+  @include interstitial;
+
+  &__room {
+    @include interstitial-code;
+
+    margin: 0 0 $gap-4;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-4;
+  }
+}

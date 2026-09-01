@@ -7,19 +7,18 @@ import type { AvatarShape, ClientMsg, ServerMsg } from './lib/types'
 import PartySocket from 'partysocket'
 import { computed, onMounted, provide, ref, shallowRef } from 'vue'
 import AlertDialog from './components/AlertDialog.vue'
-import Logo from './components/Logo.vue'
 import PhaseBoundary from './components/PhaseBoundary.vue'
 import { askAlert, currentDialog, settleDialog } from './lib/dialog'
 import { clientIdKey, socketKey } from './lib/keys'
 import { normaliseShape } from './lib/types'
-
-import { wordPair } from './lib/words'
 import Entry from './views/Entry.vue'
 import Paint from './views/Paint.vue'
 import Drawing from './views/phases/Drawing.vue'
 import Lobby from './views/phases/Lobby.vue'
 import Results from './views/phases/Results.vue'
 import Voting from './views/phases/Voting.vue'
+import NameGate from './views/rooms/NameGate.vue'
+import SessionClosed from './views/rooms/SessionClosed.vue'
 // Hidden debug route (/taglines) — not linked anywhere; for reading the full
 // tagline set in bulk.
 import Taglines from './views/Taglines.vue'
@@ -63,10 +62,6 @@ function storedShape(): AvatarShape {
   return normaliseShape(localStorage.getItem('pixmaler:shape'))
 }
 
-function reloadPage() {
-  window.location.reload()
-}
-
 // ── Reactive room state ──────────────────────────────────────────────────────
 
 // `shallowRef` because we never mutate inner fields — we always replace the
@@ -101,8 +96,6 @@ const sessionClosed = ref(false)
 // the message arrives while `Drawing.vue` is still mounted — the lobby view does not exist
 // yet to receive it. Cleared when the next round starts, or when the player dismisses it.
 const roundCancelled = ref(false)
-// The app root, for the way out of a closed room. Matches `Paint.vue` / `Taglines.vue`.
-const baseUrl = `${import.meta.env.BASE_URL.replace(/\/+$/, '')}/`
 
 // ── Connect (only when on the room route) ────────────────────────────────────
 
@@ -111,12 +104,10 @@ const baseUrl = `${import.meta.env.BASE_URL.replace(/\/+$/, '')}/`
 // view mounts (those only render once server state arrives).
 const socketRef = shallowRef<PartySocket | null>(null)
 
-// Name gate: shown on the room route until the player has a stored name. The
-// random word-pair is offered as a placeholder — submitting empty accepts it
-// (the random names went down well in playtesting).
+// Name gate: shown on the room route until the player has a stored name. The screen
+// itself is `views/rooms/NameGate.vue` — it owns the input and the offered random name
+// and hands back only the chosen one; this flag is just which branch renders.
 const showNameGate = ref(false)
-const nameInput = ref('')
-const randomName = wordPair()
 
 // One identity for the whole module: `provide`, the `join` payload, and the
 // spectator lookup below all read the same value rather than re-deriving it.
@@ -142,8 +133,9 @@ if (route === 'room' && roomCode) {
   }
 }
 
-function submitName() {
-  const chosen = nameInput.value.trim() || randomName
+// The gate's only output. Storing the name stays here, next to `storedName`, so one place
+// owns the `pixmaler:name` key — the gate never touches localStorage.
+function submitName(chosen: string) {
   localStorage.setItem('pixmaler:name', chosen)
   showNameGate.value = false
   connect(chosen)
@@ -268,62 +260,11 @@ if (route === 'room' && roomCode) {
   <Taglines v-else-if="route === 'taglines'" />
 
   <template v-else-if="route === 'room'">
-    <!-- Session closed: terminal, and checked before everything else because every
-         branch below it describes a room the server has already forgotten.
-         Deliberately bare for now — `14` owns making it feel like part of the game.
+    <!-- Session closed: when a game-session has been closed by a GM or timeout -->
+    <SessionClosed v-if="sessionClosed" />
 
-         The copy names no cause on purpose. `wipeState` is one funnel for two events -
-         the idle alarm and the GM's own "End session" - and `session-closed` carries no
-         reason, so anything cause-specific here is wrong half the time (#18): this said
-         "after sitting idle" to a GM who had just chosen to end the room. Telling them
-         apart needs a flag on the message, which is a protocol change and a Worker
-         deploy; an ending that reads as an ending does not. -->
-    <div v-if="sessionClosed" class="page page--narrow session-closed">
-      <Logo />
-      <p class="label label--eyebrow">
-        gallery closed
-      </p>
-      <p class="session-closed__room">
-        {{ roomCode }}
-      </p>
-      <p class="session-closed__note">
-        the exhibition came down and the room code is free again.
-      </p>
-      <button class="btn btn--primary" type="button" @click="reloadPage">
-        Reopen (first player will be GM)
-      </button>
-      <a class="btn btn--ghost" type="button" :href="baseUrl">
-        Back to homepage
-      </a>
-    </div>
-
-    <!-- Name gate: shown before connecting when the player has no stored name.
-         No socket is opened until they submit, so bots that just load the URL
-         never become ghost players. Empty submit accepts the random name. -->
-    <div v-else-if="showNameGate" class="page page--narrow namegate">
-      <p class="label label--eyebrow">
-        joining room
-      </p>
-      <p class="namegate__room">
-        {{ roomCode }}
-      </p>
-      <form class="namegate__form" @submit.prevent="submitName">
-        <label class="field">
-          <span class="label">Your name</span>
-          <input
-            v-model="nameInput"
-            class="input"
-            type="text"
-            maxlength="24"
-            :placeholder="randomName"
-            autofocus
-          >
-        </label>
-        <button class="btn btn--primary" type="submit">
-          {{ nameInput.trim() ? "Join" : `Join as ${randomName}` }}
-        </button>
-      </form>
-    </div>
+    <!-- Name gate: shown before connecting when the player has no stored name -->
+    <NameGate v-else-if="showNameGate" @submit="submitName" />
 
     <div v-else-if="!state" class="page">
       <p>{{ connectionStatus === "reconnecting" ? "Reconnecting…" : `Connecting to ${roomCode}…` }}</p>

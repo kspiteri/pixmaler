@@ -61,39 +61,3 @@
     }
   }
 }
-
-// The name gate — shown when arriving via a room link, before joining. Lives here
-// rather than in a thin partial of its own: it's the other pre-room screen.
-.namegate {
-  @include interstitial;
-
-  &__room {
-    @include interstitial-code;
-
-    margin: 0 0 $gap-4;
-  }
-
-  &__form {
-    display: flex;
-    flex-direction: column;
-    gap: $gap-4;
-  }
-}
-
-// Terminal screen for a room the server has wiped — by the idle alarm, or by the GM
-// ending the session. Shares the name gate's shape through `interstitial` because both
-// are "you are not in a game" states on the room route. Intentionally plain: `14` owns
-// making this feel like part of the game rather than an error page.
-.session-closed {
-  @include interstitial;
-
-  &__room {
-    @include interstitial-code;
-
-    margin: 0;
-  }
-
-  &__note {
-    @include interstitial-note;
-  }
-}

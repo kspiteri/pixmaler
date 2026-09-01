@@ -105,7 +105,7 @@ When you add a test, make it fail first: revert the fix it guards and check it g
 ```
 src/lib/        # canvas, image pipeline, shared types, taglines, layout helpers, dialog queue, composables
 src/components/ # reusable UI (AlertDialog, ImagePicker, CanvasPair, PaletteTools, PlayerList, PhaseLayout, Tagline, Logo)
-src/views/      # Entry, Paint, Taglines, and the phase screens
+src/views/      # Entry, Paint, Taglines, phases/ (the four game screens), rooms/ (name gate, closed session)
 src/styles/     # _tokens + shared primitives + per-screen partials, all via main.scss
 party/          # PartyServer Durable Object — server.ts plus the per-concern handler modules; config in wrangler.jsonc
 test/           # Vitest suites, with the shared fake RoomCtx in test/support/

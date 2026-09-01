@@ -23,6 +23,8 @@
 @use 'paint';
 @use 'voting';
 @use 'results';
+@use 'namegate'; // the pre-join screen — views/rooms/NameGate.vue
+@use 'session-closed'; // the wiped-room screen — views/rooms/SessionClosed.vue
 @use 'taglines'; // /taglines debug route
 @use 'tools-panel'; // CanvasPair's static chrome (panel + canvas-pair layout)
 @use 'picker'; // ImagePicker's cards (shared by Lobby GM controls + /paint)
