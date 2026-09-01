@@ -48,7 +48,7 @@ const clientId = inject(clientIdKey)!
 const config = computed(() => props.state.config!)
 // Server-echoed grid for a rejoin mid-round. Length-checked against the live
 // config: `handleSubmit` stores whatever a client sent without validating, so
-// a wrong-sized grid would render as garbage. Mismatch → ignore and start
+// a wrong-sized grid would render as rubbish. Mismatch → ignore and start
 // blank, which is the pre-existing behaviour.
 const restoredGrid = computed(() => {
   const g = props.initialGrid
@@ -70,7 +70,7 @@ const pairRef = useTemplateRef<InstanceType<typeof CanvasPair>>('pair')
 
 // Spectator-only: the reference, rendered read-only. Same shape as the lobby's
 // non-GM preview — `PixelCanvas` is imperative, so it is mounted into a slot
-// rather than driven by reactivity, and re-mounted if the config changes under it.
+// rather than driven by reactivity and re-mounted if the config changes under it.
 const watchSlot = useTemplateRef<HTMLElement>('watchSlot')
 let watchCanvas: PixelCanvas | null = null
 
@@ -100,9 +100,9 @@ function extendTime() {
   socket.send(JSON.stringify(msg))
 }
 
-// Always confirmed: cancelling throws everyone back to the lobby mid-paint and
+// Always confirmed: cancelling throws everyone back to the lobby mid-paint, and
 // their drawings are gone. There is no state in which that warning is untrue, so
-// unlike Voting's end-round confirm this one is never suppressed.
+// unlike Voting's end-round confirmation, this one is never suppressed.
 async function cancelRound() {
   if (!await askConfirm('Cancel this round? Everyone goes back to the lobby and the drawings are lost.'))
     return
@@ -130,7 +130,7 @@ const secondsLeft = ref<number | null>(null)
 const totalSeconds = computed(() => props.state.roundSeconds || config.value.drawSeconds)
 
 // Ratio-aware layout (item 5). The drawing screen is a fixed, non-scrolling
-// shell; we flip the reference/canvas pair between a row and a column so the
+// shell; we flip the reference/canvas pair between a row and a column, so the
 // editable canvas always claims the largest fitting area. `orientationFor`
 // compares the grid's aspect to the live viewport.
 const viewportW = ref(window.innerWidth)
@@ -144,8 +144,8 @@ const orientation = computed(() =>
 )
 
 // "Done" is a purely social signal (it never gates submission). Local optimistic
-// flag for instant feedback on click, OR'd with the server's truth so a player
-// who reconnects mid-DRAWING (local flag reset to false) still sees their
+// flag for instant feedback on click, OR'd with the server's truth, so a player
+// who reconnects mid-DRAWING (the local flag reset to false) still sees their
 // already-flagged state restored rather than a fresh "I'm done" button.
 const flaggedLocally = ref(false)
 const flaggedDone = computed(() =>
@@ -211,9 +211,9 @@ function sendSubmit(grid: number[]) {
 // mount, and every stroke corrects it from here.
 const canvasBlank = ref(true)
 
-// Shown only in the closing stretch, and only over an empty canvas. A blank canvas
+// Shown only in the closing stretch and only over an empty canvas. A blank canvas
 // is normal for most of the round, so warning early would be noise — and by
-// definition there is nothing underneath to obscure. 20 s is the existing
+//  definition, there is nothing underneath to obscure. 20 s is the existing
 // `--timer-danger` threshold rather than a new number.
 const BLANK_WARN_AT = 20
 const warnBlank = computed(() =>
@@ -245,8 +245,8 @@ function flagDone() {
 
 function autoSubmitAtDeadline() {
   // Whatever's on the canvas at the deadline is what gets locked in. The
-  // server transitions to VOTING immediately after, dropping any further
-  // submits via its phase guard.
+  // server transitions to VOTING immediately after dropping any further
+  // submitting via its phase guard.
   const player = pairRef.value?.player()
   if (!player)
     return
@@ -263,7 +263,7 @@ function cancelTimers() {
 
 // Restartable, because the deadline can move: the GM's "+15s" arrives as a fresh
 // `state` push mid-round. The old version read `deadline.value` into a local at
-// mount, so both the tick and the auto-submit stayed pinned to the first value and
+// mount, so both the tick and the auto-submit stayed pinned to the first value, and
 // a revised deadline was silently ignored.
 function armCountdown() {
   if (autoSubmitTimer) { clearTimeout(autoSubmitTimer); autoSubmitTimer = null }
@@ -275,7 +275,7 @@ function armCountdown() {
     return
 
   // Tick unconditionally until 0 — the countdown reflects wall-clock time,
-  // independent of submit state. Reads `deadline.value` each frame rather than the
+  // independent of the submit state. Reads `deadline.value` each frame rather than the
   // captured `dl`, so an extension lands on the very next frame.
   const tick = () => {
     const now = deadline.value
