@@ -309,10 +309,7 @@ async function adoptFile(file: File, label: string) {
     // properly — leave the ratio alone and let `reprocess` surface the error.
     naturalDims.value = null
   }
-  // Schedule rather than run directly: setting `ratio` above already tripped the watch,
-  // and a bare `reprocess()` here raced it into two runs — so two `result` emits, so the
-  // GM's pick broadcast the whole target grid to the room twice. Both collapse into one
-  // timer. The 150 ms is invisible next to the fetch and decode that just happened.
+  // prevent double `reprocess` calls
   scheduleReprocess()
 }
 
