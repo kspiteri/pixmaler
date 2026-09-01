@@ -68,23 +68,31 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 
 **Types** — `strict` is on. `pnpm build` runs `vue-tsc --noEmit` first, so a type error fails the build; `pnpm typecheck` also covers `party/` against Workers globals via `tsconfig.worker.json`. Keep the tree green.
 
-**Tests** — `pnpm test` runs Vitest over `test/`. Coverage is deliberately narrow: pure, load-bearing logic that a plausible refactor could silently break. Nothing here needs a DOM, which is why the modules under test are shaped the way they are — `src/lib/palette.ts` and `party/tally.ts` both exist because the logic in them was worth testing and was trapped inside something that needed a canvas or a Durable Object.
+**Tests** — `pnpm test` runs Vitest over `test/`: 14 files, 348 tests, and [`ci.yml`](./.github/workflows/ci.yml) runs them on every push and PR. Coverage is deliberately narrow *and* deliberately DOM-free: pure, load-bearing logic that a plausible refactor could silently break, reachable without a browser. That constraint shaped the code as much as it shaped the tests — `src/lib/palette.ts` and `party/tally.ts` both exist because the logic in them was worth testing and was trapped inside something that needed a canvas or a Durable Object, and `party/ctx.ts` is the seam that lets every room handler run against a fake `RoomCtx` (`test/support/room.ts`) instead of a live one.
 
 | Suite | Guards |
 |---|---|
 | `types.test.ts` | `parseClientMsg` — the wire's trust boundary. It must never throw, and must *construct* its result so unknown properties can't ride into room state. |
 | `tally.test.ts` | Who wins a round, and what a player ends up called. A dropped voter's votes must not count, or the tally disagrees with the "N of M voted" the GM decided on. |
-| `palette.test.ts` | Median cut, near-duplicate merging, swatch ordering. `paletteSortOrder` must return a permutation — the caller remaps `targetGrid` through it, so a lost index repaints cells the wrong colour. |
-| `pipeline.test.ts` | Grid geometry, and the rule that grid cell `(x, y)` reads source pixel `(x, y)` — the invariant whose absence caused #4, where the right column and bottom row of every image were discarded. |
+| `state.test.ts` | The room's derived state. `isGm` is derived at broadcast time so it cannot drift from `gmClientId`, and spectators are excluded from both progress readouts, or a mid-round arrival makes a count go backwards. |
+| `connection.test.ts` | Join, rename, close, and the reconnect rules. `partysocket` reconnects unprompted, so anything `handleJoin` re-applies fires on every network blip — which is how a waking tab used to repaint its own avatar mid-reveal. |
+| `gm.test.ts` | The GM-only controls and their phase guards. Each guard exists because a GM can hold a stale tab and click a button the room has moved past: `gm:playAgain` from a stale RESULTS tab used to null the config just chosen in the lobby. |
+| `drawing.test.ts` | `draw:submit`'s contextual validation — grid length and palette range against the round's own config. That grid is broadcast verbatim to everyone else, so this is what keeps a crafted payload out of their renderers. |
+| `voting.test.ts` | The guards that stop a crafted client rigging a round, exercised without a Durable Object, a socket or a browser. |
+| `phases.test.ts` | The two load-bearing orderings: `endDrawing` computes the gallery *before* it mutates anything, and sets `phase = 'VOTING'` *before* calling `endVoting` on the nobody-drew path. Both look like tidy-up targets to anyone who doesn't know the history. |
+| `alarm.test.ts` | One alarm slot, four windows. The real ones are measured in minutes, so none of this is observable in a smoke test — the decisions are pure functions of an injected clock, which is what makes them testable at all. |
+| `palette.test.ts` | Median cut, near-duplicate merging, swatch ordering, and the swatch the pipeline actually hands the picker. `medianCut` takes a **count, not a depth** (#28), so a request for 24 yields 24 where a power-of-two depth could only give 32; `withClassics` caps the swatch at the requested count and fills a short one from the classics ramp. `paletteSortOrder` must return a permutation — the caller remaps `targetGrid` through it, so a lost index repaints cells the wrong colour. |
+| `pipeline.test.ts` | Grid geometry, and the rule that grid cell `(x, y)` reads source pixel `(x, y)` — the invariant whose absence caused #4, where the right column and bottom row of every image were discarded. Also `unsupportedImage`, which refuses a vector or non-image pick before `createImageBitmap` gets the chance to throw a DOM exception at the player. |
+| `grid.test.ts` | Cell geometry lifted out of `PixelCanvas`: even brushes are asymmetric, footprints clip rather than clamp, and `cellAt` is *allowed* to return cells outside the grid, because the input path uses that to notice the pen leaving the canvas. |
 | `aspect.test.ts` | Brush sizing, `--art-ratio`, the row/column choice, and the three target shapes with their crop math. |
 | `seats.test.ts` | Seat colour, initial and lean. The initial is taken by code point, not `charAt(0)` — see the file header for the emoji collapse that caused. |
 
-When you add a test, make it fail first: revert the fix it guards and check it goes red. Several of these were written that way, and two of them caught mutations that a green-only run would have missed. Canvas rendering and component behaviour are not unit tested — verify those in the browser.
+When you add a test, make it fail first: revert the fix it guards and check it goes red. Several of these were written that way, and two of them caught mutations that a green-only run would have missed. What the suite cannot reach is anything needing a real `getContext('2d')` — canvas rendering, the decode → crop → flatten → sample half of `processImage`, `hasTransparency` — or component behaviour. Verify those by driving the app in a browser.
 
 ## Conventions
 
 - **British English** in user-facing strings, comments, and docs (`colour`, `behaviour`, `centre`). Identifiers mirroring DOM/web APIs stay as-is (`color` in CSS, `fillStyle` on canvas).
-- **Vue 3 Composition API** with `<script setup>`. **Styling convention:** static, non-reactive styles live in per-screen partials (`src/styles/_<screen>.scss`) and shared primitives (`_alerts`, `_buttons`, `_forms`, `_logo`, `_phase`, `_surfaces`, `_tools-panel`), all `@use`d into `main.scss`; tokens in `_tokens.scss`. `_surfaces.scss`'s header is where the three surface roles are written down — artefact (a drawing), chrome (panels and inputs), person/choice (roster rows, vote cards) — and it owns the `.art-frame` / `.art-surface` pair that every finished drawing goes in. A component's scoped `<style>` is reserved for genuinely reactive or component-local rules — chiefly `:deep()` reaching imperatively-mounted `PixelCanvas` elements, which only works in a scoped block. The one unscoped exception is `Tagline.vue`'s `::view-transition` block: document-level pseudo-elements can't be scoped.
+- **Vue 3 Composition API** with `<script setup>`. **Styling convention:** static, non-reactive styles live in per-screen partials (`src/styles/_<screen>.scss`) and shared primitives (`_alerts`, `_buttons`, `_forms`, `_logo`, `_phase`, `_surfaces`, `_tools-panel`), all `@use`d into `main.scss`; tokens in `_tokens.scss`. Recipe partials are the exception: `_chrome` (the chrome surface), `_wonk` (the tilt) and `_screen` (the interstitial shape behind the name gate, the closed room and the phase-error fallback) define mixins and **emit no CSS**, so they are `@use`d by whoever includes them rather than by `main.scss` — a rule in one would land wherever the first `@use` resolved and reorder the cascade. `_surfaces.scss`'s header is where the three surface roles are written down — artefact (a drawing), chrome (panels and inputs), person/choice (roster rows, vote cards) — and it owns the `.art-frame` / `.art-surface` pair that every finished drawing goes in. A component's scoped `<style>` is reserved for genuinely reactive or component-local rules — chiefly `:deep()` reaching imperatively-mounted `PixelCanvas` elements, which only works in a scoped block. The one unscoped exception is `Tagline.vue`'s `::view-transition` block: document-level pseudo-elements can't be scoped.
 - **Inject infrastructure, prop data.** `socket` and `clientId` are `provide`/`inject`ed once at connection; reactive game state flows down as props. No Pinia.
 - **`PixelCanvas` is imperative** — it owns its `<canvas>` and is instantiated in `onMounted`/watchers, not driven by reactivity.
 - **The server is authoritative** for phase, timer, submissions, and votes. Client state is a view of the server's truth — derive from the latest `state` message rather than holding local state that can drift.
@@ -99,18 +107,19 @@ src/lib/        # canvas, image pipeline, shared types, taglines, layout helpers
 src/components/ # reusable UI (AlertDialog, ImagePicker, CanvasPair, PaletteTools, PlayerList, PhaseLayout, Tagline, Logo)
 src/views/      # Entry, Paint, Taglines, and the phase screens
 src/styles/     # _tokens + shared primitives + per-screen partials, all via main.scss
-party/          # PartyServer Durable Object (server.ts); config in wrangler.jsonc
+party/          # PartyServer Durable Object — server.ts plus the per-concern handler modules; config in wrangler.jsonc
+test/           # Vitest suites, with the shared fake RoomCtx in test/support/
 ```
 
 ## Submitting changes
 
 1. Branch off `main`.
 2. Keep it focused.
-3. Run `pnpm lint` and `pnpm typecheck`.
+3. Run `pnpm lint`, `pnpm typecheck` and `pnpm test`.
 4. Verify in dev with **both** servers running. Test a reconnect (reload mid-game) if you touched anything stateful — and reload during **RESULTS** specifically, which used to strand the room (`13` item 54). If you touched a phase transition, also drive the two rounds that look like nothing: one where **nobody draws**, and one where people draw but **nobody votes**.
 5. Open a PR describing what changed and how you verified it. Note protocol changes explicitly.
 
-No test suite yet — manual verification against the dev servers is the bar. Describe what you tested. (Wiring a runner is [`13-technical.md`](./docs/.plans/13-technical.md) item 31, deliberately unscheduled.)
+A green `pnpm test` is part of the bar, not all of it. The suite is DOM-free by design, so it says nothing about canvas rendering or the half of `processImage` that needs a real `getContext('2d')` — pipeline and drawing changes are verified by driving the app in a browser instead. It doesn't exercise a live room either: anything stateful still needs both dev servers and a real reconnect. Describe what you tested, whichever kind it was.
 
 ## Commit messages
 
