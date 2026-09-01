@@ -142,3 +142,23 @@ export async function processImage(
 export function isMobileWarning(longestGridSide: number): boolean {
   return longestGridSide > MOBILE_WARN_GRID
 }
+
+// Why the picker refused a file, or `null` if the pipeline should try it. The copy lives
+// with the picker; this only classifies.
+export type UnsupportedImage = 'vector' | 'not-image'
+
+// `image/*` in a file dialog includes SVG, and an `<img>` renders one happily — which is
+// why the crop preview looks right — but `createImageBitmap` rejects it outright, so
+// `processImage` cannot sample it. Vector art has no pixels to quantise, so there is
+// nothing to salvage by trying harder.
+const VECTOR_TYPES = new Set(['image/svg+xml', 'image/svg'])
+
+// A blank `type` is deliberately allowed through: an unusual extension can leave it
+// empty on some systems, and the browser's own decode is a better judge than a guess.
+export function unsupportedImage(file: File): UnsupportedImage | null {
+  if (VECTOR_TYPES.has(file.type))
+    return 'vector'
+  if (file.type && !file.type.startsWith('image/'))
+    return 'not-image'
+  return null
+}

@@ -16,6 +16,7 @@ import {
   isMobileWarning,
   MOBILE_WARN_GRID,
   quantiseToPalette,
+  unsupportedImage,
 } from '../src/lib/pipeline'
 
 describe('isMobileWarning', () => {
@@ -110,5 +111,38 @@ describe('quantiseToPalette', () => {
       expect(index).toBeGreaterThanOrEqual(0)
       expect(index).toBeLessThan(palette.length)
     }
+  })
+})
+
+describe('unsupportedImage', () => {
+  const file = (name: string, type: string) => new File([''], name, { type })
+
+  it('refuses vector images, which the browser will not decode', () => {
+    // `createImageBitmap` rejects an SVG outright, and an `<img>` renders it anyway, so
+    // without this the crop preview looks fine while the target fails.
+    expect(unsupportedImage(file('logo.svg', 'image/svg+xml'))).toBe('vector')
+    expect(unsupportedImage(file('logo.svg', 'image/svg'))).toBe('vector')
+  })
+
+  it('refuses anything that is not an image at all', () => {
+    expect(unsupportedImage(file('deck.pdf', 'application/pdf'))).toBe('not-image')
+    expect(unsupportedImage(file('notes.txt', 'text/plain'))).toBe('not-image')
+  })
+
+  it('passes the raster formats the pipeline can sample', () => {
+    for (const type of ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'image/bmp', 'image/avif'])
+      expect(unsupportedImage(file(`shot.${type.slice(6)}`, type))).toBeNull()
+  })
+
+  it('passes HEIC, which only some browsers decode', () => {
+    // Safari reads an iPhone photo; Chrome does not. Refusing it here would break the
+    // browsers that can, so the decode attempt decides and reports for itself.
+    expect(unsupportedImage(file('IMG_0001.heic', 'image/heic'))).toBeNull()
+  })
+
+  it('passes a file whose type the system left blank', () => {
+    // An unusual extension can produce an empty type for a perfectly good PNG, so the
+    // browser's own decode is a better judge than the guess.
+    expect(unsupportedImage(file('screenshot', ''))).toBeNull()
   })
 })

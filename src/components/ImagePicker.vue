@@ -23,6 +23,7 @@ import {
   gridSizeFor,
   isMobileWarning,
   processImage,
+  unsupportedImage,
 } from '../lib/pipeline'
 import { clampDrawSeconds, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN } from '../lib/types'
 
@@ -275,7 +276,12 @@ async function reprocess() {
     if (myRun !== runId)
       return
     busy.value = false
-    status.value = `Error: ${err}`
+    // A decode failure is the browser refusing the format — an iPhone HEIC outside
+    // Safari, say — not a fault in the pipeline, so say it in those terms. `accept` and
+    // `unsupportedImage` catch the formats we can name; this covers the rest.
+    status.value = err instanceof DOMException && err.name === 'InvalidStateError'
+      ? `Could not read ${sourceLabel.value} — the browser cannot decode that image format. Try a PNG or JPEG.`
+      : `Error: ${err}`
   }
 }
 
@@ -317,6 +323,21 @@ function onFileChange() {
   const file = fileInput.value?.files?.[0]
   if (!file)
     return
+  // `accept` is only a hint — the OS dialog's "All Files" escape hatch, and any
+  // programmatic pick, get here regardless.
+  const unsupported = unsupportedImage(file)
+  if (unsupported) {
+    // Whatever is already loaded stays: a mistaken pick should not cost the GM a
+    // working target. Clearing the input lets the same file re-fire `change`, so a
+    // second attempt is not silently swallowed.
+    status.value = unsupported === 'vector'
+      ? `${file.name} is a vector image — there are no pixels to sample. Try a PNG or JPEG.`
+      : `${file.name} is not an image. Try a PNG or JPEG.`
+    if (fileInput.value)
+      fileInput.value.value = ''
+    return
+  }
+  status.value = ''
   selected.value = null
   adoptFile(file, file.name)
 }
@@ -480,7 +501,16 @@ onBeforeUnmount(() => {
         <span class="picker__setting-label">Upload image</span>
         <label class="picker__browse pressable">
           Browse…
-          <input ref="fileInput" type="file" accept="image/*" hidden @change="onFileChange">
+          <!-- Raster formats only: `image/*` offers SVGs the pipeline cannot decode.
+               HEIC/HEIF stay listed so an iPhone photo is still selectable, since
+               Safari decodes those and `unsupportedImage` cannot know which will. -->
+          <input
+            ref="fileInput"
+            type="file"
+            accept="image/png,image/jpeg,image/gif,image/webp,image/bmp,image/avif,image/heic,image/heif"
+            hidden
+            @change="onFileChange"
+          >
         </label>
       </div>
 
