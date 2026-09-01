@@ -87,6 +87,9 @@ const voteState = shallowRef<VoteStateMsg | null>(null)
 // This player's own in-progress grid, echoed by the server on (re)join during
 // DRAWING so a page reload restores their drawing. Null until/unless received.
 const drawState = shallowRef<DrawStateMsg | null>(null)
+// The image players are copying, held across updates because `state` no longer carries it
+// (#35). Arrives on configure and on join; cleared when `config` goes null.
+const targetGrid = shallowRef<number[] | null>(null)
 const connectionStatus = ref<'connecting' | 'connected' | 'reconnecting'>('connecting')
 // Terminal. The server wiped the room out from under us (45 min idle), so this
 // client's slot no longer exists and nothing it sends will be honoured. Unlike a
@@ -174,7 +177,13 @@ function connect(name: string) {
     catch { console.error('[pixmaler] bad message', ev.data); return }
 
     switch (msg.type) {
-      case 'state': state.value = msg; break
+      case 'state':
+        state.value = msg
+        // `config: null` is the room leaving a round behind, so the grid goes with it.
+        if (!msg.config)
+          targetGrid.value = null
+        break
+      case 'target': targetGrid.value = msg.grid; break
       case 'phase':
         // `phase` doesn't carry config/players — patch the cached state.
         if (state.value) {
@@ -322,10 +331,11 @@ if (route === 'room' && roomCode) {
            sits outside it deliberately: connection state is exactly what a player
            wants to see while a view is broken. -->
       <PhaseBoundary :key="state.phase">
-        <Lobby v-if="state.phase === 'LOBBY'" :state="state" />
+        <Lobby v-if="state.phase === 'LOBBY'" :state="state" :target-grid="targetGrid" />
         <Drawing
-          v-else-if="state.phase === 'DRAWING' && state.config"
+          v-else-if="state.phase === 'DRAWING' && state.config && targetGrid"
           :state="state"
+          :target-grid="targetGrid"
           :initial-grid="drawState?.grid ?? null"
           :spectating="spectating"
         />
@@ -344,7 +354,7 @@ if (route === 'room' && roomCode) {
           :results="results"
           :gm-client-id="state.gmClientId"
           :players="state.players"
-          :target-grid="state.config?.targetGrid ?? null"
+          :target-grid="targetGrid"
         />
       </PhaseBoundary>
     </template>

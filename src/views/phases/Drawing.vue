@@ -35,6 +35,8 @@ type State = Extract<ServerMsg, { type: 'state' }>
 
 const props = defineProps<{
   state: State
+  // Held by App.vue rather than read off `state.config`, which no longer carries it (#35).
+  targetGrid: number[]
   initialGrid: number[] | null
   // Joined mid-round: watch, don't draw. The server already refuses this client's
   // `draw:submit` and `draw:done` and leaves them out of the done tally, so this
@@ -84,7 +86,7 @@ watch([() => props.spectating, () => props.state.config, watchSlot], () => {
     gridW: cfg.gridW,
     gridH: cfg.gridH,
     palette: cfg.palette,
-    targetGrid: cfg.targetGrid,
+    targetGrid: props.targetGrid,
     editable: false,
   })
   watchSlot.value.replaceChildren(watchCanvas.canvas)
@@ -381,7 +383,7 @@ onBeforeUnmount(() => {
         :grid-w="config.gridW"
         :grid-h="config.gridH"
         :palette="config.palette"
-        :target-grid="config.targetGrid"
+        :target-grid="targetGrid"
         :initial-grid="restoredGrid"
         variant="drawing"
         :orientation="orientation"

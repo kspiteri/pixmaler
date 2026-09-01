@@ -23,7 +23,11 @@ import { AVATAR_SHAPES } from '../../lib/types'
 
 type State = Extract<ServerMsg, { type: 'state' }>
 
-const props = defineProps<{ state: State }>()
+const props = defineProps<{
+  state: State
+  // Held by App.vue rather than read off `state.config`, which no longer carries it (#35).
+  targetGrid: number[] | null
+}>()
 
 const socket = inject(socketKey)!.value!
 const clientId = inject(clientIdKey)!
@@ -204,10 +208,10 @@ const previewSlot = useTemplateRef<HTMLDivElement>('previewSlot')
 // carry a class. It used to be a `document.createElement('p')` with no class at all,
 // leaning on a `:deep(p)` rule that never matched: `_lobby.scss` is a global partial,
 // so `:deep()` is not a selector the browser understands.
-function renderPreview(config: State['config']) {
+function renderPreview(config: State['config'], grid: number[] | null) {
   if (!previewSlot.value)
     return
-  if (!config) {
+  if (!config || !grid) {
     previewSlot.value.replaceChildren()
     return
   }
@@ -215,7 +219,7 @@ function renderPreview(config: State['config']) {
     gridW: config.gridW,
     gridH: config.gridH,
     palette: config.palette,
-    targetGrid: config.targetGrid,
+    targetGrid: grid,
     editable: false,
   })
   previewSlot.value.replaceChildren(previewPc.canvas)
@@ -237,10 +241,10 @@ function renderPreview(config: State['config']) {
 // `v-else` branch mounts, the slot appears, and no `config` change accompanies it.
 // Same shape as `Drawing.vue`'s spectator-canvas watcher, which had it right.
 watch(
-  [() => props.state.config, isGm, previewSlot],
+  [() => props.state.config, () => props.targetGrid, isGm, previewSlot],
   () => {
     if (!isGm.value)
-      renderPreview(props.state.config)
+      renderPreview(props.state.config, props.targetGrid)
   },
   { immediate: true, flush: 'post' },
 )
