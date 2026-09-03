@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.5.0](https://github.com/kspiteri/pixmaler/compare/0.4.1...0.5.0) (2026-09-01)
+
+
+### New
+
+* add customizable background for transparent images ([c3207ca](https://github.com/kspiteri/pixmaler/commit/c3207ca828ca0f9b4c5ef4ed5cb474922c91c7e1))
+* notify players when a round is cancelled mid-game ([e1363c3](https://github.com/kspiteri/pixmaler/commit/e1363c3a23128dc7f555c7347b9bd06cd7a1904f))
+
+
+### Fixes
+
+* enhance image format handling and error messaging in `ImagePicker` ([3899a67](https://github.com/kspiteri/pixmaler/commit/3899a67a71da103e38050f580ab7e225efb091a8))
+
+
+### Under the hood
+
+* centralize interstitial screen styles with mixins ([a5acdb9](https://github.com/kspiteri/pixmaler/commit/a5acdb99946e1a33644fa6cf0e06de1bd0becc57))
+* extract `NameGate` and `SessionClosed` screens into own views ([b80c96b](https://github.com/kspiteri/pixmaler/commit/b80c96bf2a1c505d0ead42f2602d015d9cc971f8))
+
 ## [0.4.1](https://github.com/kspiteri/pixmaler/compare/0.4.0...0.4.1) (2026-09-01)
 
 
