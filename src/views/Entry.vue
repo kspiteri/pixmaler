@@ -62,24 +62,26 @@ function enterRoom(room: string) {
         <span class="entry__rule" />
       </div>
 
-      <label class="field">
-        <span class="label">Room code</span>
-        <input
-          v-model="code"
-          class="input"
-          type="text"
-          placeholder="e.g. feral-crayon"
-        >
-      </label>
+      <div class="entry__join">
+        <label class="field entry__join-field">
+          <span class="label">Room code</span>
+          <input
+            v-model="code"
+            class="input"
+            type="text"
+            placeholder="e.g. feral-crayon"
+          >
+        </label>
 
-      <button
-        class="btn btn--ghost"
-        type="button"
-        :disabled="!name.trim() || !code.trim()"
-        @click="enterRoom(code.trim().toLowerCase())"
-      >
-        Join room
-      </button>
+        <button
+          class="btn btn--ghost entry__join-btn"
+          type="button"
+          :disabled="!name.trim() || !code.trim()"
+          @click="enterRoom(code.trim().toLowerCase())"
+        >
+          Join room
+        </button>
+      </div>
 
       <div class="entry__divider">
         <span class="entry__rule" />

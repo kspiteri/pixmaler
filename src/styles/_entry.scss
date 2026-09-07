@@ -38,6 +38,27 @@
     align-items: center;
     gap: $gap-3;
   }
+
+  // The join half is one row: label above the input, Join aligned to the input's
+  // foot at the end. It collapses back to the stacked column below $bp-mobile,
+  // where a word-pair code plus a two-word button no longer share a line.
+  &__join {
+    display: flex;
+    align-items: flex-end;
+    gap: $gap-3;
+
+    @media (max-width: $bp-mobile) {
+      flex-direction: column;
+      align-items: stretch;
+      gap: $gap-4;
+    }
+  }
+  &__join-field {
+    flex: 1;
+  }
+  &__join-btn {
+    flex-shrink: 0;
+  }
   &__rule {
     flex: 1;
     height: 1px;
