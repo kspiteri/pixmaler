@@ -11,6 +11,7 @@
 @use 'alerts'; // the alert register — .conn-banner + AlertDialog
 @use 'avatar'; // the seat chip + its shape modifiers (shared: roster + results)
 @use 'buttons';
+@use 'name-field'; // NameField.vue — display-name input + dice randomise (#44)
 @use 'forms';
 @use 'logo';
 @use 'tagline'; // before the page partials — see the file header

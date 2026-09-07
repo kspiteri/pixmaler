@@ -3,6 +3,7 @@
 
 import { ref } from 'vue'
 import Logo from '../components/Logo.vue'
+import NameField from '../components/NameField.vue'
 import SettingsMenu from '../components/SettingsMenu.vue'
 import Tagline from '../components/Tagline.vue'
 import { getName, setName } from '../lib/identity'
@@ -38,15 +39,7 @@ function enterRoom(room: string) {
 
     <!-- Form -->
     <div class="entry__form">
-      <label class="field">
-        <span class="label">Your name</span>
-        <input
-          v-model="name"
-          class="input"
-          maxlength="24"
-          type="text"
-        >
-      </label>
+      <NameField v-model="name" label="Your name" />
 
       <button
         class="btn btn--primary"

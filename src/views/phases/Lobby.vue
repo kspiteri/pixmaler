@@ -13,6 +13,7 @@ import { CircleSlash } from '@lucide/vue'
 import { computed, inject, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 import AlertToast from '../../components/AlertToast.vue'
 import ImagePicker from '../../components/ImagePicker.vue'
+import NameField from '../../components/NameField.vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import PlayerList from '../../components/PlayerList.vue'
 import PlayerTag from '../../components/PlayerTag.vue'
@@ -56,16 +57,17 @@ const myName = computed(() =>
   props.state.players.find(p => p.clientId === clientId)?.name ?? '',
 )
 const nameDraft = ref(myName.value)
-const nameInput = useTemplateRef<HTMLInputElement>('nameInput')
+const renaming = ref(false)
 
 // Keep the draft in sync if the server echoes a different name (e.g. another
 // tab renamed us) — but don't clobber what the user is actively typing.
 watch(myName, (name) => {
-  if (document.activeElement !== nameInput.value)
+  if (!renaming.value)
     nameDraft.value = name
 })
 
 function commitName() {
+  renaming.value = false
   const next = nameDraft.value.trim()
   if (!next || next === myName.value) {
     nameDraft.value = myName.value // revert empty edits
@@ -73,6 +75,11 @@ function commitName() {
   }
   setName(next)
   socket.send(JSON.stringify({ type: 'rename', name: next } satisfies ClientMsg))
+}
+
+// Enter commits by blurring, so `@blur` stays the single commit path (no double send).
+function onRenameKey(e: KeyboardEvent) {
+  (e.target as HTMLInputElement).blur()
 }
 
 // ── Avatar shape ─────────────────────────────────────────────────────────────
@@ -304,19 +311,15 @@ onBeforeUnmount(() => {
 
     <div class="lobby__body">
       <aside class="lobby__players">
-        <label class="field lobby__name">
-          <span class="label">your name</span>
-          <input
-            ref="nameInput"
+        <div class="lobby__name">
+          <NameField
             v-model="nameDraft"
-            class="input"
-            type="text"
-            maxlength="24"
-            placeholder="choose a name"
-            @keydown.enter="nameInput?.blur()"
+            label="your name"
+            @focus="renaming = true"
+            @keydown.enter="onRenameKey"
             @blur="commitName"
-          >
-        </label>
+          />
+        </div>
         <div v-if="mySeat" class="field lobby__shape">
           <span id="lobby-shape" class="label">your avatar shape</span>
           <div class="lobby__shapes" role="group" aria-labelledby="lobby-shape">

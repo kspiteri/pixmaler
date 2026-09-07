@@ -13,6 +13,7 @@
 // playtesting, and this way taking one costs nothing.
 
 import { ref } from 'vue'
+import NameField from '../../components/NameField.vue'
 import { wordPair } from '../../lib/words'
 
 const emit = defineEmits<{
@@ -38,17 +39,7 @@ function submitName() {
       {{ roomCode }}
     </p>
     <form class="namegate__form" @submit.prevent="submitName">
-      <label class="field">
-        <span class="label">Your name</span>
-        <input
-          v-model="nameInput"
-          class="input"
-          type="text"
-          maxlength="24"
-          :placeholder="randomName"
-          autofocus
-        >
-      </label>
+      <NameField v-model="nameInput" label="Your name" autofocus />
       <button class="btn btn--primary" type="submit">
         {{ nameInput.trim() ? "Join" : `Join as ${randomName}` }}
       </button>
