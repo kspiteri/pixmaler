@@ -188,7 +188,6 @@ function mountCanvases(slots: Map<string, HTMLElement>) {
       targetGrid: sub.grid,
       editable: false,
     })
-    pc.canvas.classList.add('voting__canvas')
     slot.replaceChildren(pc.canvas)
     canvases.push(pc)
   }

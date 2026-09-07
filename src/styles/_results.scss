@@ -1,8 +1,9 @@
 @use 'tokens' as *;
 @use 'wonk' as *;
 
-// Results screen — hero winner card plus a gallery of the rest by overall points. The
-// `:deep(.results__canvas)` rule stays in the component's scoped <style>, where it works.
+// Results screen — hero winner card plus a gallery of the rest by overall points. Each
+// drawing is a PixelCanvas appended into an `.art-surface`; it's sized by the unscoped
+// `.art-surface > canvas` rule in `_surfaces.scss`, so there's no per-screen canvas rule.
 
 .results {
   max-width: 48rem;

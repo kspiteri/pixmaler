@@ -3,8 +3,9 @@
 @use 'wonk' as *;
 
 // Voting screen — anonymised gallery: each card holds the drawing (with the voter's
-// emoji stickers on top) and a row of category vote buttons below. The
-// `:deep(.voting__canvas)` rule stays in the component's scoped <style>, where it works.
+// emoji stickers on top) and a row of category vote buttons below. The drawing is a
+// PixelCanvas in an `.art-surface`, sized by the unscoped `.art-surface > canvas` rule
+// in `_surfaces.scss`, so there's no per-screen canvas rule.
 
 .voting {
   max-width: 42rem;

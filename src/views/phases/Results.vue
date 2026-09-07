@@ -187,7 +187,6 @@ function mountCanvases() {
       targetGrid: r.grid,
       editable: false,
     })
-    pc.canvas.classList.add('results__canvas')
     slot.replaceChildren(pc.canvas)
     canvases.push(pc)
   }
