@@ -10,6 +10,9 @@
   min-height: var(--vh-safe);
   max-height: var(--vh-safe);
   overflow: hidden;
+  // border-box so `padding` counts inside `--vh-safe` — without it the padding is added
+  // on top and the "non-scrolling" shell scrolls the page by 2×$page-pad (no global reset).
+  box-sizing: border-box;
   padding: $page-pad;
   max-width: $page-max;
   margin: 0 auto;

@@ -119,23 +119,27 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <CanvasPair
-        v-if="result"
-        ref="pairRef"
-        :key="`${result.gridW}x${result.gridH}-${result.palette.join(',')}`"
-        :grid-w="result.gridW"
-        :grid-h="result.gridH"
-        :palette="result.palette"
-        :target-grid="result.targetGrid"
-        variant="paint"
-        :orientation="orientation"
-      />
-      <div v-else class="paint__skeleton" role="status">
-        <div class="paint__skeleton-box" />
-        <p class="paint__skeleton-text">
-          Preparing canvas…
-        </p>
-      </div>
+      <!-- Only while settings are collapsed: opening them unmounts the pair, which takes
+           its teleported (position:fixed) palette with it, so neither overlaps the panel. -->
+      <template v-if="!settingsOpen">
+        <CanvasPair
+          v-if="result"
+          ref="pairRef"
+          :key="`${result.gridW}x${result.gridH}-${result.palette.join(',')}`"
+          :grid-w="result.gridW"
+          :grid-h="result.gridH"
+          :palette="result.palette"
+          :target-grid="result.targetGrid"
+          variant="paint"
+          :orientation="orientation"
+        />
+        <div v-else class="paint__skeleton" role="status">
+          <div class="paint__skeleton-box" />
+          <p class="paint__skeleton-text">
+            Preparing canvas…
+          </p>
+        </div>
+      </template>
     </div>
   </div>
 </template>
