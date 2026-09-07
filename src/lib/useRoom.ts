@@ -65,8 +65,10 @@ export function useRoom(roomCode: string | null) {
   const showNameGate = ref(false)
 
   // One identity for the whole composable: `provide`, the `join` payload, and the
-  // spectator lookup below all read the same value rather than re-deriving it.
-  const myClientId = getClientId()
+  // spectator lookup below all read the same value. Minted only on the room route —
+  // off it (Entry/Paint) there's nothing to identify, so a mere visit never creates a
+  // device id, and "clear my data" isn't immediately undone by a fresh one.
+  const myClientId = roomCode ? getClientId() : ''
 
   // Joined mid-round, so this client sits the round out — no canvas, no vote, and
   // excluded from both progress denominators server-side. Derived from `state`

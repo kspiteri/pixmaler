@@ -9,6 +9,8 @@
 
 import { Settings } from '@lucide/vue'
 import { onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
+import { askConfirm } from '../lib/dialog'
+import { clearAllData } from '../lib/identity'
 import { SCALE_STEPS, stepScale, textScale } from '../lib/textScale'
 import ThemeToggle from './ThemeToggle.vue'
 
@@ -47,6 +49,21 @@ onBeforeUnmount(() => {
   document.removeEventListener('pointerdown', onDocPointer as EventListener)
   document.removeEventListener('keydown', onKey as EventListener)
 })
+
+// Clear my data (#44): wipe every pixmaler:* key and return to Entry. The reload closes
+// any open socket, so leaving a live room is implicit — the confirm says so. Copy is
+// context-aware: only rooms have a game to leave.
+async function clearData() {
+  open.value = false
+  const inRoom = new URLSearchParams(location.search).has('room')
+  const message = inRoom
+    ? 'Clear your saved name and preferences, and leave the current game?'
+    : 'Clear your saved name and preferences?'
+  if (!await askConfirm(message))
+    return
+  clearAllData()
+  location.href = import.meta.env.BASE_URL
+}
 </script>
 
 <template>
@@ -94,6 +111,11 @@ onBeforeUnmount(() => {
           </button>
         </div>
       </div>
+
+      <hr class="settings-menu__sep">
+      <button class="settings-menu__clear pressable" type="button" @click="clearData">
+        Clear my data
+      </button>
     </div>
   </div>
 </template>

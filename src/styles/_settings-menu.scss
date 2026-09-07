@@ -106,6 +106,32 @@
     }
   }
 
+  &__sep {
+    border: none;
+    border-top: 1px solid $border-soft;
+    margin: 0;
+  }
+
+  &__clear {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid $border;
+    border-radius: $radius-sm;
+    background: transparent;
+    color: $fg-60;
+    font-family: $font-alert;
+    font-size: $fs-sm;
+    cursor: pointer;
+    transition:
+      color 0.15s,
+      border-color 0.15s;
+
+    &:hover {
+      color: $fg;
+      border-color: $fg-25;
+    }
+  }
+
   // Entry is a centred hero with no bar, so the menu anchors to the page corner
   // (the role the old `.theme-toggle--corner` played).
   &--corner {

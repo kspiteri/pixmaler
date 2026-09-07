@@ -9,6 +9,9 @@
 .entry {
   position: relative;
   min-height: 100vh;
+  // border-box so `padding` counts inside the 100vh — there's no global box-sizing
+  // reset, and content-box would add the padding on top and force a scrollbar.
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -79,6 +82,27 @@
 
     &:hover {
       color: $fg-50;
+    }
+  }
+
+  // Privacy notice — a quiet, collapsible footnote under the form. Closed by default;
+  // it explains what's stored (#44) without taking space from the two doors above.
+  &__privacy {
+    width: 100%;
+    max-width: $col-narrow;
+    margin-top: $gap-5;
+    color: $fg-35;
+    font-size: $fs-xs;
+    line-height: $lh-normal;
+    text-align: left;
+
+    summary {
+      cursor: pointer;
+      color: $fg-50;
+      text-align: center;
+    }
+    p {
+      margin: $gap-2 0 0;
     }
   }
 }

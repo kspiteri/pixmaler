@@ -112,17 +112,18 @@ const {
         />
       </PhaseBoundary>
     </template>
-
-    <!-- The app's only dialog instance (lib/dialog.ts). Outside the phase chain
-         because a rejection can arrive before state loads and must survive a
-         phase change. Keyed so each request mounts a fresh <dialog>. -->
-    <AlertDialog
-      v-if="currentDialog"
-      :key="currentDialog.id"
-      :message="currentDialog.message"
-      :mode="currentDialog.mode"
-      @confirm="settleDialog(true)"
-      @cancel="settleDialog(false)"
-    />
   </template>
+
+  <!-- The app's only dialog instance (lib/dialog.ts). App-global — mounted on every
+       route, not just in a room — so `askConfirm`/`askAlert` work from the settings menu
+       on Entry/Paint too (e.g. "Clear my data"). Keyed so each request mounts a fresh
+       <dialog>; outside the phase chain so it survives a phase change. -->
+  <AlertDialog
+    v-if="currentDialog"
+    :key="currentDialog.id"
+    :message="currentDialog.message"
+    :mode="currentDialog.mode"
+    @confirm="settleDialog(true)"
+    @cancel="settleDialog(false)"
+  />
 </template>

@@ -48,3 +48,14 @@ export function getShape(): AvatarShape {
 export function setShape(shape: AvatarShape): void {
   localStorage.setItem(SHAPE, shape)
 }
+
+// Wipe every `pixmaler:*` key — the "clear my data" action (#44). Deliberately broad:
+// it takes identity (name, clientId, shape) *and* preferences (theme, text size), since
+// the control promises to clear everything. The caller then reloads to Entry, which
+// closes any open socket. `Object.keys` snapshots, so mutating in the loop is safe.
+export function clearAllData(): void {
+  for (const key of Object.keys(localStorage)) {
+    if (key.startsWith('pixmaler:'))
+      localStorage.removeItem(key)
+  }
+}
