@@ -1,20 +1,24 @@
 <script setup lang="ts">
+// The dark/light switch — a thin binding around the generic `ToggleSwitch`. Sun on the
+// off (light) side, moon on the on (dark) side; `aria-checked` reports the current theme.
+// The View-Transition cross-fade lives in `toggleTheme`, so it survives the extraction.
+
 import { Moon, Sun } from '@lucide/vue'
 import { theme, toggleTheme } from '../lib/theme'
-
-// The icon shows the theme you'd *get*, not the one you're in.
-const label = () => (theme.value === 'dark' ? 'Switch to light theme' : 'Switch to dark theme')
+import ToggleSwitch from './ToggleSwitch.vue'
 </script>
 
 <template>
-  <button
-    class="theme-toggle pressable"
-    type="button"
-    :aria-label="label()"
-    :title="label()"
-    @click="toggleTheme"
+  <ToggleSwitch
+    :model-value="theme === 'dark'"
+    label="Dark theme"
+    @update:model-value="toggleTheme"
   >
-    <Sun v-if="theme === 'dark'" :size="18" aria-hidden="true" />
-    <Moon v-else :size="18" aria-hidden="true" />
-  </button>
+    <template #off>
+      <Sun :size="16" aria-hidden="true" />
+    </template>
+    <template #on>
+      <Moon :size="16" aria-hidden="true" />
+    </template>
+  </ToggleSwitch>
 </template>
