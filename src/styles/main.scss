@@ -6,6 +6,7 @@
 
 // Shared primitives — reused across screens.
 @use 'theme'; // the dark/light palettes — must come first, everything reads it
+@use 'fonts'; // self-hosted @font-face — vendored, no Google CDN (#44)
 @use 'backdrop'; // html base colour + the app-wide pixel grid & vignette
 @use 'alerts'; // the alert register — .conn-banner + AlertDialog
 @use 'avatar'; // the seat chip + its shape modifiers (shared: roster + results)
