@@ -1,3 +1,4 @@
+@use 'chrome' as *;
 @use 'screen' as *;
 @use 'tokens' as *;
 
@@ -91,7 +92,6 @@
     width: 100%;
     max-width: $col-narrow;
     margin-top: $gap-5;
-    color: $fg-35;
     font-size: $fs-xs;
     line-height: $lh-normal;
     text-align: left;
@@ -101,8 +101,27 @@
       color: $fg-50;
       text-align: center;
     }
-    p {
-      margin: $gap-2 0 0;
+  }
+  // The revealed content sits on a solid surface, not the textured backdrop, so the
+  // small print stays readable. `$muted` is the quiet-copy rung — `$fg-35` is a
+  // non-text contrast level and was too faint here.
+  &__privacy-body {
+    margin-top: $gap-3;
+    padding: $gap-3 $gap-4;
+    @include chrome($rung: $radius);
+    color: $muted;
+
+    > * {
+      margin: 0;
+    }
+    > * + * {
+      margin-top: $gap-2;
+    }
+    ul {
+      padding-left: 1.1rem;
+    }
+    li + li {
+      margin-top: $gap-1;
     }
   }
 }
