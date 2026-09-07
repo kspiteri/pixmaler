@@ -1,0 +1,62 @@
+@use 'tokens' as *;
+
+// ToggleSwitch.vue — a generic two-state switch. A sliding pill (`.pressable`, no fill
+// of its own to deepen) flanked by an off/on side; the lime knob slides toward the
+// active side and that side brightens. Presentation only; see the component for intent.
+
+.toggle-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: $gap-2;
+
+  &__side {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: $fg-30; // dim side
+    transition: color 0.2s;
+  }
+  // Off is the implicit default (no modifier); `--on` flips which side reads as active.
+  &:not(&--on) &__side--off,
+  &--on &__side--on {
+    color: $fg;
+  }
+
+  &__control {
+    position: relative;
+    flex-shrink: 0;
+    // 2.75 × 1.5rem track; the knob slides between the flanking sides.
+    width: 2.75rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 1px solid $border;
+    border-radius: 999px;
+    background: $bg;
+    cursor: pointer;
+  }
+
+  &__knob {
+    position: absolute;
+    top: 50%;
+    left: 0.1875rem;
+    width: 1.125rem;
+    height: 1.125rem;
+    // Vertical centre without `transform` — the press rule owns that, and the knob
+    // uses the standalone `translate` for its slide (same split as the wonk tilt).
+    margin-top: -0.5625rem;
+    border-radius: 50%;
+    background: $accent;
+    translate: 0;
+    transition: translate 0.2s;
+  }
+  &--on &__knob {
+    translate: 1.25rem;
+  }
+
+  // The slide and side fade are decoration; the press travel is the movement that stays.
+  @media (prefers-reduced-motion: reduce) {
+    .toggle-switch__side,
+    .toggle-switch__knob {
+      transition: none;
+    }
+  }
+}
