@@ -46,11 +46,11 @@
   }
 
   &__pill {
-    font-size: 0.625rem;
+    font-size: $fs-2xs;
     padding: 0.125rem 0.5rem;
     border-radius: 999px;
     border: 1px solid rgba($primary, 0.5);
-    color: $primary;
+    color: $primary-ink;
   }
 
   &__make-gm {
