@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.6.0](https://github.com/kspiteri/pixmaler/compare/0.5.0...0.6.0) (2026-09-07)
+
+
+### New
+
+* add "Clear my data" feature and privacy notice ([0fce3ea](https://github.com/kspiteri/pixmaler/commit/0fce3ea45aed5500edcb618d0df97f8dc6911ee0))
+* add `SettingsMenu` component ([3406e75](https://github.com/kspiteri/pixmaler/commit/3406e755678b8803b89b731ae35331269d77cbf3))
+* add reusable `ToggleSwitch` component ([7d3c259](https://github.com/kspiteri/pixmaler/commit/7d3c259b22b47b806f011636d93af667d208e0ad))
+
+
+### Fixes
+
+* prevent canvas from unmounting when settings are collapsed ([d255b2d](https://github.com/kspiteri/pixmaler/commit/d255b2d7ff46428755053fa7dcc2252312bc9ac4))
+
+
+### Under the hood
+
+* centralize font size control with `fs()` and `--text-scale` ([ab2d421](https://github.com/kspiteri/pixmaler/commit/ab2d4215a0cf7ee6487656fb53056e5f7536e5a6))
+* centralize identity handling with `lib/identity` ([116eb26](https://github.com/kspiteri/pixmaler/commit/116eb2670f56b982ae44abfa6d570d0b02d63f88))
+* extract room connection and state management into `useRoom` ([216fc4b](https://github.com/kspiteri/pixmaler/commit/216fc4bc2358983b97a57839cc4c28461af42b9a))
+* improve privacy notice styling and structure ([8b083c3](https://github.com/kspiteri/pixmaler/commit/8b083c3ab742343e45c15f700d800f53645f93cc))
+* remove per-screen canvas rules and streamline styling ([5c7b92d](https://github.com/kspiteri/pixmaler/commit/5c7b92d99ec5f758231d1bba2c9ba296bd8be1ab))
+* replace `ThemeToggle` with `SettingsMenu` ([e63d72c](https://github.com/kspiteri/pixmaler/commit/e63d72cc19d6fb6f341ff9330bc8026fcee10cfd))
+* replace custom `ThemeToggle` logic with `ToggleSwitch` ([26e4da1](https://github.com/kspiteri/pixmaler/commit/26e4da18154f664a2384a28194012c4f858042d8))
+* replace inline name inputs with reusable `NameField` component ([61a102d](https://github.com/kspiteri/pixmaler/commit/61a102d93c57140fda2b4b36f3b71430c47c19eb))
+* self-host fonts locally ([3df668e](https://github.com/kspiteri/pixmaler/commit/3df668e33f074718e149b2e0c197f066446218ea))
+
 ## [0.5.0](https://github.com/kspiteri/pixmaler/compare/0.4.1...0.5.0) (2026-09-01)
 
 
