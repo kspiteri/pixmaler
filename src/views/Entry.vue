@@ -3,8 +3,8 @@
 
 import { ref } from 'vue'
 import Logo from '../components/Logo.vue'
+import SettingsMenu from '../components/SettingsMenu.vue'
 import Tagline from '../components/Tagline.vue'
-import ThemeToggle from '../components/ThemeToggle.vue'
 import { getName, setName } from '../lib/identity'
 import { wordPair } from '../lib/words'
 
@@ -29,7 +29,7 @@ function enterRoom(room: string) {
 
 <template>
   <div class="entry">
-    <ThemeToggle class="theme-toggle--corner" />
+    <SettingsMenu class="settings-menu--corner" />
     <!-- Wordmark -->
     <header class="entry__brand">
       <Logo size="lg" />

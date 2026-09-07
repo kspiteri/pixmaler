@@ -9,8 +9,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import CanvasPair from '../components/CanvasPair.vue'
 import ImagePicker from '../components/ImagePicker.vue'
 import Logo from '../components/Logo.vue'
+import SettingsMenu from '../components/SettingsMenu.vue'
 import Tagline from '../components/Tagline.vue'
-import ThemeToggle from '../components/ThemeToggle.vue'
 import { orientationFor } from '../lib/aspect'
 
 const result = ref<PipelineResult | null>(null)
@@ -87,7 +87,7 @@ onBeforeUnmount(() => {
       <a class="paint__back" :href="backHref"><Logo size="sm" /></a>
       <div class="phase__status">
         <Tagline class="paint__sub" seed="solo sandbox, no lobby, no timer" />
-        <ThemeToggle />
+        <SettingsMenu />
       </div>
     </header>
 

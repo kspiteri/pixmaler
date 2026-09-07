@@ -5,7 +5,7 @@
 // (0–100) and `progressColour`.
 
 import Logo from './Logo.vue'
-import ThemeToggle from './ThemeToggle.vue'
+import SettingsMenu from './SettingsMenu.vue'
 
 withDefaults(defineProps<{
   // 0–100 width of the top bar. Omit to hide the bar entirely.
@@ -31,7 +31,7 @@ withDefaults(defineProps<{
       <Logo size="sm" />
       <div class="phase__status">
         <slot name="status" />
-        <ThemeToggle />
+        <SettingsMenu />
       </div>
     </header>
 
