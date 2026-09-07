@@ -63,6 +63,11 @@
   left: 0;
   z-index: 100;
   width: 13rem;
+  // A compact tool overlay floating over a fixed pixel canvas — it stays at 100% text
+  // regardless of the text-size control, so it never outgrows its fixed width. Every
+  // `$fs-*` is `calc(… * var(--text-scale, 1))`, so pinning the var here opts the whole
+  // subtree out (S/M/L, the PALETTE label, the brush readout, the hint).
+  --text-scale: 1;
   @include chrome($edge: $border);
   overflow: hidden;
   box-shadow: $shadow-2;

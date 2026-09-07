@@ -400,11 +400,17 @@ function clear() {
 
   :deep(.brush__slider) {
     flex: 1;
+    // Firefox gives `input[type=range]` an intrinsic min-width and won't shrink it as a
+    // flex item, so the slider hogged the row and the panel's `overflow: hidden` clipped
+    // the label to "brus". `min-width: 0` lets it give the label its space back.
+    min-width: 0;
     accent-color: $primary;
   }
 
   :deep(.brush__label) {
     min-width: 56px;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 }
 </style>

@@ -54,8 +54,11 @@
   // plus the flush `border-left` joins would clip and slide a `translateY` travel out.
 
   &__item {
-    width: 1.75rem;
-    padding: 0.375rem 0;
+    // em, not rem: the cell tracks its own (scaling) font so multi-char values like
+    // "2:3" don't crowd when the text-size control is raised. Vertical padding stays
+    // fixed so the control height is unchanged at 100%.
+    min-width: 2.25em;
+    padding: 0.375rem 0.6em;
     background: transparent;
     border: none;
     color: $muted;
@@ -86,8 +89,7 @@
   }
 
   &--wide &__item {
-    width: auto;
-    min-width: 2.5rem;
-    padding: 0.375rem $gap-2;
+    min-width: 3em;
+    padding: 0.375rem 0.75em;
   }
 }
