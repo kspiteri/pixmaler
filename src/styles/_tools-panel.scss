@@ -78,7 +78,7 @@
     border-bottom: 1px solid $border-soft;
     color: $muted;
     cursor: grab;
-    font-size: 0.6875rem;
+    font-size: $fs-2xs;
     text-transform: uppercase;
     letter-spacing: 0.15em;
 
@@ -112,7 +112,7 @@
     border: 1px solid $border;
     border-radius: $radius-sm;
     color: $fg-60;
-    font-size: 0.875rem;
+    font-size: $fs-sm;
     line-height: 1;
     cursor: pointer;
     transition:
@@ -168,7 +168,7 @@
     padding: $gap-2 $gap-3;
     border-bottom: 1px solid $border-soft;
     color: $muted;
-    font-size: 0.6875rem;
+    font-size: $fs-2xs;
     text-transform: uppercase;
     letter-spacing: 0.15em;
   }

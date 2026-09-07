@@ -22,13 +22,13 @@
     margin: 0 0 $gap-2;
     font-family: $font-display;
     font-weight: 700;
-    font-size: 2rem;
+    font-size: $fs-2xl;
   }
 
   &__intro {
     margin: 0 0 $gap-5;
     color: $fg-50;
-    font-size: 0.9375rem;
+    font-size: $fs-sm;
     line-height: 1.5;
 
     a {

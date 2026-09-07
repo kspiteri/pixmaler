@@ -72,6 +72,15 @@
         if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t
       })()
     </script>
+
+    <script>
+      // Apply a stored text-scale before first paint, so type doesn't reflow on load.
+      // Mirrors the theme block above; the module re-validates against its rungs.
+      ;(function () {
+        var s = Number(localStorage.getItem('pixmaler:textScale'))
+        if (s >= 90 && s <= 150) document.documentElement.style.setProperty('--text-scale', String(s / 100))
+      })()
+    </script>
   </head>
   <body>
     <div id="app"></div>

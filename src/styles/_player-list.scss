@@ -42,7 +42,7 @@
   // The roster name's size, applied to the tag — PlayerTag inherits size and
   // weight from its host, since the four sites legitimately differ.
   .player-tag {
-    font-size: 0.875rem;
+    font-size: $fs-sm;
   }
 
   &__pill {
@@ -54,7 +54,7 @@
   }
 
   &__make-gm {
-    font-size: 0.6875rem;
+    font-size: $fs-2xs;
     padding: 0.25rem 0.5rem;
     border-radius: $radius-sm;
     background: transparent;

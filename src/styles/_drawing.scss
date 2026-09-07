@@ -7,7 +7,7 @@
   &__timer {
     font-family: $font-display;
     font-weight: 700;
-    font-size: 1.05rem;
+    font-size: fs(1.05rem); // off-rung; scales like the tokens
 
     // A brief lift when the GM adds time. Standalone `scale`, not `transform`, for
     // the same reason the tilt uses `rotate` — nothing here should clobber a press.
@@ -18,7 +18,7 @@
 
   &__done {
     color: $muted;
-    font-size: 0.875rem;
+    font-size: $fs-sm;
   }
 
   // Placement only — the look is `.toast` in the alert register. Overlaid rather

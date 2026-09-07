@@ -9,15 +9,26 @@ $font-alert: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
 
 // ── Type scale ──────────────────────────────────────────────────────────────
 // Static rungs for chrome; `-fluid` clamp() rungs for headings that should breathe.
-$fs-2xs: 0.6875rem; // 11px — micro labels
-$fs-xs: 0.75rem; // 12px — meta / captions
-$fs-sm: 0.875rem; // 14px — small body, plain buttons, form labels
-$fs-base: 1rem; // 16px — body default
-$fs-md: 1.125rem; // 18px — primary buttons, emphasised body
-$fs-lg: 1.25rem; // 20px — sub-headings, prompts
-$fs-xl: 1.5rem; // 24px — section headings
-$fs-2xl: 2rem; // 32px — page headings (room code, results)
-$fs-3xl: 2.5rem; // 40px — hero / logo
+// The reading rungs carry the text-size control's multiplier via `fs()` — `lib/textScale.ts`
+// sets `--text-scale` on :root, so **type scales while rem spacing and layout stay put**
+// (the root font-size is deliberately NOT scaled). px comments are the size at 100%.
+//
+// A function, not a mixin: the token needs a returned *value*, and a mixin only emits
+// declarations. `@use 'tokens' as *` is everywhere, so `fs()` is too — use it for any
+// off-rung font-size that should still follow the control (see `_drawing.scss`).
+@function fs($size) {
+  @return calc(#{$size} * var(--text-scale, 1));
+}
+
+$fs-2xs: fs(0.6875rem); // 11px — micro labels
+$fs-xs: fs(0.75rem); // 12px — meta / captions
+$fs-sm: fs(0.875rem); // 14px — small body, plain buttons, form labels
+$fs-base: fs(1rem); // 16px — body default
+$fs-md: fs(1.125rem); // 18px — primary buttons, emphasised body
+$fs-lg: fs(1.25rem); // 20px — sub-headings, prompts
+$fs-xl: fs(1.5rem); // 24px — section headings
+$fs-2xl: fs(2rem); // 32px — page headings (room code, results)
+$fs-3xl: 2.5rem; // 40px — hero / logo (branding; does not follow the text-size control)
 
 // Fluid headings — scale between mobile min and desktop max across the
 // viewport. Middle value uses vw so it grows smoothly.

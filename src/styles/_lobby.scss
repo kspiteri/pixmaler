@@ -22,7 +22,7 @@
     border: 1px solid transparent;
     font-family: $font-display;
     font-weight: 700;
-    font-size: 1.125rem;
+    font-size: $fs-md;
     color: $fg;
     cursor: pointer;
     transition:
@@ -40,7 +40,7 @@
   &__copy {
     font-family: $font-body;
     font-weight: 600;
-    font-size: 0.6875rem;
+    font-size: $fs-2xs;
     color: $fg-35;
   }
 
@@ -128,7 +128,7 @@
   &__start {
     width: 100%;
     margin-top: auto;
-    font-size: 1.25rem;
+    font-size: $fs-lg;
     padding: 1rem;
     border-radius: $radius-lg;
   }
@@ -136,7 +136,7 @@
     margin: $gap-2 0 0;
     text-align: center;
     color: $fg-25;
-    font-size: 0.75rem;
+    font-size: $fs-xs;
   }
 
   // Non-GM waiting state
@@ -161,7 +161,7 @@
   &__preview-label {
     margin: 0 0 $gap-2;
     color: $muted;
-    font-size: 0.75rem;
+    font-size: $fs-xs;
   }
   // Plain descendant, not `:deep()`. This is a global partial — `Lobby.vue` has no
   // `<style>` block — so the previous `:deep(p)` / `:deep(canvas)` rules were never

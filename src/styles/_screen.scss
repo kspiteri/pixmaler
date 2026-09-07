@@ -24,7 +24,7 @@
 @mixin interstitial-code {
   font-family: $font-display;
   font-weight: 700;
-  font-size: 2rem;
+  font-size: $fs-2xl;
   color: $accent-ink;
   word-break: break-word;
 }

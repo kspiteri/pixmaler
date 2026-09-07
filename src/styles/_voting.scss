@@ -28,7 +28,7 @@
   &__hint {
     margin: $gap-2 0 0;
     color: $fg-35;
-    font-size: 0.875rem;
+    font-size: $fs-sm;
     text-wrap: balance;
   }
   // Only rendered when somebody wiped their canvas. Quieter than `__hint` — this is
@@ -124,7 +124,7 @@
       margin: 0;
       justify-content: center;
       color: $fg-25;
-      font-size: 0.75rem;
+      font-size: $fs-xs;
       font-style: italic;
     }
   }
@@ -141,7 +141,7 @@
     color: $fg-50;
     font-family: $font-body;
     font-weight: 600;
-    font-size: 0.75rem;
+    font-size: $fs-xs;
     cursor: pointer;
     transition:
       border-color 120ms,
@@ -173,7 +173,7 @@
   // Status-bar tally + end button.
   &__tally {
     color: $muted;
-    font-size: 0.875rem;
+    font-size: $fs-sm;
     transition: color 0.3s ease;
 
     // Reads as a prompt once the click is free. Not `$accent-ink`: lime means
@@ -200,7 +200,7 @@
   // Shared with the cancel control beside it: same status bar, same scale.
   &__stop,
   &__cancel {
-    font-size: 0.875rem;
+    font-size: $fs-sm;
     padding: 0.5rem 0.875rem;
   }
 }

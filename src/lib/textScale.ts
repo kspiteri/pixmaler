@@ -2,12 +2,11 @@ import { ref } from 'vue'
 
 // The text-size control. Module-level like `lib/theme.ts` — one scale per document.
 //
-// The whole UI is authored in `rem`, so scaling the root font-size grows type,
-// spacing and rem-based layout together: a text-led zoom rather than a text-only one.
-// It builds on the *browser's* own default size (`_backdrop.scss` sets the root to
-// `calc(100% * var(--text-scale))`), so a reader who has already raised their browser
-// default keeps that as the 100 % baseline. Only an explicit choice is stored, and
-// `index.html` applies it before first paint so type doesn't reflow on load.
+// Text-only, not a whole-UI zoom: it sets `--text-scale` on :root, which only the type
+// tokens read (via `fs()` in `_tokens.scss`). The root font-size is deliberately left
+// alone, so `rem` spacing and layout stay put while type grows — the fix for the
+// everything-balloons problem a scaled root caused. Only an explicit choice is stored,
+// and `index.html` applies it before first paint so type doesn't reflow on load.
 
 const KEY = 'pixmaler:textScale'
 

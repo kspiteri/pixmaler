@@ -28,7 +28,7 @@
     gap: $gap-2;
     font-family: $font-body;
     font-weight: 700;
-    font-size: 0.75rem;
+    font-size: $fs-xs;
     text-transform: uppercase;
     letter-spacing: 0.2em;
     color: $accent-ink;
@@ -68,7 +68,7 @@
   &__winner-name {
     margin: 0;
     font-weight: 700;
-    font-size: 1.25rem;
+    font-size: $fs-lg;
   }
   &__winner-votes {
     margin: 0.125rem 0 0;
@@ -79,7 +79,7 @@
   &__winner-breakdown {
     margin: 0.125rem 0 0;
     color: $muted;
-    font-size: 0.875rem;
+    font-size: $fs-sm;
   }
   &__winner-breakdown-item {
     display: inline-flex;
@@ -124,12 +124,12 @@
   &__item-name {
     margin: 0;
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: $fs-sm;
   }
   &__item-votes {
     margin: 0.125rem 0 0;
     color: $muted;
-    font-size: 0.75rem;
+    font-size: $fs-xs;
   }
   // Stands in for the score on a wiped canvas. Italic rather than a new colour —
   // it is a different *kind* of statement, not a different severity, and every
@@ -137,7 +137,7 @@
   &__item-wiped {
     margin: 0.125rem 0 0;
     color: $muted;
-    font-size: 0.75rem;
+    font-size: $fs-xs;
     font-style: italic;
   }
 
@@ -156,7 +156,7 @@
 
   &__nodraw-item {
     color: $muted;
-    font-size: 0.875rem;
+    font-size: $fs-sm;
     // The chip is inline with the sentence, so it needs to sit on the text baseline
     // rather than the line box.
     display: flex;
@@ -168,6 +168,6 @@
 
   &__hint {
     color: $fg-35;
-    font-size: 0.875rem;
+    font-size: $fs-sm;
   }
 }
