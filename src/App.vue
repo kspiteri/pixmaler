@@ -3,14 +3,14 @@
 // Provides `socket` and `clientId` to descendants; passes mutable `state`,
 // `gallery`, and `results` down as props.
 
-import type { AvatarShape, ClientMsg, ServerMsg } from './lib/types'
+import type { ClientMsg, ServerMsg } from './lib/types'
 import PartySocket from 'partysocket'
 import { computed, onMounted, provide, ref, shallowRef } from 'vue'
 import AlertDialog from './components/AlertDialog.vue'
 import PhaseBoundary from './components/PhaseBoundary.vue'
 import { askAlert, currentDialog, settleDialog } from './lib/dialog'
+import { getClientId, getName, getShape, setName } from './lib/identity'
 import { clientIdKey, socketKey } from './lib/keys'
-import { normaliseShape } from './lib/types'
 import Entry from './views/Entry.vue'
 import Paint from './views/Paint.vue'
 import Drawing from './views/phases/Drawing.vue'
@@ -33,34 +33,6 @@ const isPaintRoute = path.endsWith('/paint')
 // Hidden debug page — read all taglines in bulk. Not linked from anywhere.
 const isTaglinesRoute = path.endsWith('/taglines')
 const route = isTaglinesRoute ? 'taglines' : isPaintRoute ? 'paint' : roomCode ? 'room' : 'entry'
-
-// ── Identity ─────────────────────────────────────────────────────────────────
-
-function getOrCreateClientId(): string {
-  let id = localStorage.getItem('pixmaler:clientId')
-  if (!id) {
-    id = crypto.randomUUID()
-    localStorage.setItem('pixmaler:clientId', id)
-  }
-  return id
-}
-
-// Stored display name, or null if the player hasn't chosen one yet. Unlike the
-// old getOrCreate, this does NOT mint a name — the room route shows a name gate
-// when it's null, both to let first-timers choose and so bots that merely load
-// the URL never connect (no human action → no socket → no ghost player).
-function storedName(): string | null {
-  return localStorage.getItem('pixmaler:name')?.trim() || null
-}
-
-// The player's chosen avatar shape. Browser-local by design: it follows them
-// into every future room rather than being per-room state, and it's sent with
-// `join` so their chip is right on the first render. Validation is the shared
-// `normaliseShape` — the same predicate the server runs on receipt, so an old or
-// hand-edited key degrades to the default identically on both sides.
-function storedShape(): AvatarShape {
-  return normaliseShape(localStorage.getItem('pixmaler:shape'))
-}
 
 // ── Reactive room state ──────────────────────────────────────────────────────
 
@@ -111,7 +83,7 @@ const showNameGate = ref(false)
 
 // One identity for the whole module: `provide`, the `join` payload, and the
 // spectator lookup below all read the same value rather than re-deriving it.
-const myClientId = getOrCreateClientId()
+const myClientId = getClientId()
 
 // Joined mid-round, so this client sits the round out — no canvas, no vote, and
 // excluded from both progress denominators server-side. Derived from `state`
@@ -124,7 +96,7 @@ if (route === 'room' && roomCode) {
   provide(clientIdKey, myClientId)
   provide(socketKey, socketRef)
 
-  const existing = storedName()
+  const existing = getName()
   if (existing) {
     connect(existing)
   }
@@ -133,10 +105,10 @@ if (route === 'room' && roomCode) {
   }
 }
 
-// The gate's only output. Storing the name stays here, next to `storedName`, so one place
-// owns the `pixmaler:name` key — the gate never touches localStorage.
+// The gate's only output. `lib/identity` owns the `pixmaler:name` key; storing the
+// chosen name and opening the socket both stay here, so the gate touches neither.
 function submitName(chosen: string) {
-  localStorage.setItem('pixmaler:name', chosen)
+  setName(chosen)
   showNameGate.value = false
   connect(chosen)
 }
@@ -151,7 +123,7 @@ function connect(name: string) {
 
   socket.addEventListener('open', () => {
     connectionStatus.value = 'connected'
-    const msg: ClientMsg = { type: 'join', clientId, name, shape: storedShape() }
+    const msg: ClientMsg = { type: 'join', clientId, name, shape: getShape() }
     socket.send(JSON.stringify(msg))
   })
 

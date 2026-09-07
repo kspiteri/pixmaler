@@ -5,9 +5,10 @@ import { ref } from 'vue'
 import Logo from '../components/Logo.vue'
 import Tagline from '../components/Tagline.vue'
 import ThemeToggle from '../components/ThemeToggle.vue'
+import { getName, setName } from '../lib/identity'
 import { wordPair } from '../lib/words'
 
-const name = ref(localStorage.getItem('pixmaler:name') ?? '')
+const name = ref(getName() ?? '')
 const code = ref('')
 
 // Strip any trailing "index.html" so BASE_URL ("/pixmaler/") prefixes /paint
@@ -21,7 +22,7 @@ function enterRoom(room: string) {
   const trimmed = name.value.trim()
   if (!trimmed || !room)
     return
-  localStorage.setItem('pixmaler:name', trimmed)
+  setName(trimmed)
   location.href = `${location.pathname}?room=${room}`
 }
 </script>

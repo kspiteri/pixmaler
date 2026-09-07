@@ -19,6 +19,7 @@ import PlayerTag from '../../components/PlayerTag.vue'
 import Tagline from '../../components/Tagline.vue'
 import { PixelCanvas } from '../../lib/canvas/pixel'
 import { askConfirm } from '../../lib/dialog'
+import { setName, setShape } from '../../lib/identity'
 import { clientIdKey, socketKey } from '../../lib/keys'
 import { seatFor } from '../../lib/seats'
 import { AVATAR_SHAPES } from '../../lib/types'
@@ -70,7 +71,7 @@ function commitName() {
     nameDraft.value = myName.value // revert empty edits
     return
   }
-  localStorage.setItem('pixmaler:name', next)
+  setName(next)
   socket.send(JSON.stringify({ type: 'rename', name: next } satisfies ClientMsg))
 }
 
@@ -102,7 +103,7 @@ function pickShape(shape: AvatarShape) {
 // this only ever records a confirmed choice.
 watch(() => mySeat.value?.shape, (shape) => {
   if (shape)
-    localStorage.setItem('pixmaler:shape', shape)
+    setShape(shape)
 }, { immediate: true })
 
 // The GM's own chip + name, for the non-GM waiting line: it turns "waiting for
