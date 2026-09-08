@@ -13,7 +13,7 @@
 //     this button doesn't gate it.
 
 import type { ClientMsg, ServerMsg } from '../../lib/types'
-import { TriangleAlert } from '@lucide/vue'
+import { CircleSlash, TriangleAlert } from '@lucide/vue'
 import {
   computed,
   inject,
@@ -357,12 +357,14 @@ onBeforeUnmount(() => {
       </button>
       <button
         v-if="isGm"
-        class="btn btn--ghost drawing__cancel"
+        class="btn btn--ghost btn--icon-mobile drawing__cancel"
         type="button"
         title="Abandon this round and return everyone to the lobby"
+        aria-label="Cancel round"
         @click="cancelRound"
       >
-        Cancel round
+        <CircleSlash class="btn__icon" :size="16" aria-hidden="true" />
+        <span class="btn__label">Cancel round</span>
       </button>
     </template>
 

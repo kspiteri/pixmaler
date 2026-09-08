@@ -21,6 +21,21 @@
     font-size: $fs-sm;
   }
 
+  // Narrow screens: drop the numeric countdown entirely. The full-width colour-coded
+  // progress ribbon at the top of the shell already shows time remaining and its urgency
+  // (lime → amber → red), so the number only duplicated it and crowded the bar (#48). The
+  // "X of Y ready" tally stays — it's unique info nothing else carries — just smaller and
+  // on one line. (Exact seconds are still shown on desktop, where there's room.)
+  @media (max-width: $bp-mobile) {
+    &__timer {
+      display: none;
+    }
+    &__done {
+      font-size: $fs-2xs;
+      white-space: nowrap;
+    }
+  }
+
   // Placement only — the look is `.toast` in the alert register. Overlaid rather
   // than in flow because `.phase--fixed` has a hard height budget and the canvas
   // takes what is left, so an element in the column would shrink the drawing area
@@ -96,6 +111,18 @@
       padding: 0;
       gap: 0;
     }
+  }
+}
+
+// Consistent bar-control width on mobile: the icon-only Cancel round is square (via
+// `.btn.btn--icon-mobile`), so give the text `+15s` the same footprint. `.btn.<class>` is
+// 0-2-0 and this partial loads after `_buttons`, so it wins the tie and overrides even the
+// utility's own width on the cancel button.
+@media (max-width: $bp-mobile) {
+  .btn.drawing__extend,
+  .btn.drawing__cancel {
+    min-width: 3rem;
+    padding: 0.5rem;
   }
 }
 

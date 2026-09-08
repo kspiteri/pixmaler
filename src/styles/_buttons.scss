@@ -78,6 +78,29 @@
   }
 }
 
+// A bar control that keeps its words on desktop but collapses to just its icon under
+// `$bp-mobile`, where the shared phase bar runs out of room (#48). Desktop is untouched:
+// the icon is hidden and the label shows, exactly as before. Wrap the text in
+// `.btn__label` and add an icon carrying `.btn__icon`; the button needs an `aria-label`
+// too, since the visible text drops out of the accessibility tree when hidden — and these
+// are destructive controls (End session, Cancel round). `.btn.btn--icon-mobile` on the
+// mobile padding so its 0-2-0 beats any per-phase single-class sizing (`.lobby__end` etc.).
+.btn--icon-mobile .btn__icon {
+  display: none;
+}
+@media (max-width: $bp-mobile) {
+  .btn.btn--icon-mobile {
+    padding: 0.5rem;
+    min-width: 2.25rem;
+  }
+  .btn--icon-mobile .btn__icon {
+    display: inline-flex;
+  }
+  .btn--icon-mobile .btn__label {
+    display: none;
+  }
+}
+
 // One press for every control in the app: it rests on a hard offset shadow and travels
 // down onto the page by that distance. `--press` / `--press-colour` are a variant's only knobs.
 .btn,

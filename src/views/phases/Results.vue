@@ -5,6 +5,7 @@
 // "Play again" button that returns the room to LOBBY.
 
 import type { ClientMsg, Player, RankedResult, ServerMsg } from '../../lib/types'
+import { Power } from '@lucide/vue'
 import { computed, inject, nextTick, onBeforeUnmount, watch } from 'vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import PlayerTag from '../../components/PlayerTag.vue'
@@ -255,12 +256,14 @@ async function endSession() {
       </button>
       <button
         v-if="isGm"
-        class="btn btn--ghost"
+        class="btn btn--ghost btn--icon-mobile"
         type="button"
         title="Close the room for everyone and release this code"
+        aria-label="End session"
         @click="endSession"
       >
-        End session
+        <Power class="btn__icon" :size="16" aria-hidden="true" />
+        <span class="btn__label">End session</span>
       </button>
       <span v-if="!isGm" class="results__hint">waiting for the GM…</span>
     </template>

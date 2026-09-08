@@ -13,7 +13,7 @@
 
   &__room {
     display: inline-flex;
-    align-items: baseline;
+    align-items: center;
     gap: $gap-2;
     margin: 0;
     padding: 0.375rem 0.625rem;
@@ -37,11 +37,30 @@
   &__code {
     color: $accent-ink;
   }
-  &__copy {
-    font-family: $font-body;
-    font-weight: 600;
-    font-size: $fs-2xs;
+  &__copy-icon {
     color: $fg-35;
+    // Sits with the code, not on the text baseline of the display font above it.
+    flex-shrink: 0;
+  }
+  // The "Room:" prefix is a nicety, not information — the code and copy icon carry the
+  // control on their own, so it's the first thing to go when the bar gets tight (#48).
+  // The code then truncates within a cap rather than wrapping to a second line and pushing
+  // the bar taller: a long word-pair (cloudy-brush) ellipsises, a short one shows whole.
+  // The full code stays reachable — the button's aria-label/title, the URL, the join
+  // screen — so nothing shareable is lost, only the on-screen echo is trimmed.
+  @media (max-width: $bp-mobile) {
+    &__room-label {
+      display: none;
+    }
+    &__room {
+      max-width: 9rem;
+    }
+    &__code {
+      min-width: 0; // let it shrink inside the flex row so the ellipsis can engage
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
   }
 
   &__name {

@@ -6,6 +6,7 @@
 // counts would influence later voters and ruin the social tension.
 
 import type { ClientMsg, ServerMsg, Submission, VoteCategory } from '../../lib/types'
+import { CircleSlash } from '@lucide/vue'
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import { artRatio as artRatioFor } from '../../lib/aspect'
@@ -271,12 +272,14 @@ function castVote(category: VoteCategory, submissionId: string) {
       </button>
       <button
         v-if="isGm"
-        class="btn btn--ghost voting__cancel"
+        class="btn btn--ghost btn--icon-mobile voting__cancel"
         type="button"
         title="Abandon this round and return everyone to the lobby"
+        aria-label="Cancel round"
         @click="cancelRound"
       >
-        Cancel round
+        <CircleSlash class="btn__icon" :size="16" aria-hidden="true" />
+        <span class="btn__label">Cancel round</span>
       </button>
     </template>
 

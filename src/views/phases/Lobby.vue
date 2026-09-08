@@ -9,7 +9,7 @@ import type {
   GmConfigureMsg,
   ServerMsg,
 } from '../../lib/types'
-import { CircleSlash } from '@lucide/vue'
+import { Check, CircleSlash, Copy, Power } from '@lucide/vue'
 import { computed, inject, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 import AlertToast from '../../components/AlertToast.vue'
 import ImagePicker from '../../components/ImagePicker.vue'
@@ -282,19 +282,23 @@ onBeforeUnmount(() => {
         class="lobby__room pressable no-shadow"
         type="button"
         :title="copied ? 'Copied!' : 'Click to copy the room link'"
+        :aria-label="copied ? `Room ${roomCode} — link copied` : `Room ${roomCode} — copy link`"
         @click="copyLink"
       >
-        Room: <span class="lobby__code">{{ roomCode }}</span>
-        <span class="lobby__copy">{{ copied ? "copied!" : "copy link" }}</span>
+        <span class="lobby__room-label">Room:</span>
+        <span class="lobby__code">{{ roomCode }}</span>
+        <component :is="copied ? Check : Copy" class="lobby__copy-icon" :size="15" aria-hidden="true" />
       </button>
       <button
         v-if="isGm"
-        class="btn btn--ghost lobby__end"
+        class="btn btn--ghost btn--icon-mobile lobby__end"
         type="button"
         title="Close the room for everyone and release this code"
+        aria-label="End session"
         @click="endSession"
       >
-        End session
+        <Power class="btn__icon" :size="16" aria-hidden="true" />
+        <span class="btn__label">End session</span>
       </button>
     </template>
 
