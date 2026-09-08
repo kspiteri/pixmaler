@@ -17,6 +17,10 @@ import ThemeToggle from './ThemeToggle.vue'
 const min = SCALE_STEPS[0]
 const max = SCALE_STEPS[SCALE_STEPS.length - 1]
 
+// Client build version, stamped into `<meta name="pixmaler:client">` at build time by the
+// Vite plugin (#25). Read once for the drawer footer; empty string if the meta is absent.
+const version = document.querySelector('meta[name="pixmaler:client"]')?.getAttribute('content') ?? ''
+
 const open = ref(false)
 const root = useTemplateRef<HTMLElement>('root')
 const trigger = useTemplateRef<HTMLButtonElement>('trigger')
@@ -116,6 +120,9 @@ async function clearData() {
       <button class="settings-menu__clear pressable" type="button" @click="clearData">
         Clear my data
       </button>
+      <p v-if="version" class="settings-menu__version">
+        pixmaler v{{ version }}
+      </p>
     </div>
   </div>
 </template>

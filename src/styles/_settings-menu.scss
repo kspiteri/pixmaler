@@ -132,6 +132,15 @@
     }
   }
 
+  // Build version at the foot of the drawer — quiet metadata, not a control.
+  &__version {
+    margin: 0;
+    text-align: center;
+    color: $fg-35;
+    font-size: $fs-2xs;
+    font-variant-numeric: tabular-nums;
+  }
+
   // Entry is a centred hero with no bar, so the menu anchors to the page corner
   // (the role the old `.theme-toggle--corner` played).
   &--corner {
