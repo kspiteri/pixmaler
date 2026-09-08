@@ -12,6 +12,10 @@
 
   &__card {
     flex: 1 1 320px;
+    // Shrink below the 320px basis when the column is narrower than that (stacked lobby /
+    // Paint on a phone). Without this the card floors at its min-content and scrolls the
+    // panel sideways; the rows inside already wrap or shrink, so 0 is safe.
+    min-width: 0;
     @include chrome;
     padding: $gap-4;
     display: flex;
@@ -43,6 +47,11 @@
 
   &__scale {
     flex: 1;
+    // A range input's default `min-width: auto` is its intrinsic ~129px, which — with the
+    // 7rem readout beside it — kept the whole Scale row from shrinking and blew the picker
+    // wider than a phone in the stacked lobby/Paint layout (horizontal scroll). Let it
+    // shrink; a short slider still drags fine.
+    min-width: 0;
     accent-color: $primary;
   }
   // Readout: "12 → 40×60" plus the busy spinner. Right-aligned in a reserved slot

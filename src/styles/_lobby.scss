@@ -197,7 +197,11 @@
   // Stack on narrow screens.
   @media (max-width: $bp-mobile) {
     &__body {
-      grid-template-columns: 1fr;
+      // `minmax(0, 1fr)`, not `1fr`: a bare `1fr` is `minmax(auto, 1fr)`, and the `auto`
+      // floor is the column's min-content — so one stubborn child (the picker) could hold
+      // the track wider than the viewport and scroll the body sideways. Cap it at 0 so the
+      // single column can never exceed the phone's width.
+      grid-template-columns: minmax(0, 1fr);
     }
     &__players {
       border-right: none;
