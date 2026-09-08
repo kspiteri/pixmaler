@@ -329,7 +329,7 @@ function clear() {
               </button>
             </div>
           </div>
-          <div v-if="variant === 'drawing'" class="tools-panel__hint">
+          <div v-if="variant === 'drawing' && !isMobile" class="tools-panel__hint">
             <p>
               {{
                 flaggedDone

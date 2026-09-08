@@ -153,14 +153,20 @@
   &__target {
     flex: 0 0 auto;
     display: flex;
+    // Centre the (now compact) reference against the taller controls column, so
+    // shrinking it doesn't leave a block of dead space beneath it.
     align-items: flex-start;
+    align-self: center;
 
     .canvas-pair__target-canvas {
       display: block;
       width: auto;
       height: auto;
-      max-width: 34vw;
-      max-height: 34vh;
+      // A compact fixed thumbnail (#48 follow-up): the reference used to take ~34vw and
+      // dominate the docked bar. Smaller frees swatch width and shrinks the panel's own
+      // footprint over the canvas; it stays the only reference on mobile, so not tiny.
+      max-width: 5.5rem;
+      max-height: 7rem;
       border-radius: $radius-sm;
     }
   }
