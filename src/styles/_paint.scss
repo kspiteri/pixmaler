@@ -20,6 +20,8 @@
   flex-direction: column;
 
   @media (max-width: $bp-mobile) {
+    padding: $gap-2;
+
     &--settings-open {
       height: auto;
       max-height: none;
@@ -119,6 +121,16 @@
     display: inline-flex;
     align-items: center;
     color: $fg-35;
+  }
+
+  @media (max-width: $bp-mobile) {
+    &__toggle {
+      padding: 0.3rem 0.55rem;
+      font-size: $fs-xs;
+    }
+    &__toggle-summary {
+      font-size: $fs-2xs;
+    }
   }
 
   // Placeholder until the first pipeline result lands. Mirrors <CanvasPair>'s
