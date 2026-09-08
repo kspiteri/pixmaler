@@ -21,6 +21,13 @@ export function withViewTransition(mutate: () => void, name?: string): void {
   if (name)
     root.dataset[`${name}Vt`] = ''
   const transition = document.startViewTransition(mutate)
+  // A skipped transition — the tab was backgrounded, or a newer transition superseded this
+  // one — rejects `ready` with AbortError. Swallow it (regardless of `name`, since even a
+  // nameless call starts a transition that can be skipped) so it never surfaces as an
+  // unhandled promise rejection.
+  transition.ready.catch(() => {})
+  // `finished` *resolves* even on a skip, so cleanup always runs; a genuine throw inside
+  // `mutate` still rejects it and surfaces, which is what we want.
   if (name)
     transition.finished.finally(() => { delete root.dataset[`${name}Vt`] })
 }

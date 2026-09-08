@@ -47,6 +47,10 @@ function rotate() {
   const root = document.documentElement
   root.dataset.taglineVt = VARIANTS[Math.floor(Math.random() * VARIANTS.length)]
   const transition = document.startViewTransition(() => { current.value = next })
+  // A skipped transition (tab backgrounded, or the next 7s tick superseding this one)
+  // rejects `ready` with AbortError; swallow it so it isn't an unhandled rejection.
+  // `finished` resolves even on a skip, so the attribute cleanup still runs.
+  transition.ready.catch(() => {})
   transition.finished.finally(() => { delete root.dataset.taglineVt })
 }
 
