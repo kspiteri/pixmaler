@@ -19,11 +19,14 @@ import {
 import { PixelCanvas } from '../lib/canvas/pixel'
 import { CLASSIC_BASE, rgbToHex } from '../lib/palette'
 import {
+  decodeImage,
   DEFAULT_BACKGROUND,
   DEFAULT_COLOR_COUNT,
   DEFAULT_SCALE,
   gridSizeFor,
   hasTransparency,
+  ImageDecodeError,
+  isHeic,
   isMobileWarning,
   processImage,
   unsupportedImage,
@@ -295,11 +298,14 @@ async function reprocess() {
     if (myRun !== runId)
       return
     busy.value = false
-    // A decode failure is the browser refusing the format — an iPhone HEIC outside
-    // Safari, say — not a fault in the pipeline, so say it in those terms. `accept` and
-    // `unsupportedImage` catch the formats we can name; this covers the rest.
-    status.value = err instanceof DOMException && err.name === 'InvalidStateError'
-      ? `Could not read ${sourceLabel.value} — the browser cannot decode that image format. Try a PNG or JPEG.`
+    // `decodeImage` tried the fast path and an <img>-based fallback before giving up, so
+    // an ImageDecodeError means the browser truly cannot render these bytes. HEIC is the
+    // one case common enough to name — every iPhone shoots it and only Safari reads it —
+    // so it earns its own line; everything else is a corrupt or unsupported file.
+    status.value = err instanceof ImageDecodeError
+      ? (cachedFile && isHeic(cachedFile)
+          ? `${sourceLabel.value} looks like an iPhone HEIC photo, which only Safari can open. Export it as a JPEG, or open this page in Safari.`
+          : `Could not read ${sourceLabel.value} — it looks corrupted, or in a format this browser can't decode. Try a PNG or JPEG.`)
       : `Error: ${err}`
   }
 }
@@ -324,7 +330,7 @@ async function adoptFile(file: File, label: string) {
     URL.revokeObjectURL(sourceUrl.value)
   sourceUrl.value = URL.createObjectURL(file)
   try {
-    const bitmap = await createImageBitmap(file)
+    const bitmap = await decodeImage(file)
     naturalDims.value = { w: bitmap.width, h: bitmap.height }
     ratio.value = nearestRatioFor(bitmap.width, bitmap.height)
     // Once per file, while the bitmap is already decoded and open. Nothing later in the

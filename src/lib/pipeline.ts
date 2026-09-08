@@ -39,6 +39,14 @@ export const DEFAULT_COLOR_COUNT = 16
 export const DEFAULT_SCALE = 8 // cells per 100 source px; range 1-50
 export const MOBILE_WARN_GRID = 64 // warn if computed grid longest side exceeds this
 export const SOURCE_MAX_SIDE = 768 // normalise uploads so the slider behaves consistently
+// Cap for the fallback decode's canvas. A phone photo — especially a 360/panorama — can be
+// far larger than a mobile browser will decode into an `ImageBitmap` or a canvas at all
+// (iOS caps a 2D canvas near ~16.7M px), which is the likeliest reason `createImageBitmap`
+// refused it in the first place. Drawing the `<img>` down into a canvas no larger than this
+// dodges that ceiling; the pipeline downscales to `SOURCE_MAX_SIDE` afterwards regardless,
+// so this only ever discards detail the target could never have shown. 4096 keeps plenty of
+// headroom for a tight crop while staying inside every mobile 2D-canvas limit we know of.
+export const MAX_DECODE_SIDE = 4096
 // What shows through a transparent upload. White because line art and logos — the PNGs
 // that carry an alpha channel — are drawn for a light page; the GM can change it.
 export const DEFAULT_BACKGROUND = '#ffffff'
@@ -76,6 +84,71 @@ export function quantiseToPalette(
   return grid
 }
 
+// Thrown when the browser genuinely cannot render an image's bytes — both the fast path
+// and the fallback below have given up. The picker turns this into player-facing copy.
+export class ImageDecodeError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options)
+    this.name = 'ImageDecodeError'
+  }
+}
+
+// Decode a file to an `ImageBitmap`, surviving browsers whose `createImageBitmap(Blob)` is
+// flaky. A mobile Chromium/WebKit build rejects images the same browser will happily render
+// through an `<img>` — progressive or EXIF-heavy JPEGs, and above all *oversized* ones: a
+// phone panorama or 360 shot easily exceeds the memory a mobile decoder will hand to
+// `createImageBitmap`, which is the failure behind #46 (fine on desktop, refused on the
+// phone). So try the fast path first, then fall back to an `<img>` → canvas round-trip: the
+// `<img>` decoder is far more forgiving, it bakes in EXIF orientation, and it strips
+// EXIF/ICC metadata (the canvas holds pixels only). The fallback canvas is capped at
+// `MAX_DECODE_SIDE` so an enormous source can't reintroduce the very limit that tripped the
+// fast path. The canvas overload of `createImageBitmap` is a plain pixel copy, so it works
+// where the Blob one did not. Both decode sites (`processImage`, the picker's adopt) use it.
+export async function decodeImage(file: File): Promise<ImageBitmap> {
+  try {
+    return await createImageBitmap(file)
+  }
+  catch (primary) {
+    try {
+      return await decodeViaElement(file)
+    }
+    catch (fallback) {
+      throw new ImageDecodeError(`Could not decode ${file.name || 'image'}`, { cause: fallback ?? primary })
+    }
+  }
+}
+
+async function decodeViaElement(file: File): Promise<ImageBitmap> {
+  const url = URL.createObjectURL(file)
+  try {
+    const img = new Image()
+    img.src = url
+    await img.decode()
+    // `naturalWidth/Height` already reflect any EXIF orientation, so drawing at that size
+    // gives the upright image; a rotated phone photo comes out the right way up.
+    const w = img.naturalWidth
+    const h = img.naturalHeight
+    if (!w || !h)
+      throw new Error('decoded image reports no dimensions')
+    // Cap the canvas at `MAX_DECODE_SIDE`: an oversized source is the likeliest reason the
+    // fast path refused it, and a full-size canvas here would hit the same wall. Downscaling
+    // on draw loses only detail the pipeline's own `SOURCE_MAX_SIDE` normalise would drop.
+    const scale = Math.min(1, MAX_DECODE_SIDE / Math.max(w, h))
+    const cw = Math.max(1, Math.round(w * scale))
+    const ch = Math.max(1, Math.round(h * scale))
+    const canvas = document.createElement('canvas')
+    canvas.width = cw
+    canvas.height = ch
+    // No fill: a transparent PNG that reached the fallback keeps its alpha, which
+    // `hasTransparency` and the pipeline's own background flatten still handle.
+    canvas.getContext('2d')!.drawImage(img, 0, 0, cw, ch)
+    return await createImageBitmap(canvas)
+  }
+  finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
 export async function processImage(
   file: File,
   scale: number, // cells per 100 source px, 1-50; clamped if out of range
@@ -84,7 +157,7 @@ export async function processImage(
   crop: CropSelection = FULL_CROP,
   background: string = DEFAULT_BACKGROUND, // CSS colour behind a transparent upload
 ): Promise<PipelineResult> {
-  const bitmap = await createImageBitmap(file)
+  const bitmap = await decodeImage(file)
 
   // Constrain to one of three shapes (see `aspect.ts`): take the rect the GM framed,
   // then normalise into that ratio's box. `SOURCE_MAX_SIDE` caps the long axis so the
@@ -173,6 +246,15 @@ export function unsupportedImage(file: File): UnsupportedImage | null {
   if (file.type && !file.type.startsWith('image/'))
     return 'not-image'
   return null
+}
+
+// Whether a file that failed to decode is a HEIC/HEIF — the one undecodable format common
+// enough to name in an error, since every iPhone shoots it and only Safari reads it.
+// Extension as well as MIME because a `.heic` often arrives with an empty `type`. Post-
+// decode-failure classification, not a pre-emptive refusal: Safari decodes these fine, so
+// `unsupportedImage` lets them through and this only helps word the message when they fail.
+export function isHeic(file: File): boolean {
+  return /^image\/hei[cf]$/.test(file.type) || /\.hei[cf]$/i.test(file.name)
 }
 
 // Whether any pixel is less than fully opaque, which is the only case where the
