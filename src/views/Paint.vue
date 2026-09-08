@@ -82,7 +82,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="paint">
+  <div class="paint" :class="{ 'paint--settings-open': settingsOpen }">
     <header class="phase__bar">
       <a class="paint__back" :href="backHref"><Logo size="sm" /></a>
       <div class="phase__status">
