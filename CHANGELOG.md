@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.1](https://github.com/kspiteri/pixmaler/compare/0.6.0...0.6.1) (2026-09-08)
+
+
+### Fixes
+
+* handle skipped transitions to prevent unhandled promise rejections ([1e03c24](https://github.com/kspiteri/pixmaler/commit/1e03c240e57cca548e5e96f27ae077c2f37ed5cb))
+* improve image decoding with HEIC support and better error handling ([46fddb3](https://github.com/kspiteri/pixmaler/commit/46fddb3d35a01c98aae41746efe38f9308a35374))
+* optimize drawing panel for mobile ([7444001](https://github.com/kspiteri/pixmaler/commit/744400142a77cb4644b1422053f2664d207c1edb))
+
 ## [0.6.0](https://github.com/kspiteri/pixmaler/compare/0.5.0...0.6.0) (2026-09-07)
 
 
