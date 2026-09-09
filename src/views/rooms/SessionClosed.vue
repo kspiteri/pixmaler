@@ -7,9 +7,10 @@
 // message carries no reason, so anything cause-specific here would be wrong half the time.
 
 import Logo from '../../components/Logo.vue'
+import { appHref } from '../../lib'
 
 const roomCode = new URLSearchParams(location.search).get('room') ?? ''
-const baseUrl = `${import.meta.env.BASE_URL.replace(/\/+$/, '')}/`
+const baseUrl = appHref()
 
 // A function rather than an inline handler, for the same reason `PhaseBoundary.vue` does it:
 // `location.reload` passed by reference loses its receiver.

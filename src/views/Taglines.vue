@@ -2,12 +2,11 @@
 // Hidden page (/taglines) — lists every tagline grouped: fixed lines, then each
 // template as its own group (pattern + expanded options). Not linked from anywhere.
 
-import { taglineGroups } from '../lib/taglines'
+import { appHref, taglineGroups } from '../lib'
 
 const { fixed, templates } = taglineGroups()
 const total = fixed.length + templates.reduce((n, t) => n + t.expanded.length, 0)
-const base = import.meta.env.BASE_URL.replace(/\/+$/, '')
-const backHref = `${base}/`
+const backHref = appHref()
 const ghIssue = 'https://github.com/kspiteri/pixmaler/issues/new'
 </script>
 

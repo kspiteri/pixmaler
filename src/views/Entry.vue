@@ -6,15 +6,12 @@ import Logo from '../components/Logo.vue'
 import NameField from '../components/NameField.vue'
 import SettingsMenu from '../components/SettingsMenu.vue'
 import Tagline from '../components/Tagline.vue'
-import { getName, setName } from '../lib/identity'
-import { wordPair } from '../lib/words'
+import { appHref, getName, setName, wordPair } from '../lib'
 
 const name = ref(getName() ?? '')
 const code = ref('')
 
-// Strip any trailing "index.html" so BASE_URL prefixes /paint correctly.
-const base = import.meta.env.BASE_URL.replace(/\/+$/, '')
-const sandboxHref = `${base}/paint`
+const sandboxHref = appHref('paint')
 
 // Belt-and-braces: both buttons are `:disabled` until their fields are filled.
 function enterRoom(room: string) {

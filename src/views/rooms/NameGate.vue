@@ -9,7 +9,7 @@
 
 import { ref } from 'vue'
 import NameField from '../../components/NameField.vue'
-import { wordPair } from '../../lib/words'
+import { wordPair } from '../../lib'
 
 const emit = defineEmits<{
   // The name the player settled on, never empty — `App.vue` stores it and connects.
