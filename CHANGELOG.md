@@ -1,5 +1,36 @@
 # Changelog
 
+## [0.7.0](https://github.com/kspiteri/pixmaler/compare/0.6.1...0.7.0) (2026-09-09)
+
+
+### New
+
+* add `parseClientMsg` for server-side validation ([9e2e7b5](https://github.com/kspiteri/pixmaler/commit/9e2e7b524573da3d341cc7f0d26b9413100f47f6))
+* add accessible countdown announcements and phase headings ([d688b69](https://github.com/kspiteri/pixmaler/commit/d688b69beff4275c072d394efa85981369311acc))
+* add accessible countdown announcements for assistive tech ([0a5ba40](https://github.com/kspiteri/pixmaler/commit/0a5ba400adf3070eb8121adadf9d4cbdeb17fc01))
+* add crop widget, GM controls, and pixel-art thumbnail components ([65a530b](https://github.com/kspiteri/pixmaler/commit/65a530b98a5b369986a0a8d913e715478d752a34))
+* add invisible headings for better assistive tech navigation ([c01022b](https://github.com/kspiteri/pixmaler/commit/c01022bf4bc033b1cfd676961781aa9bb8b0cb25))
+* add shared composables ([0a28c9d](https://github.com/kspiteri/pixmaler/commit/0a28c9d5a736a6b51240b98c5227a5486edf366b))
+* implement `colorName` for accessible swatches and ARIA support ([815ef18](https://github.com/kspiteri/pixmaler/commit/815ef18d511a0ad9670cfdbcd2d9e89acbbab4a7))
+* share foundation functions ([9bd8859](https://github.com/kspiteri/pixmaler/commit/9bd885932e7aae9bbf1640475b76e9f547925e3f))
+
+
+### Under the hood
+
+* "results" phase ([d1ce86f](https://github.com/kspiteri/pixmaler/commit/d1ce86f37dddfd3861458ae79d1df5b930cc2ee1))
+* "voting" phase ([fcb39c1](https://github.com/kspiteri/pixmaler/commit/fcb39c13f831ff69c9a2a3ac94d2271c8ce3c53b))
+* adjust `parseClientMsg` import path to `protocol` ([10999a4](https://github.com/kspiteri/pixmaler/commit/10999a48840be7d65080185ce21c0eddf68a1927))
+* **components:** consolidate imports to `lib` using barrel file ([c7ad5a7](https://github.com/kspiteri/pixmaler/commit/c7ad5a7973efd79861fe6bcc510336e671278ce9))
+* **components:** use `CropWidget` and consolidate imports to `lib` ([08749bd](https://github.com/kspiteri/pixmaler/commit/08749bd672e4f19bffae64be49419c5478f69fc6))
+* consolidate imports to `lib` using barrel file ([d17099c](https://github.com/kspiteri/pixmaler/commit/d17099c6aab71efa75b2e393216af0fb6efb6017))
+* drawing phase ([46ca67c](https://github.com/kspiteri/pixmaler/commit/46ca67c7602e0d8da84603512fd57b6bf0915286))
+* **lib:** group modules into domain folders ([5c7dac1](https://github.com/kspiteri/pixmaler/commit/5c7dac1c16260656ea730474f35914f400279607))
+* replace GM logic with `LobbyGmControls` and use `PixelThumb` ([0ab0a7e](https://github.com/kspiteri/pixmaler/commit/0ab0a7e0083fd7a612d876fe77bfb57a5f6189e4))
+* **tests:** consolidate imports to `lib` ([5930a45](https://github.com/kspiteri/pixmaler/commit/5930a457bcb49505a7d6678df6cbfcb48afde294))
+* update party imports to `protocol` and reorganise paths ([96c9874](https://github.com/kspiteri/pixmaler/commit/96c987419476cb8565c0ae629241a11a14e0625a))
+* use `appHref` from barrel file for consistent URL handling ([664e5af](https://github.com/kspiteri/pixmaler/commit/664e5af1521b77335f210134b016647815944c3b))
+* use `useOrientation` and consolidate imports to `lib` ([5dc17d7](https://github.com/kspiteri/pixmaler/commit/5dc17d7bb66b9f5a408bcbbdca32aaba4ffabf74))
+
 ## [0.6.1](https://github.com/kspiteri/pixmaler/compare/0.6.0...0.6.1) (2026-09-08)
 
 
