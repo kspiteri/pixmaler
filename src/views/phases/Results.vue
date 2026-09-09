@@ -3,18 +3,13 @@
 // hero card; everyone else falls into a gallery ordered by points, each drawing once.
 // The GM gets a "Play again" button that returns the room to LOBBY.
 
-import type { ClientMsg, Player, RankedResult, ServerMsg } from '../../lib/types'
+import type { Player, RankedResult, ServerMsg } from '../../lib'
 import { Power } from '@lucide/vue'
-import { computed, inject, nextTick, onBeforeUnmount, watch } from 'vue'
+import { computed, inject } from 'vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import PlayerTag from '../../components/PlayerTag.vue'
 import Tagline from '../../components/Tagline.vue'
-import { artRatio as artRatioFor } from '../../lib/aspect'
-import { PixelCanvas } from '../../lib/canvas/pixel'
-import { askConfirm } from '../../lib/dialog'
-import { clientIdKey, socketKey } from '../../lib/keys'
-import { seatFor } from '../../lib/seats'
-import { VOTE_CATEGORIES } from '../../lib/types'
+import { artRatio as artRatioFor, asset, clientIdKey, seatFor, socketKey, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '../../lib'
 
 const props = defineProps<{
   results: Results | null
@@ -26,16 +21,12 @@ const props = defineProps<{
   targetGrid: number[] | null
 }>()
 
-// Resolve a `public/`-hosted asset path against Vite's `base` so it doesn't 404.
-function iconUrl(path: string): string {
-  return `${import.meta.env.BASE_URL}${path}`
-}
-
 type Results = Extract<ServerMsg, { type: 'results' }>
 type Entry = Results['ranked'][number]
 
 const socket = inject(socketKey)!.value!
 const clientId = inject(clientIdKey)!
+const { playAgain, endSession } = useGmActions(socket)
 
 const isGm = computed(() => props.gmClientId === clientId)
 
@@ -110,93 +101,43 @@ function breakdownItems(entry: Entry) {
   return VOTE_CATEGORIES.map(c => ({
     id: c.id,
     label: c.label,
-    icon: iconUrl(c.icon),
+    icon: asset(c.icon),
     count: entry.breakdown?.[c.id] ?? 0,
   }))
 }
 
-// PixelCanvas instances mounted into the per-row slots. Re-built when the results change.
-let canvases: PixelCanvas[] = []
-
-// Slots are keyed per block, NOT in one shared map. The hero and gallery `v-for`s can hold
-// the same submissionId at once (a gallery player wins the next round), Vue patches the hero
-// before the gallery, and unmount fires the `:ref` with `null` — so one shared map would let
-// the gallery's unmount-null delete the freshly registered hero element. Two maps keep the
-// lifecycles independent.
-const heroSlots = new Map<string, HTMLElement>()
-const gallerySlots = new Map<string, HTMLElement>()
-function setSlot(kind: 'hero' | 'gallery', submissionId: string, el: unknown) {
-  const slots = kind === 'hero' ? heroSlots : gallerySlots
-  if (el instanceof HTMLElement)
-    slots.set(submissionId, el)
-  else slots.delete(submissionId)
-}
-
-// Slot key for the target image's canvas in the no-winner hero; never collides with a submissionId.
+// Slot key for the target image's hero canvas; never collides with a submissionId.
 const TARGET_SLOT = '__target__'
 
-function mountCanvases() {
-  canvases = []
-  if (!props.results)
-    return
-  for (const r of props.results.ranked) {
-    // Hero first: a submission is in `winners` or `rest`, never both at rest. During the
-    // patch that lands a new winner both may briefly hold it, and the hero slot wins.
-    const slot = heroSlots.get(r.submissionId) ?? gallerySlots.get(r.submissionId)
-    if (!slot)
-      continue
-    const pc = new PixelCanvas({
-      gridW: props.results.gridW,
-      gridH: props.results.gridH,
-      palette: props.results.palette,
-      targetGrid: r.grid,
-      editable: false,
-    })
-    slot.replaceChildren(pc.canvas)
-    canvases.push(pc)
-  }
-  // No human winner: the target image occupies the hero instead.
-  if (noWinner.value && props.targetGrid) {
-    const slot = heroSlots.get(TARGET_SLOT)
-    if (slot) {
-      const pc = new PixelCanvas({
-        gridW: props.results.gridW,
-        gridH: props.results.gridH,
-        palette: props.results.palette,
-        targetGrid: props.targetGrid,
-        editable: false,
+// Mount each ranked drawing into its hero or gallery slot (hero wins if a winner briefly
+// appears in both), plus the target image in the hero when nobody won.
+const { setSlot } = useReadonlyCanvases(
+  () => [props.results, props.targetGrid],
+  () => {
+    const r = props.results
+    if (!r)
+      return []
+    const thumbs = r.ranked.map(entry => ({
+      groups: ['hero', 'gallery'],
+      key: entry.submissionId,
+      gridW: r.gridW,
+      gridH: r.gridH,
+      palette: r.palette,
+      grid: entry.grid,
+    }))
+    if (noWinner.value && props.targetGrid) {
+      thumbs.push({
+        groups: ['hero'],
+        key: TARGET_SLOT,
+        gridW: r.gridW,
+        gridH: r.gridH,
+        palette: r.palette,
+        grid: props.targetGrid,
       })
-      slot.replaceChildren(pc.canvas)
-      canvases.push(pc)
     }
-  }
-}
-
-// `targetGrid` is watched too: in the no-winner case it renders the hero, and it arrives on
-// `state`, not the `results` payload, so the two can land in either order.
-watch(() => [props.results, props.targetGrid], async () => {
-  // See Voting.vue's note: `flush: "post"` doesn't guarantee :ref callbacks have fired;
-  // nextTick() twice is the supported way to wait for the patch.
-  await nextTick()
-  await nextTick()
-  mountCanvases()
-}, { immediate: true })
-
-onBeforeUnmount(() => { canvases = [] })
-
-function playAgain() {
-  const msg: ClientMsg = { type: 'gm:playAgain' }
-  socket.send(JSON.stringify(msg))
-}
-
-// Ends the whole session rather than starting another round. Always confirmed: it closes
-// the room for everyone and releases the code.
-async function endSession() {
-  if (!await askConfirm('End the session for everyone? The room closes and this code is released.'))
-    return
-  const msg: ClientMsg = { type: 'gm:endSession' }
-  socket.send(JSON.stringify(msg))
-}
+    return thumbs
+  },
+)
 </script>
 
 <template>
@@ -236,7 +177,7 @@ async function endSession() {
         <!-- Hero: overall winner(s), or the target image when nobody voted. -->
         <div class="results__hero">
           <p class="results__crown">
-            <img :src="iconUrl('assets/icons/crown.svg')" alt="crown" class="results__crown-icon">
+            <img :src="asset('assets/icons/crown.svg')" alt="crown" class="results__crown-icon">
             {{ noWinner ? (nobodyDrew ? "nobody drew — the original wins" : "nobody voted — the original wins") : winners.length > 1 ? "joint winners" : "overall winner" }}
           </p>
           <div class="results__winners">
