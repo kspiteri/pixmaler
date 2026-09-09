@@ -8,20 +8,7 @@
 // these are the invariants that keep it that way.
 
 import { describe, expect, it } from 'vitest'
-import {
-  artRatio,
-  brushMaxFor,
-  CROP_MIN_ZOOM,
-  cropRect,
-  defaultBrushFor,
-  FULL_CROP,
-  maxCropSize,
-  nearestRatioFor,
-  orientationFor,
-  ratioBox,
-  TARGET_RATIO_IDS,
-  TARGET_RATIOS,
-} from '../src/lib/aspect'
+import { artRatio, brushMaxFor, CROP_MIN_ZOOM, cropRect, defaultBrushFor, FULL_CROP, maxCropSize, nearestRatioFor, orientationFor, ratioBox, TARGET_RATIO_IDS, TARGET_RATIOS } from '../src/lib/canvas/aspect'
 
 describe('brushMaxFor', () => {
   it('scales with the longest side', () => {

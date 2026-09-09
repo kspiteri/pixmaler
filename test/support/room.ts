@@ -6,7 +6,7 @@
 
 import type { RoomConn, RoomCtx } from '../../party/ctx'
 import type { RoomPlayer, RoomState } from '../../party/state'
-import type { ServerMsg } from '../../src/lib/types'
+import type { ServerMsg } from '../../src/lib/protocol/types'
 import { buildState, drawProgress, freshRoomState } from '../../party/state'
 
 export function player(clientId: string, over: Partial<RoomPlayer> = {}): RoomPlayer {

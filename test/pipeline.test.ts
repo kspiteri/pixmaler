@@ -11,13 +11,7 @@
 // cell (x, y) is pixel (x, y). That is the invariant these tests pin down.
 
 import { describe, expect, it } from 'vitest'
-import {
-  gridSizeFor,
-  isMobileWarning,
-  MOBILE_WARN_GRID,
-  quantiseToPalette,
-  unsupportedImage,
-} from '../src/lib/pipeline'
+import { gridSizeFor, isMobileWarning, MOBILE_WARN_GRID, quantiseToPalette, unsupportedImage } from '../src/lib/canvas/pipeline'
 
 describe('isMobileWarning', () => {
   it('warns only above the threshold, not at it', () => {

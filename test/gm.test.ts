@@ -6,7 +6,7 @@
 // just chosen in the lobby, silently losing their image.
 
 import type { RoomPlayer, RoomState } from '../party/state'
-import type { GmConfigureMsg, Phase } from '../src/lib/types'
+import type { GmConfigureMsg, Phase } from '../src/lib/protocol/types'
 import { describe, expect, it } from 'vitest'
 import {
   handleCancelRound,

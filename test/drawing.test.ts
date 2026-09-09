@@ -6,7 +6,7 @@
 // everyone else's renderer.
 
 import type { RoomPlayer, RoomState } from '../party/state'
-import type { GmConfigureMsg } from '../src/lib/types'
+import type { GmConfigureMsg } from '../src/lib/protocol/types'
 import { describe, expect, it } from 'vitest'
 import { handleDrawDone, handleSubmit } from '../party/drawing'
 import { player, harness as room } from './support/room'

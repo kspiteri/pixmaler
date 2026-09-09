@@ -9,8 +9,8 @@
 // behaviour so a "simplification" back to charAt/[0] fails loudly.
 
 import { describe, expect, it } from 'vitest'
-import { SEAT_COUNT, seatFor } from '../src/lib/seats'
-import { DEFAULT_AVATAR_SHAPE } from '../src/lib/types'
+import { SEAT_COUNT, seatFor } from '../src/lib/player/seats'
+import { DEFAULT_AVATAR_SHAPE } from '../src/lib/protocol/types'
 
 const player = (name: string, shape = 'circle') => ({ name, shape } as Parameters<typeof seatFor>[1])
 

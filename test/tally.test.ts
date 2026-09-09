@@ -2,10 +2,10 @@
 // up called. Both were private to `PixmalerServer` until the split in #19 gave
 // them a module of their own.
 
-import type { Player, Submission } from '../src/lib/types'
+import type { Player, Submission } from '../src/lib/protocol/types'
 import { describe, expect, it } from 'vitest'
 import { categoryOf, NAME_MAX_LEN, tallyVotes, uniqueName, voteKey, voterOf } from '../party/tally'
-import { adjectives } from '../src/lib/words'
+import { adjectives } from '../src/lib/content/words'
 
 type Voter = Pick<Player, 'name' | 'connected'>
 

@@ -8,7 +8,7 @@
 // the round off an empty gallery, silently discarding every submission.
 
 import type { RoomState } from '../party/state'
-import type { GalleryMsg, GmConfigureMsg, PhaseMsg, ResultsMsg } from '../src/lib/types'
+import type { GalleryMsg, GmConfigureMsg, PhaseMsg, ResultsMsg } from '../src/lib/protocol/types'
 import { describe, expect, it } from 'vitest'
 import { endDrawing, endVoting, handleStart, resetToLobby } from '../party/phases'
 import { voteKey } from '../party/tally'

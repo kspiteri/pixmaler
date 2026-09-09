@@ -4,7 +4,7 @@
 // mid-reveal, and how a flaky connection could ratchet a name forever.
 
 import type { RoomPlayer, RoomState } from '../party/state'
-import type { ClientMsg, GalleryMsg, GmConfigureMsg, ResultsMsg } from '../src/lib/types'
+import type { ClientMsg, GalleryMsg, GmConfigureMsg, ResultsMsg } from '../src/lib/protocol/types'
 import { describe, expect, it } from 'vitest'
 import { handleClose, handleJoin, handleRename, handleShape } from '../party/connection'
 import { voteKey } from '../party/tally'

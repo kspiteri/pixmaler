@@ -10,18 +10,8 @@
 //     room state and back out over a broadcast.
 
 import { describe, expect, it } from 'vitest'
-import {
-  AVATAR_SHAPES,
-  clampDrawSeconds,
-  DEFAULT_AVATAR_SHAPE,
-  DRAW_SECONDS_MAX,
-  DRAW_SECONDS_MIN,
-  GRID_MAX_SIDE,
-  normaliseShape,
-  PALETTE_MAX_LEN,
-  parseClientMsg,
-  VOTE_CATEGORIES,
-} from '../src/lib/types'
+import { GRID_MAX_SIDE, PALETTE_MAX_LEN, parseClientMsg } from '../src/lib/protocol/protocol'
+import { AVATAR_SHAPES, clampDrawSeconds, DEFAULT_AVATAR_SHAPE, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN, normaliseShape, VOTE_CATEGORIES } from '../src/lib/protocol/types'
 
 // Every assertion parses a raw frame; the short name keeps them readable.
 const parse = parseClientMsg

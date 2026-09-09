@@ -9,7 +9,7 @@
 
 import type { LifecycleClock } from '../party/alarm'
 import type { RoomState } from '../party/state'
-import type { GmConfigureMsg } from '../src/lib/types'
+import type { GmConfigureMsg } from '../src/lib/protocol/types'
 import { describe, expect, it } from 'vitest'
 import { alarmAction, ARM_TOLERANCE_MS, handleExtendTime, nextWake, shouldArm } from '../party/alarm'
 import { freshRoomState, MAX_EXTENSIONS } from '../party/state'

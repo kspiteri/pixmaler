@@ -8,7 +8,7 @@
 // cannot make a count go backwards or un-fire `allVoted`.
 
 import type { RoomPlayer, RoomState } from '../party/state'
-import type { GmConfigureMsg } from '../src/lib/types'
+import type { GmConfigureMsg } from '../src/lib/protocol/types'
 import { describe, expect, it } from 'vitest'
 import { buildState, drawProgress, freshRoomState, MAX_EXTENSIONS, votingProgress } from '../party/state'
 import { voteKey } from '../party/tally'

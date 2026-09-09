@@ -6,24 +6,9 @@
 // than the wire allows, or an ordering that loses the index mapping, corrupts
 // every drawing in the round rather than just looking wrong.
 
-import type { Rgb } from '../src/lib/palette'
+import type { Rgb } from '../src/lib/canvas/palette'
 import { describe, expect, it } from 'vitest'
-import {
-  CLASSIC_DEDUPE_DIST,
-  CLASSICS,
-  colorDist,
-  derivePalette,
-  hexToRgb,
-  medianCut,
-  mergeNearDuplicates,
-  nearestIndex,
-  paletteSortOrder,
-
-  rgbToHex,
-  rgbToHsl,
-  SAT_THRESHOLD,
-  withClassics,
-} from '../src/lib/palette'
+import { CLASSIC_DEDUPE_DIST, CLASSICS, colorDist, derivePalette, hexToRgb, medianCut, mergeNearDuplicates, nearestIndex, paletteSortOrder, rgbToHex, rgbToHsl, SAT_THRESHOLD, withClassics } from '../src/lib/canvas/palette'
 
 // A deterministic spread of colours; no randomness, so a failure is reproducible.
 function ramp(n: number): Rgb[] {

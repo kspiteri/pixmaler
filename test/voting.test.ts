@@ -5,7 +5,7 @@
 // Written before the rest of #19 moves handlers, so they lock current behaviour.
 
 import type { RoomPlayer, RoomState } from '../party/state'
-import type { GmConfigureMsg, Submission } from '../src/lib/types'
+import type { GmConfigureMsg, Submission } from '../src/lib/protocol/types'
 import { describe, expect, it } from 'vitest'
 import { voteKey } from '../party/tally'
 import { handleStopVoting, handleVote } from '../party/voting'
