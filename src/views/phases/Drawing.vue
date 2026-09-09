@@ -9,7 +9,7 @@
 //   - "Done" is a social signal, not a submit action. Clicking it fires `draw:done`
 //     so the room sees the player in the "X of Y ready" tally; it doesn't gate submission.
 
-import type { ClientMsg, ServerMsg } from '../../lib/types'
+import type { ClientMsg, ServerMsg } from '../../lib'
 import { CircleSlash, TriangleAlert } from '@lucide/vue'
 import {
   computed,
@@ -23,11 +23,8 @@ import {
 import AlertToast from '../../components/AlertToast.vue'
 import CanvasPair from '../../components/CanvasPair.vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
-import { orientationFor } from '../../lib/aspect'
-import { PixelCanvas } from '../../lib/canvas/pixel'
-import { useCountdownAnnounce } from '../../lib/countdown'
-import { askConfirm } from '../../lib/dialog'
-import { clientIdKey, socketKey } from '../../lib/keys'
+import PixelThumb from '../../components/PixelThumb.vue'
+import { clientIdKey, socketKey, useCountdownAnnounce, useDrawSubmit, useGmActions, useOrientation } from '../../lib'
 
 type State = Extract<ServerMsg, { type: 'state' }>
 
@@ -43,6 +40,7 @@ const props = defineProps<{
 
 const socket = inject(socketKey)!.value!
 const clientId = inject(clientIdKey)!
+const { cancelRound } = useGmActions(socket)
 // `state.config` is checked non-null in App.vue's v-if, so this assertion is safe.
 const config = computed(() => props.state.config!)
 // Server-echoed grid for a mid-round rejoin; ignored unless its length matches the live
@@ -58,33 +56,18 @@ const restoredGrid = computed(() => {
   }
   return g
 })
-const deadline = computed(() => props.state.deadline)
 const doneText = computed(() =>
   `${props.state.doneCount} of ${props.state.totalDrawing} ready`,
 )
 
 const pairRef = useTemplateRef<InstanceType<typeof CanvasPair>>('pair')
 
-// Spectator-only: the reference, rendered read-only. `PixelCanvas` is imperative, so it's
-// mounted into a slot and re-mounted if the config changes under it.
-const watchSlot = useTemplateRef<HTMLElement>('watchSlot')
-let watchCanvas: PixelCanvas | null = null
-
-watch([() => props.spectating, () => props.state.config, watchSlot], () => {
-  if (!props.spectating || !watchSlot.value || !props.state.config) {
-    watchCanvas = null
-    return
-  }
-  const cfg = props.state.config
-  watchCanvas = new PixelCanvas({
-    gridW: cfg.gridW,
-    gridH: cfg.gridH,
-    palette: cfg.palette,
-    targetGrid: props.targetGrid,
-    editable: false,
-  })
-  watchSlot.value.replaceChildren(watchCanvas.canvas)
-}, { immediate: true, flush: 'post' })
+const { secondsLeft, canvasBlank, onCanvasUpdate } = useDrawSubmit({
+  socket,
+  deadline: () => props.state.deadline,
+  player: () => pairRef.value?.player() ?? null,
+  restoredGrid: () => restoredGrid.value,
+})
 
 // GM-only. The step and cap live on the server; this only reports whether to show the button.
 const isGm = computed(() => props.state.gmClientId === clientId)
@@ -92,15 +75,6 @@ const canExtend = computed(() => props.state.extensionsLeft > 0)
 
 function extendTime() {
   const msg: ClientMsg = { type: 'gm:extendTime' }
-  socket.send(JSON.stringify(msg))
-}
-
-// Always confirmed: cancelling throws everyone back to the lobby and their drawings are
-// gone — a warning that is never untrue, so never suppressed.
-async function cancelRound() {
-  if (!await askConfirm('Cancel this round? Everyone goes back to the lobby and the drawings are lost.'))
-    return
-  const msg: ClientMsg = { type: 'gm:cancelRound' }
   socket.send(JSON.stringify(msg))
 }
 
@@ -116,8 +90,6 @@ watch(() => props.state.roundSeconds, (now, before) => {
   bumpTimer = setTimeout(() => { timeAdded.value = false }, 700)
 })
 
-// Seconds remaining on the countdown (null until we know the deadline).
-const secondsLeft = ref<number | null>(null)
 // Announced into the hidden live region at 60/30/10 then the last five seconds — never
 // per second, which would bury the "X of Y ready" tally.
 const countdownAnnounce = useCountdownAnnounce(secondsLeft, [60, 30, 10, 5, 4, 3, 2, 1])
@@ -125,17 +97,8 @@ const countdownAnnounce = useCountdownAnnounce(secondsLeft, [60, 30, 10, 5, 4, 3
 // and dividing by the config would pin the bar at 100%.
 const totalSeconds = computed(() => props.state.roundSeconds || config.value.drawSeconds)
 
-// Ratio-aware layout. The fixed shell flips the reference/canvas pair between row and
-// column so the editable canvas always claims the largest fitting area (`orientationFor`).
-const viewportW = ref(window.innerWidth)
-const viewportH = ref(window.innerHeight)
-function onResize() {
-  viewportW.value = window.innerWidth
-  viewportH.value = window.innerHeight
-}
-const orientation = computed(() =>
-  orientationFor(config.value.gridW, config.value.gridH, viewportW.value, viewportH.value),
-)
+// Ratio-aware layout: the fixed shell flips the reference/canvas pair between row and column.
+const orientation = useOrientation(() => config.value.gridW, () => config.value.gridH)
 
 // "Done" is a purely social signal. Local optimistic flag for instant click feedback,
 // OR'd with the server's truth so a reconnect restores the flagged state.
@@ -164,40 +127,6 @@ const timerColour = computed(() => {
   return 'var(--timer-danger)'
 })
 
-let autoSubmitTimer: ReturnType<typeof setTimeout> | null = null
-let resubmitTimer: ReturnType<typeof setTimeout> | null = null
-let rafId: number | null = null
-// Latest grid from the @update event — the deadline auto-submit reads it.
-let latestGrid: number[] | null = null
-// Last grid actually sent over the wire, to skip no-op resubmits.
-let lastSentGrid: number[] | null = null
-
-const RESUBMIT_DEBOUNCE_MS = 500
-
-function gridsEqual(a: number[], b: number[]): boolean {
-  if (a === b)
-    return true
-  if (a.length !== b.length)
-    return false
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i])
-      return false
-  }
-  return true
-}
-
-function sendSubmit(grid: number[]) {
-  if (lastSentGrid && gridsEqual(grid, lastSentGrid))
-    return
-  // Snapshot the array — `latestGrid` may keep mutating as more strokes land.
-  lastSentGrid = [...grid]
-  socket.send(JSON.stringify({ type: 'draw:submit', grid } satisfies ClientMsg))
-}
-
-// Whether the canvas currently has nothing on it. Seeded true (a fresh round starts empty);
-// a restored grid and every stroke correct it.
-const canvasBlank = ref(true)
-
 // Shown only in the closing stretch and only over an empty canvas — earlier would be noise,
 // with nothing underneath to obscure. 20 s reuses the `--timer-danger` threshold.
 const BLANK_WARN_AT = 20
@@ -208,17 +137,6 @@ const warnBlank = computed(() =>
   && secondsLeft.value <= BLANK_WARN_AT,
 )
 
-function onCanvasUpdate(grid: number[]) {
-  latestGrid = grid
-  canvasBlank.value = grid.every(cell => cell === -1)
-  if (resubmitTimer)
-    clearTimeout(resubmitTimer)
-  resubmitTimer = setTimeout(() => {
-    if (latestGrid)
-      sendSubmit(latestGrid)
-  }, RESUBMIT_DEBOUNCE_MS)
-}
-
 function flagDone() {
   if (flaggedDone.value)
     return
@@ -226,63 +144,6 @@ function flagDone() {
   // Pure social ping — no `draw:submit` here; auto-submit handles the wire state.
   socket.send(JSON.stringify({ type: 'draw:done' } satisfies ClientMsg))
 }
-
-function autoSubmitAtDeadline() {
-  // Whatever's on the canvas at the deadline is locked in. The server transitions to
-  // VOTING immediately after, dropping further submits via its phase guard.
-  const player = pairRef.value?.player()
-  if (!player)
-    return
-  const grid = latestGrid ?? player.getGrid()
-  sendSubmit(grid)
-}
-
-function cancelTimers() {
-  if (bumpTimer) { clearTimeout(bumpTimer); bumpTimer = null }
-  if (autoSubmitTimer) { clearTimeout(autoSubmitTimer); autoSubmitTimer = null }
-  if (resubmitTimer) { clearTimeout(resubmitTimer); resubmitTimer = null }
-  if (rafId) { cancelAnimationFrame(rafId); rafId = null }
-}
-
-// Restartable, because the deadline can move: the GM's "+15s" arrives as a fresh `state`
-// push mid-round, so tick and auto-submit must not pin to the mount-time value.
-function armCountdown() {
-  if (autoSubmitTimer) { clearTimeout(autoSubmitTimer); autoSubmitTimer = null }
-  if (rafId) { cancelAnimationFrame(rafId); rafId = null }
-
-  const dl = deadline.value
-  // No deadline → secondsLeft stays null; timerText shows "drawing…".
-  if (!dl)
-    return
-
-  // Tick unconditionally until 0 — the countdown reflects wall-clock time. Reads
-  // `deadline.value` each frame, so an extension lands on the very next frame.
-  const tick = () => {
-    const now = deadline.value
-    if (!now)
-      return
-    const left = Math.max(0, Math.ceil((now - Date.now()) / 1000))
-    secondsLeft.value = left
-    if (left > 0)
-      rafId = requestAnimationFrame(tick)
-  }
-  rafId = requestAnimationFrame(tick)
-  autoSubmitTimer = setTimeout(autoSubmitAtDeadline, Math.max(0, dl - Date.now()))
-}
-
-watch(deadline, armCountdown)
-
-onMounted(() => {
-  // The server already has this exact grid. Priming `lastSentGrid` makes `sendSubmit`'s
-  // equality check suppress the redundant round-trip CanvasPair's watcher would trigger.
-  if (restoredGrid.value)
-    lastSentGrid = [...restoredGrid.value]
-
-  armCountdown()
-
-  // Cancel pending sends if the socket goes away; phase change is handled by onBeforeUnmount.
-  socket.addEventListener('close', cancelTimers, { once: true })
-})
 
 // Cmd/Ctrl+Z → undo. Always available — the canvas never locks during DRAWING.
 function onKeyDown(e: KeyboardEvent) {
@@ -297,15 +158,11 @@ function onKeyDown(e: KeyboardEvent) {
 
 onMounted(() => {
   window.addEventListener('keydown', onKeyDown)
-  window.addEventListener('resize', onResize)
 })
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown)
-  window.removeEventListener('resize', onResize)
-  // `{ once: true }` above only self-removes when the listener fires, and the socket outlives
-  // this component, so without this each DRAWING round would leak a listener across the loop.
-  socket.removeEventListener('close', cancelTimers)
-  cancelTimers()
+  if (bumpTimer)
+    clearTimeout(bumpTimer)
 })
 </script>
 
@@ -351,7 +208,14 @@ onBeforeUnmount(() => {
       <p class="drawing__watching-note">
         you joined mid-round — watching this one, drawing the next
       </p>
-      <div ref="watchSlot" class="drawing__watching-target" />
+      <PixelThumb
+        v-if="config"
+        class="drawing__watching-target"
+        :grid-w="config.gridW"
+        :grid-h="config.gridH"
+        :palette="config.palette"
+        :grid="targetGrid"
+      />
     </div>
 
     <div v-else class="drawing__body">
