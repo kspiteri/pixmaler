@@ -1,5 +1,5 @@
 import type { Connection, ConnectionContext } from 'partyserver'
-import type { ServerMsg } from '../src/lib/types'
+import type { ServerMsg } from '../src/lib/protocol'
 import type { LifecycleClock } from './alarm'
 import type { RoomCtx } from './ctx'
 import type { RoomState } from './state'

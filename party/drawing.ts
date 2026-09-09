@@ -2,7 +2,7 @@
 // debounces it on every stroke — so this is the hottest path on the server, and it
 // broadcasts nothing.
 
-import type { ClientMsg } from '../src/lib/types'
+import type { ClientMsg } from '../src/lib/protocol'
 import type { RoomConn, RoomCtx } from './ctx'
 import { playerByConn } from './state'
 

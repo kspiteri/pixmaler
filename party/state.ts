@@ -2,8 +2,8 @@
 // here is a function of `RoomState` alone — no connections, no broadcasts, no
 // Durable Object — so the rules deciding what players see are directly testable.
 
-import type { GmConfigureMsg, Phase, Player, RankedResult, RoundConfig, StateMsg, Submission } from '../src/lib/types'
-import { VOTE_CATEGORIES } from '../src/lib/types'
+import type { GmConfigureMsg, Phase, Player, RankedResult, RoundConfig, StateMsg, Submission } from '../src/lib/protocol'
+import { VOTE_CATEGORIES } from '../src/lib/protocol'
 import { voterOf } from './tally'
 
 // GM "+15s" during DRAWING. Capped server-side — a client-side cap is decoration.

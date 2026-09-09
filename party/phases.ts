@@ -2,7 +2,7 @@
 // The statement order inside `endDrawing` is load-bearing, not stylistic — payload
 // before mutation, phase before delegation. `test/phases.test.ts` pins both.
 
-import type { ServerMsg, Submission } from '../src/lib/types'
+import type { ServerMsg, Submission } from '../src/lib/protocol'
 import type { RoomConn, RoomCtx } from './ctx'
 import { isGm } from './state'
 import { tallyVotes } from './tally'

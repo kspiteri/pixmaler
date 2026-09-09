@@ -2,9 +2,9 @@
 // produce the message, so reaching one means drift or tampering, and an `error` reply
 // would only confirm to a prober that it got through.
 
-import type { ClientMsg } from '../src/lib/types'
+import type { ClientMsg } from '../src/lib/protocol'
 import type { RoomConn, RoomCtx } from './ctx'
-import { VOTE_CATEGORIES } from '../src/lib/types'
+import { VOTE_CATEGORIES } from '../src/lib/protocol'
 import { endVoting } from './phases'
 import { isGm, playerByConn } from './state'
 import { voteKey } from './tally'

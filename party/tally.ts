@@ -3,8 +3,8 @@
 // is a function of its arguments, so the parts with real consequences — who wins,
 // what a player ends up called — are testable without a Durable Object.
 
-import type { Player, RankedResult, Submission, VoteCategory } from '../src/lib/types'
-import { adjectives } from '../src/lib/words'
+import type { Player, RankedResult, Submission, VoteCategory } from '../src/lib/protocol'
+import { adjectives } from '../src/lib/content/words'
 
 // Enforced on BOTH write paths (join and rename): a name reaches the DOM as a class
 // name, and `maxlength="24"` on the inputs is not a check.

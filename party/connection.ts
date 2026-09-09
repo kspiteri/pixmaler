@@ -2,11 +2,11 @@
 // `handleJoin`'s rules exist because a reconnect is not a new player — partysocket
 // reconnects unprompted, so anything re-applied here fires on every network blip.
 
-import type { ClientMsg, ServerMsg, VoteCategory } from '../src/lib/types'
+import type { ClientMsg, ServerMsg, VoteCategory } from '../src/lib/protocol'
 import type { RoomConn, RoomCtx } from './ctx'
 import type { RoomPlayer } from './state'
-import { normaliseShape } from '../src/lib/types'
-import { wordPair } from '../src/lib/words'
+import { wordPair } from '../src/lib/content/words'
+import { normaliseShape } from '../src/lib/protocol'
 import { autoPromoteGm } from './state'
 import { categoryOf, NAME_MAX_LEN, uniqueName, voterOf } from './tally'
 

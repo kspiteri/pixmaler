@@ -2,7 +2,7 @@
 // prove the phase allows it, then act. The phase guards are load-bearing, not
 // defensive: a GM with a stale tab can click a button the room has already moved past.
 
-import type { ClientMsg } from '../src/lib/types'
+import type { ClientMsg } from '../src/lib/protocol'
 import type { RoomConn, RoomCtx } from './ctx'
 import { resetToLobby } from './phases'
 import { isGm } from './state'
