@@ -131,9 +131,8 @@
     color: $muted;
     font-size: $fs-xs;
   }
-  // Stands in for the score on a wiped canvas. Italic rather than a new colour —
-  // it is a different *kind* of statement, not a different severity, and every
-  // accent in this system already carries a meaning.
+  // Stands in for the score on a wiped canvas. Italic rather than a new colour — every
+  // accent already carries a meaning.
   &__item-wiped {
     margin: 0.125rem 0 0;
     color: $muted;
@@ -141,9 +140,8 @@
     font-style: italic;
   }
 
-  // Roll call of players who never drew. Deliberately unlike `__gallery` — no frames,
-  // no grid, no score — because none of these entries is rankable and anything
-  // card-shaped would imply they were.
+  // Roll call of players who never drew. Deliberately unlike `__gallery` — no frames, grid
+  // or score, since none of these entries is rankable.
   &__nodraw {
     margin: $gap-5 0 0;
     padding: 0;

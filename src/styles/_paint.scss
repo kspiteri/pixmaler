@@ -4,14 +4,13 @@
 // Paint sandbox — solo canvas page. Picker left, canvas pair right.
 
 .paint {
-  // Fixed, non-scrolling shell matching the DRAWING phase, so the canvas pair fills
-  // the free area and fit-zooms; `--vh-safe` dodges the mobile URL-bar `100vh` overshoot.
+  // Fixed, non-scrolling shell matching DRAWING so the canvas pair fit-zooms; `--vh-safe`
+  // dodges the mobile URL-bar `100vh` overshoot.
   height: var(--vh-safe);
   min-height: var(--vh-safe);
   max-height: var(--vh-safe);
   overflow: hidden;
-  // border-box so `padding` counts inside `--vh-safe` — without it the padding is added
-  // on top and the "non-scrolling" shell scrolls the page by 2×$page-pad (no global reset).
+  // border-box so `padding` counts inside `--vh-safe`, else the shell scrolls.
   box-sizing: border-box;
   padding: $page-pad;
   max-width: $page-max;
@@ -133,8 +132,7 @@
     }
   }
 
-  // Placeholder until the first pipeline result lands. Mirrors <CanvasPair>'s
-  // `flex: 1` so swapping one for the other moves nothing.
+  // Placeholder until the first pipeline result lands; mirrors <CanvasPair>'s `flex: 1`.
   &__skeleton {
     flex: 1;
     min-height: 0;

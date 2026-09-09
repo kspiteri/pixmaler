@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Pixel canvas pair — target reference + editable canvas, shared by the DRAWING
 // phase and the /paint sandbox. `PixelCanvas` is imperative: it owns its
-// `<canvas>` and pixels, Vue only owns the layout around them.
+// `<canvas>` and pixels, Vue only owns the surrounding layout.
 
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
 import { useAppLayout } from '../lib/appLayout'
@@ -29,15 +29,13 @@ interface Props {
 }
 const props = defineProps<Props>()
 
-// `update` bubbles grid changes so parents can debounce-resubmit after the
-// first "Done"; `done` relays the palette's Ready click.
+// `update` bubbles grid changes so parents can debounce-resubmit; `done` relays Ready.
 const emit = defineEmits<{
   update: [grid: number[]]
   done: []
 }>()
 
-// `paletteHeight` is the docked palette's measured height, published by
-// <PaletteTools> — single source of truth for the mobile reservation below.
+// `paletteHeight` is the docked palette's measured height, published by <PaletteTools>.
 const { isMobile, paletteHeight } = useAppLayout()
 
 // Space the docked palette needs below the canvas area (mobile only).
@@ -49,18 +47,16 @@ const reservedForPalette = computed(() =>
 const targetSlot = useTemplateRef<HTMLDivElement>('targetSlot')
 const drawSlot = useTemplateRef<HTMLDivElement>('drawSlot')
 
-// PixelCanvas instances are imperative — plain vars, no deep reactivity.
-// `player` also goes through shallowRef so <PaletteTools> sees it after mount.
+// PixelCanvas instances are imperative — plain vars. `player` uses shallowRef so
+// <PaletteTools> sees it after mount.
 let target: PixelCanvas | null = null
 const playerRef = shallowRef<PixelCanvas | null>(null)
 
-// Imperative palette + brush DOM handed to <PaletteTools> once the player
-// canvas exists. shallowRef because these are HTMLElements, not reactive data.
+// Imperative palette + brush DOM handed to <PaletteTools>; shallowRef, not reactive data.
 const swatchEl = shallowRef<HTMLElement | null>(null)
 const brushEl = shallowRef<HTMLElement | null>(null)
 
-// Mirrors `player.canUndo()` for the panel's Undo button — refreshed from
-// `onUpdate`, which `undo()` also fires, so the flag clears when the stack empties.
+// Mirrors `player.canUndo()` for the Undo button; refreshed from `onUpdate`.
 const canUndo = ref(false)
 
 // Anchor for the panel's default position — targetWrap's DOM element.
@@ -71,8 +67,8 @@ const anchorEl = ref<HTMLElement | null>(null)
 const targetEl = shallowRef<HTMLElement | null>(null)
 const targetHomeEl = ref<HTMLElement | null>(null)
 
-// Fit-zoom: `PixelCanvas.fitTo` sets the editable canvas's DISPLAY box to the
-// largest aspect-preserving fit of its slot, re-run whenever the slot resizes.
+// Fit-zoom: `fitTo` sets the editable canvas's display box to the largest aspect-preserving
+// fit of its slot, re-run whenever the slot resizes.
 let drawResizeObserver: ResizeObserver | null = null
 function fitDrawCanvas() {
   const slot = drawSlot.value
@@ -94,8 +90,7 @@ defineExpose({
 })
 
 onMounted(() => {
-  // Swatch first, so the canvases' onHover handlers can highlight it. `player`
-  // is only read in onSelect, which fires after mount.
+  // Swatch first, so the canvases' onHover handlers can highlight it.
   const swatch = buildSwatch(props.palette, i => playerRef.value?.selectColor(i))
 
   target = new PixelCanvas({
@@ -109,8 +104,8 @@ onMounted(() => {
     ),
   })
   target.canvas.classList.add('canvas-pair__target-canvas')
-  // Inline, not a partial: this has to beat the class rules. The constructor covers
-  // the editable canvas only, so the read-only target needs its own.
+  // Inline, not a partial: this must beat the class rules, and the constructor styles the
+  // editable canvas only, so the read-only target needs its own border.
   target.canvas.style.border = '1px solid var(--canvas-edge)'
   targetSlot.value!.appendChild(target.canvas)
 
@@ -134,13 +129,13 @@ onMounted(() => {
   player.canvas.style.background = '#fff'
   drawSlot.value!.appendChild(player.canvas)
 
-  // Publish what the panel needs. Order matters: `player` before the imperative
-  // controls, so a subscriber watching it reads valid swatchEl/brushEl.
+  // Publish what the panel needs. Order matters: `player` before the imperative controls,
+  // so a subscriber watching it reads valid swatchEl/brushEl.
   playerRef.value = player
   swatchEl.value = swatch.element
   brushEl.value = buildBrushControls(player)
-  // Anchor the palette to the thumbnail slot, NOT targetWrap: the stretched
-  // target column's bottom sits below the whole canvas.
+  // Anchor the palette to the thumbnail slot, not targetWrap: the stretched target
+  // column's bottom sits below the whole canvas.
   anchorEl.value = targetSlot.value
   targetEl.value = target.canvas
   targetHomeEl.value = targetSlot.value
@@ -153,8 +148,8 @@ onMounted(() => {
   }
 })
 
-// Covers a late `draw-state` on rejoin (the constructor seed is the usual path).
-// Guarded on `canUndo` so a server grid can't clobber strokes; NOT `immediate`.
+// Covers a late `draw-state` on rejoin. Guarded on `canUndo` so a server grid can't
+// clobber strokes; NOT `immediate`.
 watch(() => props.initialGrid, (grid) => {
   const player = playerRef.value
   if (!player || !grid || canUndo.value)
@@ -162,14 +157,14 @@ watch(() => props.initialGrid, (grid) => {
   player.setGrid(grid)
 })
 
-// Orientation flips row↔column, changing the slot's shape — refit on nextTick so
-// it lands on the prop change (the ResizeObserver would catch it a frame later).
+// Orientation flips row↔column, changing the slot's shape — refit on nextTick so it lands
+// on the prop change (the ResizeObserver would catch it a frame later).
 watch(() => props.orientation, () => {
   nextTick(fitDrawCanvas)
 })
 
-// The reserved band changes the draw slot's height — refit on nextTick, once the
-// style binding's layout has settled, so fitTo reads the final clientHeight.
+// The reserved band changes the draw slot's height — refit on nextTick, once the style
+// binding's layout has settled, so fitTo reads the final clientHeight.
 watch(reservedForPalette, () => {
   nextTick(fitDrawCanvas)
 })
@@ -222,19 +217,19 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped lang="scss">
-// Canvas-pair `:deep()` overrides — the `<canvas>` elements are mounted
-// imperatively by `lib/canvas/pixel.ts`, and `:deep()` only works in a scoped block.
-// Static flex layout for the row lives in `_tools-panel.scss`.
+// Canvas-pair `:deep()` overrides — the `<canvas>` elements are mounted imperatively by
+// `lib/canvas/pixel.ts`, and `:deep()` only works in a scoped block. Static flex layout
+// for the row lives in `_tools-panel.scss`.
 @use '../styles/tokens' as *;
 
-// Fit-zoom shell shared by the DRAWING phase and the /paint sandbox:
-// `PixelCanvas.fitTo` sets the editable canvas's display size — never CSS.
+// Fit-zoom shell shared by DRAWING and /paint: `fitTo` sets the editable canvas's display
+// size — never CSS.
 .canvas-pair {
   flex: 1;
   min-height: 0;
   display: flex;
 
-  // The box fitTo() measures (clientWidth/Height); centres the fitted canvas.
+  // The box fitTo() measures; centres the fitted canvas.
   .canvas-pair__draw-slot {
     flex: 1;
     min-width: 0;

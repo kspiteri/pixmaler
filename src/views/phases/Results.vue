@@ -1,8 +1,7 @@
 <script setup lang="ts">
-// RESULTS phase — chaotic overall reveal. The winner(s) (most total votes,
-// joint on a tie) take the hero card; everyone else falls into a gallery
-// ordered by overall points. Each drawing appears exactly once. The GM gets a
-// "Play again" button that returns the room to LOBBY.
+// RESULTS phase — overall reveal. Winner(s) (most total votes, joint on a tie) take the
+// hero card; everyone else falls into a gallery ordered by points, each drawing once.
+// The GM gets a "Play again" button that returns the room to LOBBY.
 
 import type { ClientMsg, Player, RankedResult, ServerMsg } from '../../lib/types'
 import { Power } from '@lucide/vue'
@@ -20,16 +19,14 @@ import { VOTE_CATEGORIES } from '../../lib/types'
 const props = defineProps<{
   results: Results | null
   gmClientId: string
-  // Needed only to resolve seat colours: `RankedResult` carries a clientId but
-  // no seat, and a seat is the player's index in this array (see `lib/seats.ts`).
+  // Needed only to resolve seat colours: `RankedResult` carries a clientId but no seat,
+  // and a seat is the player's index in this array (see `lib/seats.ts`).
   players: Player[]
-  // The round's target grid. Rendered as the winner when nobody voted — see
-  // `noWinner`. Null only if the config went away, which can't happen in RESULTS.
+  // The round's target grid, rendered as the winner when nobody voted (see `noWinner`).
   targetGrid: number[] | null
 }>()
 
-// Resolve a `public/`-hosted asset path against Vite's `base` (e.g.
-// `/pixmaler/`) so absolute URLs don't skip the base and 404.
+// Resolve a `public/`-hosted asset path against Vite's `base` so it doesn't 404.
 function iconUrl(path: string): string {
   return `${import.meta.env.BASE_URL}${path}`
 }
@@ -42,25 +39,21 @@ const clientId = inject(clientIdKey)!
 
 const isGm = computed(() => props.gmClientId === clientId)
 
-// clientId → { seat, player }, built once per state push rather than a findIndex
-// per card: the gallery is ordered by points, not by join order, so every entry
-// needs a lookup. The `Player` comes along because the chip's shape lives there —
-// `RankedResult` carries a name but no shape. A player missing from the roster
-// yields no chip rather than a guess.
+// clientId → { seat, player }, built once per state push. The `Player` comes along because
+// the chip's shape lives there; a player missing from the roster yields no chip.
 const seats = computed(() =>
   new Map(props.players.map((p, i) => [p.clientId, { seat: i, player: p }])),
 )
 
-// All drawings share the GM's image dimensions — one ratio drives every art
-// slot (hero + gallery) via `--art-ratio`, so non-square images keep shape.
+// All drawings share the GM's image dimensions — one ratio drives every art slot (hero +
+// gallery) via `--art-ratio`, so non-square images keep shape.
 const artRatio = computed(() =>
   props.results ? artRatioFor(props.results.gridW, props.results.gridH) : '1 / 1',
 )
 
-// Top scorers (joint on a tie) become the hero; the rest form the gallery,
-// still in overall-points order. `ranked` arrives pre-sorted descending. Each
-// entry is paired with its seat here so the template resolves the lookup once
-// per card instead of once per binding.
+// Top scorers (joint on a tie) become the hero; the rest form the gallery in points order.
+// `ranked` arrives pre-sorted descending. Each entry is paired with its seat here so the
+// template resolves the lookup once per card.
 const ranked = computed<Entry[]>(() => props.results?.ranked ?? [])
 function withSeats(entries: Entry[]) {
   return entries.map((e) => {
@@ -69,29 +62,13 @@ function withSeats(entries: Entry[]) {
   })
 }
 
-// Players who were competing and never put a mark down.
-//
-// Derived by subtracting `ranked` from the roster, NOT by reading `drewThisRound`.
-// The flag is authoritative server-side — `endDrawing` filters the gallery on it —
-// but it never reaches the client reliably: `handleSubmit` sets it silently, because
-// it fires on every stroke, and nothing between the last submission and RESULTS
-// broadcasts `state`. So the roster the client holds still says `false` for everyone
-// who drew, and this list named the entire field as having lost their paint brush.
-// A vote masked it, since `handleVote` does broadcast state — which is why it only
-// showed up in rounds where somebody drew but nobody voted.
-//
-// `ranked` cannot go stale the same way: it arrives in the very `results` message
-// that makes this screen render, and it contains exactly the gallery — i.e. exactly
-// the players whose `drewThisRound` was set. Subtracting it needs no protocol change
-// and no extra broadcast.
-//
-// Deriving rather than appending to `ranked` is still the point. `nobodyDrew` below
-// infers "nobody drew" from `ranked` being empty, so putting non-drawers in there
-// would make it permanently false and silently break the zero-submission reveal.
-//
-// Spectators are excluded: they joined after the round started, so they were never
-// asked to draw. Disconnected players are *not* excluded — they were in the room and
-// they did not draw, which is exactly what this says.
+// Players who were competing and never put a mark down. Derived by subtracting `ranked`
+// from the roster, NOT by reading `drewThisRound`: that flag is set silently server-side
+// and never reaches the client, so the roster still says `false` for everyone who drew.
+// `ranked` can't go stale — it arrives in the same `results` message and is exactly the
+// gallery. Deriving rather than appending matters: `nobodyDrew` infers from `ranked` being
+// empty, so padding it would break the zero-submission reveal. Spectators are excluded;
+// disconnected players are not — they were here and did not draw.
 const drewIds = computed(() => new Set(ranked.value.map(e => e.clientId)))
 const neverDrew = computed(() =>
   props.players
@@ -105,14 +82,10 @@ const neverDrew = computed(() =>
 // Nobody drew at all. The server skips VOTING in this case (see endDrawing), so this
 // arrives straight from DRAWING with an empty ranked field.
 const nobodyDrew = computed(() => ranked.value.length === 0)
-// No human winner — either nobody drew, or people drew and nobody voted. `ranked`
-// arrives sorted descending, so a zero at the top means a zero everywhere; without
-// this guard `e.votes === top` below matched *every* entry, which crowned the whole
-// field and, because `rest` slices past `winners`, deleted the gallery with it.
-//
-// Either way the target image takes the hero and everyone falls into the gallery. A
-// game called "recreate art. poorly." resolving these as the original beating all of
-// you is both the honest result and the funniest reading of it.
+// No human winner — either nobody drew, or people drew and nobody voted. `ranked` arrives
+// sorted descending, so a zero at the top means a zero everywhere; without this guard
+// `e.votes === top` matched every entry and deleted the gallery. Either way the target
+// takes the hero and everyone falls into the gallery.
 const noWinner = computed(() => nobodyDrew.value || ranked.value[0].votes === 0)
 
 const winners = computed(() => {
@@ -122,8 +95,8 @@ const winners = computed(() => {
   const top = all[0].votes
   return withSeats(all.filter(e => e.votes === top))
 })
-// Empty `winners` makes this `slice(0)` — the whole ranked field — which is exactly
-// what the no-winner case wants: nobody crowned, everybody in the gallery.
+// Empty `winners` makes this `slice(0)` — the whole ranked field — which is what the
+// no-winner case wants: nobody crowned, everybody in the gallery.
 const rest = computed(() => withSeats(ranked.value.slice(winners.value.length)))
 
 // A player who drew and then cleared.
@@ -131,9 +104,8 @@ function isWiped(entry: RankedResult): boolean {
   return entry.grid.every(cell => cell === -1)
 }
 
-// Per-category breakdown for the hero, e.g. `[{ count: 5, icon: laugh.svg, … }, …]`.
-// Falls back to 0 for any missing category so a stale/old-shape results payload
-// can't crash the reveal.
+// Per-category breakdown for the hero. Falls back to 0 for any missing category so a
+// stale results payload can't crash the reveal.
 function breakdownItems(entry: Entry) {
   return VOTE_CATEGORIES.map(c => ({
     id: c.id,
@@ -143,20 +115,14 @@ function breakdownItems(entry: Entry) {
   }))
 }
 
-// PixelCanvas instances mounted into the per-row slots. Re-built whenever
-// the results object changes (Play again → new round).
+// PixelCanvas instances mounted into the per-row slots. Re-built when the results change.
 let canvases: PixelCanvas[] = []
 
-// Slots are keyed per block, NOT in one shared map. The hero and gallery `v-for`s
-// can hold the same submissionId at different times (a player who was in the
-// gallery last round wins this one), Vue patches the hero block before the
-// gallery block, and function-form `:ref`s are invoked with `null` on unmount.
-// With one shared map the order on a gallery → hero move is
-// `hero SET(id)` → `gallery NULL(id)`, so the unmount-null deletes the hero
-// element that was just registered; `mountCanvases` then finds no slot for the
-// winner and skips it, leaving `$paper` in the winner frame — a blank painting.
-// Two maps keep the lifecycles independent, so neither block can unset the
-// other's element.
+// Slots are keyed per block, NOT in one shared map. The hero and gallery `v-for`s can hold
+// the same submissionId at once (a gallery player wins the next round), Vue patches the hero
+// before the gallery, and unmount fires the `:ref` with `null` — so one shared map would let
+// the gallery's unmount-null delete the freshly registered hero element. Two maps keep the
+// lifecycles independent.
 const heroSlots = new Map<string, HTMLElement>()
 const gallerySlots = new Map<string, HTMLElement>()
 function setSlot(kind: 'hero' | 'gallery', submissionId: string, el: unknown) {
@@ -166,8 +132,7 @@ function setSlot(kind: 'hero' | 'gallery', submissionId: string, el: unknown) {
   else slots.delete(submissionId)
 }
 
-// Slot key for the target image's canvas in the no-winner hero. Not a submissionId,
-// so it can never collide with one.
+// Slot key for the target image's canvas in the no-winner hero; never collides with a submissionId.
 const TARGET_SLOT = '__target__'
 
 function mountCanvases() {
@@ -175,9 +140,8 @@ function mountCanvases() {
   if (!props.results)
     return
   for (const r of props.results.ranked) {
-    // Hero first: a submission is in `winners` or `rest`, never both, so at rest
-    // only one map holds it. During the patch that lands a new winner both may
-    // briefly, and the hero slot is the one to fill.
+    // Hero first: a submission is in `winners` or `rest`, never both at rest. During the
+    // patch that lands a new winner both may briefly hold it, and the hero slot wins.
     const slot = heroSlots.get(r.submissionId) ?? gallerySlots.get(r.submissionId)
     if (!slot)
       continue
@@ -208,13 +172,11 @@ function mountCanvases() {
   }
 }
 
-// `targetGrid` is watched too: in the no-winner case it is what the hero renders,
-// and it arrives on `state`, not on the `results` payload, so the two can land in
-// either order.
+// `targetGrid` is watched too: in the no-winner case it renders the hero, and it arrives on
+// `state`, not the `results` payload, so the two can land in either order.
 watch(() => [props.results, props.targetGrid], async () => {
-  // See Voting.vue's note: `flush: "post"` doesn't strictly guarantee that
-  // function-form :ref callbacks have fired before the watcher runs.
-  // nextTick() twice is the public, supported way to wait for the patch.
+  // See Voting.vue's note: `flush: "post"` doesn't guarantee :ref callbacks have fired;
+  // nextTick() twice is the supported way to wait for the patch.
   await nextTick()
   await nextTick()
   mountCanvases()
@@ -227,8 +189,8 @@ function playAgain() {
   socket.send(JSON.stringify(msg))
 }
 
-// Ends the whole session rather than starting another round. Always confirmed: it
-// closes the room for everyone and releases the code.
+// Ends the whole session rather than starting another round. Always confirmed: it closes
+// the room for everyone and releases the code.
 async function endSession() {
   if (!await askConfirm('End the session for everyone? The room closes and this code is released.'))
     return
@@ -240,12 +202,9 @@ async function endSession() {
 <template>
   <PhaseLayout heading="Results">
     <template #status>
-      <!-- Never gate the GM's only control on the payload arriving. The server
-           now replays `results` on a mid-RESULTS rejoin, but if that ever fails
-           the GM must still be able to restart the room: gating this on
-           `results` once left a reloading GM with no usable button anywhere and
-           the room unrecoverable. Non-GMs get the hint unconditionally for the
-           same reason — a rejoining player should never see a blank status bar. -->
+      <!-- Never gate the GM's only control on the payload arriving: if the `results`
+           replay ever fails the GM must still be able to restart the room. Non-GMs get
+           the hint unconditionally so a rejoining player never sees a blank status bar. -->
       <button
         v-if="isGm"
         class="btn btn--primary results__again"
@@ -274,15 +233,15 @@ async function endSession() {
       </p>
 
       <template v-else>
-        <!-- Hero: overall winner(s), or the target image when nobody voted -->
+        <!-- Hero: overall winner(s), or the target image when nobody voted. -->
         <div class="results__hero">
           <p class="results__crown">
             <img :src="iconUrl('assets/icons/crown.svg')" alt="crown" class="results__crown-icon">
             {{ noWinner ? (nobodyDrew ? "nobody drew — the original wins" : "nobody voted — the original wins") : winners.length > 1 ? "joint winners" : "overall winner" }}
           </p>
           <div class="results__winners">
-            <!-- Nobody voted, so the target takes the hero and everyone drops into
-                 the gallery below. Same frame as a real winner: it did beat them. -->
+            <!-- Nobody voted, so the target takes the hero. Same frame as a real
+                 winner: it did beat them. -->
             <div v-if="noWinner" class="results__winner">
               <div class="results__winner-art art-frame art-frame--winner">
                 <div :ref="el => setSlot('hero', TARGET_SLOT, el)" class="art-surface" />
@@ -328,7 +287,7 @@ async function endSession() {
           </div>
         </div>
 
-        <!-- Gallery: everyone else, ordered by overall points -->
+        <!-- Gallery: everyone else, ordered by overall points. -->
         <div v-if="rest.length" class="results__gallery">
           <div
             v-for="{ entry, seat } in rest"
@@ -356,7 +315,7 @@ async function endSession() {
           </div>
         </div>
 
-        <!-- Players who never drew get shown here -->
+        <!-- Players who never drew. -->
         <ul v-if="neverDrew.length" class="results__nodraw">
           <li
             v-for="{ player, seat } in neverDrew"

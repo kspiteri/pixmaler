@@ -6,12 +6,12 @@
 
 // Shared primitives — reused across screens.
 @use 'theme'; // the dark/light palettes — must come first, everything reads it
-@use 'fonts'; // self-hosted @font-face — vendored, no Google CDN (#44)
+@use 'fonts'; // self-hosted @font-face — vendored, no Google CDN
 @use 'backdrop'; // html base colour + the app-wide pixel grid & vignette
 @use 'alerts'; // the alert register — .conn-banner + AlertDialog
 @use 'avatar'; // the seat chip + its shape modifiers (shared: roster + results)
 @use 'buttons';
-@use 'name-field'; // NameField.vue — display-name input + dice randomise (#44)
+@use 'name-field'; // NameField.vue — display-name input + dice randomise
 @use 'forms';
 @use 'logo';
 @use 'tagline'; // before the page partials — see the file header
@@ -109,7 +109,7 @@ a {
 }
 
 // Visually hidden, but read by assistive tech — for the per-phase headings that give
-// the app a document outline (#10) and for off-screen live-region text. Same recipe as
+// the app a document outline and for off-screen live-region text. Same recipe as
 // the picker's private `&__sr`; global so every screen shares one utility.
 .sr-only {
   position: absolute;

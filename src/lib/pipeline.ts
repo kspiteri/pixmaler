@@ -39,13 +39,10 @@ export const DEFAULT_COLOR_COUNT = 16
 export const DEFAULT_SCALE = 8 // cells per 100 source px; range 1-50
 export const MOBILE_WARN_GRID = 64 // warn if computed grid longest side exceeds this
 export const SOURCE_MAX_SIDE = 768 // normalise uploads so the slider behaves consistently
-// Cap for the fallback decode's canvas. A phone photo — especially a 360/panorama — can be
-// far larger than a mobile browser will decode into an `ImageBitmap` or a canvas at all
-// (iOS caps a 2D canvas near ~16.7M px), which is the likeliest reason `createImageBitmap`
-// refused it in the first place. Drawing the `<img>` down into a canvas no larger than this
-// dodges that ceiling; the pipeline downscales to `SOURCE_MAX_SIDE` afterwards regardless,
-// so this only ever discards detail the target could never have shown. 4096 keeps plenty of
-// headroom for a tight crop while staying inside every mobile 2D-canvas limit we know of.
+// Cap for the fallback decode's canvas. A large phone photo can exceed what a mobile
+// browser will decode into a canvas at all (iOS caps a 2D canvas near ~16.7M px) — the
+// likeliest reason `createImageBitmap` refused it. 4096 stays inside every known mobile
+// 2D-canvas limit; the pipeline downscales to `SOURCE_MAX_SIDE` afterwards regardless.
 export const MAX_DECODE_SIDE = 4096
 // What shows through a transparent upload. White because line art and logos — the PNGs
 // that carry an alpha channel — are drawn for a light page; the GM can change it.
@@ -53,9 +50,9 @@ export const DEFAULT_BACKGROUND = '#ffffff'
 
 // ── Main pipeline ─────────────────────────────────────────────────────────────
 
-// Exported so the UI can show the resulting dimensions live while the scale slider
-// moves (`processImage` calls this too, so the two can't drift). Rounds rather than
-// truncates, and clamps to one cell per axis so a small scale can't collapse the grid.
+// Exported so the UI shows the resulting dimensions live as the scale slider moves
+// (`processImage` calls this too, so the two can't drift). Rounds and clamps to one cell
+// per axis so a small scale can't collapse the grid.
 export function gridSizeFor(
   sourceW: number,
   sourceH: number,
@@ -94,16 +91,11 @@ export class ImageDecodeError extends Error {
 }
 
 // Decode a file to an `ImageBitmap`, surviving browsers whose `createImageBitmap(Blob)` is
-// flaky. A mobile Chromium/WebKit build rejects images the same browser will happily render
-// through an `<img>` — progressive or EXIF-heavy JPEGs, and above all *oversized* ones: a
-// phone panorama or 360 shot easily exceeds the memory a mobile decoder will hand to
-// `createImageBitmap`, which is the failure behind #46 (fine on desktop, refused on the
-// phone). So try the fast path first, then fall back to an `<img>` → canvas round-trip: the
-// `<img>` decoder is far more forgiving, it bakes in EXIF orientation, and it strips
-// EXIF/ICC metadata (the canvas holds pixels only). The fallback canvas is capped at
-// `MAX_DECODE_SIDE` so an enormous source can't reintroduce the very limit that tripped the
-// fast path. The canvas overload of `createImageBitmap` is a plain pixel copy, so it works
-// where the Blob one did not. Both decode sites (`processImage`, the picker's adopt) use it.
+// flaky — a mobile build rejects oversized or EXIF-heavy images the same browser renders
+// fine through an `<img>`. Try the fast path, then fall back to an `<img>` → canvas
+// round-trip: the `<img>` decoder is more forgiving, bakes in EXIF orientation, and strips
+// metadata. The fallback canvas is capped at `MAX_DECODE_SIDE` so an enormous source can't
+// reintroduce the limit that tripped the fast path.
 export async function decodeImage(file: File): Promise<ImageBitmap> {
   try {
     return await createImageBitmap(file)
@@ -131,8 +123,7 @@ async function decodeViaElement(file: File): Promise<ImageBitmap> {
     if (!w || !h)
       throw new Error('decoded image reports no dimensions')
     // Cap the canvas at `MAX_DECODE_SIDE`: an oversized source is the likeliest reason the
-    // fast path refused it, and a full-size canvas here would hit the same wall. Downscaling
-    // on draw loses only detail the pipeline's own `SOURCE_MAX_SIDE` normalise would drop.
+    // fast path refused it. Downscaling here loses only detail `SOURCE_MAX_SIDE` would drop.
     const scale = Math.min(1, MAX_DECODE_SIDE / Math.max(w, h))
     const cw = Math.max(1, Math.round(w * scale))
     const ch = Math.max(1, Math.round(h * scale))
@@ -159,9 +150,9 @@ export async function processImage(
 ): Promise<PipelineResult> {
   const bitmap = await decodeImage(file)
 
-  // Constrain to one of three shapes (see `aspect.ts`): take the rect the GM framed,
-  // then normalise into that ratio's box. `SOURCE_MAX_SIDE` caps the long axis so the
-  // scale slider means the same thing for every upload, and only ever shrinks.
+  // Constrain to one of three shapes (see `aspect.ts`): take the rect the GM framed, then
+  // normalise into that ratio's box. `SOURCE_MAX_SIDE` caps the long axis so the scale
+  // slider means the same for every upload.
   const { sx, sy, sw, sh } = cropRect(bitmap.width, bitmap.height, ratio, crop)
   const { w: sourceW, h: sourceH } = ratioBox(ratio, Math.min(SOURCE_MAX_SIDE, Math.max(sw, sh)))
 
@@ -170,19 +161,17 @@ export async function processImage(
   sourceCanvas.width = sourceW
   sourceCanvas.height = sourceH
   const sourceCtx = sourceCanvas.getContext('2d')!
-  // Flatten onto an opaque background *before* anything samples it. `getImageData` hands
-  // back RGB 0,0,0 for a fully transparent pixel and `quantiseToPalette` reads no alpha,
-  // so without this every transparent region quantises to black — a logo on alpha came
-  // out as one black mass. Filling first also blends anti-aliased edges properly instead
-  // of darkening them towards black.
+  // Flatten onto an opaque background *before* anything samples it: `getImageData` returns
+  // RGB 0,0,0 for a transparent pixel and `quantiseToPalette` reads no alpha, so without
+  // this every transparent region quantises to black. Filling also blends anti-aliased edges.
   sourceCtx.fillStyle = background
   sourceCtx.fillRect(0, 0, sourceW, sourceH)
   sourceCtx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, sourceW, sourceH)
   bitmap.close()
 
-  // ── Step 1: downscale the source to exactly the grid, in one step. A `gridW × gridH`
-  // destination consumes the *whole* source rect, so no pixel is dropped — the vendored
-  // pixelit round-trip this replaces lost the right and bottom edges. See issue #4.
+  // ── Step 1: downscale the source to exactly the grid in one step. A `gridW × gridH`
+  // destination consumes the whole source rect, so no pixel is dropped — the vendored
+  // pixelit round-trip this replaces lost the right and bottom edges.
   const { gridW, gridH } = gridSizeFor(sourceW, sourceH, scale)
 
   const sampleCanvas = document.createElement('canvas')
@@ -194,8 +183,7 @@ export async function processImage(
   const sampleData = sampleCtx.getImageData(0, 0, gridW, gridH).data
 
   // ── Step 2: derive the palette from that same downscale. The target uses only
-  // image-derived colours; classics top the swatch up to `colorCount` afterwards if
-  // the image could not fill it.
+  // image-derived colours; classics top the swatch up to `colorCount` afterwards.
   const samplePixels: Rgb[] = []
   for (let i = 0; i < sampleData.length; i += 4) {
     samplePixels.push([sampleData[i], sampleData[i + 1], sampleData[i + 2]])
@@ -232,10 +220,8 @@ export function isMobileWarning(longestGridSide: number): boolean {
 // with the picker; this only classifies.
 export type UnsupportedImage = 'vector' | 'not-image'
 
-// `image/*` in a file dialog includes SVG, and an `<img>` renders one happily — which is
-// why the crop preview looks right — but `createImageBitmap` rejects it outright, so
-// `processImage` cannot sample it. Vector art has no pixels to quantise, so there is
-// nothing to salvage by trying harder.
+// `image/*` includes SVG, and an `<img>` renders one (so the crop preview looks right), but
+// `createImageBitmap` rejects it — vector art has no pixels to quantise, so nothing to salvage.
 const VECTOR_TYPES = new Set(['image/svg+xml', 'image/svg'])
 
 // A blank `type` is deliberately allowed through: an unusual extension can leave it
@@ -248,28 +234,18 @@ export function unsupportedImage(file: File): UnsupportedImage | null {
   return null
 }
 
-// Whether a file that failed to decode is a HEIC/HEIF — the one undecodable format common
-// enough to name in an error, since every iPhone shoots it and only Safari reads it.
-// Extension as well as MIME because a `.heic` often arrives with an empty `type`. Post-
-// decode-failure classification, not a pre-emptive refusal: Safari decodes these fine, so
-// `unsupportedImage` lets them through and this only helps word the message when they fail.
+// Whether a failed-to-decode file is HEIC/HEIF — the one undecodable format common enough
+// to name in an error (every iPhone shoots it, only Safari reads it). Extension as well as
+// MIME, since a `.heic` often arrives with an empty `type`. Post-failure classification only.
 export function isHeic(file: File): boolean {
   return /^image\/hei[cf]$/.test(file.type) || /\.hei[cf]$/i.test(file.name)
 }
 
-// Whether any pixel is less than fully opaque, which is the only case where the
-// background choice changes the target. Unlike the rest of this section it needs a DOM —
-// there is no way to ask an `ImageBitmap` directly.
-//
-// Scanned at `SOURCE_MAX_SIDE`, the same cap `processImage` normalises to, so this is an
-// upper bound on what the grid could ever sample at any scale rather than a guess: a
-// transparent region too small to survive here cannot reach the target either. Callers
-// run it once per adopted file — re-checking per run would let a marginal region flip the
-// answer as the scale slider moves.
-//
-// A PNG's alpha *channel* is not the question. Screenshots are routinely saved as RGBA
-// with every pixel opaque, so reading the header would report transparency for images
-// that have none; only the pixels know.
+// Whether any pixel is less than fully opaque — the only case where the background choice
+// changes the target. Needs a DOM: there's no way to ask an `ImageBitmap` directly. Scanned
+// at `SOURCE_MAX_SIDE`, an upper bound on what the grid could sample, so callers run it once
+// per adopted file. A PNG's alpha *channel* isn't the question — screenshots are routinely
+// opaque RGBA, so only the pixels know.
 export function hasTransparency(bitmap: ImageBitmap): boolean {
   const shrink = Math.min(1, SOURCE_MAX_SIDE / Math.max(bitmap.width, bitmap.height))
   const w = Math.max(1, Math.round(bitmap.width * shrink))

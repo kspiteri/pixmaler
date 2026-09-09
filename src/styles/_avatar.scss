@@ -53,8 +53,8 @@
     border-radius: 0;
     clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
   }
-  // Two opposite corners rounded hard, two left square — asymmetric on purpose,
-  // in the same register as item 24's tilt. The letter stays centred and clear.
+  // Two opposite corners rounded hard, two left square — asymmetric on purpose.
+  // The letter stays centred and clear.
   &--leaf {
     border-radius: 50% 15% 50% 15%;
   }

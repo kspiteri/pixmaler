@@ -1,7 +1,6 @@
-// The app's one modal surface, as an awaitable call: `AlertDialog` emits rather
-// than returning, so requests queue here and call sites keep reading like the
-// native calls did — `if (!await askConfirm('End voting now?')) return`.
-// Module-level, not a composable: there is one dialog for the whole app.
+// The app's one modal surface, as an awaitable call: `AlertDialog` emits rather than
+// returning, so requests queue here — `if (!await askConfirm('End voting now?')) return`.
+// Module-level, not a composable: one dialog for the whole app.
 
 import { computed, ref } from 'vue'
 

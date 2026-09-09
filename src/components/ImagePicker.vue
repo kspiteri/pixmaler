@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Image picker — used by the GM controls (with `showPreview`/`showMobileWarn`/
-// `showDrawSeconds`) and the /paint sandbox (without). Owns the file input,
-// scale/colour/ratio controls, sample buttons, and runs the pipeline on change.
+// `showDrawSeconds`) and the /paint sandbox (without). Owns the file input, scale/colour/
+// ratio controls, sample buttons, and runs the pipeline on change.
 
 import type { CropSelection, TargetRatioId } from '../lib/aspect'
 import type { PickerMeta, PipelineResult } from '../lib/pipeline'
@@ -33,66 +33,56 @@ import {
 } from '../lib/pipeline'
 import { clampDrawSeconds, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN } from '../lib/types'
 
-// The bundled sample images (`public/assets/<name>.png`). Add a sample by
-// dropping the png in and appending an entry to `samples` below.
+// The bundled sample images (`public/assets/<name>.png`).
 type SampleName = 'monalisa' | 'scream' | 'pearls'
 
 interface Props {
   showMobileWarn?: boolean
   showDrawSeconds?: boolean
   showPreview?: boolean
-  // Auto-load a sample on first render. Useful for the sandbox where an image
-  // is required.
+  // Autoload a sample on first render, for the sandbox where an image is required.
   autoLoadSample?: SampleName
 }
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
   result: [result: PipelineResult, meta: PickerMeta]
-  // Fires when input changes but before processing finishes — caller can use
-  // this to disable a Start button etc.
+  // Fires when input changes but before processing finishes — lets a caller disable Start.
   processing: []
 }>()
 
 const scale = ref(DEFAULT_SCALE)
 const colorCount = ref(DEFAULT_COLOR_COUNT)
-// Target shape. Preselected from the loaded image's own framing (see
-// `nearestRatioFor`) so the GM only sees a crop when they ask for one.
+// Target shape. Preselected from the loaded image's own framing (`nearestRatioFor`).
 const ratio = ref<TargetRatioId>(DEFAULT_RATIO)
-// What part of the source to keep. Source-relative, so switching ratio keeps the
-// GM's framing instead of snapping back to centre.
+// What part of the source to keep. Source-relative, so switching ratio keeps the framing.
 const crop = ref<CropSelection>({ ...FULL_CROP })
-// What shows through a transparent upload, and whether this image has any. Deliberately
-// sticky: the choice survives loading an opaque image in between, so a GM who set it once
-// gets it back on the next transparent upload rather than starting from white again.
+// What shows through a transparent upload, and whether this image has any. Sticky: the
+// choice survives an opaque image in between and returns on the next transparent upload.
 const background = ref(DEFAULT_BACKGROUND)
 const hasAlpha = ref(false)
-// Natural size of the loaded image, read once on adopt. Needed to resolve the
-// crop against the source and to lay the overlay out at the right shape.
+// Natural size of the loaded image, read once on adopt; resolves the crop and overlay shape.
 const naturalDims = ref<{ w: number, h: number } | null>(null)
 // Object URL for the crop widget's preview. Revoked whenever it is replaced.
 const sourceUrl = ref('')
 const DEFAULT_DRAW_SECONDS = 120
 const drawSecs = ref(DEFAULT_DRAW_SECONDS)
-// The floor is stated in the label, and applied here on commit. HTML `min` does
-// not stop a typed value, so without this a GM testing with 20 s had the whole
-// config rejected server-side and saw only a Start button that did nothing.
+// The floor is stated in the label and applied here on commit — HTML `min` doesn't stop a
+// typed value, and an under-floor config is rejected server-side, blocking Start silently.
 function commitDrawSecs() {
-  // An emptied input yields NaN through `v-model.number`, which would otherwise
-  // clamp to NaN and put an unstartable config on the wire.
+  // An emptied input yields NaN via `v-model.number`, which would put an unstartable config
+  // on the wire.
   drawSecs.value = Number.isFinite(drawSecs.value)
     ? clampDrawSeconds(drawSecs.value)
     : DEFAULT_DRAW_SECONDS
 }
-// `status` carries user-facing *messages* (errors) only; in-flight processing is
-// `busy`, so the spinner never has to sniff the message string.
+// `status` carries user-facing messages (errors) only; in-flight processing is `busy`.
 const status = ref('')
 const busy = ref(false)
 const showWarn = ref(false)
 
-// Colour-count options — the number is what the player actually cares about, so
-// the segmented control shows it and the friendly wording rides along as the
-// accessible name.
+// Colour-count options — the number is what the player cares about, so the control shows it
+// and the friendly wording rides along as the accessible name.
 const COLOUR_OPTIONS: { value: number, label: string }[] = [
   { value: 8, label: 'Very few colours' },
   { value: 16, label: 'A normal number of colours' },
@@ -100,8 +90,8 @@ const COLOUR_OPTIONS: { value: number, label: string }[] = [
   { value: 32, label: 'A lot more colours' },
 ]
 
-// The six anchors of the fill ramp, reused as background choices: whatever the GM picks
-// is a colour the swatch can also express, so a player can paint the background back in.
+// The six fill-ramp anchors, reused as background choices: whatever the GM picks is a colour
+// the swatch can also express, so a player can paint the background back in.
 const BACKGROUND_OPTIONS = CLASSIC_BASE.map(({ name, rgb }) => ({ name, hex: rgbToHex(...rgb) }))
 
 defineExpose({ getDrawSeconds: () => drawSecs.value })
@@ -113,16 +103,14 @@ let cachedFile: File | null = null
 let runId = 0
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
-// Labels stay short — the caption sits under the thumbnail on one line, and a
-// long title would stretch the button far wider than its image.
+// Labels stay short — the caption sits under the thumbnail on one line.
 const samples: { name: SampleName, label: string }[] = [
   { name: 'monalisa', label: 'Mona Lisa' },
   { name: 'scream', label: 'The Scream' },
   { name: 'pearls', label: 'Pearl Earring' },
 ]
 
-// Which sample is currently loaded — drives the selected state. `null` once an
-// uploaded file takes over, so the swatches stop claiming credit for it.
+// Which sample is currently loaded — drives the selected state. `null` once an upload takes over.
 const selected = ref<SampleName | null>(null)
 
 // Label for whatever is loaded — the sample's title, or the uploaded filename.
@@ -130,10 +118,8 @@ const sourceLabel = ref('')
 
 const showWarnNode = computed(() => props.showMobileWarn && showWarn.value)
 
-// Normalised source dimensions of the loaded image, kept from the last result.
-// They don't depend on scale, so the grid readout below can be recomputed live
-// while the slider moves — no reprocessing, no lag, and no drift from what the
-// pipeline will actually produce (both call `gridSizeFor`).
+// Normalised source dimensions from the last result. Scale-independent, so the grid readout
+// recomputes live as the slider moves, with no reprocessing and no drift (both call `gridSizeFor`).
 const sourceDims = ref<{ w: number, h: number } | null>(null)
 
 const gridPreview = computed(() => {
@@ -144,11 +130,8 @@ const gridPreview = computed(() => {
 })
 
 // ── Crop widget ───────────────────────────────────────────────────────────────
-//
-// The widget shows the whole source with the kept region cut out of a dimmed
-// overlay. Geometry is computed as percentages of the image box, so the widget
-// needs no measurement and stays correct at any rendered size — the same reason
-// `CropSelection` is source-relative rather than in pixels.
+// Shows the whole source with the kept region cut out of a dimmed overlay. Geometry is
+// in percentages of the image box, so it needs no measurement at any rendered size.
 
 const cropBox = computed(() => {
   const dims = naturalDims.value
@@ -163,9 +146,8 @@ const cropBox = computed(() => {
   }
 })
 
-// True when the crop can actually be moved — a maximal crop of the image's own
-// shape fills it on both axes, so there is nothing to drag and the hint should
-// say so rather than inviting a no-op.
+// True, when the crop can actually be moved — a maximal crop of the image's own shape fills
+// it on both axes, so there is nothing to drag.
 const cropMovable = computed(() => {
   const dims = naturalDims.value
   if (!dims)
@@ -176,9 +158,8 @@ const cropMovable = computed(() => {
 
 const cropFrame = useTemplateRef<HTMLElement>('cropFrame')
 
-// Drag to pan. The pointer is captured so a fast drag that leaves the widget
-// keeps steering it, and the centre is written straight from the pointer's
-// position within the frame — `cropRect` clamps, so no edge handling here.
+// Drag to pan. The pointer is captured so a drag leaving the widget keeps steering; the
+// centre is written from the pointer position and `cropRect` clamps.
 function onCropPointerDown(e: PointerEvent) {
   if (!cropMovable.value)
     return
@@ -192,16 +173,14 @@ function onCropPointerDown(e: PointerEvent) {
 }
 
 function onCropPointerMove(e: PointerEvent) {
-  // `buttons` rather than a local flag: if the button was released off-widget
-  // and we missed the up, this stops steering instead of sticking to the cursor.
+  // `buttons`, not a local flag: a release missed off-widget still stops steering.
   if (e.buttons === 0 || !cropMovable.value)
     return
   moveCropTo(e)
 }
 
-// Both writers clamp the centre to the image. `cropRect` already clamps the
-// resolved rect, but letting `cx`/`cy` drift outside 0-1 would mean a drag past
-// the edge needs the same distance dragged back before anything moves again.
+// Both writers clamp the centre to 0-1; letting it drift outside would make a drag past the
+// edge need the same distance dragged back before anything moves.
 function setCropCentre(cx: number, cy: number) {
   crop.value = {
     ...crop.value,
@@ -226,8 +205,7 @@ function onCropZoom(e: Event) {
   scheduleReprocess()
 }
 
-// Keyboard path for the crop, so framing is not pointer-only. One step is 2% of
-// the source, which is a visible nudge at any image size.
+// Keyboard path for the crop, so framing is not pointer-only. One step is 2% of the source.
 function onCropKeyDown(e: KeyboardEvent) {
   const step = 0.02
   const delta: Record<string, [number, number]> = {
@@ -253,9 +231,8 @@ async function reprocess() {
   const myRun = ++runId
   busy.value = true
   status.value = ''
-  // The previous preview deliberately stays on screen (dimmed by `is-busy`)
-  // rather than being cleared — blanking it flashed an empty box on every
-  // slider nudge, which read as slower than it was.
+  // The previous preview stays on screen (dimmed by `is-busy`) rather than being cleared —
+  // blanking it flashed an empty box on every slider nudge.
   showWarn.value = false
   emit('processing')
 
@@ -298,10 +275,9 @@ async function reprocess() {
     if (myRun !== runId)
       return
     busy.value = false
-    // `decodeImage` tried the fast path and an <img>-based fallback before giving up, so
-    // an ImageDecodeError means the browser truly cannot render these bytes. HEIC is the
-    // one case common enough to name — every iPhone shoots it and only Safari reads it —
-    // so it earns its own line; everything else is a corrupt or unsupported file.
+    // `decodeImage` tried the fast path and an <img> fallback, so ImageDecodeError means the
+    // browser truly can't render these bytes. HEIC is named because every iPhone shoots it
+    // and only Safari reads it; everything else is a corrupt or unsupported file.
     status.value = err instanceof ImageDecodeError
       ? (cachedFile && isHeic(cachedFile)
           ? `${sourceLabel.value} looks like an iPhone HEIC photo, which only Safari can open. Export it as a JPEG, or open this page in Safari.`
@@ -318,10 +294,8 @@ function scheduleReprocess() {
 
 watch([scale, colorCount, ratio, background], scheduleReprocess)
 
-// Adopt a newly-chosen image: preselect the ratio closest to its own framing and
-// reset the crop to the whole frame, so the first render matches how the GM
-// framed it and any crop is a deliberate second choice. Costs one extra decode;
-// the pipeline's own decode dominates.
+// Adopt a newly-chosen image: preselect the ratio closest to its own framing and reset the
+// crop to the whole frame, so any crop is a deliberate second choice. Costs one extra decode.
 async function adoptFile(file: File, label: string) {
   cachedFile = file
   sourceLabel.value = label
@@ -333,18 +307,16 @@ async function adoptFile(file: File, label: string) {
     const bitmap = await decodeImage(file)
     naturalDims.value = { w: bitmap.width, h: bitmap.height }
     ratio.value = nearestRatioFor(bitmap.width, bitmap.height)
-    // Once per file, while the bitmap is already decoded and open. Nothing later in the
-    // run can change the answer, so no reprocess re-checks it.
+    // Once per file, while the bitmap is decoded; nothing later can change the answer.
     hasAlpha.value = hasTransparency(bitmap)
     bitmap.close()
   }
   catch {
-    // Undecodable here means undecodable in the pipeline too, which reports it
-    // properly — leave the ratio alone and let `reprocess` surface the error.
+    // Undecodable here means undecodable in the pipeline too, which reports it properly —
+    // leave the ratio alone and let `reprocess` surface the error.
     naturalDims.value = null
     hasAlpha.value = false
   }
-  // prevent double `reprocess` calls
   scheduleReprocess()
 }
 
@@ -352,13 +324,11 @@ function onFileChange() {
   const file = fileInput.value?.files?.[0]
   if (!file)
     return
-  // `accept` is only a hint — the OS dialog's "All Files" escape hatch, and any
-  // programmatic pick, get here regardless.
+  // `accept` is only a hint — the OS "All Files" escape hatch and programmatic picks get here.
   const unsupported = unsupportedImage(file)
   if (unsupported) {
-    // Whatever is already loaded stays: a mistaken pick should not cost the GM a
-    // working target. Clearing the input lets the same file re-fire `change`, so a
-    // second attempt is not silently swallowed.
+    // Whatever is already loaded stays: a mistaken pick shouldn't cost a working target.
+    // Clearing the input lets the same file re-fire `change` for a second attempt.
     status.value = unsupported === 'vector'
       ? `${file.name} is a vector image — there are no pixels to sample. Try a PNG or JPEG.`
       : `${file.name} is not an image. Try a PNG or JPEG.`
@@ -412,15 +382,12 @@ onBeforeUnmount(() => {
           class="picker__scale"
           type="range" min="1" max="50"
         >
-        <!-- Value + the grid it produces. The dims are computed, not measured,
-             so they track the slider instantly instead of waiting on a run. -->
+        <!-- Value + the grid it produces. Computed, not measured, so it tracks the slider. -->
         <span class="picker__scale-out">
           <span class="picker__scale-val">{{ scale }}</span>
           <span v-if="gridPreview" class="picker__scale-grid">→ {{ gridPreview }}</span>
-          <!-- Busy indicator lives here, in the eye-line of the control being
-               dragged, rather than at the bottom of the card. Always rendered so
-               it reserves its space — appearing/disappearing would nudge the
-               slider's width and make the thumb twitch mid-drag. -->
+          <!-- Busy indicator in the eye-line of the dragged control. Always rendered so it
+               reserves its space — appearing/disappearing would twitch the slider mid-drag. -->
           <Loader2
             class="picker__spinner"
             :class="{ 'is-on': busy }"
@@ -451,8 +418,7 @@ onBeforeUnmount(() => {
         </div>
 
         <label v-if="showDrawSeconds" class="picker__setting picker__setting--inline">
-          <!-- The floor is stated here rather than discovered by a round refusing
-               to start, which is how it was found in the first place. -->
+          <!-- The floor is stated here rather than discovered by a round refusing to start. -->
           <span class="picker__setting-label">Draw seconds (min: {{ DRAW_SECONDS_MIN }}s)</span>
           <input
             v-model.number="drawSecs"
@@ -481,15 +447,12 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- Crop framing. Renders only once an image is loaded and measured — the
-           upload and samples in the next card are what put one there. Shape and
-           crop are one decision, so they stay together: shape decides what the
-           frame can be, the drag decides where it sits. -->
+      <!-- Crop framing. Renders only once an image is loaded and measured. Shape and crop
+           are one decision: shape decides what the frame can be, the drag where it sits. -->
       <div v-if="sourceUrl && naturalDims" class="picker__crop">
         <div class="picker__crop-head">
           <span id="picker-ratio" class="picker__setting-label">Framing</span>
-          <!-- Preselected from the image's own proportions (`nearestRatioFor`);
-               these are an override, not a required step. -->
+          <!-- Preselected from the image's own proportions; an override, not a required step. -->
           <div class="segmented" role="group" aria-labelledby="picker-ratio">
             <button
               v-for="id in TARGET_RATIO_IDS"
@@ -506,8 +469,8 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <!-- The frame is the interactive element, so it takes the tabindex and the
-             keyboard handler; the overlay and window inside it are decoration. -->
+        <!-- The frame is the interactive element, so it takes the tabindex and keyboard
+             handler; the overlay and window inside it are decoration. -->
         <div
           ref="cropFrame"
           class="picker__crop-frame"
@@ -519,8 +482,8 @@ onBeforeUnmount(() => {
           @pointermove="onCropPointerMove"
           @keydown="onCropKeyDown"
         >
-          <!-- Tinted with the chosen background so a transparent upload previews the way
-               it will actually be sampled, rather than against the card. -->
+          <!-- Tinted with the chosen background so a transparent upload previews the way it
+               will actually be sampled. -->
           <img
             class="picker__crop-img"
             :src="sourceUrl"
@@ -555,9 +518,8 @@ onBeforeUnmount(() => {
         <span class="picker__setting-label">Upload image</span>
         <label class="picker__browse pressable">
           Browse…
-          <!-- Raster formats only: `image/*` offers SVGs the pipeline cannot decode.
-               HEIC/HEIF stay listed so an iPhone photo is still selectable, since
-               Safari decodes those and `unsupportedImage` cannot know which will. -->
+          <!-- Raster formats only: `image/*` offers SVGs the pipeline can't decode. HEIC/HEIF
+               stay listed so an iPhone photo is selectable, since Safari decodes those. -->
           <input
             ref="fileInput"
             type="file"
@@ -586,8 +548,8 @@ onBeforeUnmount(() => {
         </ul>
       </div>
 
-      <!-- Polite, not role="alert": this re-fires every time the scale slider
-           settles, and an assertive live region would interrupt on each pass. -->
+      <!-- Polite, not role="alert": this re-fires on every scale-slider settle, and an
+           assertive live region would interrupt each pass. -->
       <p v-if="showWarnNode" class="picker__warn" role="status">
         <TriangleAlert :size="16" />
         <span>Grid exceeds 64px on its longest side — mobile players may struggle.</span>

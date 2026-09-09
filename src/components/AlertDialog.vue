@@ -1,8 +1,7 @@
 <script setup lang="ts">
-// The app's modal surface: `mode` renders acknowledge (one action) or yes/no
-// (two). Native <dialog> + showModal(), so focus trapping, focus restore, Esc
-// and the top layer come from the platform. Don't call this directly — go
-// through lib/dialog.ts, which owns the single instance mounted in App.vue.
+// The app's modal surface: `mode` renders acknowledgement (one action) or yes/no (two). Native
+// <dialog> + showModal(), so focus trapping, restore, Esc and the top layer come from the
+// platform. Don't call directly — go through lib/dialog.ts, which owns the single instance.
 
 import { onMounted, useId, useTemplateRef } from 'vue'
 
@@ -21,9 +20,8 @@ const msgId = useId()
 
 onMounted(() => dialogEl.value?.showModal())
 
-// Esc fires the native `cancel` event, default-prevented so the element never
-// closes itself: a <dialog> that closed behind its own v-if would leave an
-// invisible, un-reopenable modal.
+// Esc fires native `cancel`, default-prevented so the element never closes itself: a
+// <dialog> that closed behind its own v-if would leave an invisible, un-reopenable modal.
 function onEscape() {
   if (props.mode === 'confirm')
     emit('cancel')
@@ -43,8 +41,6 @@ function onEscape() {
     <p :id="msgId" class="alert-dialog__msg">
       {{ message }}
     </p>
-    <!-- Cancel takes the focus, diverging from native confirm(): both call
-         sites are destructive, so Return and Esc should agree. -->
     <div class="alert-dialog__actions">
       <button
         v-if="mode === 'confirm'"

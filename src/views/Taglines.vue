@@ -1,7 +1,6 @@
 <script setup lang="ts">
-// Hidden page (/taglines) — lists every tagline grouped: the fixed lines,
-// then each template as its own group (pattern + expanded options) so the set
-// can be read in bulk and new ones suggested. Not linked from anywhere.
+// Hidden page (/taglines) — lists every tagline grouped: fixed lines, then each
+// template as its own group (pattern + expanded options). Not linked from anywhere.
 
 import { taglineGroups } from '../lib/taglines'
 
@@ -22,8 +21,7 @@ const ghIssue = 'https://github.com/kspiteri/pixmaler/issues/new'
       All {{ total }} taglines currently in the game. If you have any suggestions, create an <a :href="ghIssue" target="_blank">issue</a> in github and label it as enhancement.
     </p>
 
-    <!-- Fixed lines, then each template as its own numbered group with the
-         expanded options nested beneath. -->
+    <!-- Fixed lines, then each template as its own numbered group. -->
     <ol class="taglines__list">
       <li v-for="line in fixed" :key="line" class="taglines__item">
         {{ line }}

@@ -12,13 +12,11 @@ import { wordPair } from '../lib/words'
 const name = ref(getName() ?? '')
 const code = ref('')
 
-// Strip any trailing "index.html" so BASE_URL ("/pixmaler/") prefixes /paint
-// correctly in dev and prod alike.
+// Strip any trailing "index.html" so BASE_URL prefixes /paint correctly.
 const base = import.meta.env.BASE_URL.replace(/\/+$/, '')
 const sandboxHref = `${base}/paint`
 
-// The guard is belt-and-braces: both buttons are already `:disabled` until
-// their fields are filled, so it can't actually fire.
+// Belt-and-braces: both buttons are `:disabled` until their fields are filled.
 function enterRoom(room: string) {
   const trimmed = name.value.trim()
   if (!trimmed || !room)

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-// Paint sandbox — solo canvas, no lobby/socket/timer. Picker on the left, the
-// canvas pair (target + editable + tools) on the right. Pair re-mounts each
-// time the picker emits a new result, so PixelCanvas instances tear down cleanly.
+// Paint sandbox — solo canvas, no lobby/socket/timer. Picker left, canvas pair right;
+// the pair re-mounts on each new picker result so PixelCanvas instances tear down cleanly.
 
 import type { PickerMeta, PipelineResult } from '../lib/pipeline'
 import { ChevronDown, ChevronUp, Settings } from '@lucide/vue'
@@ -17,18 +16,15 @@ const result = ref<PipelineResult | null>(null)
 const meta = ref<PickerMeta | null>(null)
 const pairRef = ref<InstanceType<typeof CanvasPair> | null>(null)
 
-// Settings start open; collapse automatically once the first image is loaded
-// so the canvas gets the focus. The toggle re-opens them for a quick tweak.
+// Settings start open, collapse once the first image loads; the toggle re-opens them.
 const settingsOpen = ref(true)
 let collapsedOnce = false
 
 const base = import.meta.env.BASE_URL.replace(/\/+$/, '')
 const backHref = `${base}/`
 
-// Ratio-aware layout, matching the DRAWING phase (item 5): the canvas pair
-// flips between a row (reference beside the canvas) and a column (stacked) so
-// the editable canvas always claims the largest fitting area. `orientationFor`
-// compares the grid's aspect to the live viewport.
+// Ratio-aware layout matching DRAWING: the canvas pair flips between row and column
+// so the editable canvas always claims the largest fitting area (`orientationFor`).
 const viewportW = ref(window.innerWidth)
 const viewportH = ref(window.innerHeight)
 function onResize() {
@@ -50,14 +46,13 @@ function onResult(next: PipelineResult, nextMeta: PickerMeta) {
   }
 }
 
-// Collapsed toggle caption — "Mona Lisa · 32×48 · 16 colours" — so the player
-// can see what they're painting without re-opening the panel.
+// Collapsed toggle caption — "Mona Lisa · 32×48 · 16 colours".
 const summary = computed(() => {
   if (!result.value || !meta.value)
     return ''
   const { gridW, gridH, palette } = result.value
   // The palette that came back, not the count the GM asked for: a flat image cannot
-  // always fill that count (see `withClassics`), and the caption must not claim it did.
+  // always fill that count, so the caption must not claim it did.
   return [meta.value.source, `${gridW}×${gridH}`, `${palette.length} colours`]
     .filter(Boolean)
     .join(' · ')
@@ -119,8 +114,8 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <!-- Only while settings are collapsed: opening them unmounts the pair, which takes
-           its teleported (position:fixed) palette with it, so neither overlaps the panel. -->
+      <!-- Only while settings are collapsed: opening them unmounts the pair and its
+           teleported palette, so neither overlaps the panel. -->
       <template v-if="!settingsOpen">
         <CanvasPair
           v-if="result"

@@ -1,12 +1,9 @@
 // The browser-local player identity — the single owner of the `pixmaler:clientId`,
-// `pixmaler:name` and `pixmaler:shape` localStorage keys. Everything that reads or
-// writes them goes through here, so the keys and their handling live in exactly one
-// place: before this, `pixmaler:name` was touched raw in `App.vue`, `Entry.vue` and
-// `Lobby.vue`, and `App.vue`'s "one place owns the key" comment was already untrue.
+// `pixmaler:name` and `pixmaler:shape` localStorage keys. Everything that reads or writes
+// them goes through here, so the keys live in exactly one place.
 //
-// Module-level, not a composable, and deliberately not reactive: identity is
-// per-document and set at most once per screen — the same reasoning as `lib/theme.ts`,
-// which owns `pixmaler:theme` the same way. Callers hold the value they read.
+// Module-level, not a composable, and deliberately not reactive: identity is per-document
+// and set at most once per screen. Callers hold the value they read.
 
 import type { AvatarShape } from './types'
 import { normaliseShape } from './types'
@@ -49,10 +46,10 @@ export function setShape(shape: AvatarShape): void {
   localStorage.setItem(SHAPE, shape)
 }
 
-// Wipe every `pixmaler:*` key — the "clear my data" action (#44). Deliberately broad:
-// it takes identity (name, clientId, shape) *and* preferences (theme, text size), since
-// the control promises to clear everything. The caller then reloads to Entry, which
-// closes any open socket. `Object.keys` snapshots, so mutating in the loop is safe.
+// Wipe every `pixmaler:*` key — the "clear my data" action. Deliberately broad: it takes
+// identity (name, clientId, shape) *and* preferences (theme, text size), since the control
+// promises to clear everything. The caller then reloads to Entry, which closes any open
+// socket. `Object.keys` snapshots, so mutating in the loop is safe.
 export function clearAllData(): void {
   for (const key of Object.keys(localStorage)) {
     if (key.startsWith('pixmaler:'))

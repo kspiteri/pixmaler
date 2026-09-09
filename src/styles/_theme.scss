@@ -28,8 +28,8 @@
 
   --accent-ink: #c8ff2d;
   --warn-ink: #ff8c00;
-  // Purple as ink/outline. `$primary` is 4.43:1 here and 4.36:1 on `$surface` —
-  // under the floor for the 12px `.btn--ghost` label, so the ink variant lifts.
+  // Purple as ink/outline — `$primary` unmodified is under the floor for the 12px
+  // `.btn--ghost` label, so the ink variant lifts.
   --primary-ink: #8c7aff;
 
   // Timer ribbon fill, in urgency order. Needs 3:1 against the `$surface` track.
@@ -38,8 +38,7 @@
   --timer-danger: #ef130b;
 
   --logo-shadow: none;
-  // Kept as the literal it replaced, so this theme is untouched — white at 10%
-  // over white paper, so in practice invisible.
+  // White at 10% over white paper, so in practice invisible.
   --canvas-edge: rgba(255, 255, 255, 0.1);
 
   --shadow-1: 0 4px 10px rgba(0, 0, 0, 0.35);
@@ -128,10 +127,8 @@
   @include dark;
 }
 
-// The theme swap is cross-faded by `lib/theme.ts` (see `withViewTransition`). The
-// default `root` snapshot already fades; 0.25s is brisk for a whole-page colour
-// change, so this only stretches it. `lib/motion.ts` skips the transition entirely
-// under reduced motion, so there is nothing to guard here.
+// The theme swap is cross-faded by `lib/theme.ts`; this only stretches the default
+// 0.25s. Reduced motion is handled in `lib/motion.ts`, so nothing to guard here.
 [data-theme-vt] {
   &::view-transition-old(root),
   &::view-transition-new(root) {

@@ -2,10 +2,9 @@
 @use 'chrome' as *;
 @use 'wonk' as *;
 
-// Voting screen — anonymised gallery: each card holds the drawing (with the voter's
-// emoji stickers on top) and a row of category vote buttons below. The drawing is a
-// PixelCanvas in an `.art-surface`, sized by the unscoped `.art-surface > canvas` rule
-// in `_surfaces.scss`, so there's no per-screen canvas rule.
+// Voting screen — anonymised gallery: each card holds the drawing (with the voter's emoji
+// stickers on top) and category vote buttons below. The drawing's canvas is sized by the
+// `.art-surface > canvas` rule in `_surfaces.scss`.
 
 .voting {
   max-width: 42rem;
@@ -31,8 +30,8 @@
     font-size: $fs-sm;
     text-wrap: balance;
   }
-  // Only rendered when somebody wiped their canvas. Quieter than `__hint` — this is
-  // reconciling two counts, not instructing, so it must not compete with the eyebrow.
+  // Only rendered when somebody wiped their canvas. Quieter than `__hint`, so it doesn't
+  // compete with the eyebrow.
   &__wiped {
     margin: $gap-1 0 0;
     color: $fg-35;
@@ -177,9 +176,7 @@
     transition: color 0.3s ease;
 
     // Reads as a prompt once the click is free. Not `$accent-ink`: lime means
-    // "active/selected" app-wide, and this is a status. Eased, because the line
-    // becoming a call to action is a moment — restrained, since it sits beside a
-    // button rather than being the celebration.
+    // "active/selected" app-wide, and this is a status.
     &--complete {
       color: $fg;
       font-weight: $fw-semibold;
@@ -187,8 +184,8 @@
     }
   }
 
-  // Urgency without a new colour register: reuses the timer's danger ink, which
-  // `_theme.scss` already tunes per theme for exactly this "read it now" job.
+  // Urgency without a new colour: reuses the timer's danger ink, tuned per theme in
+  // `_theme.scss`.
   &__clock {
     font-family: $font-alert;
     font-weight: $fw-bold;

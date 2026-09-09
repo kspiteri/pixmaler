@@ -29,17 +29,15 @@ type State = Extract<ServerMsg, { type: 'state' }>
 
 const props = defineProps<{
   state: State
-  // Held by App.vue rather than read off `state.config`, which no longer carries it (#35).
+  // Held by App.vue rather than read off `state.config`, which no longer carries it.
   targetGrid: number[] | null
-  // The GM abandoned the last round, so this lobby needs to say why everyone is here and
-  // their drawing isn't (#16). Owned by App.vue: the `round-cancelled` message arrives
-  // before this view exists.
+  // The GM abandoned the last round, so this lobby says why everyone is here and their
+  // drawing isn't. Owned by App.vue: the `round-cancelled` message arrives before this view.
   roundCancelled: boolean
 }>()
 
 const emit = defineEmits<{
-  // Clears the flag in App.vue, which unmounts the toast. Kept up there so a dismissal
-  // sticks — a toast that owned its own dismissal would come back on any remount.
+  // Clears the flag in App.vue, which unmounts the toast — kept up there so a dismissal sticks.
   dismissCancelled: []
 }>()
 
@@ -50,8 +48,8 @@ const isGm = computed(() => props.state.gmClientId === clientId)
 const roomCode = new URLSearchParams(location.search).get('room') ?? ''
 
 // ── Name editing ─────────────────────────────────────────────────────────────
-// Everyone can set their display name here. The server seeds a random word-pair
-// (App.vue) when none was chosen, so this field is pre-filled and editable.
+// Everyone can set their display name here. The server seeds a random word-pair when
+// none was chosen, so this field is pre-filled and editable.
 
 const myName = computed(() =>
   props.state.players.find(p => p.clientId === clientId)?.name ?? '',
@@ -59,8 +57,8 @@ const myName = computed(() =>
 const nameDraft = ref(myName.value)
 const renaming = ref(false)
 
-// Keep the draft in sync if the server echoes a different name (e.g. another
-// tab renamed us) — but don't clobber what the user is actively typing.
+// Keep the draft in sync if the server echoes a different name — but don't clobber what
+// the user is actively typing.
 watch(myName, (name) => {
   if (!renaming.value)
     nameDraft.value = name
@@ -83,15 +81,12 @@ function onRenameKey(e: KeyboardEvent) {
 }
 
 // ── Avatar shape ─────────────────────────────────────────────────────────────
-// Browser-local (`pixmaler:shape`) so it follows the player into future rooms,
-// and echoed through the server so *other* people see it. LOBBY-only, enforced
-// server-side for the same reason as rename: the chip shows up in RESULTS.
+// Browser-local (`pixmaler:shape`) so it follows the player into future rooms, echoed
+// through the server so others see it. LOBBY-only, enforced server-side: the chip shows in RESULTS.
 
-// The viewer's own seat, so each option previews in their real colour and
-// initial rather than a generic swatch. `null` when this client isn't in
-// `players` yet — a state push triggered by someone else can land between our
-// socket opening and the server handling our own `join`, and hiding the picker
-// for that frame beats rendering a wrong colour.
+// The viewer's own seat, so each option previews in their real colour and initial. `null`
+// when this client isn't in `players` yet — a state push can land before the server handles
+// our `join`, and hiding the picker for that frame beats a wrong colour.
 const mySeat = computed(() => {
   const i = props.state.players.findIndex(p => p.clientId === clientId)
   return i < 0 ? null : seatFor(i, props.state.players[i])
@@ -103,24 +98,18 @@ function pickShape(shape: AvatarShape) {
   socket.send(JSON.stringify({ type: 'shape', shape } satisfies ClientMsg))
 }
 
-// Persist only what the server has actually accepted. Writing on click instead
-// would durably store a shape the server may refuse — the reachable case is the
-// phase flipping to DRAWING before this client hears about it — and that value
-// would then be re-applied by the next `join`. `mySeat.shape` is echoed state, so
-// this only ever records a confirmed choice.
+// Persist only what the server has accepted. Writing on click would durably store a shape
+// the server may refuse (phase flips to DRAWING first) and re-apply on the next `join`.
+// `mySeat.shape` is echoed state, so this only records a confirmed choice.
 watch(() => mySeat.value?.shape, (shape) => {
   if (shape)
     setShape(shape)
 }, { immediate: true })
 
-// The GM's own chip + name, for the non-GM waiting line: it turns "waiting for
-// the GM" into waiting for a specific person you can already see in the roster
-// directly above, matched by colour and silhouette. `null` if the GM isn't in
-// `players` yet, in which case the line falls back to naming the role.
-//
-// The **name is not optional here.** The chip is `aria-hidden` like every other
-// one, so if it carried the identity alone a screen reader would read "waiting
-// for to start…".
+// The GM's own chip + name, for the non-GM waiting line — waiting for a specific person you
+// can see in the roster above. `null` if the GM isn't in `players` yet, falling back to the role.
+// The name is not optional: the chip is `aria-hidden`, so alone a screen reader would read
+// "waiting for to start…".
 const gmSeat = computed(() => {
   const i = props.state.players.findIndex(p => p.clientId === props.state.gmClientId)
   if (i < 0)
@@ -143,8 +132,7 @@ async function copyLink() {
     copyTimer = setTimeout(() => { copied.value = false }, 2000)
   }
   catch {
-    // Clipboard API can fail (insecure context / denied) — no-op, the code is
-    // still visible for manual copying.
+    // Clipboard API can fail (insecure context / denied) — no-op, the code is still visible.
   }
 }
 
@@ -169,10 +157,8 @@ function onResult(result: PipelineResult) {
   imageReady.value = true
 }
 
-// Mirror of the server's gate (`handleStart`), which stays authoritative. The
-// count is always real; only the *blocking* is lifted in dev, matching the
-// worker's PIXMALER_DEV=1 escape hatch so `pnpm dev` stays solo-testable. The
-// hint still renders there, so the gate is visible while it's being bypassed.
+// Mirror of the server's gate (`handleStart`), which stays authoritative. The count is
+// always real; only the blocking is lifted in dev, so the hint still shows the gate.
 const MIN_PLAYERS = 2
 
 const missingPlayers = computed(() => {
@@ -206,9 +192,8 @@ function startGame() {
   socket.send(JSON.stringify({ type: 'gm:start' } satisfies ClientMsg))
 }
 
-// Ends the whole session, not just the round — everyone lands on the closed screen
-// and the room code is released. Always confirmed: it is irreversible and it acts
-// on everybody, so there is no state in which the warning is untrue.
+// Ends the whole session, not just the round — everyone lands on the closed screen and the
+// code is released. Always confirmed: irreversible and acts on everybody.
 async function endSession() {
   if (!await askConfirm('End the session for everyone? The room closes and this code is released.'))
     return
@@ -216,18 +201,12 @@ async function endSession() {
 }
 
 // ── Non-GM target preview ────────────────────────────────────────────────────
-//
-// PixelCanvas is imperative, so we render it into a slot div and rebuild on
-// config change. (Re-watching by reference works because App.vue replaces the
-// whole `state` ref on each server message, which means `state.config` becomes
-// a new object reference too.)
+// PixelCanvas is imperative, so we render it into a slot div and rebuild on config change.
+// (App.vue replaces the whole `state` ref per message, so `state.config` is a new object.)
 
 const previewSlot = useTemplateRef<HTMLDivElement>('previewSlot')
 
-// Only the canvas is built here now — the label lives in the template, where it can
-// carry a class. It used to be a `document.createElement('p')` with no class at all,
-// leaning on a `:deep(p)` rule that never matched: `_lobby.scss` is a global partial,
-// so `:deep()` is not a selector the browser understands.
+// Only the canvas is built here — the label lives in the template so it can carry a class.
 function renderPreview(config: State['config'], grid: number[] | null) {
   if (!previewSlot.value)
     return
@@ -245,21 +224,10 @@ function renderPreview(config: State['config'], grid: number[] | null) {
   previewSlot.value.replaceChildren(previewPc.canvas)
 }
 
-// `previewSlot` and `isGm` are watch **sources**, not just values read inside — that is
-// the whole fix. Previously only `config` was watched:
-//
-//   - `immediate: true` fires during `setup()`, before mount, so the very first run saw
-//     `previewSlot.value === null` and bailed. (`flush: 'post'` governs reactive
-//     re-triggers, not the immediate invocation.)
-//   - Nothing re-ran when the ref populated, because the ref was dereferenced inside
-//     the callback rather than tracked.
-//   - So it stayed empty until `config`'s *identity* changed — and since the server
-//     sends `config` inside every `state` message, each one a fresh `JSON.parse`, any
-//     unrelated push (a join, a rename, a shape change) was what finally drew it.
-//
-// Tracking the ref also fixes GM transfer, which the old version got wrong too: the
-// `v-else` branch mounts, the slot appears, and no `config` change accompanies it.
-// Same shape as `Drawing.vue`'s spectator-canvas watcher, which had it right.
+// `previewSlot` and `isGm` are watch sources, not just values read inside: the callback must
+// re-run when the slot ref populates (before mount `previewSlot.value` is null) and when GM
+// transfer mounts the `v-else` branch with no accompanying `config` change. Same shape as
+// `Drawing.vue`'s spectator-canvas watcher.
 watch(
   [() => props.state.config, () => props.targetGrid, isGm, previewSlot],
   () => {
@@ -346,8 +314,8 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <PlayerList :players="state.players" :gm-client-id="state.gmClientId" />
-        <!-- GM sees the tagline here, under the roster. Non-GMs get it beside
-             the "waiting for GM" line instead (below), where their eyes are. -->
+        <!-- GM sees the tagline here, under the roster. Non-GMs get it beside the
+             "waiting for GM" line instead (below), where their eyes are. -->
         <Tagline v-if="isGm" class="lobby__tagline" />
       </aside>
 
@@ -390,8 +358,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="lobby__preview">
             <!-- The placeholder reserves the space so an unconfigured preview reads as
-                 waiting rather than broken. That ambiguity is part of why the render
-                 race this replaced went unnoticed — an empty box looked normal. -->
+                 waiting rather than broken. -->
             <p class="lobby__preview-label">
               <template v-if="state.config">
                 Target image ({{ state.config.gridW }}×{{ state.config.gridH }}):

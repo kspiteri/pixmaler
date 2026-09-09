@@ -1,11 +1,8 @@
 <script setup lang="ts">
-// The display-name field, used everywhere a player names themselves (Entry, the name
-// gate, the lobby rename). One reusable unit so the placeholder and the "randomise"
-// dice — the pseudonym nudge (#44) — are identical at every site. Data-minimisation by
-// design: a random word-pair is one tap away, so a real name is never the easy path.
-//
-// `inheritAttrs: false` + `v-bind="$attrs"` on the <input> so a host can still pass
-// native bits straight through to the field (autofocus, @blur, @keydown, …).
+// The display-name field, used everywhere a player names themselves (Entry, the name gate,
+// the lobby rename). One reusable unit so the placeholder and the "randomise" dice — a
+// data-minimisation nudge — are identical at every site. `inheritAttrs: false` +
+// `v-bind="$attrs"` on the <input> routes native bits (autofocus, @blur, @keydown) to it.
 
 import { Dices } from '@lucide/vue'
 import { useId, useTemplateRef } from 'vue'

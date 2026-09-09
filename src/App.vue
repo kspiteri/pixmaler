@@ -1,8 +1,6 @@
 <script setup lang="ts">
-// Router (entry / paint / room). The room connection and the server-message dispatch
-// live in `lib/useRoom`; this file resolves the route and feeds the returned room state
-// into the phase views. Descendants get `socket` and `clientId` by provide (from
-// useRoom); the reactive room state comes down as props.
+// Router (entry / paint / room). Resolves the route and feeds the room state from
+// `lib/useRoom` into the phase views; descendants get `socket`/`clientId` by provide.
 
 import AlertDialog from './components/AlertDialog.vue'
 import PhaseBoundary from './components/PhaseBoundary.vue'
@@ -16,8 +14,7 @@ import Results from './views/phases/Results.vue'
 import Voting from './views/phases/Voting.vue'
 import NameGate from './views/rooms/NameGate.vue'
 import SessionClosed from './views/rooms/SessionClosed.vue'
-// Hidden debug route (/taglines) — not linked anywhere; for reading the full
-// tagline set in bulk.
+// Hidden debug route (/taglines), not linked anywhere.
 import Taglines from './views/Taglines.vue'
 
 // ── Routing ──────────────────────────────────────────────────────────────────
@@ -25,12 +22,11 @@ import Taglines from './views/Taglines.vue'
 const roomCode = new URLSearchParams(location.search).get('room')
 const path = location.pathname.replace(/\/+$/, '')
 const isPaintRoute = path.endsWith('/paint')
-// Hidden debug page — read all taglines in bulk. Not linked from anywhere.
+// Hidden debug page — read all taglines in bulk.
 const isTaglinesRoute = path.endsWith('/taglines')
 const route = isTaglinesRoute ? 'taglines' : isPaintRoute ? 'paint' : roomCode ? 'room' : 'entry'
 
-// Connect only on the room route; useRoom leaves its state inert off it (a `?room=`
-// on /paint or /taglines resolves to those routes first, so it passes null here).
+// Connect only on the room route; useRoom leaves its state inert off it.
 const {
   state,
   gallery,
@@ -53,7 +49,7 @@ const {
   <Taglines v-else-if="route === 'taglines'" />
 
   <template v-else-if="route === 'room'">
-    <!-- Session closed: when a game-session has been closed by a GM or timeout -->
+    <!-- Session closed by a GM or timeout. -->
     <SessionClosed v-if="sessionClosed" />
 
     <!-- Name gate: shown before connecting when the player has no stored name -->
@@ -64,20 +60,15 @@ const {
     </div>
 
     <template v-else>
-      <!-- Connection banner: once we've loaded state, a drop shows here rather
-           than freezing silently. partysocket auto-reconnects (reclaims the slot
-           by clientId), so this is usually a brief blip. Condition-bound and
-           self-clearing, so it carries no dismiss control. -->
+      <!-- Connection banner: a drop shows here rather than freezing silently.
+           partysocket auto-reconnects; self-clearing, so no dismiss control. -->
       <div v-if="connectionStatus === 'reconnecting'" class="conn-banner" role="status">
         Reconnecting…
       </div>
 
-      <!-- Keyed by phase so the boundary remounts when the server moves the room on,
-           which clears a captured error. Without that reset a crash in DRAWING would
-           still be showing its fallback through VOTING and RESULTS - the same
-           forgotten-reset shape as the per-round flags on the server. The banner above
-           sits outside it deliberately: connection state is exactly what a player
-           wants to see while a view is broken. -->
+      <!-- Keyed by phase so the boundary remounts when the room moves on, clearing
+           a captured error. The banner above sits outside it: connection state is
+           what a player wants to see while a view is broken. -->
       <PhaseBoundary :key="state.phase">
         <Lobby
           v-if="state.phase === 'LOBBY'"
@@ -114,10 +105,8 @@ const {
     </template>
   </template>
 
-  <!-- The app's only dialog instance (lib/dialog.ts). App-global — mounted on every
-       route, not just in a room — so `askConfirm`/`askAlert` work from the settings menu
-       on Entry/Paint too (e.g. "Clear my data"). Keyed so each request mounts a fresh
-       <dialog>; outside the phase chain so it survives a phase change. -->
+  <!-- The app's only dialog instance (lib/dialog.ts), app-global so `askConfirm`/
+       `askAlert` work everywhere. Keyed for a fresh <dialog>; outside the phase chain. -->
   <AlertDialog
     v-if="currentDialog"
     :key="currentDialog.id"

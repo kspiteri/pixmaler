@@ -1,7 +1,6 @@
-// Colour science for the image pipeline: hex conversion, RGB distance, median-cut
-// palette derivation, near-duplicate merging, and the swatch's display order. Split
-// out of `pipeline.ts`, which was also doing image geometry. Nothing here knows about
-// canvases, grids or cells, which is what makes it testable without a DOM.
+// Colour science for the image pipeline: hex conversion, RGB distance, median-cut palette
+// derivation, near-duplicate merging, and the swatch's display order. Nothing here knows
+// about canvases, grids or cells, which is what makes it testable without a DOM.
 
 // 0-255 per channel, no alpha — a target is fully opaque.
 export type Rgb = [number, number, number]

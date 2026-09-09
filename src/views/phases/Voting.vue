@@ -1,9 +1,6 @@
 <script setup lang="ts">
-// VOTING phase — anonymised gallery. Click a thumbnail to cast a vote;
-// click another to change it. The server allows re-votes during VOTING.
-//
-// Tallies are intentionally hidden until RESULTS — broadcasting running
-// counts would influence later voters and ruin the social tension.
+// VOTING phase — anonymised gallery. Click a thumbnail to cast a vote; click another
+// to change it. Tallies stay hidden until RESULTS — running counts would sway voters.
 
 import type { ClientMsg, ServerMsg, Submission, VoteCategory } from '../../lib/types'
 import { CircleSlash } from '@lucide/vue'
@@ -21,21 +18,17 @@ const props = defineProps<{
   gmClientId: string
   votedCount: number
   totalVoters: number
-  // Echoed by the server on (re)join during VOTING — this voter's own picks, so
-  // a reconnecting player sees their votes restored instead of a blank slate.
+  // Echoed by the server on (re)join during VOTING — this voter's own picks restored.
   voteState: VoteState | null
-  // The VOTING backstop's expiry (party/server.ts, DEFAULT_VOTING_MS). Generous and
-  // normally unreachable, so it is surfaced only in the final stretch — a clock on
-  // the whole phase would make voting feel raced, which it isn't meant to be.
+  // The VOTING backstop's expiry (party/server.ts). Generous and normally unreachable,
+  // so surfaced only in the final stretch.
   deadline: number | null
-  // Joined mid-round: they see the gallery but don't judge it. The server already
-  // refuses their `vote:cast` and leaves them out of the tally, so this only
-  // decides what they see.
+  // Joined mid-round: sees the gallery but doesn't judge it. The server refuses their
+  // `vote:cast`, so this only decides what they see.
   spectating: boolean
 }>()
 
-// Resolve a `public/`-hosted asset path against Vite's `base` (e.g.
-// `/pixmaler/`) so absolute URLs don't skip the base and 404.
+// Resolve a `public/`-hosted asset path against Vite's `base` so it doesn't 404.
 function iconUrl(path: string): string {
   return `${import.meta.env.BASE_URL}${path}`
 }
@@ -48,21 +41,18 @@ const clientId = inject(clientIdKey)!
 
 const isGm = computed(() => props.gmClientId === clientId)
 
-// Every submission in a room shares the GM's single image dimensions, so one
-// aspect ratio drives all the thumbnail slots. Falls back to 1 (square) until
-// the gallery lands. Drives `--art-ratio` on the root; slots read it via
-// `aspect-ratio` so non-square images aren't squished.
+// Every submission shares the GM's image dimensions, so one aspect ratio drives all
+// thumbnail slots (via `--art-ratio`). Falls back to 1 (square) until the gallery lands.
 const artRatio = computed(() =>
   props.gallery ? artRatioFor(props.gallery.gridW, props.gallery.gridH) : '1 / 1',
 )
 
-// Countdown for the backstop. A 1 s interval is plenty — this is a warning, not the
-// drawing phase's frame-accurate clock, so no rAF. `null` until the final stretch,
-// which is what keeps it out of the way for the whole normal phase.
+// Countdown for the backstop. A 1 s interval is plenty — a warning, not a frame-accurate
+// clock. `null` until the final stretch, keeping it out of the way for the normal phase.
 const WARN_AT_SECONDS = 30
 const secondsLeft = ref<number | null>(null)
-// Announced into the hidden live region in the status bar at 30/10 then the last five
-// seconds — never per second, which the visible clock previously did for a full 30 s (#10).
+// Announced into the hidden live region at 30/10 then the last five seconds — never per
+// second.
 const countdownAnnounce = useCountdownAnnounce(secondsLeft, [30, 10, 5, 4, 3, 2, 1])
 let tick: ReturnType<typeof setInterval> | undefined
 
@@ -80,15 +70,11 @@ onMounted(() => {
   tick = setInterval(readClock, 1000)
 })
 onBeforeUnmount(() => clearInterval(tick))
-// The GM can extend nothing here, but the deadline still moves on a rejoin (the
-// server re-sends it), so re-read rather than trusting the mount-time value.
+// Deadline still moves on a rejoin (server re-sends), so re-read on change.
 watch(() => props.deadline, readClock)
 
-// Per-client gallery order. The drawings are shuffled locally so no two players
-// see the same arrangement (purely cosmetic — votes carry the submissionId, so
-// order is irrelevant to the server). Frozen per round: we only reshuffle when
-// the *set* of submissions changes, so a rejoin re-send doesn't scramble the
-// cards mid-vote.
+// Per-client gallery order, shuffled locally so no two players see the same arrangement
+// (cosmetic — votes carry the submissionId). Reshuffled only when the submission set changes.
 const ordered = ref<Submission[]>([])
 
 function shuffle<T>(input: T[]): T[] {
@@ -107,15 +93,12 @@ function sameSet(a: Submission[], b: Submission[]): boolean {
   return b.every(s => ids.has(s.submissionId))
 }
 
-// Everyone *present* has finished voting. Both sides of the fraction come from the
-// same population (`votingProgress` on the server), so this can un-fire when a
-// straggler reconnects — which is why the state lives in the status line rather
-// than a dialog.
+// Everyone present has finished voting. Both sides come from the same population, so this
+// can un-fire when a straggler reconnects — hence a status line, not a dialog.
 const allVoted = computed(() => props.totalVoters > 0 && props.votedCount >= props.totalVoters)
 
-// The only way out of the phase, so a misclick ruins the round — but the warning is
-// only *true* while someone can still be cut off. Once everyone has voted there is
-// nobody left to not count, so asking would be confirming an impossible consequence.
+// The only way out of the phase; the warning is only true while someone can still be cut
+// off, so it's suppressed once everyone has voted.
 async function stopVoting() {
   if (!allVoted.value && !await askConfirm('End voting now? Anyone who hasn\'t finished voting won\'t be counted.'))
     return
@@ -123,9 +106,7 @@ async function stopVoting() {
   socket.send(JSON.stringify(msg))
 }
 
-// Unconditionally confirmed, unlike stopVoting above: that suppresses its dialog
-// once everyone has voted because the warning stops being true, whereas cancelling
-// always destroys work everyone else did. Nothing makes that consequence untrue.
+// Always confirmed, unlike stopVoting: cancelling always destroys everyone's work.
 async function cancelRound() {
   if (!await askConfirm('Cancel this round? Everyone goes back to the lobby and the drawings are lost.'))
     return
@@ -133,18 +114,16 @@ async function cancelRound() {
   socket.send(JSON.stringify(msg))
 }
 
-// Local-only — not echoed by the server during VOTING. One submissionId per
-// category (null until cast). We trust our own optimistic update because the
-// server only rejects self-votes / wrong-phase / unknown categories.
+// Local-only — not echoed during VOTING. One submissionId per category (null until cast);
+// we trust the optimistic update since the server only rejects invalid votes.
 const myVotes = ref<Record<VoteCategory, string | null>>({ funniest: null, best: null })
 
 function emptyVotes(): Record<VoteCategory, string | null> {
   return { funniest: null, best: null }
 }
 
-// Rehydrate my picks from the server's echo on (re)join. Only fills categories
-// the server reported — never clobbers a fresh optimistic vote with stale null.
-// `immediate` so a reconnect that lands before this view mounts still applies.
+// Rehydrate my picks from the server's echo on (re)join, filling only reported categories.
+// `immediate` so a reconnect before mount still applies.
 watch(() => props.voteState, (vs) => {
   if (!vs)
     return
@@ -155,29 +134,25 @@ watch(() => props.voteState, (vs) => {
   }
 }, { immediate: true })
 
-// Which of my category votes have landed on a given submission — drives the
-// stickers shown on that card.
+// Which of my category votes landed on a given submission — drives its stickers.
 function votedCategoriesFor(submissionId: string) {
   return VOTE_CATEGORIES.filter(c => myVotes.value[c.id] === submissionId)
 }
 
-// True once every category has a vote — players know they're done.
+// True once every category has a vote.
 const allCast = computed(() => VOTE_CATEGORIES.every(c => myVotes.value[c.id] !== null))
 
-// Track PixelCanvas instances so we can dispose them when the gallery changes
-// or this view unmounts. Each instance owns mouse handlers; orphaning them
-// without cleanup leaks listeners on the canvas elements.
+// Track PixelCanvas instances to dispose them when the gallery changes or this view
+// unmounts. Each owns mouse handlers; orphaning them leaks listeners.
 let canvases: PixelCanvas[] = []
 
 function disposeCanvases() {
-  // PixelCanvas listeners are attached to the canvas element it owns; once
-  // the element is removed from the DOM the listeners can't fire anyway.
-  // Dropping references is enough.
+  // Listeners live on the canvas element; once it leaves the DOM they can't fire, so
+  // dropping references is enough.
   canvases = []
 }
 
-// Mount each submission's canvas into its slot. Re-runs whenever the gallery
-// reference changes (new round = different submissions).
+// Mount each submission's canvas into its slot. Re-runs when the gallery changes.
 function mountCanvases(slots: Map<string, HTMLElement>) {
   if (!props.gallery)
     return
@@ -198,8 +173,7 @@ function mountCanvases(slots: Map<string, HTMLElement>) {
   }
 }
 
-// Slots keyed by submissionId — bound via the :ref function-form below so
-// Vue calls back with each <div> as it mounts.
+// Slots keyed by submissionId — bound via the :ref function-form below.
 const slotMap = new Map<string, HTMLElement>()
 function setSlot(submissionId: string, el: unknown) {
   if (el instanceof HTMLElement)
@@ -207,30 +181,25 @@ function setSlot(submissionId: string, el: unknown) {
   else slotMap.delete(submissionId)
 }
 
-// A wiped canvas is in the gallery so the reveal can acknowledge its author, but it
-// is not a candidate — there is nothing on it to judge, and the server refuses a
-// vote for one. Filtered out here rather than server-side so RESULTS still receives
-// it: this is the only screen where an unvotable card would be dead weight.
+// A wiped canvas rides along so the reveal can acknowledge its author, but it's not a
+// candidate. Filtered here, not server-side, so RESULTS still receives it.
 function isBlank(sub: Submission): boolean {
   return sub.grid.every(cell => cell === -1)
 }
 
-// How many drew and then wiped it. Stated in the header so the count people voted
-// on matches the count they see on the reveal — otherwise an extra entry appears
-// from nowhere and reads as "was there a card I couldn't see?".
+// How many drew then wiped it. Stated in the header so the count voted on matches the
+// count shown on the reveal.
 const wipedCount = computed(() => (props.gallery?.submissions ?? []).filter(isBlank).length)
 
 watch(() => props.gallery, async () => {
   const subs = (props.gallery?.submissions ?? []).filter(s => !isBlank(s))
-  // Reshuffle only on a genuinely new submission set (new round); a rejoin
-  // re-send of the same set keeps the existing order so cards don't jump.
+  // Reshuffle only on a genuinely new submission set; a rejoin keeps the order.
   if (!sameSet(ordered.value, subs)) {
     ordered.value = shuffle(subs)
     myVotes.value = emptyVotes()
   }
-  // Wait two ticks: the first lets Vue patch the DOM (including :ref
-  // callbacks that populate slotMap), the second is belt-and-braces in
-  // case the v-if="gallery" gate causes a second patch pass.
+  // Wait two ticks: the first lets Vue patch the DOM (including :ref callbacks that
+  // populate slotMap), the second covers a second patch from the v-if gate.
   await nextTick()
   await nextTick()
   mountCanvases(slotMap)
@@ -239,15 +208,13 @@ watch(() => props.gallery, async () => {
 onBeforeUnmount(disposeCanvases)
 
 function castVote(category: VoteCategory, submissionId: string) {
-  // Self-vote guard mirrors the server's; let the click do nothing rather
-  // than triggering a server "Cannot vote for yourself" error.
+  // Self-vote guard mirrors the server's; let the click do nothing.
   if (submissionId === clientId)
     return
-  // No-op if this category already points here (avoids a redundant send).
+  // No-op if this category already points here.
   if (myVotes.value[category] === submissionId)
     return
-  // A category vote can move between cards but isn't withdrawable — the server
-  // has no "unvote" and auto-end counts each cast category once.
+  // A category vote can move between cards but isn't withdrawable — the server has no unvote.
   myVotes.value = { ...myVotes.value, [category]: submissionId }
   const msg: ClientMsg = { type: 'vote:cast', category, submissionId }
   socket.send(JSON.stringify(msg))
@@ -260,10 +227,8 @@ function castVote(category: VoteCategory, submissionId: string) {
       <span class="voting__tally" :class="{ 'voting__tally--complete': allVoted }" role="status">
         {{ allVoted ? 'the votes are in…' : `${votedCount} of ${totalVoters} voted` }}
       </span>
-      <!-- Only present in the final stretch, so it reads as a warning rather than a
-           clock. The visible number stays silent; the hidden live region below reads it
-           aloud at intervals instead, so it isn't sight-only yet doesn't re-read every
-           second the way a `role="status"` on this span used to (#10). -->
+      <!-- Only present in the final stretch, so it reads as a warning rather than a clock.
+           The visible number stays silent; the hidden live region reads it aloud instead. -->
       <span v-if="secondsLeft !== null" class="voting__clock">
         {{ secondsLeft }}s to vote
       </span>
@@ -311,20 +276,15 @@ function castVote(category: VoteCategory, submissionId: string) {
             ><img :src="iconUrl(c.icon)" :alt="c.label" class="voting__hint-icon"></span>
           </template>
         </p>
-        <!-- Only when somebody wiped. Keeps the count people vote on equal to the
-             count on the reveal, so a blank entry there doesn't read as a card they
-             were never shown. Anonymous by design — the gallery is, and naming the
-             worst performer before a single vote is cast would be a partial leak. -->
+        <!-- Only when somebody wiped. Keeps the count voted on equal to the count on the
+             reveal. Anonymous by design — naming the worst performer would be a partial leak. -->
         <p v-if="wipedCount" class="voting__wiped">
           {{ ordered.length }} to judge — {{ wipedCount === 1 ? 'one player wiped theirs' : `${wipedCount} players wiped theirs` }}
         </p>
       </header>
 
-      <!-- `ordered.length`, not just `gallery`: a truthy gallery message with zero
-           submissions rendered a 0-height grid under the heading — a void, with no
-           fallback, because the `v-else` below only covers "no gallery yet". The
-           server now skips VOTING entirely when nobody drew, so this is unreachable
-           by design; it stays guarded so the hole can't come back. -->
+      <!-- `ordered.length`, not just `gallery`: a truthy gallery with zero submissions
+           rendered a 0-height void. Unreachable now, kept guarded so the hole can't return. -->
       <div v-if="gallery && ordered.length" class="voting__grid">
         <div
           v-for="sub in ordered"

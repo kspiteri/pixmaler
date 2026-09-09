@@ -1,9 +1,8 @@
 @use 'tokens' as *;
 @use 'chrome' as *;
 
-// SettingsMenu.vue — the trigger in every header plus its dropdown. The trigger mirrors
-// the old `.theme-toggle` (44px, bordered, `.pressable` since there's no fill to deepen);
-// the panel is a Chrome surface floating on `$shadow-2`.
+// SettingsMenu.vue — the header trigger plus its dropdown. Trigger is 44px, bordered,
+// `.pressable`; the panel is a Chrome surface floating on `$shadow-2`.
 
 .settings-menu {
   position: relative;
@@ -35,7 +34,7 @@
 
   &__panel {
     position: absolute;
-    // Anchored under the trigger's right edge — the button lives top-right in every header.
+    // Anchored under the trigger's right edge.
     top: calc(100% + #{$gap-2});
     right: 0;
     z-index: 20;
@@ -141,8 +140,7 @@
     font-variant-numeric: tabular-nums;
   }
 
-  // Entry is a centred hero with no bar, so the menu anchors to the page corner
-  // (the role the old `.theme-toggle--corner` played).
+  // Entry is a centred hero with no bar, so the menu anchors to the page corner.
   &--corner {
     position: absolute;
     top: $gap-4;

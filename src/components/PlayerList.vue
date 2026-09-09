@@ -1,10 +1,7 @@
 <script setup lang="ts">
-// Player list — one row per player: avatar chip, name, GM pill, and an optional
-// "Make GM" transfer button when the viewer is the GM and the row is for a
-// connected non-self player.
-//
-// Styles live in `styles/_player-list.scss`, not here: it's static chrome with
-// nothing that needs `:deep()`, so there was no reason for a scoped block.
+// Player list — one row per player: avatar chip, name, GM pill, and an optional "Make GM"
+// transfer button when the viewer is the GM and the row is a connected non-self player.
+// Styles live in `styles/_player-list.scss`.
 
 import type { ClientMsg, Player } from '../lib/types'
 import { computed, inject } from 'vue'
@@ -17,24 +14,16 @@ const props = defineProps<Props>()
 
 interface Props {
   players: Player[]
-  // The GM as recorded in server state. Compared to viewer's clientId to gate
-  // the "Make GM" button.
+  // The GM in server state, compared to the viewer's clientId to gate the "Make GM" button.
   gmClientId: string
 }
 const socket = inject(socketKey)!.value!
 const viewerClientId = inject(clientIdKey)!
 
-// Seat is the player's index — join order, stable for the room's life (see
-// `lib/seats.ts`). Paired up here so the template resolves it once per row
-// rather than once per binding.
-//
-// `i` is doing double duty: it is both the seat and the render position, and
-// that only holds while nothing reorders. Nothing does today, and the current
-// intent is to keep it that way — a kicked player (`13-technical.md` item 33)
-// would stay in place, exactly as an `[offline]` one does. **If that ever
-// changes**, map first and sort the paired result, never the other way round:
-// sorting `props.players` before the map re-seats every row below the moved one
-// and silently re-colours players mid-game.
+// Seat is the player's index — join order, stable for the room's life (see `lib/seats.ts`).
+// Paired up here so the template resolves it once per row. `i` doubles as seat and render
+// position, which only holds while nothing reorders. If that ever changes, map first and
+// sort the paired result — sorting `props.players` before the map re-seats every row below.
 const rows = computed(() =>
   props.players.map((p, i) => ({ player: p, seat: seatFor(i, p) })),
 )

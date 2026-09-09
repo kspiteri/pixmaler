@@ -11,29 +11,24 @@ export interface CanvasOptions {
   gridH: number
   palette: string[]
   targetGrid?: number[] // if provided, renders as the reference image
-  // Editable canvases only: seed the canvas with a drawing already in progress
-  // (rejoin mid-DRAWING). Ignored when `targetGrid` is set — a read-only
-  // reference canvas has no in-progress state.
+  // Editable canvases only: seed with a drawing already in progress (rejoin mid-DRAWING).
+  // Ignored when `targetGrid` is set.
   initialGrid?: number[]
   editable?: boolean // if false, read-only display (used for gallery/results)
   onUpdate?: (grid: number[]) => void
-  // Fires when the cursor moves to a different cell on an editable canvas, or
-  // null when the cursor leaves. Used to mirror the position to a reference
-  // canvas via `showMarker`.
+  // Fires when the cursor moves to a different cell (null on leave), to mirror it to a reference canvas.
   onHover?: (cell: { x: number, y: number } | null) => void
 }
 
 const CELL_SIZE = 14 // px per grid cell at 1× scale — scales up on large screens
 
-// Checkerboard for unpainted cells on **editable** canvases only. `$paper` is `#ffffff`
-// and the palette is median-cut from the GM's photo, so unpainted-as-transparent made
-// white paint identical to nothing at all — nobody could see their own strokes.
+// Checkerboard for unpainted cells on **editable** canvases only: on white `$paper`,
+// unpainted-as-transparent made white paint invisible against nothing.
 const EMPTY_LIGHT = '#ffffff'
 const EMPTY_DARK = '#f1f1f4'
 
-// Brush sizing (see `./aspect` — `brushMaxFor` / `defaultBrushFor`) scales with
-// grid resolution so the brush stays proportional to the image: small grids
-// still get a 1-cell brush, large ones get a usefully chunky one.
+// Brush sizing (see `./aspect`) scales with grid resolution so the brush stays proportional:
+// small grids get a 1-cell brush, large ones a chunkier one.
 
 export class PixelCanvas {
   readonly canvas: HTMLCanvasElement
@@ -66,12 +61,10 @@ export class PixelCanvas {
 
   constructor(opts: CanvasOptions) {
     this.opts = opts
-    // Brush range scales with grid resolution (see brushMaxFor/defaultBrushFor).
     this.brushMax = brushMaxFor(opts.gridW, opts.gridH)
     this.brushSize = defaultBrushFor(opts.gridW, opts.gridH)
-    // Read-only canvases render `targetGrid`. Editable canvases start blank
-    // (-1 = untouched, rendered transparent so the white background shows
-    // through) unless `initialGrid` restores a drawing in progress.
+    // Read-only canvases render `targetGrid`; editable ones start blank (-1 = untouched,
+    // rendered transparent) unless `initialGrid` restores a drawing in progress.
     const seed = opts.targetGrid ?? opts.initialGrid
     this.grid = seed
       ? [...seed]
@@ -86,8 +79,8 @@ export class PixelCanvas {
     if (opts.editable) {
       // White in both themes: untouched cells (-1) render transparent onto it.
       this.canvas.style.background = '#fff'
-      // The only edge this canvas gets — CanvasPair has no `.art-frame`. Themed, and
-      // inline `var()` resolves against `:root` like any other declaration.
+      // The only edge this canvas gets — CanvasPair has no `.art-frame`. Themed via inline
+      // `var()`, which resolves against `:root`.
       this.canvas.style.border = '1px solid var(--canvas-edge)'
     }
 
@@ -102,24 +95,21 @@ export class PixelCanvas {
   // ── Public API ─────────────────────────────────────────────────────────────
 
   // Untouched cells stay `-1` on the wire so read-only renderers draw them transparent,
-  // keeping submitted drawings looking like strokes on paper rather than filled onto
-  // `palette[0]`.
+  // keeping drawings as strokes on paper rather than filled onto `palette[0]`.
   getGrid(): number[] {
     return [...this.grid]
   }
 
-  // Notifies via `onUpdate`, exactly like a stroke or an `undo()`: its only callers are
-  // the destructive Clear actions, and both the wire state and any UI mirroring
-  // `canUndo()` have to catch up. Without it, clearing left the server on the old grid.
+  // Notifies via `onUpdate` like a stroke or `undo()` — its callers are the Clear actions,
+  // and the wire state must catch up or the server is left on the old grid.
   setGrid(grid: number[]) {
     this.grid = [...grid]
     this.render()
     this.opts.onUpdate?.(this.getGrid())
   }
 
-  // Fits the canvas's DISPLAY size to the available box, preserving the grid's aspect. The
-  // bitmap is untouched, so cells stay crisp and `cellAt` keeps mapping. The scale is NOT
-  // snapped to whole pixels per cell — flooring 2.818 to 2 lost 29% of the width.
+  // Fits the canvas's DISPLAY size to the box, preserving aspect (bitmap untouched, cells
+  // stay crisp). Scale is NOT snapped to whole px per cell — flooring 2.818 to 2 lost 29%.
   fitTo(availW: number, availH: number) {
     const { gridW, gridH } = this.opts
     if (gridW <= 0 || gridH <= 0 || availW <= 0 || availH <= 0)
@@ -164,9 +154,8 @@ export class PixelCanvas {
 
   // ── Undo ────────────────────────────────────────────────────────────────────
 
-  // Push the current grid onto the undo stack. Called automatically at the
-  // start of each paint stroke; can be called explicitly by callers before
-  // destructive operations like Clear so they're undoable too.
+  // Push the current grid onto the undo stack. Called at the start of each stroke, or
+  // explicitly before a destructive Clear so that's undoable too.
   pushUndoSnapshot() {
     this.undoStack.push([...this.grid])
     if (this.undoStack.length > PixelCanvas.UNDO_DEPTH)
@@ -198,9 +187,8 @@ export class PixelCanvas {
 
   // ── Rendering ──────────────────────────────────────────────────────────────
 
-  // Paint an unpainted cell's ground. On an editable canvas that is a checkerboard so
-  // white paint is distinguishable from nothing (see EMPTY_LIGHT/EMPTY_DARK); on a
-  // read-only one it stays transparent so `$paper` shows through as before.
+  // Paint an unpainted cell's ground: a checkerboard on an editable canvas (so white paint
+  // shows against nothing), transparent on a read-only one so `$paper` shows through.
   private paintEmptyCell(cx: number, cy: number) {
     const x = cx * CELL_SIZE
     const y = cy * CELL_SIZE
@@ -256,9 +244,9 @@ export class PixelCanvas {
       this.drawMarkerAt(cell.x, cell.y)
   }
 
-  // The crosshair spans the full canvas, so a restore repaints one column band and one
-  // row band, not a box. Uses `markerHalo` as recorded when the marker was *drawn* — a
-  // resize between draw and restore would otherwise leave a sliver of halo behind.
+  // The crosshair spans the full canvas, so a restore repaints one column band and one row
+  // band, not a box. Uses `markerHalo` as recorded at *draw* time — else a resize between
+  // draw and restore leaves a sliver of halo behind.
   private restoreMarkerArea(cx: number, cy: number) {
     const { gridW, gridH } = this.opts
     // `+ 1` covers the halo's outer edge, which strokes half outside the line's
@@ -280,17 +268,16 @@ export class PixelCanvas {
     }
   }
 
-  // A crosshair through the cell spanning both axes, driven by the editable canvas's
-  // hover. Not a box: inflated to stay visible on a shrunken reference one reached ~24
-  // cells wide, and `strokeRect` clipped it, pointing at a cell up to 6 off near edges.
+  // A crosshair through the cell spanning both axes, driven by the editable canvas's hover.
+  // Not a box: a `strokeRect` inflated to stay visible on a shrunken reference canvas clipped
+  // and pointed up to 6 cells off near the edges.
   private drawMarkerAt(cx: number, cy: number) {
     const ctx = this.ctx
     const cxPx = cx * CELL_SIZE + CELL_SIZE / 2
     const cyPx = cy * CELL_SIZE + CELL_SIZE / 2
 
-    // The reference canvas is CSS-scaled down hard (a 346-cell grid is a 4844px bitmap
-    // in a ~240px box), so a fixed *apparent* thickness must be expressed in canvas px.
-    // 1:1 before first layout, when the rect is still 0.
+    // The reference canvas is CSS-scaled down hard, so a fixed *apparent* thickness must be
+    // expressed in canvas px. 1:1 before first layout, when the rect is still 0.
     const displayW = this.canvas.getBoundingClientRect().width
     const ratio = displayW ? this.canvas.width / displayW : 1
     this.markerHalo = Math.max(2, Math.round(3 * ratio))
@@ -365,12 +352,11 @@ export class PixelCanvas {
     el.style.touchAction = 'none'
 
     // Unified Pointer Events (mouse + touch + pen in one path). `setPointerCapture` on
-    // pointerdown keeps every later move and up coming here even off-element, which is
-    // what fixed dragging off the canvas and back silently stopping the stroke.
+    // pointerdown keeps later moves and up coming here even off-element, so a drag off the
+    // canvas and back doesn't silently stop the stroke.
     el.addEventListener('pointerdown', (e) => {
       if (this.locked)
         return
-      // Capture this pointer so moves outside the element still reach us.
       try { el.setPointerCapture(e.pointerId) }
       catch { /* capture is best-effort; painting still works without it */ }
       this.pushUndoSnapshot()
@@ -396,9 +382,8 @@ export class PixelCanvas {
           this.opts.onHover?.(this.cursorCell)
         }
         else {
-          // Pen lifts off the paper: paint nothing while out (no edge-clamp smear) and
-          // reset the stroke, so re-entry starts a fresh segment instead of drawing across
-          // the gap. Capture still delivers these moves, so it resumes without a new click.
+          // Pen lifts off the paper: paint nothing while out (no edge-clamp smear) and reset
+          // the stroke, so re-entry starts a fresh segment rather than drawing across the gap.
           this.resetStroke()
           this.cursorCell = null
           this.opts.onHover?.(null)
@@ -426,8 +411,7 @@ export class PixelCanvas {
     el.addEventListener('pointercancel', endStroke)
 
     // Hides the hover preview only. An in-progress stroke is NOT ended — capture keeps
-    // delivering moves so a drag can come back in — and `pointermove` already handles
-    // painting nothing while out.
+    // delivering moves so a drag can come back in.
     el.addEventListener('pointerleave', () => {
       this.clearHover()
       if (!this.painting) {
@@ -437,9 +421,8 @@ export class PixelCanvas {
     })
   }
 
-  // Lightweight hover tracking for read-only canvases — fires `onHover` only,
-  // no preview/marker (read-only canvases are typically the destination of a
-  // marker driven by the editable canvas, not the source of one).
+  // Lightweight hover tracking for read-only canvases — fires `onHover` only, no
+  // preview/marker (they're the destination of a marker, not its source).
   private attachReadOnlyHover() {
     const el = this.canvas
     el.addEventListener('mousemove', (e) => {

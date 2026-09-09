@@ -1,24 +1,16 @@
-// Static layout for CanvasPair.vue — the canvas pair flex row and the floating
-// tools panel chrome. The component's `:deep()` rules and the `--sw` swatch var
-// must stay in its scoped block: `:deep()` only works there.
+// Static layout for CanvasPair.vue — the canvas-pair flex row and the floating tools
+// panel chrome. The component's `:deep()` rules and the `--sw` swatch var stay in its
+// scoped block.
 
 @use 'tokens' as *;
 @use 'chrome' as *;
 
-// ── Fixed fit-zoom shell (item 5, Pattern A) ─────────────────────────────────
-// Shared by DRAWING and /paint; `flex-direction` comes inline from `orientationFor`.
+// Fixed fit-zoom shell, shared by DRAWING and /paint; `flex-direction` comes inline from
+// `orientationFor`.
 .canvas-pair {
-  // The component root is a flex parent (CanvasPair.vue scoped); the row fills it.
-  //
-  // `min-width: 0` is load-bearing, not boilerplate. A flex item defaults to
-  // `min-width: auto`, meaning it refuses to shrink below its *content*. The
-  // editable canvas has an explicit pixel width (PixelCanvas.fitTo), so without
-  // this the row was pinned to the canvas's width and grew past its own parent —
-  // and `.drawing__body` clips overflow rather than scrolling it, so the
-  // rightmost columns of a wide grid became unreachable: the cursor stopped at
-  // the window edge, not the canvas edge, and the reference marker correctly
-  // reported a cell the player could not see they were on. Worst in the `column`
-  // orientation, where the row gets the full viewport width to overflow from.
+  // `min-width: 0` is load-bearing: a flex item defaults to `min-width: auto` and refuses
+  // to shrink below its content, so the row would pin to the canvas's explicit pixel width
+  // and overflow the clipped `.drawing__body`, leaving the rightmost columns unreachable.
   &__row {
     flex: 1;
     min-width: 0;
@@ -63,10 +55,8 @@
   left: 0;
   z-index: 100;
   width: 13rem;
-  // A compact tool overlay floating over a fixed pixel canvas — it stays at 100% text
-  // regardless of the text-size control, so it never outgrows its fixed width. Every
-  // `$fs-*` is `calc(… * var(--text-scale, 1))`, so pinning the var here opts the whole
-  // subtree out (S/M/L, the PALETTE label, the brush readout, the hint).
+  // Stays at 100% text regardless of the text-size control so it never outgrows its fixed
+  // width; pinning `--text-scale` opts the whole subtree out of the `$fs-*` scaling.
   --text-scale: 1;
   @include chrome($edge: $border);
   overflow: hidden;
@@ -153,8 +143,8 @@
   &__target {
     flex: 0 0 auto;
     display: flex;
-    // Centre the (now compact) reference against the taller controls column, so
-    // shrinking it doesn't leave a block of dead space beneath it.
+    // Centre the compact reference against the taller controls column, so shrinking it
+    // doesn't leave dead space beneath it.
     align-items: flex-start;
     align-self: center;
 
@@ -162,8 +152,7 @@
       display: block;
       width: auto;
       height: auto;
-      // A compact fixed thumbnail (#48 follow-up): the reference used to take ~34vw and
-      // dominate the docked bar. Smaller frees swatch width and shrinks the panel's own
+      // A compact fixed thumbnail: small frees swatch width and shrinks the panel's
       // footprint over the canvas; it stays the only reference on mobile, so not tiny.
       max-width: 5.5rem;
       max-height: 7rem;

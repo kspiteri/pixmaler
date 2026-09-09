@@ -54,10 +54,8 @@ function pick<T>(arr: readonly T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
-// Pick uniformly over the *slots* — each fixed line and each template category
-// is equally likely (a template then fills a random option). Matches the
-// original weighting, where a template counts as one slot regardless of how many
-// options it has.
+// Pick uniformly over the *slots* — each fixed line and each template category is equally
+// likely (a template then fills a random option), regardless of how many options it has.
 export function randomTagline(): string {
   const slot = Math.floor(Math.random() * (FIXED.length + TEMPLATES.length))
   if (slot < FIXED.length)

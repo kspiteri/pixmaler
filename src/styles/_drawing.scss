@@ -9,8 +9,8 @@
     font-weight: 700;
     font-size: fs(1.05rem); // off-rung; scales like the tokens
 
-    // A brief lift when the GM adds time. Standalone `scale`, not `transform`, for
-    // the same reason the tilt uses `rotate` — nothing here should clobber a press.
+    // A brief lift when the GM adds time. Standalone `scale`, not `transform`, so it never
+    // clobbers a press.
     &--added {
       animation: drawing-time-added 0.7s ease-out;
     }
@@ -21,11 +21,8 @@
     font-size: $fs-sm;
   }
 
-  // Narrow screens: drop the numeric countdown entirely. The full-width colour-coded
-  // progress ribbon at the top of the shell already shows time remaining and its urgency
-  // (lime → amber → red), so the number only duplicated it and crowded the bar (#48). The
-  // "X of Y ready" tally stays — it's unique info nothing else carries — just smaller and
-  // on one line. (Exact seconds are still shown on desktop, where there's room.)
+  // Narrow screens: drop the numeric countdown — the colour-coded progress ribbon already
+  // shows time remaining and urgency. The "X of Y ready" tally stays, just smaller.
   @media (max-width: $bp-mobile) {
     &__timer {
       display: none;
@@ -36,15 +33,10 @@
     }
   }
 
-  // Placement only — the look is `.toast` in the alert register. Overlaid rather
-  // than in flow because `.phase--fixed` has a hard height budget and the canvas
-  // takes what is left, so an element in the column would shrink the drawing area
-  // for a message that is usually absent.
-  //
-  // Pinned to the **top**, not the bottom. It was at the bottom first and read as an
-  // afterthought down by the browser chrome; the top is where the eye already goes
-  // for the clock, and on mobile the palette docks at the bottom so the top is the
-  // free edge.
+  // Placement only — the look is `.toast` in the alert register. Overlaid, not in flow,
+  // because `.phase--fixed` has a hard height budget and an in-column element would shrink
+  // the drawing area for a message usually absent. Pinned to the top, where the eye goes
+  // for the clock and the free edge on mobile (the palette docks at the bottom).
   &__blank-warn {
     position: absolute;
     inset-inline: $gap-4;

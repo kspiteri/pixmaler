@@ -4,8 +4,7 @@
 // and logo come from PhaseLayout; the room copy-link button sits in its status slot.
 
 .lobby {
-  // Compact, to match the room-code control it sits beside rather than `.btn`'s
-  // default — the lobby status bar is a thin strip.
+  // Compact, to match the room-code control it sits beside — the lobby status bar is thin.
   &__end {
     padding: 0.25rem 0.625rem;
     font-size: $fs-xs;
@@ -42,12 +41,9 @@
     // Sits with the code, not on the text baseline of the display font above it.
     flex-shrink: 0;
   }
-  // The "Room:" prefix is a nicety, not information — the code and copy icon carry the
-  // control on their own, so it's the first thing to go when the bar gets tight (#48).
-  // The code then truncates within a cap rather than wrapping to a second line and pushing
-  // the bar taller: a long word-pair (cloudy-brush) ellipsises, a short one shows whole.
-  // The full code stays reachable — the button's aria-label/title, the URL, the join
-  // screen — so nothing shareable is lost, only the on-screen echo is trimmed.
+  // The "Room:" prefix is a nicety, not information, so it's the first thing to go when the
+  // bar gets tight. The code then truncates within a cap rather than wrapping taller; the
+  // full code stays reachable via the button's aria-label, the URL and the join screen.
   @media (max-width: $bp-mobile) {
     &__room-label {
       display: none;
@@ -71,16 +67,15 @@
   &__shape {
     margin-bottom: $gap-4;
   }
-  // One row, always: six fixed 44px targets would need 304px but the aside is
-  // ~231px, so the cells flex — ~48px where it goes full-width, ~35px on desktop.
+  // One row, always: the six 44px targets flex to fit the ~231px aside.
   &__shapes {
     display: grid;
     grid-template-columns: repeat(6, minmax(1.75rem, 1fr));
     gap: $gap-1;
     margin-top: $gap-2;
   }
-  // No chrome: the chip *is* the control (selection = opacity + size step), but the
-  // `aspect-ratio` cell still gives 54px. Keep `border-radius`: it shapes the focus ring.
+  // No chrome: the chip *is* the control (selection = opacity + size step). Keep
+  // `border-radius`: it shapes the focus ring.
   &__shape-btn {
     display: inline-flex;
     align-items: center;
@@ -92,8 +87,8 @@
     background: none;
     cursor: pointer;
 
-    // Fade the **chip**, not the button — button opacity composites its own
-    // `:focus-visible` ring too, cutting its contrast ~4x for keyboard users.
+    // Fade the **chip**, not the button — button opacity would composite its
+    // `:focus-visible` ring too.
     .avatar {
       opacity: 0.45;
       transition:

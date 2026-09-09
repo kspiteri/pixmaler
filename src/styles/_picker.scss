@@ -12,9 +12,8 @@
 
   &__card {
     flex: 1 1 320px;
-    // Shrink below the 320px basis when the column is narrower than that (stacked lobby /
-    // Paint on a phone). Without this the card floors at its min-content and scrolls the
-    // panel sideways; the rows inside already wrap or shrink, so 0 is safe.
+    // Shrink below the 320px basis on a narrow (stacked) column; without it the card floors
+    // at min-content and scrolls the panel sideways.
     min-width: 0;
     @include chrome;
     padding: $gap-4;
@@ -47,10 +46,8 @@
 
   &__scale {
     flex: 1;
-    // A range input's default `min-width: auto` is its intrinsic ~129px, which — with the
-    // 7rem readout beside it — kept the whole Scale row from shrinking and blew the picker
-    // wider than a phone in the stacked lobby/Paint layout (horizontal scroll). Let it
-    // shrink; a short slider still drags fine.
+    // A range input's default `min-width: auto` is its intrinsic ~129px, which blew the
+    // picker wider than a phone in the stacked layout. Let it shrink.
     min-width: 0;
     accent-color: $primary;
   }
@@ -117,9 +114,8 @@
     }
   }
 
-  // Background choices. Same visual language as the paint palette's swatch cells —
-  // circular, ringed, the selected one ringed white and nudged up — so a colour button
-  // reads the same wherever it appears.
+  // Background choices, same swatch language as the paint palette — circular, ringed, the
+  // selected one ringed white and nudged up.
   &__bg-list {
     display: flex;
     gap: $gap-2;

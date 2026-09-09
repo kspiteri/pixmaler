@@ -1,11 +1,7 @@
 <script setup lang="ts">
-// A generic two-state switch: a sliding pill flanked by an "off" and an "on" side,
-// with the active side brightened. Presentation only — it owns the pill, the knob and
-// the press, and knows nothing about what it toggles. Bind `v-model` and fill the two
-// slots (`#off`, `#on`) with whatever labels or icons the state means.
-//
-// First extracted for the theme switch (`ThemeToggle.vue`); reusable for any on/off
-// control (a future audio mute, a per-room setting, …).
+// A generic two-state switch: a sliding pill flanked by an "off" and an "on" side, the
+// active side brightened. Presentation only — it owns the pill, knob and press and knows
+// nothing about what it toggles. Bind `v-model` and fill the `#off`/`#on` slots.
 
 defineProps<{
   modelValue: boolean

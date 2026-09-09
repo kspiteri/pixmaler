@@ -10,7 +10,7 @@
     color: $fg-50;
     font-size: $fs-sm;
     text-decoration: none;
-    // Was missing, so this hover snapped while `.paint__back`'s eased.
+    // Eased hover, matching `.paint__back`.
     transition: color 0.15s;
 
     &:hover {

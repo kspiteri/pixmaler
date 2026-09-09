@@ -1,16 +1,11 @@
 <script setup lang="ts">
 // The name gate — shown on the room route until the player has a stored name, so nothing
-// connects before a human acts. That's the point of it: bots that merely load a room URL
-// never open a socket, so they never become ghost players.
+// connects before a human acts: bots that merely load a room URL never open a socket, so
+// they never become ghost players.
 //
-// Its own file, next to `SessionClosed.vue`, because both are room-route screens where
-// there is no game yet (or any more) — see the folder's siblings. Only the chosen name
-// leaves here: storing it and opening the socket stay in `App.vue`, which owns identity
-// and the connection. The room code comes off the URL as it does in `SessionClosed.vue`.
-//
-// The random word-pair is offered as the placeholder rather than pre-filled text, so an
-// empty submit accepts it and typing replaces it — the random names went down well in
-// playtesting, and this way taking one costs nothing.
+// Only the chosen name leaves here; storing it and opening the socket stay in `App.vue`.
+// The random word-pair is offered as the placeholder rather than pre-filled, so an empty
+// submit accepts it and typing replaces it.
 
 import { ref } from 'vue'
 import NameField from '../../components/NameField.vue'

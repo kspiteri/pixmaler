@@ -1,7 +1,7 @@
 <script setup lang="ts">
-// Palette tools panel — swatch + brush + undo/clear, teleported to <body> so it
-// can be dragged (desktop) or dock full-width to the bottom (mobile). The swatch
-// and brush are imperative DOM built by the parent; we only mount them in slots.
+// Palette tools panel — swatch + brush + undo/clear, teleported to <body> so it can be
+// dragged (desktop) or dock full-width to the bottom (mobile). The swatch and brush are
+// imperative DOM built by the parent; we only mount them in slots.
 
 import type { PixelCanvas } from '../lib/canvas/pixel'
 import { Check, GripVertical, Pin, Trash2, Undo2 } from '@lucide/vue'
@@ -10,33 +10,27 @@ import { setPaletteHeight, useAppLayout } from '../lib/appLayout'
 import { useDraggable } from '../lib/useDraggable'
 
 interface Props {
-  // The editable PixelCanvas the buttons drive (Undo / Clear). May be null
-  // for one tick while the parent mounts it.
+  // The editable PixelCanvas the buttons drive; null for one tick while the parent mounts it.
   player: PixelCanvas | null
-  // Pre-built imperative DOM for the palette + brush slider. Parent owns
-  // their lifecycle (they're wired to the PixelCanvas hover/select handlers).
+  // Pre-built imperative DOM for the palette + brush slider; the parent owns their lifecycle.
   swatchEl: HTMLElement | null
   brushEl: HTMLElement | null
   // "paint" → show Clear (sandbox). "drawing" → show Done (Ready) instead.
   variant: 'drawing' | 'paint'
-  // Element to anchor the panel's default position under (usually the target
-  // reference). If null / not laid out, we fall back to (16, 16).
+  // Element to anchor the panel's default position under; falls back to (16, 16).
   anchor?: HTMLElement | null
-  // DRAWING only — whether this player has flagged themselves done. When true
+  // DRAWING only — whether this player has flagged themselves done.
   flaggedDone?: boolean
-  // Whether the canvas has anything on its undo stack — parent-supplied because
-  // `PixelCanvas.canUndo()` is imperative.
+  // Whether the canvas has anything on its undo stack — parent-supplied (canUndo is imperative).
   canUndo?: boolean
-  // DRAWING only — the target reference `<canvas>` and its in-flow home slot. On
-  // mobile we relocate it into the docked bar, back to `targetHome` on desktop.
+  // DRAWING only — the target reference and its home slot; relocated into the dock on mobile.
   targetEl?: HTMLElement | null
   targetHome?: HTMLElement | null
 }
 
 const props = defineProps<Props>()
 
-// DRAWING only — the Done button is a social "Ready" ping; the parent owns the
-// actual state and wire message, we just surface the click.
+// DRAWING only — Done is a social "Ready" ping; the parent owns the state and wire message.
 const emit = defineEmits<{
   done: []
 }>()
@@ -55,12 +49,11 @@ const {
   setPosition: setPanelPosition,
 } = useDraggable({ initialX: 16, initialY: 16, desktopOnly: true, element: () => panelEl.value })
 
-// Below $bp-mobile the panel docks to the bottom full-width and dragging is off.
-// `isMobile` comes from the shared context so everyone agrees on the breakpoint.
+// Below $bp-mobile the panel docks full-width at the bottom and dragging is off.
 const { isMobile } = useAppLayout()
 
-// Docked ↔ floating flip changes whether the reference belongs in the dock and
-// how tall the reserve should be — re-run once the layout has settled.
+// The docked/floating flip changes whether the reference belongs in the dock and how tall
+// the reserve is — re-run once the layout has settled.
 watch(isMobile, () => {
   nextTick(() => {
     placeTarget()
@@ -68,8 +61,8 @@ watch(isMobile, () => {
   })
 })
 
-// Move the reference between its in-flow home (desktop) and the docked bar
-// (mobile). Safe to move the imperative `<canvas>`: non-editable, no fit-zoom.
+// Move the reference between its in-flow home (desktop) and the docked bar (mobile). Safe
+// to move the imperative `<canvas>`: non-editable, no fit-zoom.
 function placeTarget() {
   const el = props.targetEl
   if (!el)
@@ -106,13 +99,12 @@ function snapToDefault() {
 }
 
 function onResize() {
-  // Reset to default on resize so the panel never floats off-screen — matches
-  // the "no position persistence" decision.
+  // Reset to default on resize so the panel never floats off-screen.
   snapToDefault()
 }
 
-// Mobile only — the docked panel's height varies, so we publish its measured
-// height as `paletteHeight`: the single source of truth canvas areas reserve.
+// Mobile only — the docked panel's height varies, so publish it as `paletteHeight`, the
+// single source of truth canvas areas reserve.
 let dockObserver: ResizeObserver | null = null
 
 function publishDockHeight() {
@@ -123,20 +115,20 @@ function publishDockHeight() {
     return
   }
   const h = Math.ceil(el.getBoundingClientRect().height)
-  // Ignore a 0/tiny reading (panel hidden or mid-layout) and keep the last good
-  // value — under-reserving would let the canvas slide behind the dock.
+  // Ignore a 0/tiny reading (hidden or mid-layout) and keep the last good value —
+  // under-reserving would let the canvas slide behind the dock.
   if (h > 0)
     setPaletteHeight(h)
 }
 
-// The docked height only settles once the reference is placed AND the body has
-// flipped to its row layout — hence two frames, not a single microtask.
+// The docked height settles only once the reference is placed AND the body has flipped to
+// its row layout — hence two frames, not a single microtask.
 function schedulePublishDockHeight() {
   requestAnimationFrame(() => requestAnimationFrame(publishDockHeight))
 }
 
-// Mount the parent's imperative swatch/brush DOM into our slots. `watch`, not
-// onMounted: the parent builds them in its own onMounted, after we've mounted.
+// Mount the parent's imperative swatch/brush DOM into our slots. `watch`, not onMounted:
+// the parent builds them in its own onMounted, after we've mounted.
 watch(
   () => [props.swatchEl, props.brushEl] as const,
   async ([sw, br]) => {
@@ -150,8 +142,7 @@ watch(
     snapToDefault()
     panelVisible.value = true
     placeTarget()
-    // Panel is now visible and the reference (if any) relocated — publish the
-    // real docked height so the DRAWING shell reserves the correct band.
+    // Panel is visible and the reference relocated — publish the real docked height.
     schedulePublishDockHeight()
   },
   { immediate: true },
@@ -168,13 +159,11 @@ watch(swatchSize, () => schedulePublishDockHeight())
 
 onMounted(() => {
   window.addEventListener('resize', onResize)
-  // isMobile is already live from the shared context; reconcile the initial
-  // reference placement / reserve now that our DOM exists.
+  // Reconcile the initial reference placement / reserve now that our DOM exists.
   placeTarget()
   schedulePublishDockHeight()
 
-  // Keep the reserve in sync with the panel's rendered height (swatch size
-  // changes, brush row wrapping, etc.).
+  // Keep the reserve in sync with the panel's rendered height.
   if (panelEl.value) {
     dockObserver = new ResizeObserver(() => publishDockHeight())
     dockObserver.observe(panelEl.value)
@@ -185,8 +174,8 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
   dockObserver?.disconnect()
   dockObserver = null
-  // Return the reference to its home slot so the parent can tear it down with
-  // the rest of its DOM (the node currently lives in our dock on mobile).
+  // Return the reference to its home slot so the parent can tear it down (it lives in our
+  // dock on mobile).
   if (props.targetEl && props.targetHome && !props.targetHome.contains(props.targetEl))
     props.targetHome.appendChild(props.targetEl)
   // Drop the reserve so other screens don't inherit a stale dock height.
@@ -197,8 +186,7 @@ function undo() {
   props.player?.undo()
 }
 
-// Tooltip advertises the shortcut (handled by Paint.vue / Drawing.vue) the way
-// the platform spells it; the aria-label stays a plain "Undo".
+// Tooltip advertises the shortcut the way the platform spells it; aria-label stays "Undo".
 const undoTitle = `Undo (${/mac|iphone|ipad|ipod/i.test(navigator.platform || navigator.userAgent) ? '⌘Z' : 'Ctrl+Z'})`
 
 function clear() {
@@ -206,8 +194,7 @@ function clear() {
   if (!p)
     return
   p.pushUndoSnapshot()
-  // Bounce through getGrid() to read the current size — the panel doesn't
-  // otherwise need to know gridW/gridH.
+  // Bounce through getGrid() to read the current size — the panel needn't know gridW/gridH.
   const len = p.getGrid().length
   p.setGrid(Array.from<number>({ length: len }).fill(-1))
 }
@@ -230,8 +217,8 @@ function clear() {
       >
         <span class="tools-panel__grip"><GripVertical :size="16" /></span>
         <span class="tools-panel__label">palette</span>
-        <!-- Dock button — snaps the panel back to its default position. Click
-             is stopped so it doesn't also initiate a drag on pointerdown. -->
+        <!-- Dock button — snaps the panel to its default position; pointerdown stopped so
+             it doesn't start a drag. -->
         <button
           class="tools-panel__dock pressable"
           type="button"
@@ -242,9 +229,8 @@ function clear() {
         >
           <Pin :size="14" />
         </button>
-        <!-- Swatch size lives up here in the handle, away from the brush slider,
-             so it's not mistaken for the brush. pointerdown is stopped so
-             clicking a size button doesn't start a panel drag. -->
+        <!-- Swatch size sits in the handle, away from the brush slider; pointerdown stopped
+             so a size click doesn't start a panel drag. -->
         <div
           class="segmented"
           role="group"
@@ -265,8 +251,7 @@ function clear() {
         </div>
       </div>
 
-      <!-- Mobile has no drag handle, so the swatch-size control gets a static
-           header strip instead (same reason: keep it off the brush row). -->
+      <!-- Mobile has no drag handle, so the swatch-size control gets a static header strip. -->
       <div v-else class="tools-panel__mobile-head">
         <span class="tools-panel__label">palette</span>
         <div class="segmented" role="group" aria-label="Swatch size">
@@ -346,9 +331,9 @@ function clear() {
 </template>
 
 <style scoped lang="scss">
-// Swatch/brush `:deep()` overrides plus the reactive `--sw` size var — the DOM
-// is mounted imperatively by `lib/canvas/pixel.ts`, and `:deep()` only works in a
-// scoped block. Static tools-panel chrome lives in `_tools-panel.scss`.
+// Swatch/brush `:deep()` overrides plus the reactive `--sw` size var — the DOM is mounted
+// imperatively by `lib/canvas/pixel.ts`, and `:deep()` only works in a scoped block. Static
+// tools-panel chrome lives in `_tools-panel.scss`.
 @use '../styles/tokens' as *;
 
 .tools-panel {
@@ -400,9 +385,8 @@ function clear() {
 
   :deep(.brush__slider) {
     flex: 1;
-    // Firefox gives `input[type=range]` an intrinsic min-width and won't shrink it as a
-    // flex item, so the slider hogged the row and the panel's `overflow: hidden` clipped
-    // the label to "brus". `min-width: 0` lets it give the label its space back.
+    // Firefox won't shrink `input[type=range]` below its intrinsic min-width as a flex
+    // item, clipping the label; `min-width: 0` lets it give the label its space back.
     min-width: 0;
     accent-color: $primary;
   }

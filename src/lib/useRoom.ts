@@ -1,12 +1,10 @@
-// The room connection and the server-message dispatch, lifted out of `App.vue` so
-// that file is left as routing + template. Owns the socket lifecycle, the reactive
-// room state the phase views render, and the `provide`d infrastructure (`socket`,
-// `clientId`). App calls it once with the room code (or null off the room route);
-// everything a template reads comes back on the returned object.
+// The room connection and server-message dispatch, lifted out of `App.vue`. Owns the
+// socket lifecycle, the reactive room state the phase views render, and the `provide`d
+// infrastructure (`socket`, `clientId`). App calls it once with the room code (null off
+// the room route).
 //
-// A composable rather than a module because it wires `provide` and `onMounted` into
-// the owning component's setup — both must be called synchronously during setup, which
-// is exactly when App invokes this.
+// A composable, not a module: it wires `provide`/`onMounted`, which must run synchronously
+// during the owning component's setup.
 
 import type { ClientMsg, ServerMsg } from './types'
 import PartySocket from 'partysocket'
@@ -17,18 +15,15 @@ import { clientIdKey, socketKey } from './keys'
 
 const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST ?? '127.0.0.1:1999'
 
-// `shallowRef` because we never mutate inner fields — we always replace the
-// whole object on a new server message. Saves Vue from deep-watching big
-// arrays like the player list / target grid.
+// `shallowRef`: the whole object is replaced on each server message, so no deep-watch.
 type StateMsg = Extract<ServerMsg, { type: 'state' }>
 type GalleryMsg = Extract<ServerMsg, { type: 'gallery' }>
 type ResultsMsg = Extract<ServerMsg, { type: 'results' }>
 type VoteStateMsg = Extract<ServerMsg, { type: 'vote-state' }>
 type DrawStateMsg = Extract<ServerMsg, { type: 'draw-state' }>
 
-// `roomCode` is null off the room route (App resolves /paint and /taglines first, even
-// when a `?room=` is present), which is why the connect/provide side-effects are guarded
-// on it rather than started unconditionally.
+// `roomCode` is null off the room route (App resolves /paint and /taglines first), which
+// is why the connect/provide side-effects are guarded on it.
 export function useRoom(roomCode: string | null) {
   const state = shallowRef<StateMsg | null>(null)
   const gallery = shallowRef<GalleryMsg | null>(null)
@@ -39,40 +34,32 @@ export function useRoom(roomCode: string | null) {
   // This player's own in-progress grid, echoed by the server on (re)join during
   // DRAWING so a page reload restores their drawing. Null until/unless received.
   const drawState = shallowRef<DrawStateMsg | null>(null)
-  // The image players are copying, held across updates because `state` no longer carries it
-  // (#35). Arrives on configure and on join; cleared when `config` goes null.
+  // The image players are copying, held across updates because `state` no longer carries
+  // it. Arrives on configure and on join; cleared when `config` goes null.
   const targetGrid = shallowRef<number[] | null>(null)
   const connectionStatus = ref<'connecting' | 'connected' | 'reconnecting'>('connecting')
-  // Terminal. The server wiped the room out from under us (45 min idle), so this
-  // client's slot no longer exists and nothing it sends will be honoured. Unlike a
-  // dropped socket this is not recoverable by reconnecting — the room is gone — so
-  // we stop trying and say so.
+  // Terminal: the server wiped the room (idle timeout), so this client's slot is gone and
+  // reconnecting can't recover it. Stop trying and say so.
   const sessionClosed = ref(false)
-  // The GM abandoned the round in flight (#16), so LOBBY owes everyone a reason: their
-  // canvas emptied and their drawing is gone. Held here rather than in `Lobby.vue` because
-  // the message arrives while `Drawing.vue` is still mounted — the lobby view does not exist
-  // yet to receive it. Cleared when the next round starts, or when the player dismisses it.
+  // The GM abandoned the round in flight, so LOBBY owes everyone a reason: their canvas
+  // emptied. Held here, not in `Lobby.vue`, because the message arrives while `Drawing.vue`
+  // is still mounted. Cleared when the next round starts or the player dismisses it.
   const roundCancelled = ref(false)
 
-  // The socket is created lazily by `connect()` (after the name gate), so it's a
-  // ref that starts null. Provided to descendants; non-null by the time any phase
-  // view mounts (those only render once server state arrives).
+  // Created lazily by `connect()` after the name gate, so starts null. Non-null by the time
+  // any phase view mounts.
   const socketRef = shallowRef<PartySocket | null>(null)
 
-  // Name gate: shown on the room route until the player has a stored name. The screen
-  // itself is `views/rooms/NameGate.vue` — it owns the input and the offered random name
-  // and hands back only the chosen one; this flag is just which branch renders.
+  // Name gate: shown on the room route until the player has a stored name. The screen is
+  // `views/rooms/NameGate.vue`; this flag is just which branch renders.
   const showNameGate = ref(false)
 
-  // One identity for the whole composable: `provide`, the `join` payload, and the
-  // spectator lookup below all read the same value. Minted only on the room route —
-  // off it (Entry/Paint) there's nothing to identify, so a mere visit never creates a
-  // device id, and "clear my data" isn't immediately undone by a fresh one.
+  // One identity for the whole composable. Minted only on the room route — off it there's
+  // nothing to identify, so a mere visit never creates a device id.
   const myClientId = roomCode ? getClientId() : ''
 
-  // Joined mid-round, so this client sits the round out — no canvas, no vote, and
-  // excluded from both progress denominators server-side. Derived from `state`
-  // rather than tracked separately, so there is no extra reset to forget.
+  // Joined mid-round, so this client sits it out. Derived from `state` rather than tracked
+  // separately, so there's no extra reset to forget.
   const spectating = computed(() =>
     state.value?.players.find(p => p.clientId === myClientId)?.spectating ?? false,
   )
@@ -96,10 +83,8 @@ export function useRoom(roomCode: string | null) {
       // don't contradict the closed screen with a "Reconnecting…" banner.
       if (sessionClosed.value)
         return
-      // partysocket auto-reconnects, so a close is "reconnecting", not dead — the
-      // next `open` flips it back to connected (and re-sends `join`, reclaiming
-      // the slot by clientId). Surface it so players see a blip rather than a
-      // silently-frozen UI.
+      // partysocket auto-reconnects, so a close is "reconnecting", not dead — the next
+      // `open` re-sends `join` and reclaims the slot. Surface it rather than freeze silently.
       connectionStatus.value = 'reconnecting'
       console.warn('[pixmaler] socket closed — reconnecting')
     })
@@ -122,21 +107,14 @@ export function useRoom(roomCode: string | null) {
           if (state.value) {
             state.value = { ...state.value, phase: msg.phase, deadline: msg.deadline }
           }
-          // A `phase` message with DRAWING is only ever broadcast by handleStart
-          // (party/server.ts:390) — i.e. a fresh round, whose submissions, votes
-          // and gallery the server just cleared. Drop everything held from the
-          // previous round so Play again can't resurrect it. A mid-round rejoin
-          // arrives as `state`, not `phase`, so a genuine restore survives.
-          //
-          // All four matter, and nothing else ever clears the last three:
-          //   drawState  — otherwise the last drawing reappears on the new canvas
-          //   results    — otherwise the next RESULTS mounts against the PREVIOUS
-          //                ranking and flashes last round's winner for a frame,
-          //                spoiling the reveal
-          //   gallery    — otherwise a stale frozen gallery is voted on
-          //   voteState  — otherwise round 1's picks pre-fill round 2's vote UI as
-          //                votes the server does not have (Voting.vue's watcher
-          //                applies any truthy `picked`)
+          // A `phase` message with DRAWING is only broadcast by handleStart — a fresh round
+          // the server has cleared — so drop everything held from the previous round or Play
+          // again resurrects it. A mid-round rejoin arrives as `state`, so restores survive.
+          // Nothing else ever clears the last three:
+          //   drawState — else the last drawing reappears on the new canvas
+          //   results   — else RESULTS flashes the previous winner before the reveal
+          //   gallery   — else a stale gallery is voted on
+          //   voteState — else round 1's picks pre-fill round 2's vote UI
           if (msg.phase === 'DRAWING') {
             roundCancelled.value = false
             drawState.value = null
@@ -150,10 +128,9 @@ export function useRoom(roomCode: string | null) {
         case 'draw-state': drawState.value = msg; break
         case 'round-cancelled': roundCancelled.value = true; break
         case 'session-closed':
-          // Terminal, and the order matters: set the flag before closing so the
-          // `close` handler above knows this teardown was deliberate. Closing stops
-          // partysocket's auto-reconnect, which would otherwise re-join us to a
-          // pristine room as a brand-new player — and silently make us its GM.
+          // Order matters: set the flag before closing so the `close` handler knows this
+          // teardown was deliberate. Closing stops auto-reconnect, which would otherwise
+          // re-join us to a pristine room as a new player and silently make us its GM.
           sessionClosed.value = true
           socket.close()
           break

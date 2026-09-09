@@ -2,16 +2,15 @@
 
 export type Phase = 'LOBBY' | 'DRAWING' | 'VOTING' | 'RESULTS'
 
-// Avatar shapes for the seat chip. A runtime array, not just a union, because the
-// **server validates against it** — the value reaches the DOM as a class name. Restricted
-// to shapes that hold a centred capital at 28 px, since the letter maps chip to name.
+// Avatar shapes for the seat chip. A runtime array, not just a union, because the server
+// validates against it and the value reaches the DOM as a class name. Restricted to shapes
+// that hold a centred capital at 28 px, since the letter maps chip to name.
 export const AVATAR_SHAPES = ['rounded', 'square', 'circle', 'hexagon', 'octagon', 'leaf'] as const
 export type AvatarShape = typeof AVATAR_SHAPES[number]
 export const DEFAULT_AVATAR_SHAPE: AvatarShape = 'rounded'
 
-// The only place a shape is validated, kept beside the list it checks and in the module
-// both sides import — the value becomes a class name on every other player's screen, so
-// two copies would mean the next rule added lands on one side only. Clamps, never throws.
+// The single shape validator, kept beside the list it checks and in the module both sides
+// import so the two never drift. Clamps, never throws.
 export function normaliseShape(shape: unknown): AvatarShape {
   return AVATAR_SHAPES.includes(shape as AvatarShape)
     ? shape as AvatarShape
@@ -30,9 +29,8 @@ export interface JoinMsg {
   shape?: AvatarShape
 }
 
-// Change of avatar shape. LOBBY-only server-side, for the same reason `rename`
-// is: the chip shows up in RESULTS, so letting it change after the drawing is in
-// would let a player edit their identity after the fact.
+// Change of avatar shape. LOBBY-only server-side, like `rename`: the chip shows in
+// RESULTS, so a later change would edit identity after the fact.
 export interface SetShapeMsg {
   type: 'shape'
   shape: AvatarShape
@@ -101,16 +99,14 @@ export interface GmPlayAgainMsg {
   type: 'gm:playAgain'
 }
 
-// GM-only, DRAWING/VOTING-only. Abandons a round in flight for when the target image
-// renders broken. Its own message rather than reusing `gm:playAgain`: they share a
-// teardown but carry opposite intents, and only a distinct type phase-guards correctly.
+// GM-only, DRAWING/VOTING-only. Abandons a round in flight when the target renders
+// broken. Distinct from `gm:playAgain` so it phase-guards correctly despite shared teardown.
 export interface GmCancelRoundMsg {
   type: 'gm:cancelRound'
 }
 
 // GM-only, LOBBY/RESULTS-only. Wipes the room and drops every client onto the closed
-// screen — the deliberate twin of the idle wipe, differing only in that somebody chose
-// it. Mid-round the right control is `gm:cancelRound`, which keeps the room alive.
+// screen. Mid-round the right control is `gm:cancelRound`, which keeps the room alive.
 export interface GmEndSessionMsg {
   type: 'gm:endSession'
 }
@@ -147,7 +143,7 @@ export const PALETTE_MAX_LEN = 64 // the picker offers 8/16/24/32, exactly; head
 
 // A floor on a *playable* round, enforced on both sides: the picker clamps to make the
 // limit visible, the server clamps so a stale client cannot shorten a round. Clamps
-// rather than rejects — HTML `min` lets a typed value through, which dropped whole configs.
+// rather than rejects — HTML `min` lets a typed value through.
 export const DRAW_SECONDS_MIN = 30
 export const DRAW_SECONDS_MAX = 600
 
@@ -177,9 +173,8 @@ function isCells(v: unknown, maxLen: number): v is number[] {
   return Array.isArray(v) && v.length <= maxLen && v.every(isInt)
 }
 
-// Parses a raw frame into a `ClientMsg`, or `null`. Replaces an unchecked cast that let
-// arbitrary objects reach the handlers. **Constructs** each message rather than narrowing,
-// so unknown properties cannot ride into room state and out over a broadcast.
+// Parses a raw frame into a `ClientMsg`, or `null`. **Constructs** each message rather
+// than narrowing, so unknown properties cannot ride into room state and out over a broadcast.
 export function parseClientMsg(raw: string): ClientMsg | null {
   let parsed: unknown
   try { parsed = JSON.parse(raw) }
@@ -349,8 +344,7 @@ export interface DrawStateMsg {
 }
 
 // Broadcast from `wipeState()` — this client's slot no longer exists, so it stops
-// reconnecting and shows the closed screen. Needed because a wipe is otherwise invisible:
-// the idle path can fire with live connections, leaving a zombie tab rendering a dead room.
+// reconnecting and shows the closed screen. The idle path can fire with live connections.
 export interface SessionClosedMsg {
   type: 'session-closed'
 }
@@ -360,7 +354,7 @@ export interface RoundCancelledMsg {
   type: 'round-cancelled'
 }
 
-// The deployed Worker's identity, sent once per connection (#25). From Cloudflare's
+// The deployed Worker's identity, sent once per connection. From Cloudflare's
 // version-metadata binding, never `package.json`, which lags because the Worker is
 // deployed before the Release PR merges. Empty fields mean the binding is absent.
 export interface VersionMsg {

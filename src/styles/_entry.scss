@@ -5,13 +5,12 @@
 // Entry screen — page-specific layout only. Buttons, fields, and the logo
 // come from the shared partials (_buttons, _forms, _logo).
 
-// The pixel grid is now the app-wide backdrop (`_backdrop.scss`), so no clip or local
-// stacking here — just a positioning context for the corner theme toggle.
+// The pixel grid is the app-wide backdrop (`_backdrop.scss`), so this is just a positioning
+// context for the corner theme toggle.
 .entry {
   position: relative;
   min-height: 100vh;
-  // border-box so `padding` counts inside the 100vh — there's no global box-sizing
-  // reset, and content-box would add the padding on top and force a scrollbar.
+  // border-box so `padding` counts inside the 100vh, else it forces a scrollbar.
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -86,8 +85,8 @@
     }
   }
 
-  // Privacy notice — a quiet, collapsible footnote under the form. Closed by default;
-  // it explains what's stored (#44) without taking space from the two doors above.
+  // Privacy notice — a quiet, collapsible footnote explaining what's stored. Closed by
+  // default.
   &__privacy {
     width: 100%;
     max-width: $col-narrow;
@@ -102,9 +101,8 @@
       text-align: center;
     }
   }
-  // The revealed content sits on a solid surface, not the textured backdrop, so the
-  // small print stays readable. `$muted` is the quiet-copy rung — `$fg-35` is a
-  // non-text contrast level and was too faint here.
+  // The revealed content sits on a solid surface, not the textured backdrop, so the small
+  // print stays readable. `$muted` is the quiet-copy rung.
   &__privacy-body {
     margin-top: $gap-3;
     padding: $gap-3 $gap-4;

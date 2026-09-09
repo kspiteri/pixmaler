@@ -45,8 +45,8 @@ export function orientationFor(
 
 // ── Target ratios ─────────────────────────────────────────────────────────────
 // A target is one of three shapes, never arbitrary — a layout constraint before an
-// aesthetic one. An arbitrary source ratio let the fit box and the grid disagree by any
-// amount: a 2.25:1 panorama overflowed `.drawing__body`, clipping the last columns.
+// aesthetic one. An arbitrary source ratio lets the fit box and the grid disagree, which
+// overflowed `.drawing__body` and clipped the last columns.
 
 export const TARGET_RATIOS = {
   portrait: { label: '2:3', w: 2, h: 3 },

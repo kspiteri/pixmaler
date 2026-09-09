@@ -51,7 +51,6 @@ export function buildSwatch(
     wrap.appendChild(cell)
   })
 
-  // Apply initial state (first swatch selected by default).
   applyState()
 
   return {

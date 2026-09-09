@@ -1,7 +1,7 @@
 // Self-hosted webfonts — vendored from Google Fonts (OFL) into `src/assets/fonts` so no
-// visitor IP ever reaches Google's CDN (#44). Latin + Latin-Extended only (Norwegian
-// æ/ø/å), woff2-only, and just the weights the app actually loads. Relative `url()`s so
-// Vite hashes the files and applies the base path. Regenerate: see #44's notes.
+// visitor IP ever reaches Google's CDN. Latin + Latin-Extended only (Norwegian æ/ø/å),
+// woff2-only, and just the weights the app actually loads. Relative `url()`s so Vite
+// hashes the files and applies the base path.
 
 @font-face {
   font-family: 'Fredoka';

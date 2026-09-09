@@ -1,11 +1,7 @@
 <script setup lang="ts">
-// The settings menu — one trigger in every header, replacing the old standalone theme
-// toggle. It opens a small dropdown with the theme switch and the text-size stepper.
-// The theme control inside is `ThemeToggle.vue`, which is now only ever rendered here.
-//
-// A disclosure, not a `role="menu"`: the panel holds controls (a toggle, a stepper),
-// not a list of commands. It closes on an outside pointer or Escape; Escape returns
-// focus to the trigger.
+// The settings menu — one gear trigger in every header, opening a dropdown with the theme
+// switch (`ThemeToggle.vue`) and text-size stepper. A disclosure, not a `role="menu"`:
+// it closes on an outside pointer or Escape; Escape returns focus to the trigger.
 
 import { Settings } from '@lucide/vue'
 import { onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
@@ -17,8 +13,7 @@ import ThemeToggle from './ThemeToggle.vue'
 const min = SCALE_STEPS[0]
 const max = SCALE_STEPS[SCALE_STEPS.length - 1]
 
-// Client build version, stamped into `<meta name="pixmaler:client">` at build time by the
-// Vite plugin (#25). Read once for the drawer footer; empty string if the meta is absent.
+// Client build version from `<meta name="pixmaler:client">`; empty string if absent.
 const version = document.querySelector('meta[name="pixmaler:client"]')?.getAttribute('content') ?? ''
 
 const open = ref(false)
@@ -54,9 +49,8 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKey as EventListener)
 })
 
-// Clear my data (#44): wipe every pixmaler:* key and return to Entry. The reload closes
-// any open socket, so leaving a live room is implicit — the confirm says so. Copy is
-// context-aware: only rooms have a game to leave.
+// Clear my data: wipe every pixmaler:* key and reload to Entry (the reload closes any
+// socket). Copy is context-aware: only rooms have a game to leave.
 async function clearData() {
   open.value = false
   const inRoom = new URLSearchParams(location.search).has('room')

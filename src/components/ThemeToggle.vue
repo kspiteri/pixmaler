@@ -1,7 +1,6 @@
 <script setup lang="ts">
-// The dark/light switch — a thin binding around the generic `ToggleSwitch`. Sun on the
-// off (light) side, moon on the on (dark) side; `aria-checked` reports the current theme.
-// The View-Transition cross-fade lives in `toggleTheme`, so it survives the extraction.
+// The dark/light switch — a thin binding around `ToggleSwitch`. Sun on the off (light)
+// side, moon on the on (dark) side; `aria-checked` reports the current theme.
 
 import { Moon, Sun } from '@lucide/vue'
 import { theme, toggleTheme } from '../lib/theme'
