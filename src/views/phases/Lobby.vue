@@ -2,28 +2,18 @@
 // LOBBY phase — player list and (for the GM) image picker / start button, or
 // (for everyone else) "Waiting for GM…" with the target preview when ready.
 
-import type { PipelineResult } from '../../lib/pipeline'
-import type {
-  AvatarShape,
-  ClientMsg,
-  GmConfigureMsg,
-  ServerMsg,
-} from '../../lib/types'
+import type { AvatarShape, ClientMsg, ServerMsg } from '../../lib'
 import { Check, CircleSlash, Copy, Power } from '@lucide/vue'
-import { computed, inject, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
 import AlertToast from '../../components/AlertToast.vue'
-import ImagePicker from '../../components/ImagePicker.vue'
+import LobbyGmControls from '../../components/LobbyGmControls.vue'
 import NameField from '../../components/NameField.vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
+import PixelThumb from '../../components/PixelThumb.vue'
 import PlayerList from '../../components/PlayerList.vue'
 import PlayerTag from '../../components/PlayerTag.vue'
 import Tagline from '../../components/Tagline.vue'
-import { PixelCanvas } from '../../lib/canvas/pixel'
-import { askConfirm } from '../../lib/dialog'
-import { setName, setShape } from '../../lib/identity'
-import { clientIdKey, socketKey } from '../../lib/keys'
-import { seatFor } from '../../lib/seats'
-import { AVATAR_SHAPES } from '../../lib/types'
+import { AVATAR_SHAPES, clientIdKey, seatFor, setName, setShape, socketKey, useGmActions } from '../../lib'
 
 type State = Extract<ServerMsg, { type: 'state' }>
 
@@ -43,6 +33,7 @@ const emit = defineEmits<{
 
 const socket = inject(socketKey)!.value!
 const clientId = inject(clientIdKey)!
+const { endSession } = useGmActions(socket)
 
 const isGm = computed(() => props.state.gmClientId === clientId)
 const roomCode = new URLSearchParams(location.search).get('room') ?? ''
@@ -136,107 +127,6 @@ async function copyLink() {
   }
 }
 
-// ── GM controls ──────────────────────────────────────────────────────────────
-
-const imageReady = ref(false)
-const pickerRef = useTemplateRef<InstanceType<typeof ImagePicker>>('picker')
-let lastConfig: GmConfigureMsg | null = null
-
-function onProcessing() { imageReady.value = false }
-
-function onResult(result: PipelineResult) {
-  lastConfig = {
-    type: 'gm:configure',
-    gridW: result.gridW,
-    gridH: result.gridH,
-    palette: result.palette,
-    targetGrid: result.targetGrid,
-    drawSeconds: pickerRef.value?.getDrawSeconds() ?? 120,
-  }
-  socket.send(JSON.stringify(lastConfig))
-  imageReady.value = true
-}
-
-// Mirror of the server's gate (`handleStart`), which stays authoritative. The count is
-// always real; only the blocking is lifted in dev, so the hint still shows the gate.
-const MIN_PLAYERS = 2
-
-const missingPlayers = computed(() => {
-  const present = props.state.players.filter(p => p.connected && !p.isGm).length
-  return Math.max(0, MIN_PLAYERS - present)
-})
-
-const startDisabled = computed(() =>
-  !imageReady.value || (missingPlayers.value > 0 && !import.meta.env.DEV),
-)
-
-const startHint = computed(() => {
-  if (!imageReady.value)
-    return 'choose an image to start'
-  if (missingPlayers.value > 0) {
-    const need = `need ${missingPlayers.value} more player${missingPlayers.value === 1 ? '' : 's'}`
-    return import.meta.env.DEV ? `${need} — ignored in dev` : need
-  }
-  return ''
-})
-
-function startGame() {
-  if (!lastConfig)
-    return
-  // Read drawSeconds fresh in case the GM edited it after the last reprocess.
-  const finalConfig: GmConfigureMsg = {
-    ...lastConfig,
-    drawSeconds: pickerRef.value?.getDrawSeconds() ?? 120,
-  }
-  socket.send(JSON.stringify(finalConfig))
-  socket.send(JSON.stringify({ type: 'gm:start' } satisfies ClientMsg))
-}
-
-// Ends the whole session, not just the round — everyone lands on the closed screen and the
-// code is released. Always confirmed: irreversible and acts on everybody.
-async function endSession() {
-  if (!await askConfirm('End the session for everyone? The room closes and this code is released.'))
-    return
-  socket.send(JSON.stringify({ type: 'gm:endSession' } satisfies ClientMsg))
-}
-
-// ── Non-GM target preview ────────────────────────────────────────────────────
-// PixelCanvas is imperative, so we render it into a slot div and rebuild on config change.
-// (App.vue replaces the whole `state` ref per message, so `state.config` is a new object.)
-
-const previewSlot = useTemplateRef<HTMLDivElement>('previewSlot')
-
-// Only the canvas is built here — the label lives in the template so it can carry a class.
-function renderPreview(config: State['config'], grid: number[] | null) {
-  if (!previewSlot.value)
-    return
-  if (!config || !grid) {
-    previewSlot.value.replaceChildren()
-    return
-  }
-  const previewPc = new PixelCanvas({
-    gridW: config.gridW,
-    gridH: config.gridH,
-    palette: config.palette,
-    targetGrid: grid,
-    editable: false,
-  })
-  previewSlot.value.replaceChildren(previewPc.canvas)
-}
-
-// `previewSlot` and `isGm` are watch sources, not just values read inside: the callback must
-// re-run when the slot ref populates (before mount `previewSlot.value` is null) and when GM
-// transfer mounts the `v-else` branch with no accompanying `config` change. Same shape as
-// `Drawing.vue`'s spectator-canvas watcher.
-watch(
-  [() => props.state.config, () => props.targetGrid, isGm, previewSlot],
-  () => {
-    if (!isGm.value)
-      renderPreview(props.state.config, props.targetGrid)
-  },
-  { immediate: true, flush: 'post' },
-)
-
 onBeforeUnmount(() => {
   if (copyTimer)
     clearTimeout(copyTimer)
@@ -320,32 +210,7 @@ onBeforeUnmount(() => {
       </aside>
 
       <section class="lobby__settings">
-        <template v-if="isGm">
-          <p class="label label--eyebrow">
-            game settings
-          </p>
-          <ImagePicker
-            ref="picker"
-            show-mobile-warn
-            show-draw-seconds
-            show-preview
-            @processing="onProcessing"
-            @result="onResult"
-          />
-          <div>
-            <button
-              class="btn btn--primary lobby__start"
-              type="button"
-              :disabled="startDisabled"
-              @click="startGame"
-            >
-              Start game
-            </button>
-            <p v-if="startHint" class="lobby__start-hint">
-              {{ startHint }}
-            </p>
-          </div>
-        </template>
+        <LobbyGmControls v-if="isGm" :players="state.players" />
 
         <template v-else>
           <div class="lobby__waiting">
@@ -367,7 +232,14 @@ onBeforeUnmount(() => {
                 the target image will appear here
               </template>
             </p>
-            <div ref="previewSlot" class="lobby__preview-canvas" />
+            <PixelThumb
+              v-if="state.config && targetGrid"
+              class="lobby__preview-canvas"
+              :grid-w="state.config.gridW"
+              :grid-h="state.config.gridH"
+              :palette="state.config.palette"
+              :grid="targetGrid"
+            />
           </div>
           <div class="lobby__tagline">
             <Tagline class="lobby__waiting-tagline" />
