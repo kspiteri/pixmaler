@@ -2,7 +2,7 @@
 // Paint sandbox — solo canvas, no lobby/socket/timer. Picker left, canvas pair right;
 // the pair re-mounts on each new picker result so PixelCanvas instances tear down cleanly.
 
-import type { PickerMeta, PipelineResult } from '../lib/pipeline'
+import type { PickerMeta, PipelineResult } from '../lib'
 import { ChevronDown, ChevronUp, Settings } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import CanvasPair from '../components/CanvasPair.vue'
@@ -10,7 +10,7 @@ import ImagePicker from '../components/ImagePicker.vue'
 import Logo from '../components/Logo.vue'
 import SettingsMenu from '../components/SettingsMenu.vue'
 import Tagline from '../components/Tagline.vue'
-import { orientationFor } from '../lib/aspect'
+import { appHref, useOrientation } from '../lib'
 
 const result = ref<PipelineResult | null>(null)
 const meta = ref<PickerMeta | null>(null)
@@ -20,22 +20,10 @@ const pairRef = ref<InstanceType<typeof CanvasPair> | null>(null)
 const settingsOpen = ref(true)
 let collapsedOnce = false
 
-const base = import.meta.env.BASE_URL.replace(/\/+$/, '')
-const backHref = `${base}/`
+const backHref = appHref()
 
-// Ratio-aware layout matching DRAWING: the canvas pair flips between row and column
-// so the editable canvas always claims the largest fitting area (`orientationFor`).
-const viewportW = ref(window.innerWidth)
-const viewportH = ref(window.innerHeight)
-function onResize() {
-  viewportW.value = window.innerWidth
-  viewportH.value = window.innerHeight
-}
-const orientation = computed(() =>
-  result.value
-    ? orientationFor(result.value.gridW, result.value.gridH, viewportW.value, viewportH.value)
-    : 'row',
-)
+// Ratio-aware layout matching DRAWING: the canvas pair flips between row and column.
+const orientation = useOrientation(() => result.value?.gridW, () => result.value?.gridH)
 
 function onResult(next: PipelineResult, nextMeta: PickerMeta) {
   result.value = next
@@ -68,11 +56,9 @@ function onKeyDown(e: KeyboardEvent) {
 
 onMounted(() => {
   window.addEventListener('keydown', onKeyDown)
-  window.addEventListener('resize', onResize)
 })
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeyDown)
-  window.removeEventListener('resize', onResize)
 })
 </script>
 
