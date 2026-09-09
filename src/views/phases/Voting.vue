@@ -2,16 +2,11 @@
 // VOTING phase — anonymised gallery. Click a thumbnail to cast a vote; click another
 // to change it. Tallies stay hidden until RESULTS — running counts would sway voters.
 
-import type { ClientMsg, ServerMsg, Submission, VoteCategory } from '../../lib/types'
+import type { ClientMsg, ServerMsg, Submission, VoteCategory } from '../../lib'
 import { CircleSlash } from '@lucide/vue'
-import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
-import { artRatio as artRatioFor } from '../../lib/aspect'
-import { PixelCanvas } from '../../lib/canvas/pixel'
-import { useCountdownAnnounce } from '../../lib/countdown'
-import { askConfirm } from '../../lib/dialog'
-import { clientIdKey, socketKey } from '../../lib/keys'
-import { VOTE_CATEGORIES } from '../../lib/types'
+import { artRatio as artRatioFor, asset, clientIdKey, socketKey, useCountdownAnnounce, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '../../lib'
 
 const props = defineProps<{
   gallery: Gallery | null
@@ -28,16 +23,12 @@ const props = defineProps<{
   spectating: boolean
 }>()
 
-// Resolve a `public/`-hosted asset path against Vite's `base` so it doesn't 404.
-function iconUrl(path: string): string {
-  return `${import.meta.env.BASE_URL}${path}`
-}
-
 type Gallery = Extract<ServerMsg, { type: 'gallery' }>
 type VoteState = Extract<ServerMsg, { type: 'vote-state' }>
 
 const socket = inject(socketKey)!.value!
 const clientId = inject(clientIdKey)!
+const { stopVoting, cancelRound } = useGmActions(socket)
 
 const isGm = computed(() => props.gmClientId === clientId)
 
@@ -97,23 +88,6 @@ function sameSet(a: Submission[], b: Submission[]): boolean {
 // can un-fire when a straggler reconnects — hence a status line, not a dialog.
 const allVoted = computed(() => props.totalVoters > 0 && props.votedCount >= props.totalVoters)
 
-// The only way out of the phase; the warning is only true while someone can still be cut
-// off, so it's suppressed once everyone has voted.
-async function stopVoting() {
-  if (!allVoted.value && !await askConfirm('End voting now? Anyone who hasn\'t finished voting won\'t be counted.'))
-    return
-  const msg: ClientMsg = { type: 'gm:stopVoting' }
-  socket.send(JSON.stringify(msg))
-}
-
-// Always confirmed, unlike stopVoting: cancelling always destroys everyone's work.
-async function cancelRound() {
-  if (!await askConfirm('Cancel this round? Everyone goes back to the lobby and the drawings are lost.'))
-    return
-  const msg: ClientMsg = { type: 'gm:cancelRound' }
-  socket.send(JSON.stringify(msg))
-}
-
 // Local-only — not echoed during VOTING. One submissionId per category (null until cast);
 // we trust the optimistic update since the server only rejects invalid votes.
 const myVotes = ref<Record<VoteCategory, string | null>>({ funniest: null, best: null })
@@ -142,44 +116,23 @@ function votedCategoriesFor(submissionId: string) {
 // True once every category has a vote.
 const allCast = computed(() => VOTE_CATEGORIES.every(c => myVotes.value[c.id] !== null))
 
-// Track PixelCanvas instances to dispose them when the gallery changes or this view
-// unmounts. Each owns mouse handlers; orphaning them leaks listeners.
-let canvases: PixelCanvas[] = []
-
-function disposeCanvases() {
-  // Listeners live on the canvas element; once it leaves the DOM they can't fire, so
-  // dropping references is enough.
-  canvases = []
-}
-
-// Mount each submission's canvas into its slot. Re-runs when the gallery changes.
-function mountCanvases(slots: Map<string, HTMLElement>) {
-  if (!props.gallery)
-    return
-  disposeCanvases()
-  for (const sub of props.gallery.submissions) {
-    const slot = slots.get(sub.submissionId)
-    if (!slot)
-      continue
-    const pc = new PixelCanvas({
-      gridW: props.gallery.gridW,
-      gridH: props.gallery.gridH,
-      palette: props.gallery.palette,
-      targetGrid: sub.grid,
-      editable: false,
-    })
-    slot.replaceChildren(pc.canvas)
-    canvases.push(pc)
-  }
-}
-
-// Slots keyed by submissionId — bound via the :ref function-form below.
-const slotMap = new Map<string, HTMLElement>()
-function setSlot(submissionId: string, el: unknown) {
-  if (el instanceof HTMLElement)
-    slotMap.set(submissionId, el)
-  else slotMap.delete(submissionId)
-}
+// Mount each rendered submission's drawing into its gallery slot.
+const { setSlot } = useReadonlyCanvases(
+  () => props.gallery,
+  () => {
+    const g = props.gallery
+    if (!g)
+      return []
+    return ordered.value.map(sub => ({
+      groups: ['gallery'],
+      key: sub.submissionId,
+      gridW: g.gridW,
+      gridH: g.gridH,
+      palette: g.palette,
+      grid: sub.grid,
+    }))
+  },
+)
 
 // A wiped canvas rides along so the reveal can acknowledge its author, but it's not a
 // candidate. Filtered here, not server-side, so RESULTS still receives it.
@@ -191,21 +144,14 @@ function isBlank(sub: Submission): boolean {
 // count shown on the reveal.
 const wipedCount = computed(() => (props.gallery?.submissions ?? []).filter(isBlank).length)
 
-watch(() => props.gallery, async () => {
+watch(() => props.gallery, () => {
   const subs = (props.gallery?.submissions ?? []).filter(s => !isBlank(s))
   // Reshuffle only on a genuinely new submission set; a rejoin keeps the order.
   if (!sameSet(ordered.value, subs)) {
     ordered.value = shuffle(subs)
     myVotes.value = emptyVotes()
   }
-  // Wait two ticks: the first lets Vue patch the DOM (including :ref callbacks that
-  // populate slotMap), the second covers a second patch from the v-if gate.
-  await nextTick()
-  await nextTick()
-  mountCanvases(slotMap)
 }, { immediate: true })
-
-onBeforeUnmount(disposeCanvases)
 
 function castVote(category: VoteCategory, submissionId: string) {
   // Self-vote guard mirrors the server's; let the click do nothing.
@@ -237,7 +183,7 @@ function castVote(category: VoteCategory, submissionId: string) {
         v-if="isGm && gallery"
         class="btn btn--primary voting__stop"
         type="button"
-        @click="stopVoting"
+        @click="stopVoting(allVoted)"
       >
         End voting
       </button>
@@ -273,7 +219,7 @@ function castVote(category: VoteCategory, submissionId: string) {
               :key="c.id"
               class="voting__hint-cat"
               :class="{ 'voting__hint-cat--done': myVotes[c.id] }"
-            ><img :src="iconUrl(c.icon)" :alt="c.label" class="voting__hint-icon"></span>
+            ><img :src="asset(c.icon)" :alt="c.label" class="voting__hint-icon"></span>
           </template>
         </p>
         <!-- Only when somebody wiped. Keeps the count voted on equal to the count on the
@@ -293,14 +239,14 @@ function castVote(category: VoteCategory, submissionId: string) {
           :class="{ 'voting__card--mine': sub.submissionId === clientId }"
         >
           <div class="voting__art art-frame">
-            <div :ref="el => setSlot(sub.submissionId, el)" class="art-surface" />
+            <div :ref="el => setSlot('gallery', sub.submissionId, el)" class="art-surface" />
             <!-- Your votes' stickers, top-anchored, side by side. -->
             <div v-if="votedCategoriesFor(sub.submissionId).length" class="voting__stickers">
               <span
                 v-for="c in votedCategoriesFor(sub.submissionId)"
                 :key="c.id"
                 class="voting__sticker"
-              ><img :src="iconUrl(c.icon)" :alt="c.label" class="voting__sticker-icon"></span>
+              ><img :src="asset(c.icon)" :alt="c.label" class="voting__sticker-icon"></span>
             </div>
             <span v-if="sub.submissionId === clientId" class="voting__tag">Yours</span>
           </div>
@@ -316,7 +262,7 @@ function castVote(category: VoteCategory, submissionId: string) {
               :title="`Vote ${c.label}`"
               @click="castVote(c.id, sub.submissionId)"
             >
-              <img :src="iconUrl(c.icon)" alt="" class="voting__cat-icon">
+              <img :src="asset(c.icon)" alt="" class="voting__cat-icon">
               {{ c.label }}
             </button>
           </div>
