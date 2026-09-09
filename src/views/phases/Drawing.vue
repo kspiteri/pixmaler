@@ -15,7 +15,6 @@ import {
   computed,
   inject,
   onBeforeUnmount,
-  onMounted,
   ref,
   useTemplateRef,
   watch,
@@ -145,22 +144,7 @@ function flagDone() {
   socket.send(JSON.stringify({ type: 'draw:done' } satisfies ClientMsg))
 }
 
-// Cmd/Ctrl+Z → undo. Always available — the canvas never locks during DRAWING.
-function onKeyDown(e: KeyboardEvent) {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
-    const player = pairRef.value?.player()
-    if (!player)
-      return
-    e.preventDefault()
-    player.undo()
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('keydown', onKeyDown)
-})
 onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeyDown)
   if (bumpTimer)
     clearTimeout(bumpTimer)
 })

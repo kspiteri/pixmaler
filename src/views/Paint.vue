@@ -4,7 +4,7 @@
 
 import type { PickerMeta, PipelineResult } from '../lib'
 import { ChevronDown, ChevronUp, Settings } from '@lucide/vue'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import CanvasPair from '../components/CanvasPair.vue'
 import ImagePicker from '../components/ImagePicker.vue'
 import Logo from '../components/Logo.vue'
@@ -44,21 +44,6 @@ const summary = computed(() => {
   return [meta.value.source, `${gridW}×${gridH}`, `${palette.length} colours`]
     .filter(Boolean)
     .join(' · ')
-})
-
-// Cmd/Ctrl+Z → undo on the active canvas.
-function onKeyDown(e: KeyboardEvent) {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
-    e.preventDefault()
-    pairRef.value?.player()?.undo()
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('keydown', onKeyDown)
-})
-onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeyDown)
 })
 </script>
 
