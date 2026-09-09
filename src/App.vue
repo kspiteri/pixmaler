@@ -4,8 +4,7 @@
 
 import AlertDialog from './components/AlertDialog.vue'
 import PhaseBoundary from './components/PhaseBoundary.vue'
-import { currentDialog, settleDialog } from './lib/dialog'
-import { useRoom } from './lib/useRoom'
+import { currentDialog, settleDialog, useRoom } from './lib'
 import Entry from './views/Entry.vue'
 import Paint from './views/Paint.vue'
 import Drawing from './views/phases/Drawing.vue'
