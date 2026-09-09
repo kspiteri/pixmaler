@@ -5,7 +5,7 @@
 
 import type PartySocket from 'partysocket'
 import type { Ref } from 'vue'
-import type { ClientMsg } from './types'
+import type { ClientMsg } from '../protocol/types'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const RESUBMIT_DEBOUNCE_MS = 500

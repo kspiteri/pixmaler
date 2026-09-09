@@ -5,8 +5,8 @@
 // Module-level, not a composable, and deliberately not reactive: identity is per-document
 // and set at most once per screen. Callers hold the value they read.
 
-import type { AvatarShape } from './types'
-import { normaliseShape } from './types'
+import type { AvatarShape } from '../protocol/types'
+import { normaliseShape } from '../protocol/types'
 
 const CLIENT_ID = 'pixmaler:clientId'
 const NAME = 'pixmaler:name'

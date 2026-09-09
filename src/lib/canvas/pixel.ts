@@ -3,7 +3,7 @@
 // brush widgets in `./tools`.
 
 import type { Cell } from './grid'
-import { brushMaxFor, defaultBrushFor } from '../aspect'
+import { brushMaxFor, defaultBrushFor } from './aspect'
 import { brushFootprint, cellAt, indexOf, linePath, xyOf } from './grid'
 
 export interface CanvasOptions {

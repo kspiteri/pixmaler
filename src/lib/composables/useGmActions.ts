@@ -3,8 +3,8 @@
 // has voted — the caller passes that, since only it knows the tally.
 
 import type PartySocket from 'partysocket'
-import type { ClientMsg } from './types'
-import { askConfirm } from './dialog'
+import type { ClientMsg } from '../protocol/types'
+import { askConfirm } from '../dialog'
 
 export function useGmActions(socket: PartySocket) {
   function send(msg: ClientMsg) {

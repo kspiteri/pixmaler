@@ -8,8 +8,8 @@
 // `gm:playAgain`. Two things keep it true — `buildState` must not sort `players`, and
 // callers must take the seat from the array index *before* sorting for display.
 
-import type { AvatarShape, Player } from './types'
-import { normaliseShape } from './types'
+import type { AvatarShape, Player } from '../protocol/types'
+import { normaliseShape } from '../protocol/types'
 
 // Keep in sync with `$player-colours`, stored in golden-angle walk order so consecutive
 // seats land ~137° apart and the 2nd player never neighbours the 1st.

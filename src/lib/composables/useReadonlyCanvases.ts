@@ -9,7 +9,7 @@
 // patch from a v-if gate) before mounting.
 
 import { nextTick, onBeforeUnmount, watch } from 'vue'
-import { PixelCanvas } from './canvas/pixel'
+import { PixelCanvas } from '../canvas/pixel'
 
 export interface ReadonlyThumb {
   groups: string[]

@@ -6,12 +6,12 @@
 // A composable, not a module: it wires `provide`/`onMounted`, which must run synchronously
 // during the owning component's setup.
 
-import type { ClientMsg, ServerMsg } from './types'
+import type { ClientMsg, ServerMsg } from '../protocol/types'
 import PartySocket from 'partysocket'
 import { computed, onMounted, provide, ref, shallowRef } from 'vue'
-import { askAlert } from './dialog'
-import { getClientId, getName, getShape, setName } from './identity'
-import { clientIdKey, socketKey } from './keys'
+import { askAlert } from '../dialog'
+import { clientIdKey, socketKey } from '../keys'
+import { getClientId, getName, getShape, setName } from '../player/identity'
 
 const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST ?? '127.0.0.1:1999'
 

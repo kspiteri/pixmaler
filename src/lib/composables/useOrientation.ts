@@ -4,7 +4,7 @@
 
 import type { ComputedRef } from 'vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { orientationFor } from './aspect'
+import { orientationFor } from '../canvas/aspect'
 
 export function useOrientation(
   gridW: () => number | null | undefined,
