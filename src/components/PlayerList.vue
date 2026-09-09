@@ -3,11 +3,9 @@
 // transfer button when the viewer is the GM and the row is a connected non-self player.
 // Styles live in `styles/_player-list.scss`.
 
-import type { ClientMsg, Player } from '../lib/types'
+import type { ClientMsg, Player } from '../lib'
 import { computed, inject } from 'vue'
-import { askConfirm } from '../lib/dialog'
-import { clientIdKey, socketKey } from '../lib/keys'
-import { seatFor } from '../lib/seats'
+import { askConfirm, clientIdKey, seatFor, socketKey } from '../lib'
 import PlayerTag from './PlayerTag.vue'
 
 const props = defineProps<Props>()

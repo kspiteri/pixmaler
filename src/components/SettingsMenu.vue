@@ -5,9 +5,7 @@
 
 import { Settings } from '@lucide/vue'
 import { onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
-import { askConfirm } from '../lib/dialog'
-import { clearAllData } from '../lib/identity'
-import { SCALE_STEPS, stepScale, textScale } from '../lib/textScale'
+import { askConfirm, clearAllData, SCALE_STEPS, stepScale, textScale } from '../lib'
 import ThemeToggle from './ThemeToggle.vue'
 
 const min = SCALE_STEPS[0]

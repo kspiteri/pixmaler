@@ -3,7 +3,7 @@
 // re-mounts when the grid changes. For any static target/drawing shown outside the editor.
 
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
-import { PixelCanvas } from '../lib/canvas/pixel'
+import { PixelCanvas } from '../lib'
 
 const props = defineProps<{
   gridW: number

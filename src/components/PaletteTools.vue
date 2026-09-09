@@ -3,11 +3,10 @@
 // dragged (desktop) or dock full-width to the bottom (mobile). The swatch and brush are
 // imperative DOM built by the parent; we only mount them in slots.
 
-import type { PixelCanvas } from '../lib/canvas/pixel'
+import type { PixelCanvas } from '../lib'
 import { Check, GripVertical, Pin, Trash2, Undo2 } from '@lucide/vue'
 import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
-import { setPaletteHeight, useAppLayout } from '../lib/appLayout'
-import { useDraggable } from '../lib/useDraggable'
+import { setPaletteHeight, useAppLayout, useDraggable } from '../lib'
 
 interface Props {
   // The editable PixelCanvas the buttons drive; null for one tick while the parent mounts it.

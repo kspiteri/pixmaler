@@ -4,9 +4,7 @@
 // `<canvas>` and pixels, Vue only owns the surrounding layout.
 
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
-import { useAppLayout } from '../lib/appLayout'
-import { PixelCanvas } from '../lib/canvas/pixel'
-import { buildBrushControls, buildSwatch } from '../lib/canvas/tools'
+import { buildBrushControls, buildSwatch, PixelCanvas, useAppLayout } from '../lib'
 import PaletteTools from './PaletteTools.vue'
 
 interface Props {

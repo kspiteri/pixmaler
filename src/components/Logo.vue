@@ -4,6 +4,7 @@
 // The mark is the shared public/mark.svg (also the favicon).
 
 import { computed } from 'vue'
+import { asset } from '../lib'
 
 const props = withDefaults(defineProps<{
   size?: 'sm' | 'lg'
@@ -11,8 +12,7 @@ const props = withDefaults(defineProps<{
 
 const showMark = computed(() => props.size === 'lg')
 
-// public/ assets resolve under the Vite base ("/pixmaler/" in prod).
-const markSrc = `${import.meta.env.BASE_URL}mark.svg`
+const markSrc = asset('mark.svg')
 </script>
 
 <template>

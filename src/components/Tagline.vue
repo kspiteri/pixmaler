@@ -5,8 +5,7 @@
 // waiting screens (Entry, Lobby, Results) and the Paint sandbox, not on Drawing/Voting.
 
 import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { prefersReducedMotion } from '../lib/motion'
-import { randomTagline } from '../lib/taglines'
+import { prefersReducedMotion, randomTagline } from '../lib'
 
 const props = withDefaults(defineProps<{
   // Rotation period in ms.
