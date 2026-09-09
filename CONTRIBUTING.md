@@ -68,7 +68,7 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 
 **Types** — `strict` is on. `pnpm build` runs `vue-tsc --noEmit` first, so a type error fails the build; `pnpm typecheck` also covers `party/` against Workers globals via `tsconfig.worker.json`. Keep the tree green.
 
-**Tests** — `pnpm test` runs Vitest over `test/`: 14 files, 348 tests, and [`ci.yml`](./.github/workflows/ci.yml) runs them on every push and PR. Coverage is deliberately narrow *and* deliberately DOM-free: pure, load-bearing logic that a plausible refactor could silently break, reachable without a browser. That constraint shaped the code as much as it shaped the tests — `src/lib/palette.ts` and `party/tally.ts` both exist because the logic in them was worth testing and was trapped inside something that needed a canvas or a Durable Object, and `party/ctx.ts` is the seam that lets every room handler run against a fake `RoomCtx` (`test/support/room.ts`) instead of a live one.
+**Tests** — `pnpm test` runs Vitest over `test/`: 14 files, 351 tests, and [`ci.yml`](./.github/workflows/ci.yml) runs them on every push and PR. Coverage is deliberately narrow *and* deliberately DOM-free: pure, load-bearing logic that a plausible refactor could silently break, reachable without a browser. That constraint shaped the code as much as it shaped the tests — `src/lib/canvas/palette.ts` and `party/tally.ts` both exist because the logic in them was worth testing and was trapped inside something that needed a canvas or a Durable Object, and `party/ctx.ts` is the seam that lets every room handler run against a fake `RoomCtx` (`test/support/room.ts`) instead of a live one.
 
 | Suite | Guards |
 |---|---|
@@ -94,6 +94,7 @@ When you add a test, make it fail first: revert the fix it guards and check it g
 - **British English** in user-facing strings, comments, and docs (`colour`, `behaviour`, `centre`). Identifiers mirroring DOM/web APIs stay as-is (`color` in CSS, `fillStyle` on canvas).
 - **Vue 3 Composition API** with `<script setup>`. **Styling convention:** static, non-reactive styles live in per-screen partials (`src/styles/_<screen>.scss`) and shared primitives (`_alerts`, `_buttons`, `_forms`, `_logo`, `_phase`, `_surfaces`, `_tools-panel`), all `@use`d into `main.scss`; tokens in `_tokens.scss`. Recipe partials are the exception: `_chrome` (the chrome surface), `_wonk` (the tilt) and `_screen` (the interstitial shape behind the name gate, the closed room and the phase-error fallback) define mixins and **emit no CSS**, so they are `@use`d by whoever includes them rather than by `main.scss` — a rule in one would land wherever the first `@use` resolved and reorder the cascade. `_surfaces.scss`'s header is where the three surface roles are written down — artefact (a drawing), chrome (panels and inputs), person/choice (roster rows, vote cards) — and it owns the `.art-frame` / `.art-surface` pair that every finished drawing goes in. A component's scoped `<style>` is reserved for genuinely reactive or component-local rules — chiefly `:deep()` reaching imperatively-mounted `PixelCanvas` elements, which only works in a scoped block. The one unscoped exception is `Tagline.vue`'s `::view-transition` block: document-level pseudo-elements can't be scoped.
 - **Inject infrastructure, prop data.** `socket` and `clientId` are `provide`/`inject`ed once at connection; reactive game state flows down as props. No Pinia.
+- **Import `lib/` through the barrel.** Consumers do `import { … } from '../lib'`; `lib/index.ts` re-exports every module, so moving a file between folders never touches a call site. Inter-lib imports stay **direct** (relative paths), never the barrel, to avoid cycles. The Worker imports the DOM-free **`protocol/` barrel** (`'../src/lib/protocol'`) plus specific modules like `content/words` — never the client barrel, which re-exports DOM-dependent modules (`prefs/theme`, `prefs/textScale` read `localStorage` on load) that break the Workers and Vitest builds.
 - **`PixelCanvas` is imperative** — it owns its `<canvas>` and is instantiated in `onMounted`/watchers, not driven by reactivity.
 - **The server is authoritative** for phase, timer, submissions, and votes. Client state is a view of the server's truth — derive from the latest `state` message rather than holding local state that can drift.
 - **Broadcast the payload before the phase flip.** `endDrawing` sends `gallery` then `phase`; `endVoting` sends `results` then `phase`. That order is deliberate — flipping the phase first mounts the incoming screen against whatever payload the client still holds, which is the *previous* round's, and that was the root of the blank-winner bug (`13` item 48). A new phase that carries data follows the same order.
@@ -103,7 +104,7 @@ When you add a test, make it fail first: revert the fix it guards and check it g
 ## Structure
 
 ```
-src/lib/        # canvas, image pipeline, shared types, taglines, layout helpers, dialog queue, composables
+src/lib/        # domain folders behind the index.ts barrel: protocol/ · canvas/ · composables/ · prefs/ · player/ · content/ (+ keys, dialog, appLayout, assets)
 src/components/ # reusable UI (AlertDialog, ImagePicker, CanvasPair, PaletteTools, PlayerList, PhaseLayout, Tagline, Logo)
 src/views/      # Entry, Paint, Taglines, phases/ (the four game screens), rooms/ (name gate, closed session)
 src/styles/     # _tokens + shared primitives + per-screen partials, all via main.scss
@@ -175,7 +176,7 @@ No secrets. That is the point.
 ### Cutting a release
 
 1. Review the open **Release PR**. release-please has already written the version into `package.json` and the entry into `CHANGELOG.md`, derived from the conventional-commit types since the last release.
-2. **`pnpm wr:deploy` — but only if the server actually changed.** Check with `git diff <last-tag>..HEAD -- party/ src/lib/types.ts`. A Worker deploy **ends every game in progress**, so this is not a ritual: skip it when that diff is empty. When it is not empty, deploy *before* merging — the frontend inlines `VITE_PARTYKIT_HOST` at build time, and a newer server tolerates older clients while the reverse does not.
+2. **`pnpm wr:deploy` — but only if the server actually changed.** Check with `git diff <last-tag>..HEAD -- party/ src/lib/protocol/`. A Worker deploy **ends every game in progress**, so this is not a ritual: skip it when that diff is empty. When it is not empty, deploy *before* merging — the frontend inlines `VITE_PARTYKIT_HOST` at build time, and a newer server tolerates older clients while the reverse does not.
 3. **Merge the Release PR.** That tags it, publishes the GitHub release, and deploys Pages.
 4. **Close the milestone the release completes** — if it completes one.
 
