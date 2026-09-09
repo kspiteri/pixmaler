@@ -92,6 +92,7 @@
     // Push the S/M/L group that follows to the far end of the handle.
     margin-right: auto;
     white-space: nowrap;
+    font-size: $fs-2xs;
   }
 
   // Dock-to-default button — small pin icon on the handle bar, next to S/M/L.
@@ -253,7 +254,79 @@
   // Undock: fade in at the drag position. Opacity ONLY — animating `transform`
   // would beat the inline position style and snap the panel to the origin.
   &:not(&--docked) {
+    // Bound the height so a tall panel (shortcuts open) scrolls inside itself rather than
+    // running off the bottom of the viewport; base `overflow: hidden` covers the x axis.
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
     animation: tools-panel-float-in 0.18s ease-out;
+  }
+
+  // Keyboard shortcuts help, at the foot of the panel: a disclosure toggle over a list.
+  &__shortcuts {
+    margin-top: $gap-2;
+    padding-top: $gap-2;
+    border-top: 1px solid $border;
+
+    ul {
+      display: grid;
+      gap: $gap-1;
+      margin: $gap-2 0 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    li {
+      display: flex;
+      gap: $gap-2;
+      align-items: flex-start;
+      padding: 4px 8px;
+      font-size: $fs-2xs;
+      color: $muted;
+      border: 1px solid $border;
+      border-radius: $radius-sm;
+      background: $bg;
+    }
+
+    kbd {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      flex-shrink: 0;
+      min-width: 5em;
+      color: $fg;
+      font-family: $font-body;
+    }
+  }
+
+  &__shortcuts-toggle {
+    display: flex;
+    align-items: center;
+    gap: $gap-2;
+    width: 100%;
+    padding: $gap-1 $gap-2;
+    background: transparent;
+    border: 1px solid $border;
+    border-radius: $radius-sm;
+    color: $muted;
+    font-size: $fs-2xs;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+
+    &:hover {
+      color: $fg;
+      border-color: $fg-25;
+    }
+  }
+
+  // The label takes the slack, pushing the chevron to the far end.
+  &__shortcuts-title {
+    margin-right: auto;
+    text-align: left;
+  }
+
+  &__shortcuts-chevron {
+    flex-shrink: 0;
+    color: $fg-30;
   }
 }
 

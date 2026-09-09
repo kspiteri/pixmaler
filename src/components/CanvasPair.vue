@@ -3,8 +3,9 @@
 // phase and the /paint sandbox. `PixelCanvas` is imperative: it owns its
 // `<canvas>` and pixels, Vue only owns the surrounding layout.
 
+import type { BrushHandle, SwatchHandle } from '../lib'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
-import { buildBrushControls, buildSwatch, PixelCanvas, useAppLayout } from '../lib'
+import { buildBrushControls, buildSwatch, PixelCanvas, useAppLayout, useCanvasShortcuts } from '../lib'
 import PaletteTools from './PaletteTools.vue'
 
 interface Props {
@@ -50,6 +51,17 @@ const drawSlot = useTemplateRef<HTMLDivElement>('drawSlot')
 let target: PixelCanvas | null = null
 const playerRef = shallowRef<PixelCanvas | null>(null)
 
+// The swatch and brush handles, kept so the keyboard shortcuts can drive them; the
+// getters below stay valid because both are assigned in onMounted before any keypress.
+let swatchHandle: SwatchHandle | null = null
+let brushHandle: BrushHandle | null = null
+useCanvasShortcuts({
+  player: () => playerRef.value,
+  swatch: () => swatchHandle,
+  brush: () => brushHandle,
+  canvas: () => playerRef.value?.canvas ?? null,
+})
+
 // Imperative palette + brush DOM handed to <PaletteTools>; shallowRef, not reactive data.
 const swatchEl = shallowRef<HTMLElement | null>(null)
 const brushEl = shallowRef<HTMLElement | null>(null)
@@ -90,6 +102,7 @@ defineExpose({
 onMounted(() => {
   // Swatch first, so the canvases' onHover handlers can highlight it.
   const swatch = buildSwatch(props.palette, i => playerRef.value?.selectColor(i))
+  swatchHandle = swatch
 
   target = new PixelCanvas({
     gridW: props.gridW,
@@ -131,7 +144,8 @@ onMounted(() => {
   // so a subscriber watching it reads valid swatchEl/brushEl.
   playerRef.value = player
   swatchEl.value = swatch.element
-  brushEl.value = buildBrushControls(player)
+  brushHandle = buildBrushControls(player)
+  brushEl.value = brushHandle.element
   // Anchor the palette to the thumbnail slot, not targetWrap: the stretched target
   // column's bottom sits below the whole canvas.
   anchorEl.value = targetSlot.value
@@ -175,6 +189,8 @@ onBeforeUnmount(() => {
   playerRef.value = null
   swatchEl.value = null
   brushEl.value = null
+  swatchHandle = null
+  brushHandle = null
 })
 </script>
 

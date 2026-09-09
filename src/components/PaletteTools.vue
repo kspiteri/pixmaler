@@ -3,9 +3,10 @@
 // dragged (desktop) or dock full-width to the bottom (mobile). The swatch and brush are
 // imperative DOM built by the parent; we only mount them in slots.
 
+import type { Component } from 'vue'
 import type { PixelCanvas } from '../lib'
-import { Check, GripVertical, Pin, Trash2, Undo2 } from '@lucide/vue'
-import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { ArrowBigUp, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, GripVertical, Keyboard, Mouse, Pin, Trash2, Undo2 } from '@lucide/vue'
+import { markRaw, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { setPaletteHeight, useAppLayout, useDraggable } from '../lib'
 
 interface Props {
@@ -40,6 +41,26 @@ const panelEl = useTemplateRef<HTMLDivElement>('panelEl')
 const dockTargetSlot = useTemplateRef<HTMLDivElement>('dockTargetSlot')
 
 const panelVisible = ref(false)
+
+// Desktop-only keyboard shortcuts help, toggled by the ? in the handle. Hidden on mobile,
+// where there's no keyboard to shortcut with.
+const shortcutsOpen = ref(false)
+interface Shortcut {
+  // The actual key, in words — the truth, the fallback when there's no icon, and what a
+  // screen reader announces (the icons are silent to it).
+  key: string
+  // Optional icon visualisation; omit and the pill shows `key`. Icons must be markRaw'd.
+  shortcut?: (string | Component)[]
+  desc: string
+  // Optional fuller spoken label; falls back to `key` — e.g. read "⌘/Ctrl+Z" as words.
+  aria?: string
+}
+const SHORTCUTS: Shortcut[] = [
+  { key: 'hold Shift', shortcut: ['hold', markRaw(ArrowBigUp)], desc: 'show colour map - tap to switch' },
+  { key: 'arrow keys', shortcut: [markRaw(ArrowLeft), markRaw(ArrowRight)], desc: 'change colour' },
+  { key: 'scroll wheel', shortcut: [markRaw(Mouse), 'scroll'], desc: 'change brush size' },
+  { key: '⌘/Ctrl+Z', aria: 'Command or Control plus Z', desc: 'undo' },
+]
 
 const {
   x: panelX,
@@ -323,6 +344,37 @@ function clear() {
             </p>
             <p>saved as you draw, good or not</p>
           </div>
+          <!-- Keyboard shortcuts help, at the foot of the panel; desktop only, since there's
+               no keyboard to shortcut with on mobile. -->
+          <div v-if="!isMobile" class="tools-panel__shortcuts">
+            <button
+              class="tools-panel__shortcuts-toggle pressable"
+              type="button"
+              aria-label="Keyboard shortcuts"
+              :aria-expanded="shortcutsOpen"
+              @pointerdown.stop
+              @click="shortcutsOpen = !shortcutsOpen"
+            >
+              <Keyboard :size="14" />
+              <span class="tools-panel__shortcuts-title">for the pros</span>
+              <ChevronUp v-if="shortcutsOpen" :size="14" class="tools-panel__shortcuts-chevron" />
+              <ChevronDown v-else :size="14" class="tools-panel__shortcuts-chevron" />
+            </button>
+            <ul v-if="shortcutsOpen">
+              <li v-for="s in SHORTCUTS" :key="s.desc">
+                <kbd role="img" :aria-label="s.aria ?? s.key">
+                  <template v-if="s.shortcut">
+                    <template v-for="(t, i) in s.shortcut" :key="i">
+                      <component :is="t" v-if="typeof t !== 'string'" :size="13" />
+                      <span v-else>{{ t }}</span>
+                    </template>
+                  </template>
+                  <template v-else>{{ s.key }}</template>
+                </kbd>
+                <span>{{ s.desc }}</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -355,6 +407,7 @@ function clear() {
   }
 
   :deep(.swatch__cell) {
+    position: relative;
     width: var(--sw);
     aspect-ratio: 1;
     padding: 0;
@@ -371,6 +424,27 @@ function clear() {
 
   :deep(.swatch__cell--highlighted) {
     border-color: $accent-ink;
+  }
+
+  // Hold-Shift quick-swap overlay: a key badge per swatch, hidden until the overlay is on.
+  // Dark scrim + white glyph reads on any swatch colour, like the selected-cell white border.
+  :deep(.swatch__key) {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-family: $font-body;
+    font-size: 0.7rem;
+    font-weight: 700;
+    pointer-events: none;
+  }
+
+  :deep(.swatch--keys .swatch__key) {
+    display: flex;
   }
 
   :deep(.brush) {
