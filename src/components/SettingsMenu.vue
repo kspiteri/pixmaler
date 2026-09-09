@@ -3,10 +3,11 @@
 // switch (`ThemeToggle.vue`) and text-size stepper. A disclosure, not a `role="menu"`:
 // it closes on an outside pointer or Escape; Escape returns focus to the trigger.
 
-import { Settings } from '@lucide/vue'
+import { Keyboard, KeyboardOff, Settings } from '@lucide/vue'
 import { onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
-import { askConfirm, clearAllData, SCALE_STEPS, stepScale, textScale } from '../lib'
+import { askConfirm, clearAllData, SCALE_STEPS, shortcutsEnabled, stepScale, textScale, toggleShortcuts, useAppLayout } from '../lib'
 import ThemeToggle from './ThemeToggle.vue'
+import ToggleSwitch from './ToggleSwitch.vue'
 
 const min = SCALE_STEPS[0]
 const max = SCALE_STEPS[SCALE_STEPS.length - 1]
@@ -17,6 +18,9 @@ const version = document.querySelector('meta[name="pixmaler:client"]')?.getAttri
 const open = ref(false)
 const root = useTemplateRef<HTMLElement>('root')
 const trigger = useTemplateRef<HTMLButtonElement>('trigger')
+
+// The shortcuts toggle is desktop-only — there's no keyboard to shortcut with on mobile.
+const { isMobile } = useAppLayout()
 
 function onDocPointer(e: PointerEvent) {
   if (root.value && !root.value.contains(e.target as Node))
@@ -81,6 +85,22 @@ async function clearData() {
       <div class="settings-menu__row">
         <span class="settings-menu__label">Theme</span>
         <ThemeToggle />
+      </div>
+
+      <div v-if="!isMobile" class="settings-menu__row">
+        <span class="settings-menu__label">Shortcuts</span>
+        <ToggleSwitch
+          :model-value="shortcutsEnabled"
+          label="Keyboard shortcuts"
+          @update:model-value="toggleShortcuts"
+        >
+          <template #off>
+            <KeyboardOff :size="16" aria-hidden="true" />
+          </template>
+          <template #on>
+            <Keyboard :size="16" aria-hidden="true" />
+          </template>
+        </ToggleSwitch>
       </div>
 
       <div class="settings-menu__row">

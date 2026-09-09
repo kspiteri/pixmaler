@@ -7,6 +7,7 @@
 import type { PixelCanvas } from '../canvas/pixel'
 import type { BrushHandle, SwatchHandle } from '../canvas/tools'
 import { onBeforeUnmount, onMounted } from 'vue'
+import { shortcutsEnabled } from '../prefs/shortcuts'
 
 interface Refs {
   player: () => PixelCanvas | null
@@ -34,6 +35,8 @@ export function useCanvasShortcuts({ player, swatch, brush, canvas }: Refs) {
   }
 
   function onKeyDown(e: KeyboardEvent) {
+    if (!shortcutsEnabled.value)
+      return
     const pc = player()
     const sw = swatch()
     if (!pc || !sw)
@@ -94,7 +97,7 @@ export function useCanvasShortcuts({ player, swatch, brush, canvas }: Refs) {
   // can suppress the page scroll while the pointer is on the canvas.
   function onWheel(e: WheelEvent) {
     const c = canvas()
-    if (!c || !(e.target instanceof Node) || !c.contains(e.target))
+    if (!shortcutsEnabled.value || !c || !(e.target instanceof Node) || !c.contains(e.target))
       return
     e.preventDefault()
     nudgeBrush(e.deltaY < 0 ? 1 : -1)

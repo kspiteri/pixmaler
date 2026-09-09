@@ -7,7 +7,7 @@ import type { Component } from 'vue'
 import type { PixelCanvas } from '../lib'
 import { ArrowBigUp, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, GripVertical, Keyboard, Mouse, Pin, Trash2, Undo2 } from '@lucide/vue'
 import { markRaw, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
-import { setPaletteHeight, useAppLayout, useDraggable } from '../lib'
+import { setPaletteHeight, shortcutsEnabled, useAppLayout, useDraggable } from '../lib'
 
 interface Props {
   // The editable PixelCanvas the buttons drive; null for one tick while the parent mounts it.
@@ -346,7 +346,7 @@ function clear() {
           </div>
           <!-- Keyboard shortcuts help, at the foot of the panel; desktop only, since there's
                no keyboard to shortcut with on mobile. -->
-          <div v-if="!isMobile" class="tools-panel__shortcuts">
+          <div v-if="!isMobile && shortcutsEnabled" class="tools-panel__shortcuts">
             <button
               class="tools-panel__shortcuts-toggle pressable"
               type="button"
