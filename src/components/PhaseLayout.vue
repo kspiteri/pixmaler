@@ -8,6 +8,9 @@ import Logo from './Logo.vue'
 import SettingsMenu from './SettingsMenu.vue'
 
 withDefaults(defineProps<{
+  // Visually-hidden <h1> naming the phase — one per screen, so assistive tech has a
+  // document outline to navigate by (#10). The name is otherwise only implicit in the bar.
+  heading: string
   // 0–100 width of the top bar. Omit to hide the bar entirely.
   progress?: number | null
   progressColour?: string
@@ -16,6 +19,9 @@ withDefaults(defineProps<{
 
 <template>
   <div class="phase">
+    <h1 class="sr-only">
+      {{ heading }}
+    </h1>
     <div
       v-if="progress !== null"
       class="phase__progress"
