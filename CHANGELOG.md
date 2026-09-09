@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.8.0](https://github.com/kspiteri/pixmaler/compare/0.7.0...0.8.0) (2026-09-09)
+
+
+### New
+
+* add keyboard shortcuts for canvas tools and swatch enhancements ([48e7062](https://github.com/kspiteri/pixmaler/commit/48e706281136842fec82acf43baa6ba91263c023))
+* add keyboard shortcuts panel and swatch quick-key overlay ([17612fa](https://github.com/kspiteri/pixmaler/commit/17612fa8cd0c8420053defefaeb23073ff7fe6a2))
+* add toggle for keyboard shortcuts with desktop-only UI integration ([f154708](https://github.com/kspiteri/pixmaler/commit/f154708c5cdf3ae39148bcfafe54f5355fd341ee))
+
+
+### Under the hood
+
+* remove redundant keyboard shortcut handlers from views ([18434e0](https://github.com/kspiteri/pixmaler/commit/18434e0f3764a1182c6b42e54551b14e0f977680))
+
 ## [0.7.0](https://github.com/kspiteri/pixmaler/compare/0.6.1...0.7.0) (2026-09-09)
 
 
