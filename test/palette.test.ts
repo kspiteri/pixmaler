@@ -8,7 +8,7 @@
 
 import type { Rgb } from '../src/lib/canvas/palette'
 import { describe, expect, it } from 'vitest'
-import { CLASSIC_DEDUPE_DIST, CLASSICS, colorDist, derivePalette, hexToRgb, medianCut, mergeNearDuplicates, nearestIndex, paletteSortOrder, rgbToHex, rgbToHsl, SAT_THRESHOLD, withClassics } from '../src/lib/canvas/palette'
+import { CLASSIC_DEDUPE_DIST, CLASSICS, colorDist, colorName, derivePalette, hexToRgb, medianCut, mergeNearDuplicates, nearestIndex, paletteSortOrder, rgbToHex, rgbToHsl, SAT_THRESHOLD, withClassics } from '../src/lib/canvas/palette'
 
 // A deterministic spread of colours; no randomness, so a failure is reproducible.
 function ramp(n: number): Rgb[] {
@@ -367,5 +367,33 @@ describe('the swatch the pipeline builds', () => {
     const flat: Rgb[] = Array.from({ length: 100 }, () => [90, 60, 40] as Rgb)
     for (const count of [1, 2, 5, 8, 16, 24, 32])
       expect(swatchFor(flat, count)).toHaveLength(count)
+  })
+})
+
+describe('colorName', () => {
+  it('names the achromatic ramp by lightness, with no hue', () => {
+    expect(colorName('#000000')).toBe('black')
+    expect(colorName('#ffffff')).toBe('white')
+    expect(colorName('#202020')).toBe('dark grey')
+    expect(colorName('#808080')).toBe('grey')
+    expect(colorName('#d8d8d8')).toBe('light grey')
+  })
+
+  it('names a hue family with a lightness qualifier', () => {
+    expect(colorName('#dc3232')).toBe('red')
+    expect(colorName('#3264dc')).toBe('blue')
+    expect(colorName('#b0c8ff')).toBe('pale blue')
+    expect(colorName('#0a1f3d')).toBe('dark blue')
+  })
+
+  it('reads a warm dark muted colour as brown, not "dark orange"', () => {
+    expect(colorName('#462d1c')).toBe('dark brown')
+    expect(colorName('#8a6440')).toBe('brown')
+  })
+
+  it('never spells out the hex — always a spoken word', () => {
+    // A screen reader must never hear a "#", whatever the input.
+    for (const hex of ['#21110e', '#c8ff2d', '#8c7aff', '#00ffff', '#ff00ff'])
+      expect(colorName(hex)).not.toContain('#')
   })
 })

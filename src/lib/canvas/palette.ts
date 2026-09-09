@@ -113,6 +113,53 @@ export function rgbToHsl([r, g, b]: Rgb): { h: number, s: number, l: number } {
   return { h: h * 60, s, l }
 }
 
+// ── Naming ──────────────────────────────────────────────────────────────────
+// A swatch names itself by its hex, which a screen reader spells out digit by digit.
+// This gives it a spoken name instead — coarse on purpose: a hue family plus a
+// lightness qualifier is enough to pick a colour by ear, and precision nobody can hear
+// back is wasted. Output is British; the identifiers stay `color*` like the rest of the file.
+
+// Upper bound of each hue band, in order; a hue past the last wraps back to red.
+const HUE_NAMES: [number, string][] = [
+  [15, 'red'],
+  [45, 'orange'],
+  [70, 'yellow'],
+  [160, 'green'],
+  [200, 'cyan'],
+  [255, 'blue'],
+  [290, 'purple'],
+  [335, 'pink'],
+]
+
+export function colorName(hex: string): string {
+  const { h, s, l } = rgbToHsl(hexToRgb(hex))
+  // Achromatic: a grey ramp with no hue to name.
+  if (s < 0.12) {
+    if (l < 0.08)
+      return 'black'
+    if (l > 0.92)
+      return 'white'
+    if (l < 0.35)
+      return 'dark grey'
+    if (l > 0.7)
+      return 'light grey'
+    return 'grey'
+  }
+  const hue = HUE_NAMES.find(([max]) => h < max)?.[1] ?? 'red'
+  // Warm, dark and not too saturated reads as brown, not "dark orange".
+  if ((hue === 'red' || hue === 'orange' || hue === 'yellow') && l < 0.4 && s < 0.6)
+    return l < 0.25 ? 'dark brown' : 'brown'
+  if (l < 0.25)
+    return `dark ${hue}`
+  if (l > 0.78)
+    return `pale ${hue}`
+  if (l > 0.62)
+    return `light ${hue}`
+  if (s < 0.35)
+    return `muted ${hue}`
+  return hue
+}
+
 // Indices rather than a sorted palette: the caller remaps `targetGrid` through the
 // same permutation, and handing back only the colours would lose that mapping.
 export function paletteSortOrder(palette: Rgb[]): number[] {

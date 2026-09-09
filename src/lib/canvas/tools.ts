@@ -3,6 +3,7 @@
 // build bare elements with class names rather than carrying any styling of their own.
 
 import type { PixelCanvas } from './pixel'
+import { colorName } from './palette'
 
 // ── Swatch ────────────────────────────────────────────────────────────────────
 
@@ -19,6 +20,8 @@ export function buildSwatch(
 ): SwatchHandle {
   const wrap = document.createElement('div')
   wrap.className = 'swatch'
+  wrap.setAttribute('role', 'group')
+  wrap.setAttribute('aria-label', 'Colours')
 
   const cells: HTMLElement[] = []
   let selectedIndex = 0
@@ -26,10 +29,12 @@ export function buildSwatch(
 
   function applyState() {
     cells.forEach((cell, i) => {
-      cell.classList.toggle('swatch__cell--selected', i === selectedIndex)
+      const selected = i === selectedIndex
+      cell.setAttribute('aria-pressed', String(selected))
+      cell.classList.toggle('swatch__cell--selected', selected)
       cell.classList.toggle(
         'swatch__cell--highlighted',
-        i !== selectedIndex && i === highlightedIndex,
+        !selected && i === highlightedIndex,
       )
     })
   }
@@ -42,6 +47,7 @@ export function buildSwatch(
     // right escape hatch here.
     cell.style.background = hex
     cell.title = hex
+    cell.setAttribute('aria-label', `${colorName(hex)} (${hex})`)
     cell.addEventListener('click', () => {
       selectedIndex = i
       applyState()
@@ -76,10 +82,14 @@ export function buildBrushControls(pc: PixelCanvas): HTMLElement {
   slider.min = '1'
   slider.max = String(pc.getBrushMax())
   slider.value = String(pc.getBrushSize())
+  // Native range announces min/max/value; it only lacked a name.
+  slider.setAttribute('aria-label', 'Brush size')
 
   const label = document.createElement('span')
   label.className = 'brush__label'
+  // The slider already speaks its value, so the visible copy is decoration to AT.
   label.textContent = `brush: ${pc.getBrushSize()}`
+  label.setAttribute('aria-hidden', 'true')
 
   slider.addEventListener('input', () => {
     pc.setBrushSize(Number.parseInt(slider.value, 10))
