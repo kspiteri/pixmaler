@@ -11,6 +11,7 @@ import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } fr
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import { artRatio as artRatioFor } from '../../lib/aspect'
 import { PixelCanvas } from '../../lib/canvas/pixel'
+import { useCountdownAnnounce } from '../../lib/countdown'
 import { askConfirm } from '../../lib/dialog'
 import { clientIdKey, socketKey } from '../../lib/keys'
 import { VOTE_CATEGORIES } from '../../lib/types'
@@ -60,6 +61,9 @@ const artRatio = computed(() =>
 // which is what keeps it out of the way for the whole normal phase.
 const WARN_AT_SECONDS = 30
 const secondsLeft = ref<number | null>(null)
+// Announced into the hidden live region in the status bar at 30/10 then the last five
+// seconds — never per second, which the visible clock previously did for a full 30 s (#10).
+const countdownAnnounce = useCountdownAnnounce(secondsLeft, [30, 10, 5, 4, 3, 2, 1])
 let tick: ReturnType<typeof setInterval> | undefined
 
 function readClock() {
@@ -251,17 +255,19 @@ function castVote(category: VoteCategory, submissionId: string) {
 </script>
 
 <template>
-  <PhaseLayout>
+  <PhaseLayout heading="Voting">
     <template #status>
-      <span class="voting__tally" :class="{ 'voting__tally--complete': allVoted }">
+      <span class="voting__tally" :class="{ 'voting__tally--complete': allVoted }" role="status">
         {{ allVoted ? 'the votes are in…' : `${votedCount} of ${totalVoters} voted` }}
       </span>
       <!-- Only present in the final stretch, so it reads as a warning rather than a
-           clock. `role="status"` because a deadline nobody can see coming is worse
-           than no deadline — and this must not be sight-only. -->
-      <span v-if="secondsLeft !== null" class="voting__clock" role="status">
+           clock. The visible number stays silent; the hidden live region below reads it
+           aloud at intervals instead, so it isn't sight-only yet doesn't re-read every
+           second the way a `role="status"` on this span used to (#10). -->
+      <span v-if="secondsLeft !== null" class="voting__clock">
         {{ secondsLeft }}s to vote
       </span>
+      <span class="sr-only" role="status">{{ countdownAnnounce }}</span>
       <button
         v-if="isGm && gallery"
         class="btn btn--primary voting__stop"

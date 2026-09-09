@@ -28,6 +28,7 @@ import CanvasPair from '../../components/CanvasPair.vue'
 import PhaseLayout from '../../components/PhaseLayout.vue'
 import { orientationFor } from '../../lib/aspect'
 import { PixelCanvas } from '../../lib/canvas/pixel'
+import { useCountdownAnnounce } from '../../lib/countdown'
 import { askConfirm } from '../../lib/dialog'
 import { clientIdKey, socketKey } from '../../lib/keys'
 
@@ -127,6 +128,9 @@ watch(() => props.state.roundSeconds, (now, before) => {
 
 // Seconds remaining on the countdown (null until we know the deadline).
 const secondsLeft = ref<number | null>(null)
+// Announced into the hidden live region in the status bar at 60/30/10 then the last
+// five seconds only — never per second, which would bury the "X of Y ready" tally (#10).
+const countdownAnnounce = useCountdownAnnounce(secondsLeft, [60, 30, 10, 5, 4, 3, 2, 1])
 // The round's current length, not the configured one — it grows when the GM adds
 // time, and dividing by the config would pin the bar at 100%.
 const totalSeconds = computed(() => props.state.roundSeconds || config.value.drawSeconds)
@@ -336,7 +340,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <PhaseLayout class="phase--fixed" :progress="timerPct" :progress-colour="timerColour">
+  <PhaseLayout heading="Drawing" class="phase--fixed" :progress="timerPct" :progress-colour="timerColour">
     <template #status>
       <span
         class="drawing__timer"
@@ -345,7 +349,10 @@ onBeforeUnmount(() => {
       >
         {{ timerText }}
       </span>
-      <span class="drawing__done">{{ doneText }}</span>
+      <span class="drawing__done" role="status">{{ doneText }}</span>
+      <!-- The visible timer above ticks silently; this reads the remaining time aloud
+           at milestones only (see `countdownAnnounce`), so it isn't sight-only (#10). -->
+      <span class="sr-only" role="status">{{ countdownAnnounce }}</span>
       <button
         v-if="isGm && canExtend"
         class="btn btn--ghost drawing__extend"

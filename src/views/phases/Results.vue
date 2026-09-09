@@ -238,7 +238,7 @@ async function endSession() {
 </script>
 
 <template>
-  <PhaseLayout>
+  <PhaseLayout heading="Results">
     <template #status>
       <!-- Never gate the GM's only control on the payload arriving. The server
            now replays `results` on a mid-RESULTS rejoin, but if that ever fails

@@ -276,7 +276,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <PhaseLayout>
+  <PhaseLayout heading="Lobby">
     <template #status>
       <button
         class="lobby__room pressable no-shadow"
