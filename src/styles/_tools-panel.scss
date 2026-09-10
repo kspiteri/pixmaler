@@ -21,13 +21,10 @@
     gap: $gap-4;
   }
 
+  // The in-flow reference column is always empty now: PaletteTools docks the reference into
+  // the panel on every viewport. Kept only as the canvas's teardown home.
   &__target {
-    flex: 0 0 auto;
-    min-width: 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    gap: $gap-2;
+    display: none;
   }
 
   &__draw {
@@ -37,14 +34,6 @@
     display: flex;
     flex-direction: column;
     gap: $gap-2;
-  }
-
-  // Mobile: the reference moves into the docked palette bar (PaletteTools.vue),
-  // so hide the in-flow column; <CanvasPair> pads for the measured dock height.
-  @media (max-width: $bp-mobile) {
-    .canvas-pair__target {
-      display: none;
-    }
   }
 }
 
@@ -139,25 +128,66 @@
     min-width: 0;
   }
 
-  // Docked target reference (mobile DRAWING) — PaletteTools moves the <canvas>
-  // in here; sized as a compact thumbnail. Global partial, so no `:deep()`.
-  &__target {
-    flex: 0 0 auto;
+  // Reference disclosure — full-width in the desktop panel with a collapse toggle that
+  // mirrors the shortcuts below. On the mobile dock it's a compact thumbnail beside the
+  // controls, always shown. Global partial, so no `:deep()`.
+  &__reference {
     display: flex;
-    // Centre the compact reference against the taller controls column, so shrinking it
-    // doesn't leave dead space beneath it.
-    align-items: flex-start;
-    align-self: center;
+    flex-direction: column;
+    gap: $gap-2;
+  }
+
+  &__reference-toggle {
+    display: flex;
+    align-items: center;
+    gap: $gap-2;
+    width: 100%;
+    padding: $gap-1 $gap-2;
+    background: transparent;
+    border: 1px solid $border;
+    border-radius: $radius-sm;
+    color: $muted;
+    font-size: $fs-2xs;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+
+    &:hover {
+      color: $fg;
+      border-color: $fg-25;
+    }
+  }
+
+  &__reference-title {
+    margin-right: auto;
+    text-align: left;
+  }
+
+  &__reference-chevron {
+    flex-shrink: 0;
+    color: $fg-30;
+  }
+
+  &__target {
+    display: flex;
+    justify-content: center;
 
     .canvas-pair__target-canvas {
       display: block;
-      width: auto;
+      width: 100%;
       height: auto;
-      // A compact fixed thumbnail: small frees swatch width and shrinks the panel's
-      // footprint over the canvas; it stays the only reference on mobile, so not tiny.
+      border-radius: $radius-sm;
+    }
+  }
+
+  // Mobile dock: a compact thumbnail beside the controls rather than full-width.
+  &--docked &__target {
+    flex: 0 0 auto;
+    align-self: center;
+
+    .canvas-pair__target-canvas {
+      width: auto;
       max-width: 5.5rem;
       max-height: 7rem;
-      border-radius: $radius-sm;
     }
   }
 

@@ -144,9 +144,9 @@ onMounted(() => {
   swatchEl.value = swatch.element
   brushHandle = buildBrushControls(player)
   brushEl.value = brushHandle.element
-  // Anchor the palette to the thumbnail slot, not targetWrap: the stretched target
-  // column's bottom sits below the whole canvas.
-  anchorEl.value = targetSlot.value
+  // The reference now lives in the palette panel (docked on every viewport), so anchor
+  // the panel's default position to the top-left of the editable canvas area.
+  anchorEl.value = drawSlot.value
   targetEl.value = target.canvas
   targetHomeEl.value = targetSlot.value
 
@@ -202,12 +202,7 @@ onBeforeUnmount(() => {
       class="canvas-pair__row"
       :style="orientation ? { 'flex-direction': orientation } : undefined"
     >
-      <div class="canvas-pair__target">
-        <p class="label label--eyebrow">
-          Reference
-        </p>
-        <div ref="targetSlot" class="canvas-pair__target-slot" />
-      </div>
+      <div ref="targetSlot" class="canvas-pair__target" />
       <div class="canvas-pair__draw">
         <div ref="drawSlot" class="canvas-pair__draw-slot" />
       </div>

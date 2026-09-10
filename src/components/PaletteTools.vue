@@ -5,7 +5,7 @@
 
 import type { Component } from 'vue'
 import type { PixelCanvas } from '../lib'
-import { ArrowBigUp, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, GripVertical, Keyboard, Mouse, Pin, Trash2, Undo2 } from '@lucide/vue'
+import { ArrowBigUp, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, GripVertical, Image as ImageIcon, Keyboard, Mouse, Pin, Trash2, Undo2 } from '@lucide/vue'
 import { markRaw, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import { setPaletteHeight, shortcutsEnabled, useAppLayout, useDraggable } from '../lib'
 
@@ -23,7 +23,7 @@ interface Props {
   flaggedDone?: boolean
   // Whether the canvas has anything on its undo stack — parent-supplied (canUndo is imperative).
   canUndo?: boolean
-  // DRAWING only — the target reference and its home slot; relocated into the dock on mobile.
+  // The target reference and its home slot; relocated into the panel's dock on every viewport.
   targetEl?: HTMLElement | null
   targetHome?: HTMLElement | null
 }
@@ -41,6 +41,10 @@ const panelEl = useTemplateRef<HTMLDivElement>('panelEl')
 const dockTargetSlot = useTemplateRef<HTMLDivElement>('dockTargetSlot')
 
 const panelVisible = ref(false)
+
+// Desktop-only collapse for the reference, mirroring the shortcuts disclosure. Open by
+// default; on mobile the reference is always shown in the docked bar.
+const referenceOpen = ref(true)
 
 // Desktop-only keyboard shortcuts help, toggled by the ? in the handle. Hidden on mobile,
 // where there's no keyboard to shortcut with.
@@ -81,14 +85,15 @@ watch(isMobile, () => {
   })
 })
 
-// Move the reference between its in-flow home (desktop) and the docked bar (mobile). Safe
-// to move the imperative `<canvas>`: non-editable, no fit-zoom.
+// Move the reference into the panel's dock slot. It lives here on every viewport now — a
+// compact thumbnail attached to the palette, freeing the whole main area for the canvas.
+// Safe to move the imperative `<canvas>`: non-editable, no fit-zoom.
 function placeTarget() {
   const el = props.targetEl
   if (!el)
     return
   const dock = dockTargetSlot.value
-  if (isMobile.value && dock) {
+  if (dock) {
     if (!dock.contains(el))
       dock.appendChild(el)
   }
@@ -110,7 +115,8 @@ function defaultPosition(): { x: number, y: number } {
   const rect = props.anchor?.getBoundingClientRect()
   if (!rect)
     return { x: 16, y: 16 }
-  return { x: Math.round(rect.left), y: Math.round(rect.bottom + 12) }
+  // Top-left of the canvas area — the reference no longer sits above the panel in-flow.
+  return { x: Math.round(rect.left), y: Math.round(rect.top) }
 }
 
 function snapToDefault() {
@@ -290,12 +296,25 @@ function clear() {
       </div>
 
       <div class="tools-panel__body">
-        <!-- Mobile only: the target reference is relocated here to save space -->
-        <div
-          v-if="isMobile"
-          ref="dockTargetSlot"
-          class="tools-panel__target"
-        />
+        <!-- Reference: full-width in the desktop panel with a collapse toggle (like the
+             shortcuts); on the mobile dock it's a compact thumbnail beside the controls. -->
+        <div class="tools-panel__reference">
+          <button
+            v-if="!isMobile"
+            class="tools-panel__reference-toggle pressable"
+            type="button"
+            aria-label="Reference image"
+            :aria-expanded="referenceOpen"
+            @pointerdown.stop
+            @click="referenceOpen = !referenceOpen"
+          >
+            <ImageIcon :size="14" />
+            <span class="tools-panel__reference-title">reference</span>
+            <ChevronUp v-if="referenceOpen" :size="14" class="tools-panel__reference-chevron" />
+            <ChevronDown v-else :size="14" class="tools-panel__reference-chevron" />
+          </button>
+          <div v-show="isMobile || referenceOpen" ref="dockTargetSlot" class="tools-panel__target" />
+        </div>
         <div class="tools-panel__controls">
           <div ref="swatchSlot" />
           <div ref="brushSlot" class="tools-panel__brush" />
