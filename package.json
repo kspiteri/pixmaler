@@ -10,6 +10,7 @@
     "typecheck": "vue-tsc --noEmit && tsc --noEmit -p tsconfig.worker.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "lint:css": "stylelint \"src/**/*.{scss,vue}\"",
     "test": "vitest run",
     "wr:dev": "wrangler dev",
     "wr:deploy": "wrangler deploy",
@@ -29,8 +30,11 @@
     "eslint": "catalog:dev",
     "eslint-plugin-format": "catalog:dev",
     "lint-staged": "catalog:dev",
+    "postcss-html": "catalog:dev",
+    "postcss-scss": "catalog:dev",
     "sass": "catalog:dev",
     "simple-git-hooks": "catalog:dev",
+    "stylelint": "catalog:dev",
     "typescript": "catalog:dev",
     "vite": "catalog:dev",
     "vitest": "catalog:dev",
@@ -42,6 +46,7 @@
     "commit-msg": "node scripts/commit-msg.mjs $1"
   },
   "lint-staged": {
-    "*": "eslint --fix"
+    "*": "eslint --fix",
+    "*.{scss,vue}": "stylelint"
   }
 }

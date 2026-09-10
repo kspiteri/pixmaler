@@ -1,0 +1,13 @@
+{
+  "overrides": [
+    { "files": ["**/*.scss"], "customSyntax": "postcss-scss" },
+    { "files": ["**/*.vue"], "customSyntax": "postcss-html" }
+  ],
+  "rules": {
+    "color-no-hex": [true, { "message": "No literal hex — reference a token from _tokens.scss (or add the value to _theme.scss)." }],
+    "declaration-property-value-disallowed-list": {
+      "/^(color|background|background-color|border|border-color|fill|stroke|outline|outline-color)$/": ["/rgba?\\(/", "/hsla?\\(/"]
+    }
+  },
+  "ignoreFiles": ["src/styles/_theme.scss", "src/styles/_tokens.scss"]
+}
