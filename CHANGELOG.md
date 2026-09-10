@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.8.1](https://github.com/kspiteri/pixmaler/compare/0.8.0...0.8.1) (2026-09-10)
+
+
+### Fixes
+
+* add palette docking and resizing with persisted preferences ([75b0681](https://github.com/kspiteri/pixmaler/commit/75b068148e23f77bc143d81c6996c301882fe665))
+* improve canvas layout ([d225b0e](https://github.com/kspiteri/pixmaler/commit/d225b0e3a6130324661f068b2dea5afc9f04b6bb))
+
+
+### Under the hood
+
+* relocate reference img to palette panel and update layout ([68db109](https://github.com/kspiteri/pixmaler/commit/68db1099d031f65c53649f53bbf35a54413df42d))
+* replace hardcoded colours with theme variables ([4c9175a](https://github.com/kspiteri/pixmaler/commit/4c9175ad2d9b422a8ec77326f5d79a36b3bb65a1))
+
 ## [0.8.0](https://github.com/kspiteri/pixmaler/compare/0.7.0...0.8.0) (2026-09-09)
 
 
