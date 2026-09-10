@@ -4,10 +4,10 @@
 // imperative DOM built by the parent; we only mount them in slots.
 
 import type { Component } from 'vue'
-import type { PixelCanvas } from '../lib'
-import { ArrowBigUp, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, GripVertical, Image as ImageIcon, Keyboard, Mouse, Pin, Trash2, Undo2 } from '@lucide/vue'
-import { markRaw, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
-import { setPaletteHeight, shortcutsEnabled, useAppLayout, useDraggable } from '../lib'
+import type { PaletteSize, PixelCanvas } from '../lib'
+import { ArrowBigUp, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, GripVertical, Image as ImageIcon, Keyboard, Mouse, Pin, PinOff, Trash2, Undo2 } from '@lucide/vue'
+import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { paletteDocked, paletteSize, setPaletteDocked, setPaletteHeight, setPaletteSize, shortcutsEnabled, useAppLayout, useDraggable } from '../lib'
 
 interface Props {
   // The editable PixelCanvas the buttons drive; null for one tick while the parent mounts it.
@@ -76,6 +76,11 @@ const {
 // Below $bp-mobile the panel docks full-width at the bottom and dragging is off.
 const { isMobile } = useAppLayout()
 
+// Desktop-only dock/float (persisted). Floating (draggable, over the canvas) by default;
+// docked renders in-flow as a column beside the canvas (Teleport disabled).
+const floatingDesktop = computed(() => !isMobile.value && !paletteDocked.value)
+const inFlow = computed(() => !isMobile.value && paletteDocked.value)
+
 // The docked/floating flip changes whether the reference belongs in the dock and how tall
 // the reserve is — re-run once the layout has settled.
 watch(isMobile, () => {
@@ -102,10 +107,8 @@ function placeTarget() {
   }
 }
 
-// Swatch cell size — drives a CSS var on the panel; the swatch grid reflows.
-type SwatchSize = 'sm' | 'md' | 'lg'
-const swatchSize = ref<SwatchSize>('md')
-const SWATCH_SIZES: { id: SwatchSize, label: string }[] = [
+// The S / M / L options; the current choice is the persisted `paletteSize`.
+const SWATCH_SIZES: { id: PaletteSize, label: string }[] = [
   { id: 'sm', label: 'S' },
   { id: 'md', label: 'M' },
   { id: 'lg', label: 'L' },
@@ -122,6 +125,19 @@ function defaultPosition(): { x: number, y: number } {
 function snapToDefault() {
   const { x, y } = defaultPosition()
   setPanelPosition(x, y)
+}
+
+// Floating panel only — re-apply the viewport clamp against the panel's current size, so a
+// change that grows it (S/M/L, opening the reference) can't push the header off-screen.
+function reclampFloating() {
+  if (floatingDesktop.value)
+    setPanelPosition(panelX.value, panelY.value)
+}
+
+// The handle only drags when floating; docked it's a static header.
+function onHandlePointerDown(e: PointerEvent) {
+  if (floatingDesktop.value)
+    startDrag(e)
 }
 
 function onResize() {
@@ -180,8 +196,19 @@ watch(() => props.targetEl, () => nextTick(() => {
   schedulePublishDockHeight()
 }))
 
-// Swatch size changes the docked panel's height — re-measure the reserve.
-watch(swatchSize, () => schedulePublishDockHeight())
+// Size or reference-collapse changes the docked height (re-measure) and the floating
+// footprint (re-clamp so the header stays in view).
+watch([paletteSize, referenceOpen], () => {
+  schedulePublishDockHeight()
+  nextTick(reclampFloating)
+})
+
+// Returning to floating re-anchors to the default spot; the canvas refit follows from the
+// draw slot's ResizeObserver in either mode.
+watch(paletteDocked, (isDocked) => {
+  if (!isDocked)
+    nextTick(snapToDefault)
+})
 
 onMounted(() => {
   window.addEventListener('resize', onResize)
@@ -227,33 +254,33 @@ function clear() {
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport to="body" :disabled="inFlow">
     <div
       v-show="panelVisible"
       ref="panelEl"
       class="tools-panel"
-      :class="[`tools-panel--${swatchSize}`, `tools-panel--${variant}`, { 'tools-panel--docked': isMobile }]"
-      :style="isMobile ? undefined : { transform: `translate(${panelX}px, ${panelY}px)` }"
+      :class="[`tools-panel--${paletteSize}`, `tools-panel--${variant}`, { 'tools-panel--docked': isMobile, 'tools-panel--float': floatingDesktop, 'tools-panel--dock-side': inFlow }]"
+      :style="floatingDesktop ? { transform: `translate(${panelX}px, ${panelY}px)` } : undefined"
     >
       <div
         v-if="!isMobile"
         class="tools-panel__handle"
-        title="Drag to move"
-        @pointerdown="startDrag"
+        :title="floatingDesktop ? 'Drag to move' : undefined"
+        @pointerdown="onHandlePointerDown"
       >
-        <span class="tools-panel__grip"><GripVertical :size="16" /></span>
+        <span v-if="floatingDesktop" class="tools-panel__grip"><GripVertical :size="16" /></span>
         <span class="tools-panel__label">palette</span>
-        <!-- Dock button — snaps the panel to its default position; pointerdown stopped so
-             it doesn't start a drag. -->
+        <!-- Dock / float toggle. pointerdown stopped so it doesn't start a drag. -->
         <button
           class="tools-panel__dock pressable"
           type="button"
-          title="Dock to default position"
-          aria-label="Dock palette to default position"
+          :title="paletteDocked ? 'Float palette' : 'Dock palette to the side'"
+          :aria-label="paletteDocked ? 'Float palette' : 'Dock palette'"
           @pointerdown.stop
-          @click="snapToDefault"
+          @click="setPaletteDocked(!paletteDocked)"
         >
-          <Pin :size="14" />
+          <PinOff v-if="paletteDocked" :size="14" />
+          <Pin v-else :size="14" />
         </button>
         <!-- Swatch size sits in the handle, away from the brush slider; pointerdown stopped
              so a size click doesn't start a panel drag. -->
@@ -267,10 +294,10 @@ function clear() {
             v-for="s in SWATCH_SIZES"
             :key="s.id"
             class="segmented__item"
-            :class="{ 'segmented__item--active': swatchSize === s.id }"
+            :class="{ 'segmented__item--active': paletteSize === s.id }"
             type="button"
-            :aria-pressed="swatchSize === s.id"
-            @click="swatchSize = s.id"
+            :aria-pressed="paletteSize === s.id"
+            @click="setPaletteSize(s.id)"
           >
             {{ s.label }}
           </button>
@@ -285,10 +312,10 @@ function clear() {
             v-for="s in SWATCH_SIZES"
             :key="s.id"
             class="segmented__item"
-            :class="{ 'segmented__item--active': swatchSize === s.id }"
+            :class="{ 'segmented__item--active': paletteSize === s.id }"
             type="button"
-            :aria-pressed="swatchSize === s.id"
-            @click="swatchSize = s.id"
+            :aria-pressed="paletteSize === s.id"
+            @click="setPaletteSize(s.id)"
           >
             {{ s.label }}
           </button>
@@ -407,22 +434,26 @@ function clear() {
 @use '../styles/tokens' as *;
 
 .tools-panel {
-  // Swatch cell size — set by the S / M / L control, read by `:deep(.swatch*)`.
+  // Swatch cell size and grid gap — set by the S / M / L control, read by `:deep(.swatch*)`.
+  // The matching panel width lives in `_tools-panel.scss` (it's not a `:deep` concern).
   --sw: 26px;
+  --sw-gap: 6px;
 
   &--sm {
     --sw: 20px;
+    --sw-gap: 4px;
   }
 
   &--lg {
-    --sw: 34px;
+    --sw: 36px;
+    --sw-gap: 9px;
   }
 
   :deep(.swatch) {
     display: grid;
     grid-template-columns: repeat(auto-fill, var(--sw));
     justify-content: space-between;
-    gap: 6px;
+    gap: var(--sw-gap);
   }
 
   :deep(.swatch__cell) {

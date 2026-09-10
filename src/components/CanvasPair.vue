@@ -198,6 +198,18 @@ onBeforeUnmount(() => {
     :class="`canvas-pair--${variant}`"
     :style="reservedForPalette ? { 'padding-bottom': `${reservedForPalette}px` } : undefined"
   >
+    <PaletteTools
+      :player="playerRef"
+      :swatch-el="swatchEl"
+      :brush-el="brushEl"
+      :variant="variant"
+      :anchor="anchorEl"
+      :flagged-done="flaggedDone"
+      :can-undo="canUndo"
+      :target-el="targetEl"
+      :target-home="targetHomeEl"
+      @done="emit('done')"
+    />
     <div
       class="canvas-pair__row"
       :style="orientation ? { 'flex-direction': orientation } : undefined"
@@ -208,19 +220,6 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </div>
-
-  <PaletteTools
-    :player="playerRef"
-    :swatch-el="swatchEl"
-    :brush-el="brushEl"
-    :variant="variant"
-    :anchor="anchorEl"
-    :flagged-done="flaggedDone"
-    :can-undo="canUndo"
-    :target-el="targetEl"
-    :target-home="targetHomeEl"
-    @done="emit('done')"
-  />
 </template>
 
 <style scoped lang="scss">
