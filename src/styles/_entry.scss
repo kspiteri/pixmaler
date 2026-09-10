@@ -8,8 +8,6 @@
 // Buttons, fields and the logo come from the shared partials.
 
 // The action panel's width — the desktop grid track and its stacked cap in one place, so it
-
-// The action panel's width — the desktop grid track and its stacked cap in one place, so it
 // stays a contained framed piece rather than stretching when the stage is single-column.
 $panel-w: 24rem;
 
@@ -23,11 +21,12 @@ $panel-w: 24rem;
   padding: clamp(1.5rem, 5vw, 4rem);
 }
 
-// The composition: a wide brand hero on the left, the action panel on the right. Centred as
-// a block, off the page centreline. Stacks below $stage-w (portrait tablets and narrower).
+// The composition: a wide brand hero on the left, the action panel on the right. Centred as a
+// block, off the page centreline. Two-column only above `$bp-tablet` (its own max-width) — below
+// that the hero can't hold the wordmark beside the panel, so it stacks and centres.
 .entry__stage {
   width: 100%;
-  max-width: $stage-w;
+  max-width: $bp-tablet;
   margin: 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, $panel-w);
@@ -36,7 +35,7 @@ $panel-w: 24rem;
 
   // Stacked, the asymmetry has no second column to lean against, so it just centres — the
   // off-centre weighting is a wide-viewport statement, not a narrow-column one.
-  @media (max-width: $stage-w) {
+  @media (max-width: $bp-tablet) {
     grid-template-columns: 1fr;
     gap: $gap-6;
     .entry__hero {
