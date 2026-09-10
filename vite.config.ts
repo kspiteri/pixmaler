@@ -7,6 +7,13 @@ const { version } = JSON.parse(
   readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf8'),
 ) as { version: string }
 
+// `src/styles/` is organised into role folders (foundation / mixins / base / components /
+// screens); these load paths let partials keep resolving each other by bare name
+// (`@use 'tokens'`) regardless of which folder they sit in.
+const stylesRoot = fileURLToPath(new URL('./src/styles', import.meta.url))
+const styleLoadPaths = ['foundation', 'mixins', 'base', 'components', 'screens']
+  .map(dir => `${stylesRoot}/${dir}`)
+
 export default defineConfig({
   base: '/pixmaler/',
   plugins: [
@@ -20,5 +27,10 @@ export default defineConfig({
   ],
   server: {
     port: 7965, // PXML
+  },
+  css: {
+    preprocessorOptions: {
+      scss: { loadPaths: styleLoadPaths },
+    },
   },
 })

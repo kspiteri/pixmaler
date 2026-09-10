@@ -435,7 +435,7 @@ function clear() {
 // Swatch/brush `:deep()` overrides plus the reactive `--sw` size var — the DOM is mounted
 // imperatively by `lib/canvas/pixel.ts`, and `:deep()` only works in a scoped block. Static
 // tools-panel chrome lives in `_tools-panel.scss`.
-@use '../styles/tokens' as *;
+@use 'tokens' as *;
 
 .tools-panel {
   // Swatch cell size and grid gap — set by the S / M / L control, read by `:deep(.swatch*)`.

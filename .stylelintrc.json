@@ -9,5 +9,5 @@
       "/^(color|background|background-color|border|border-color|fill|stroke|outline|outline-color)$/": ["/rgba?\\(/", "/hsla?\\(/"]
     }
   },
-  "ignoreFiles": ["src/styles/_theme.scss", "src/styles/_tokens.scss"]
+  "ignoreFiles": ["src/styles/foundation/_theme.scss", "src/styles/foundation/_tokens.scss"]
 }

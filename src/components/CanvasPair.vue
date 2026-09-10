@@ -226,7 +226,7 @@ onBeforeUnmount(() => {
 // Canvas-pair `:deep()` overrides — the `<canvas>` elements are mounted imperatively by
 // `lib/canvas/pixel.ts`, and `:deep()` only works in a scoped block. Static flex layout
 // for the row lives in `_tools-panel.scss`.
-@use '../styles/tokens' as *;
+@use 'tokens' as *;
 
 // Fit-zoom shell shared by DRAWING and /paint: `fitTo` sets the editable canvas's display
 // size — never CSS.
