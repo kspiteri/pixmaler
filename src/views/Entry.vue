@@ -90,13 +90,16 @@ function enterRoom(room: string) {
     <details class="entry__privacy">
       <summary>your privacy and what is stored</summary>
       <div class="entry__privacy-body">
-        <p>Pixmaler keeps a nickname you choose, a randomly generated id, and settings. All stored in your own browser.</p>
+        <p>Pixmaler keeps a nickname you choose, a randomly generated id, and other settings. All stored in your own browser.</p>
         <ul>
           <li>
             Your nickname, random id and avatar are sent to the game server and held in memory only
             while a room is live; they're wiped when it goes idle or the session is closed by the GM.
           </li>
-          <li>Settings include your dark/light theme preference and text size.</li>
+          <li>
+            Settings include your dark/light theme preference, text size, your palette preferences and
+            whether or not you have canvas shortcuts enabled.
+          </li>
           <li>Nothing is stored in a database, no cookies, no analytics and no third parties.</li>
         </ul>
         <p>
