@@ -136,8 +136,6 @@ onMounted(() => {
     },
   })
   player.canvas.classList.add('canvas-pair__draw-canvas')
-  player.canvas.style.border = '1px solid var(--canvas-edge)'
-  player.canvas.style.background = '#fff'
   drawSlot.value!.appendChild(player.canvas)
 
   // Publish what the panel needs. Order matters: `player` before the imperative controls,

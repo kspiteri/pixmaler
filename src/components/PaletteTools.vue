@@ -411,14 +411,14 @@ function clear() {
     width: var(--sw);
     aspect-ratio: 1;
     padding: 0;
-    border: 2px solid rgba(255, 255, 255, 0.15);
+    border: 2px solid color-mix(in oklab, $paper, transparent 85%);
     border-radius: 50%;
     cursor: pointer;
     transition: transform 80ms;
   }
 
   :deep(.swatch__cell--selected) {
-    border-color: #fff;
+    border-color: $accent-ink;
     transform: scale(1.12);
   }
 
@@ -435,8 +435,8 @@ function clear() {
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.55);
-    color: #fff;
+    background: $scrim;
+    color: $paper;
     font-family: $font-body;
     font-size: 0.7rem;
     font-weight: 700;

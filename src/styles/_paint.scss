@@ -149,7 +149,8 @@
     aspect-ratio: 1;
     border-radius: $radius-lg;
     border: 1px solid $border-soft;
-    background: linear-gradient(100deg, $surface 30%, rgba(255, 255, 255, 0.06) 50%, $surface 70%) $surface;
+    background: linear-gradient(100deg, $surface 30%, color-mix(in oklab, $paper, transparent 94%) 50%, $surface 70%)
+      $surface;
     background-size: 300% 100%;
     animation: paint-skeleton-shimmer 1.4s ease-in-out infinite;
   }

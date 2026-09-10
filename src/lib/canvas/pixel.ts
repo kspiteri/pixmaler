@@ -77,8 +77,8 @@ export class PixelCanvas {
     this.canvas.style.cursor = opts.editable ? 'crosshair' : 'default'
     this.canvas.style.display = 'block'
     if (opts.editable) {
-      // White in both themes: untouched cells (-1) render transparent onto it.
-      this.canvas.style.background = '#fff'
+      // The drawing's paper (--paper): untouched cells (-1) render transparent onto it.
+      this.canvas.style.background = 'var(--paper)'
       // The only edge this canvas gets — CanvasPair has no `.art-frame`. Themed via inline
       // `var()`, which resolves against `:root`.
       this.canvas.style.border = '1px solid var(--canvas-edge)'

@@ -125,13 +125,13 @@
     width: 1.25rem;
     height: 1.25rem;
     padding: 0;
-    border: 2px solid rgba(255, 255, 255, 0.15);
+    border: 2px solid color-mix(in oklab, $paper, transparent 85%);
     border-radius: 50%;
     cursor: pointer;
     transition: transform 80ms;
 
     &.is-active {
-      border-color: #fff;
+      border-color: $paper;
       transform: scale(1.15);
     }
   }
@@ -281,7 +281,7 @@
   &__crop-shade {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
+    background: $scrim;
     pointer-events: none;
   }
   &__crop-window {

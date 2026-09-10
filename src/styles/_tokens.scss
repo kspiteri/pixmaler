@@ -56,7 +56,8 @@ $surface: var(--surface); // cards, inputs, panels
 $fg: var(--fg);
 
 // The drawing's paper. Untouched cells (-1) land on it, so it can never go dark.
-$paper: #ffffff;
+// The value is a guardrail in _theme.scss; JS reads it as var(--paper) too.
+$paper: var(--paper);
 
 // Ink for anything sitting on a seat colour (chip letters). Stays dark in both,
 // because the fill under it doesn't change — following $bg would break all 21 seats.

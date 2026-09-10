@@ -111,6 +111,8 @@
 // **Order is load-bearing** — the attribute blocks MUST stay below the query.
 :root {
   @include dark;
+  // The drawing's paper — a guardrail, constant in both themes.
+  --paper: #ffffff;
 }
 
 @media (prefers-color-scheme: light) {
