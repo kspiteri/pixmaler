@@ -7,6 +7,12 @@
 // centre-stacked. The pixel grid + vignette are the app-wide backdrop (`_backdrop.scss`).
 // Buttons, fields and the logo come from the shared partials.
 
+// The action panel's width — the desktop grid track and its stacked cap in one place, so it
+
+// The action panel's width — the desktop grid track and its stacked cap in one place, so it
+// stays a contained framed piece rather than stretching when the stage is single-column.
+$panel-w: 24rem;
+
 .entry {
   position: relative;
   min-height: 100vh;
@@ -17,20 +23,34 @@
   padding: clamp(1.5rem, 5vw, 4rem);
 }
 
-// The composition: a wide brand hero on the left, the action panel on the right. Centred
-// as a block, but weighted off the page centreline. Collapses to a stack on mobile.
+// The composition: a wide brand hero on the left, the action panel on the right. Centred as
+// a block, off the page centreline. Stacks below $stage-w (portrait tablets and narrower).
 .entry__stage {
   width: 100%;
-  max-width: 64rem;
+  max-width: $stage-w;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 24rem);
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, $panel-w);
   align-items: center;
   gap: clamp(2rem, 6vw, 5rem);
 
-  @media (max-width: $bp-mobile) {
+  // Stacked, the asymmetry has no second column to lean against, so it just centres — the
+  // off-centre weighting is a wide-viewport statement, not a narrow-column one.
+  @media (max-width: $stage-w) {
     grid-template-columns: 1fr;
     gap: $gap-6;
+    .entry__hero {
+      text-align: center;
+
+      .wordmark {
+        justify-content: center;
+      }
+
+      // Centre the summary too (the body stays left for readability).
+      .entry__privacy summary {
+        text-align: center;
+      }
+    }
   }
 }
 
@@ -51,6 +71,10 @@
 // The action panel — a framed "piece" on the wall, tilted by wonk(), straightening on focus.
 .entry__panel {
   @include chrome;
+  max-width: $panel-w;
+  // Centre it: a no-op in the desktop track (track == panel width) but it centres the
+  // capped panel when the stage is single-column.
+  justify-self: center;
   // Re-dress the chrome border as the frame bevel (`--frame-*`, $frame-w) — Entry wears the
   // gallery's frame vocabulary rather than `.art-frame` itself: a deliberate flourish, not the
   // artefact role. The frame's own shades are near-white and wash out on the dark page, so the
