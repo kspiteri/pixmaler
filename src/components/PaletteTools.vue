@@ -7,7 +7,7 @@ import type { Component } from 'vue'
 import type { PaletteSize, PixelCanvas } from '../lib'
 import { ArrowBigUp, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, GripVertical, Image as ImageIcon, Keyboard, Mouse, Pin, PinOff, Trash2, Undo2 } from '@lucide/vue'
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
-import { paletteDocked, paletteSize, setPaletteDocked, setPaletteHeight, setPaletteSize, shortcutsEnabled, useAppLayout, useDraggable } from '../lib'
+import { isTouch, paletteDocked, paletteSize, setPaletteDocked, setPaletteHeight, setPaletteSize, shortcutsEnabled, useAppLayout, useDraggable } from '../lib'
 
 interface Props {
   // The editable PixelCanvas the buttons drive; null for one tick while the parent mounts it.
@@ -71,7 +71,7 @@ const {
   y: panelY,
   start: startDrag,
   setPosition: setPanelPosition,
-} = useDraggable({ initialX: 16, initialY: 16, desktopOnly: true, element: () => panelEl.value })
+} = useDraggable({ initialX: 16, initialY: 16, disabled: () => isTouch.value, element: () => panelEl.value })
 
 // Below $bp-mobile the panel docks full-width at the bottom and dragging is off.
 const { isMobile } = useAppLayout()
@@ -80,6 +80,10 @@ const { isMobile } = useAppLayout()
 // docked renders in-flow as a column beside the canvas (Teleport disabled).
 const floatingDesktop = computed(() => !isMobile.value && !paletteDocked.value)
 const inFlow = computed(() => !isMobile.value && paletteDocked.value)
+
+// Draggable only when floating on a fine pointer: Touch mode (or a docked panel) turns the
+// handle into a static header, and useDraggable's `disabled` enforces the same at drag start.
+const canDrag = computed(() => floatingDesktop.value && !isTouch.value)
 
 // The docked/floating flip changes whether the reference belongs in the dock and how tall
 // the reserve is — re-run once the layout has settled.
@@ -134,9 +138,9 @@ function reclampFloating() {
     setPanelPosition(panelX.value, panelY.value)
 }
 
-// The handle only drags when floating; docked it's a static header.
+// The handle drags only when floating on a fine pointer; docked or in Touch mode it's static.
 function onHandlePointerDown(e: PointerEvent) {
-  if (floatingDesktop.value)
+  if (canDrag.value)
     startDrag(e)
 }
 
@@ -265,10 +269,10 @@ function clear() {
       <div
         v-if="!isMobile"
         class="tools-panel__handle"
-        :title="floatingDesktop ? 'Drag to move' : undefined"
+        :title="canDrag ? 'Drag to move' : undefined"
         @pointerdown="onHandlePointerDown"
       >
-        <span v-if="floatingDesktop" class="tools-panel__grip"><GripVertical :size="16" /></span>
+        <span v-if="canDrag" class="tools-panel__grip"><GripVertical :size="16" /></span>
         <span class="tools-panel__label">palette</span>
         <!-- Dock / float toggle. pointerdown stopped so it doesn't start a drag. -->
         <button
@@ -380,7 +384,7 @@ function clear() {
               </button>
             </div>
           </div>
-          <div v-if="variant === 'drawing' && !isMobile" class="tools-panel__hint">
+          <div v-if="variant === 'drawing' && !isTouch" class="tools-panel__hint">
             <p>
               {{
                 flaggedDone
@@ -390,9 +394,9 @@ function clear() {
             </p>
             <p>saved as you draw, good or not</p>
           </div>
-          <!-- Keyboard shortcuts help, at the foot of the panel; desktop only, since there's
-               no keyboard to shortcut with on mobile. -->
-          <div v-if="!isMobile && shortcutsEnabled" class="tools-panel__shortcuts">
+          <!-- Keyboard shortcuts help, at the foot of the panel; hidden in Touch mode, where
+               there's no keyboard to shortcut with. -->
+          <div v-if="!isTouch && shortcutsEnabled" class="tools-panel__shortcuts">
             <button
               class="tools-panel__shortcuts-toggle pressable"
               type="button"

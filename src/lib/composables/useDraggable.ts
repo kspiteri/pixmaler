@@ -1,6 +1,6 @@
 // Generic pointer-driven drag for floating UI elements. Returns `x`/`y` refs (panel
-// top-left, viewport coordinates) and a `start` handler for the drag *handle*. Coarse
-// pointers are skipped by default — mobile anchors the panel at its default spot.
+// top-left, viewport coordinates) and a `start` handler for the drag *handle*. The consumer
+// decides when dragging is off via `disabled` — Pixmaler gates it on the Touch-mode pref.
 //
 // `setPointerCapture` keeps drag events flowing when the pointer crosses other elements,
 // so the canvas's painting handlers underneath don't fight us mid-drag.
@@ -12,8 +12,9 @@ export interface UseDraggableOpts {
   // updates from outside (resize) come through `setPosition`.
   initialX: number
   initialY: number
-  // Skip drag wiring on touch devices for now.
-  desktopOnly?: boolean
+  // Getter, polled at drag start: return true to refuse a drag. The consumer owns the
+  // policy (Pixmaler passes the resolved Touch-mode pref) so an override can re-enable it.
+  disabled?: () => boolean
   // Optional: the element being moved (the panel, not the handle). When given,
   // dragging is clamped so it can't leave the viewport. Called per move so it
   // tolerates the element mounting after the composable is created.
@@ -33,11 +34,6 @@ export function useDraggable(opts: UseDraggableOpts) {
   let activeTarget: HTMLElement | null = null
   let activePointerId: number | null = null
 
-  function isCoarsePointer(): boolean {
-    return typeof window !== 'undefined'
-      && window.matchMedia('(pointer: coarse)').matches
-  }
-
   // Keep (nextX, nextY) such that the dragged element stays within the viewport.
   // No-op if no element is provided or it hasn't laid out yet.
   function clamp(nextX: number, nextY: number): { x: number, y: number } {
@@ -54,7 +50,7 @@ export function useDraggable(opts: UseDraggableOpts) {
   }
 
   function start(e: PointerEvent) {
-    if (opts.desktopOnly && isCoarsePointer())
+    if (opts.disabled?.())
       return
     // Only react to the primary button on mouse.
     if (e.pointerType === 'mouse' && e.button !== 0)

@@ -3,9 +3,9 @@
 // switch (`ThemeToggle.vue`) and text-size stepper. A disclosure, not a `role="menu"`:
 // it closes on an outside pointer or Escape; Escape returns focus to the trigger.
 
-import { Keyboard, KeyboardOff, Settings } from '@lucide/vue'
+import { Hand, Keyboard, KeyboardOff, Mouse, Settings } from '@lucide/vue'
 import { onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
-import { askConfirm, clearAllData, SCALE_STEPS, shortcutsEnabled, stepScale, textScale, toggleShortcuts, useAppLayout } from '../lib'
+import { askConfirm, clearAllData, isTouch, SCALE_STEPS, shortcutsEnabled, stepScale, textScale, toggleShortcuts, toggleTouch } from '../lib'
 import ThemeToggle from './ThemeToggle.vue'
 import ToggleSwitch from './ToggleSwitch.vue'
 
@@ -18,9 +18,6 @@ const version = document.querySelector('meta[name="pixmaler:client"]')?.getAttri
 const open = ref(false)
 const root = useTemplateRef<HTMLElement>('root')
 const trigger = useTemplateRef<HTMLButtonElement>('trigger')
-
-// The shortcuts toggle is desktop-only — there's no keyboard to shortcut with on mobile.
-const { isMobile } = useAppLayout()
 
 function onDocPointer(e: PointerEvent) {
   if (root.value && !root.value.contains(e.target as Node))
@@ -87,7 +84,23 @@ async function clearData() {
         <ThemeToggle />
       </div>
 
-      <div v-if="!isMobile" class="settings-menu__row">
+      <div class="settings-menu__row">
+        <span class="settings-menu__label">Touch mode</span>
+        <ToggleSwitch
+          :model-value="isTouch"
+          label="Touch mode"
+          @update:model-value="toggleTouch"
+        >
+          <template #off>
+            <Mouse :size="16" aria-hidden="true" />
+          </template>
+          <template #on>
+            <Hand :size="16" aria-hidden="true" />
+          </template>
+        </ToggleSwitch>
+      </div>
+
+      <div v-if="!isTouch" class="settings-menu__row">
         <span class="settings-menu__label">Shortcuts</span>
         <ToggleSwitch
           :model-value="shortcutsEnabled"
