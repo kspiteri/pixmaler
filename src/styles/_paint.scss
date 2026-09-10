@@ -4,57 +4,40 @@
 // Paint sandbox — solo canvas page. Picker left, canvas pair right.
 
 .paint {
-  // Fixed, non-scrolling shell matching DRAWING so the canvas pair fit-zooms; `--vh-safe`
-  // dodges the mobile URL-bar `100vh` overshoot.
-  height: var(--vh-safe);
-  min-height: var(--vh-safe);
-  max-height: var(--vh-safe);
-  overflow: hidden;
-  // border-box so `padding` counts inside `--vh-safe`, else the shell scrolls.
-  box-sizing: border-box;
-  padding: $page-pad;
-  max-width: $page-max;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
+  // A `.phase--fixed` variant — the shell, bar and fixed sizing come from `_phase.scss`.
+  // Only the body-centring and the mobile settings-open lift are Paint's own.
 
-  @media (max-width: $bp-mobile) {
-    padding: $gap-2;
-
-    &--settings-open {
+  // Mobile: an open settings panel can be taller than the fixed shell, so let the page
+  // scroll rather than clip the picker. Three classes, so it beats `.phase--fixed`.
+  &.phase--fixed.paint--settings-open {
+    @media (max-width: $bp-mobile) {
       height: auto;
       max-height: none;
       overflow: visible;
     }
   }
 
-  &__back {
-    display: inline-block;
-    margin-bottom: $gap-2;
-    color: $fg-60;
-    font-size: $fs-sm;
-    text-decoration: none;
-    transition: color 0.15s;
-
-    &:hover {
-      color: $fg-80;
-    }
-  }
-
-  // The <Tagline> under the title (component is margin-less; spacing here).
+  // <Tagline> in the status cluster; the bar's flex gap owns the spacing.
   &__sub {
-    margin: $gap-1 0 $gap-3;
     font-size: $fs-xs;
   }
 
-  // Fills the shell below the header so the canvas pair claims the rest and fit-zooms.
+  // Centres and pads like `.drawing__body`, and fills the phase body so the canvas pair
+  // fit-zooms into the remaining space.
   &__row {
-    flex: 1;
-    min-height: 0;
+    box-sizing: border-box;
+    height: 100%;
+    max-width: $page-max;
+    margin: 0 auto;
+    padding: $gap-4;
     display: flex;
     flex-direction: column;
     gap: $gap-5;
-    align-items: stretch;
+
+    @media (max-width: $bp-mobile) {
+      max-width: none;
+      padding: $gap-2;
+    }
   }
 
   // Header/settings hold their intrinsic height; the settings body scrolls internally,

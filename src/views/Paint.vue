@@ -7,8 +7,7 @@ import { ChevronDown, ChevronUp, Settings } from '@lucide/vue'
 import { computed, ref } from 'vue'
 import CanvasPair from '../components/CanvasPair.vue'
 import ImagePicker from '../components/ImagePicker.vue'
-import Logo from '../components/Logo.vue'
-import SettingsMenu from '../components/SettingsMenu.vue'
+import PhaseLayout from '../components/PhaseLayout.vue'
 import Tagline from '../components/Tagline.vue'
 import { appHref, useOrientation } from '../lib'
 
@@ -48,14 +47,15 @@ const summary = computed(() => {
 </script>
 
 <template>
-  <div class="paint" :class="{ 'paint--settings-open': settingsOpen }">
-    <header class="phase__bar">
-      <a class="paint__back" :href="backHref"><Logo size="sm" /></a>
-      <div class="phase__status">
-        <Tagline class="paint__sub" seed="solo sandbox, no lobby, no timer" />
-        <SettingsMenu />
-      </div>
-    </header>
+  <PhaseLayout
+    heading="Practice"
+    :home="backHref"
+    class="phase--fixed paint"
+    :class="{ 'paint--settings-open': settingsOpen }"
+  >
+    <template #status>
+      <Tagline class="paint__sub" seed="solo sandbox, no lobby, no timer" />
+    </template>
 
     <div class="paint__row">
       <div class="paint__settings">
@@ -107,5 +107,5 @@ const summary = computed(() => {
         </div>
       </template>
     </div>
-  </div>
+  </PhaseLayout>
 </template>

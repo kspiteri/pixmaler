@@ -87,6 +87,9 @@
     // Positioning context for `__blank-warn`, which is overlaid so it costs the
     // canvas no height.
     position: relative;
+    // border-box so `padding` counts inside `height: 100%`, else the bottom padding
+    // overflows the fixed shell and the canvas kisses the viewport edge.
+    box-sizing: border-box;
     height: 100%;
     max-width: $page-max;
     margin: 0 auto;

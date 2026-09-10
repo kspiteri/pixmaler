@@ -11,7 +11,10 @@ withDefaults(defineProps<{
   // 0–100 width of the top bar. Omit to hide the bar entirely.
   progress?: number | null
   progressColour?: string
-}>(), { progress: null, progressColour: 'var(--timer-ok)' })
+  // When set, the logo becomes a link to this href (the /paint sandbox's way home).
+  // In a room the logo is inert — you don't leave a game by clicking it.
+  home?: string
+}>(), { progress: null, progressColour: 'var(--timer-ok)', home: undefined })
 </script>
 
 <template>
@@ -31,7 +34,8 @@ withDefaults(defineProps<{
     </div>
 
     <header class="phase__bar">
-      <Logo size="sm" />
+      <a v-if="home" class="phase__home" :href="home"><Logo size="sm" /></a>
+      <Logo v-else size="sm" />
       <div class="phase__status">
         <slot name="status" />
         <SettingsMenu />

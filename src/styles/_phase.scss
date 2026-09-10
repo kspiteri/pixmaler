@@ -48,6 +48,18 @@
     gap: $gap-4;
   }
 
+  // The /paint sandbox turns the logo into a way home; in a room it stays a plain <Logo>.
+  &__home {
+    display: inline-flex;
+    border-radius: $radius-sm;
+    text-decoration: none;
+    transition: opacity 0.15s;
+
+    &:hover {
+      opacity: 0.8;
+    }
+  }
+
   &__body {
     flex: 1;
     min-height: 0;
