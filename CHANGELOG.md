@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.2](https://github.com/kspiteri/pixmaler/compare/0.8.1...0.8.2) (2026-09-10)
+
+
+### Fixes
+
+* add touch mode toggle and integrate touch-friendly interactions ([c0c1252](https://github.com/kspiteri/pixmaler/commit/c0c125225d2cbca17e2a18656f6bf33243c90808))
+
 ## [0.8.1](https://github.com/kspiteri/pixmaler/compare/0.8.0...0.8.1) (2026-09-10)
 
 
