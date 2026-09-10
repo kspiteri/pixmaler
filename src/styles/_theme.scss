@@ -46,8 +46,8 @@
   --shadow-2-up: 0 -8px 24px rgba(0, 0, 0, 0.5);
   --shadow-press: rgba(0, 0, 0, 0.45);
 
-  --backdrop-line: rgba(255, 255, 255, 0.03);
-  --backdrop-vignette: rgba(0, 0, 0, 0.45);
+  --backdrop-line: rgba(255, 255, 255, 0.06);
+  --backdrop-vignette: rgba(0, 0, 0, 0.6);
 }
 
 @mixin light {
@@ -103,8 +103,8 @@
   --shadow-2-up: 0 -8px 24px rgba(14, 14, 18, 0.2);
   --shadow-press: rgba(14, 14, 18, 0.28);
 
-  --backdrop-line: rgba(14, 14, 18, 0.05);
-  --backdrop-vignette: rgba(14, 14, 18, 0.1);
+  --backdrop-line: rgba(14, 14, 18, 0.06);
+  --backdrop-vignette: rgba(14, 14, 18, 0.14);
 }
 
 // Dark by default, the query honours the OS, the attribute blocks override it.
