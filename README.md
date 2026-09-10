@@ -2,7 +2,7 @@
 
 A real-time pixel-art party game.
 
-> **Deployed and playable.** Lobby → Drawing → Voting → Results → Play again all work end-to-end, with a dark "party game" visual theme and two-category voting. The frontend is on GitHub Pages and the realtime server is live on Cloudflare Workers. A round of playtest hardening landed 2026-08-23 — GM round/session controls, unique player names, and proper resolutions for the rounds where nobody draws or nobody votes. What's left is a visual personality pass — currently under way — plus sound and a few deferred engineering pieces.
+> **Deployed and playable.** Lobby → Drawing → Voting → Results → Play again all work end-to-end, with a dark "party game" visual theme and two-category voting. The frontend is on GitHub Pages and the realtime server is live on Cloudflare Workers. A round of playtest hardening landed 2026-08-23 — GM round/session controls, unique player names, and proper resolutions for the rounds where nobody draws or nobody votes. The **visual personality pass** has since landed its biggest pieces — an asymmetric, framed entry screen, a legible pixel-grid backdrop, and a more flexible drawing palette. What's left is sound and a few deferred engineering pieces.
 
 ## What it does
 
@@ -17,6 +17,7 @@ A game master uploads any image. It's quantised in the browser into chunky, limi
 - **No duplicate names** — names are unique per room, compared ignoring case and whitespace. A collision gets an adjective in front of it, in the same shape as the room code: a second `Keith` becomes `angry-Keith`. Your device keeps the plain name for the next room.
 - **The original wins** — a round where nobody drew, or where nobody voted, doesn't fake a winner. The target image takes the hero card ("nobody drew — the original wins") and the whole field drops into the gallery. A round with no drawings skips voting entirely rather than parking everyone on an empty screen.
 - **Cross-canvas hover marker** — hovering your canvas lights up a marker on the reference and highlights the matching swatch, so you don't have to squint at six near-identical browns.
+- **A palette that stays out of the way** — the reference image tucks into the palette panel and collapses when you don't need it; the panel docks to the side or floats over the canvas, sizes S / M / L, and remembers how you left it.
 - **Exact palettes, any raster upload** — the colour count is the whole swatch, not a request: ask for 24 and the room paints with 24, topped up from a ramp of classic colours when the image itself can't supply that many. An upload carrying transparency is flattened onto a background you choose first, so a logo's empty page stops merging into its own dark ink. A vector or a non-image is refused up front, in words, instead of failing behind a preview that looked fine.
 - **Solo paint sandbox** — the [`/paint`](#paint-sandbox) route opens a single-player canvas with the same pipeline; useful for testing brushes and palettes, or just goofing around.
 

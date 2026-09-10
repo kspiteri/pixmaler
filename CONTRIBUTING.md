@@ -51,6 +51,7 @@ pnpm preview      # preview the built dist
 pnpm typecheck    # vue-tsc --noEmit + tsc -p tsconfig.worker.json (no build)
 pnpm lint         # eslint .
 pnpm lint:fix     # eslint . --fix
+pnpm lint:css     # stylelint (SCSS + Vue <style>) — the colour-literal guard
 pnpm test         # vitest run (unit tests in test/)
 pnpm wr:deploy    # deploy the realtime server to Cloudflare
 ```
@@ -64,7 +65,9 @@ pnpm wr:deploy    # deploy the realtime server to Cloudflare
 
 Run `pnpm lint:fix` before committing. Most issues auto-fix.
 
-**Git hooks** — `simple-git-hooks` + `lint-staged` run `eslint --fix` on staged files at pre-commit, installed by the `prepare` script on `pnpm install`. If they don't fire, run `pnpm exec simple-git-hooks`.
+**Stylelint — the colour-literal guard.** `.stylelintrc.json` fails on any hex, or `rgb()`/`hsl()` in a fill/ink/border property, anywhere but `_theme.scss` and `_tokens.scss` (the value/name layer) — so a colour is always a token, never a one-off. `color-mix()` on a token derives a shade or an alpha; shadows, filters and gradients keep the black-alpha idiom. `pnpm lint:css` runs it over `.scss` files and Vue `<style>` blocks.
+
+**Git hooks** — `simple-git-hooks` + `lint-staged` run at pre-commit: `eslint --fix` on staged files, plus `stylelint` on staged `.scss`/`.vue`. Installed by the `prepare` script on `pnpm install`. If they don't fire, run `pnpm exec simple-git-hooks`.
 
 **Types** — `strict` is on. `pnpm build` runs `vue-tsc --noEmit` first, so a type error fails the build; `pnpm typecheck` also covers `party/` against Workers globals via `tsconfig.worker.json`. Keep the tree green.
 
@@ -93,6 +96,7 @@ When you add a test, make it fail first: revert the fix it guards and check it g
 
 - **British English** in user-facing strings, comments, and docs (`colour`, `behaviour`, `centre`). Identifiers mirroring DOM/web APIs stay as-is (`color` in CSS, `fillStyle` on canvas).
 - **Vue 3 Composition API** with `<script setup>`. **Styling convention:** static, non-reactive styles live in per-screen partials (`src/styles/_<screen>.scss`) and shared primitives (`_alerts`, `_buttons`, `_forms`, `_logo`, `_phase`, `_surfaces`, `_tools-panel`), all `@use`d into `main.scss`; tokens in `_tokens.scss`. Recipe partials are the exception: `_chrome` (the chrome surface), `_wonk` (the tilt) and `_screen` (the interstitial shape behind the name gate, the closed room and the phase-error fallback) define mixins and **emit no CSS**, so they are `@use`d by whoever includes them rather than by `main.scss` — a rule in one would land wherever the first `@use` resolved and reorder the cascade. `_surfaces.scss`'s header is where the three surface roles are written down — artefact (a drawing), chrome (panels and inputs), person/choice (roster rows, vote cards) — and it owns the `.art-frame` / `.art-surface` pair that every finished drawing goes in. A component's scoped `<style>` is reserved for genuinely reactive or component-local rules — chiefly `:deep()` reaching imperatively-mounted `PixelCanvas` elements, which only works in a scoped block. The one unscoped exception is `Tagline.vue`'s `::view-transition` block: document-level pseudo-elements can't be scoped.
+- **Colour is two layers, and a linter enforces it.** `_theme.scss` is the only file that writes a colour value — the two palettes, emitted as custom properties; `_tokens.scss` only *names* them (`$bg: var(--bg)`), so a call site never changes when a theme does. Never write a literal hex or an `rgb()`/`hsl()` fill/ink/border outside those two files — `.stylelintrc.json` fails the build on it (see Code quality). To derive a shade or an alpha, `color-mix()` on a token; deep press shades are their own static tokens (`$accent-deep`, `$primary-deep`). Breakpoints are tokens too: `$bp-mobile` (640px) and `$bp-tablet` (1024px), each the max-width boundary for "that size and smaller".
 - **Inject infrastructure, prop data.** `socket` and `clientId` are `provide`/`inject`ed once at connection; reactive game state flows down as props. No Pinia.
 - **Import `lib/` through the barrel.** Consumers do `import { … } from '../lib'`; `lib/index.ts` re-exports every module, so moving a file between folders never touches a call site. Inter-lib imports stay **direct** (relative paths), never the barrel, to avoid cycles. The Worker imports the DOM-free **`protocol/` barrel** (`'../src/lib/protocol'`) plus specific modules like `content/words` — never the client barrel, which re-exports DOM-dependent modules (`prefs/theme`, `prefs/textScale` read `localStorage` on load) that break the Workers and Vitest builds.
 - **`PixelCanvas` is imperative** — it owns its `<canvas>` and is instantiated in `onMounted`/watchers, not driven by reactivity.
