@@ -6,7 +6,7 @@ import Logo from '@/components/elements/Logo.vue'
 import NameField from '@/components/elements/NameField.vue'
 import Tagline from '@/components/elements/Tagline.vue'
 import SettingsMenu from '@/components/layout/SettingsMenu.vue'
-import { appHref, getName, setName, wordPair } from '@/lib'
+import { appHref, getName, sanitiseName, setName, wordPair } from '@/lib'
 
 const name = ref(getName() ?? '')
 const code = ref('')
@@ -15,7 +15,7 @@ const sandboxHref = appHref('paint')
 
 // Belt-and-braces: both buttons are `:disabled` until their fields are filled.
 function enterRoom(room: string) {
-  const trimmed = name.value.trim()
+  const trimmed = sanitiseName(name.value)
   if (!trimmed || !room)
     return
   setName(trimmed)

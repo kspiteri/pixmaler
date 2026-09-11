@@ -17,6 +17,21 @@ export function normaliseShape(shape: unknown): AvatarShape {
     : DEFAULT_AVATAR_SHAPE
 }
 
+// Basic, safe cleanup for a user-entered display name — run server-side (authoritative)
+// and mirrored client-side. Strips control and invisible/formatting characters that let a
+// name render as garbage or spoof layout (the bidi overrides are the Trojan-Source risk),
+// collapses internal whitespace, and trims. Length clamping stays with the caller
+// (NAME_MAX_LEN), since join and rename clamp for different reasons. Letters, marks,
+// ordinary punctuation and emoji are left alone — the voice is playful, not locked down.
+export function sanitiseName(raw: string): string {
+  return raw
+    // eslint-disable-next-line no-control-regex -- deliberately stripping control characters
+    .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // C0/C1 control characters
+    .replace(/[\u200B\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g, '') // zero-width, bidi format, BOM
+    .replace(/\s+/g, ' ') // collapse whitespace runs
+    .trim()
+}
+
 // ── Client → Server ──────────────────────────────────────────────────────────
 
 export interface JoinMsg {

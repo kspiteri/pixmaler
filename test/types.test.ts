@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { GRID_MAX_SIDE, PALETTE_MAX_LEN, parseClientMsg } from '../src/lib/protocol/protocol'
-import { AVATAR_SHAPES, clampDrawSeconds, DEFAULT_AVATAR_SHAPE, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN, normaliseShape, VOTE_CATEGORIES } from '../src/lib/protocol/types'
+import { AVATAR_SHAPES, clampDrawSeconds, DEFAULT_AVATAR_SHAPE, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN, normaliseShape, sanitiseName, VOTE_CATEGORIES } from '../src/lib/protocol/types'
 
 // Every assertion parses a raw frame; the short name keeps them readable.
 const parse = parseClientMsg
@@ -45,6 +45,45 @@ describe('normaliseShape', () => {
     // must not survive the check just because it exists on Object.prototype.
     for (const key of ['__proto__', 'constructor', 'toString', 'hasOwnProperty'])
       expect(normaliseShape(key)).toBe(DEFAULT_AVATAR_SHAPE)
+  })
+})
+
+describe('sanitiseName', () => {
+  it('leaves ordinary names, accented letters and emoji untouched', () => {
+    expect(sanitiseName('Alice')).toBe('Alice')
+    expect(sanitiseName('José')).toBe('José')
+    // The ZWJ inside an emoji sequence is deliberately preserved.
+    expect(sanitiseName('👩‍🎨 pixel')).toBe('👩‍🎨 pixel')
+  })
+
+  it('trims and collapses internal whitespace', () => {
+    expect(sanitiseName('  Bob  ')).toBe('Bob')
+    expect(sanitiseName('a   b')).toBe('a b')
+  })
+
+  it('strips control characters', () => {
+    expect(sanitiseName('a\u0000b')).toBe('ab')
+    expect(sanitiseName('a\u0007b')).toBe('ab')
+    expect(sanitiseName('a\tb\nc')).toBe('abc')
+  })
+
+  it('strips zero-width and BOM characters', () => {
+    expect(sanitiseName('a\u200Bb')).toBe('ab')
+    expect(sanitiseName('\uFEFFhi')).toBe('hi')
+  })
+
+  it('strips bidi override/isolate characters (Trojan-Source spoofing)', () => {
+    expect(sanitiseName('a\u202Eb')).toBe('ab')
+    expect(sanitiseName('\u2066x\u2069')).toBe('x')
+  })
+
+  it('reduces an all-invisible or whitespace-only name to empty', () => {
+    expect(sanitiseName('   ')).toBe('')
+    expect(sanitiseName('\u200B\uFEFF')).toBe('')
+  })
+
+  it('does not clamp length — that stays with the caller', () => {
+    expect(sanitiseName('x'.repeat(50))).toHaveLength(50)
   })
 })
 
