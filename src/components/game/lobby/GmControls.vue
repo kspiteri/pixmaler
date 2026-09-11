@@ -6,7 +6,7 @@
 import type { ClientMsg, GmConfigureMsg, PipelineResult, Player } from '@/lib'
 import { computed, inject, ref, useTemplateRef } from 'vue'
 import { socketKey } from '@/lib'
-import ImagePicker from './ImagePicker.vue'
+import ImagePicker from '../image/ImagePicker.vue'
 
 const props = defineProps<{ players: Player[] }>()
 
