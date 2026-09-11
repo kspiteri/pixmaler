@@ -110,7 +110,7 @@ When you add a test, make it fail first: revert the fix it guards and check it g
 
 ```
 src/lib/        # domain folders behind the index.ts barrel: protocol/ · canvas/ · composables/ · prefs/ · player/ · content/ (+ keys, dialog, appLayout, assets)
-src/components/ # grouped by role: elements/ (primitives) · layout/ (app shell + header) · game/ (drawing + gameplay)
+src/components/ # by role: elements/ (primitives) · layout/ (app shell + header) · game/ (drawing + gameplay, sub-grouped image/canvas/lobby/shared behind a public @/components/game barrel)
 src/views/      # Entry, Paint, Taglines, phases/ (the four game screens), rooms/ (name gate, closed session)
 src/styles/     # role folders (foundation · mixins · base · components · screens) + main.scss; partials @use by bare name, resolved via sass loadPaths (vite.config.ts)
 party/          # PartyServer Durable Object — server.ts plus the per-concern handler modules; config in wrangler.jsonc
