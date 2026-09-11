@@ -178,7 +178,7 @@ const { setSlot } = useReadonlyCanvases(
         <div class="results__hero">
           <p class="results__crown">
             <img :src="asset('assets/icons/crown.svg')" alt="crown" class="results__crown-icon">
-            {{ noWinner ? (nobodyDrew ? "nobody drew — the original wins" : "nobody voted — the original wins") : winners.length > 1 ? "joint winners" : "overall winner" }}
+            {{ noWinner ? (nobodyDrew ? "nobody drew, so the original wins" : "nobody voted, so the original wins") : winners.length > 1 ? "joint winners" : "overall winner" }}
           </p>
           <div class="results__winners">
             <!-- Nobody voted, so the target takes the hero. Same frame as a real

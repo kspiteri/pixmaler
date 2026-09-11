@@ -139,8 +139,8 @@ onBeforeUnmount(() => {
       <button
         class="lobby__room pressable no-shadow"
         type="button"
-        :title="copied ? 'Copied!' : 'Click to copy the room link'"
-        :aria-label="copied ? `Room ${roomCode} — link copied` : `Room ${roomCode} — copy link`"
+        :title="copied ? 'Copied' : 'Click to copy the room link'"
+        :aria-label="copied ? `Room ${roomCode}, link copied` : `Room ${roomCode}: copy link`"
         @click="copyLink"
       >
         <span class="lobby__room-label">Room:</span>
@@ -168,7 +168,7 @@ onBeforeUnmount(() => {
       <template #icon>
         <CircleSlash class="toast__icon" :size="16" aria-hidden="true" />
       </template>
-      the round was cancelled and you lost your drawing,<br>a new round will soon begin...
+      the round was cancelled and you lost your drawing,<br>a new round will soon begin…
     </AlertToast>
 
     <div class="lobby__body">
@@ -176,14 +176,14 @@ onBeforeUnmount(() => {
         <div class="lobby__name">
           <NameField
             v-model="nameDraft"
-            label="your name"
+            label="Your name"
             @focus="renaming = true"
             @keydown.enter="onRenameKey"
             @blur="commitName"
           />
         </div>
         <div v-if="mySeat" class="field lobby__shape">
-          <span id="lobby-shape" class="label">your avatar shape</span>
+          <span id="lobby-shape" class="label">Your avatar shape</span>
           <div class="lobby__shapes" role="group" aria-labelledby="lobby-shape">
             <button
               v-for="s in AVATAR_SHAPES"

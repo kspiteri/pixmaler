@@ -43,7 +43,7 @@ function enterRoom(room: string) {
               </li>
               <li>
                 Settings include your dark/light theme preference, text size, your palette preferences and
-                whether or not you have canvas shortcuts enabled.
+                whether you have canvas shortcuts enabled.
               </li>
               <li>Nothing is stored in a database, no cookies, no analytics and no third parties.</li>
             </ul>
@@ -106,7 +106,7 @@ function enterRoom(room: string) {
             type="button"
             :href="sandboxHref"
           >
-            Free Mode
+            Free mode
           </a>
         </div>
       </div>

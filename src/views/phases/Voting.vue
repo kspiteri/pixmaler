@@ -203,7 +203,7 @@ function castVote(category: VoteCategory, submissionId: string) {
     <div class="voting" :style="{ '--art-ratio': artRatio }">
       <header class="voting__head">
         <p class="voting__eyebrow">
-          {{ spectating ? "you joined mid-round — watch this one" : "vote for the funniest and the best" }}
+          {{ spectating ? "you joined mid-round, watch this one" : "vote for the funniest and the best" }}
         </p>
         <p class="voting__hint">
           <template v-if="spectating">
@@ -225,7 +225,7 @@ function castVote(category: VoteCategory, submissionId: string) {
         <!-- Only when somebody wiped. Keeps the count voted on equal to the count on the
              reveal. Anonymous by design — naming the worst performer would be a partial leak. -->
         <p v-if="wipedCount" class="voting__wiped">
-          {{ ordered.length }} to judge — {{ wipedCount === 1 ? 'one player wiped theirs' : `${wipedCount} players wiped theirs` }}
+          {{ ordered.length }} to judge. {{ wipedCount === 1 ? 'one player wiped theirs' : `${wipedCount} players wiped theirs` }}
         </p>
       </header>
 

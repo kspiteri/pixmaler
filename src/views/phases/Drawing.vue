@@ -190,7 +190,7 @@ onBeforeUnmount(() => {
          after this round started. The target is safe to show — a new image next round. -->
     <div v-if="spectating" class="drawing__body drawing__body--watching">
       <p class="drawing__watching-note">
-        you joined mid-round — watching this one, drawing the next
+        you joined mid-round, watching this one and drawing the next
       </p>
       <PixelThumb
         v-if="config"
@@ -220,7 +220,7 @@ onBeforeUnmount(() => {
         <template #icon>
           <TriangleAlert class="toast__icon" :size="16" aria-hidden="true" />
         </template>
-        hello? your canvas is empty!
+        hello? your canvas is empty
       </AlertToast>
     </div>
   </PhaseLayout>

@@ -17,7 +17,7 @@ const ghIssue = 'https://github.com/kspiteri/pixmaler/issues/new'
       Taglines
     </h1>
     <p class="taglines__intro">
-      All {{ total }} taglines currently in the game. If you have any suggestions, create an <a :href="ghIssue" target="_blank">issue</a> in github and label it as enhancement.
+      All {{ total }} taglines currently in the game. If you have any suggestions, create an <a :href="ghIssue" target="_blank">issue</a> in GitHub and label it as enhancement.
     </p>
 
     <!-- Fixed lines, then each template as its own numbered group. -->
