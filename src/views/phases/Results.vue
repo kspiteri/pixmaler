@@ -3,13 +3,13 @@
 // hero card; everyone else falls into a gallery ordered by points, each drawing once.
 // The GM gets a "Play again" button that returns the room to LOBBY.
 
-import type { Player, RankedResult, ServerMsg } from '../../lib'
+import type { Player, RankedResult, ServerMsg } from '@/lib'
 import { Power } from '@lucide/vue'
 import { computed, inject } from 'vue'
-import PhaseLayout from '../../components/PhaseLayout.vue'
-import PlayerTag from '../../components/PlayerTag.vue'
-import Tagline from '../../components/Tagline.vue'
-import { artRatio as artRatioFor, asset, clientIdKey, seatFor, socketKey, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '../../lib'
+import PlayerTag from '@/components/elements/PlayerTag.vue'
+import Tagline from '@/components/elements/Tagline.vue'
+import PhaseLayout from '@/components/layout/PhaseLayout.vue'
+import { artRatio as artRatioFor, asset, clientIdKey, seatFor, socketKey, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '@/lib'
 
 const props = defineProps<{
   results: Results | null

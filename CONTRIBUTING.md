@@ -110,12 +110,14 @@ When you add a test, make it fail first: revert the fix it guards and check it g
 
 ```
 src/lib/        # domain folders behind the index.ts barrel: protocol/ · canvas/ · composables/ · prefs/ · player/ · content/ (+ keys, dialog, appLayout, assets)
-src/components/ # reusable UI (AlertDialog, ImagePicker, CanvasPair, PaletteTools, PlayerList, PhaseLayout, Tagline, Logo)
+src/components/ # grouped by role: elements/ (primitives) · layout/ (app shell + header) · game/ (drawing + gameplay)
 src/views/      # Entry, Paint, Taglines, phases/ (the four game screens), rooms/ (name gate, closed session)
 src/styles/     # role folders (foundation · mixins · base · components · screens) + main.scss; partials @use by bare name, resolved via sass loadPaths (vite.config.ts)
 party/          # PartyServer Durable Object — server.ts plus the per-concern handler modules; config in wrangler.jsonc
 test/           # Vitest suites, with the shared fake RoomCtx in test/support/
 ```
+
+> **Import alias:** `@` resolves to `src/` (Vite `resolve.alias` + tsconfig `paths`), so cross-tree imports are depth-independent — `@/lib`, `@/components/<role>/X.vue`, `@/views/…`. Same-directory siblings stay relative (`./Sibling.vue`).
 
 > **IDE note:** partials `@use` each other by **bare name** (`@use 'tokens'`), resolved via a sass `loadPaths` in `vite.config.ts`. An editor that doesn't read Vite's config (WebStorm, say) may flag these as *unresolved* — the build and CI resolve them fine. To teach the IDE the same paths, mark each `src/styles/` role folder (`foundation`, `mixins`, `base`, `components`, `screens`) as a **Resource Root** (WebStorm: right-click → *Mark Directory as → Resource Root*), or use your editor's equivalent load-path setting.
 

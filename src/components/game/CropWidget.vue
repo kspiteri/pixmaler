@@ -4,9 +4,9 @@
 // Geometry is in percentages of the image box, so it needs no measurement at any size.
 // Emits shape/crop via v-model; the picker reprocesses off those.
 
-import type { CropSelection, TargetRatioId } from '../lib'
+import type { CropSelection, TargetRatioId } from '@/lib'
 import { computed, useTemplateRef } from 'vue'
-import { CROP_MIN_ZOOM, cropRect, TARGET_RATIO_IDS, TARGET_RATIOS } from '../lib'
+import { CROP_MIN_ZOOM, cropRect, TARGET_RATIO_IDS, TARGET_RATIOS } from '@/lib'
 
 const props = defineProps<{
   naturalDims: { w: number, h: number } | null

@@ -2,14 +2,14 @@
 // Paint sandbox — solo canvas, no lobby/socket/timer. Picker left, canvas pair right;
 // the pair re-mounts on each new picker result so PixelCanvas instances tear down cleanly.
 
-import type { PickerMeta, PipelineResult } from '../lib'
+import type { PickerMeta, PipelineResult } from '@/lib'
 import { ChevronDown, ChevronUp, Settings } from '@lucide/vue'
 import { computed, ref } from 'vue'
-import CanvasPair from '../components/CanvasPair.vue'
-import ImagePicker from '../components/ImagePicker.vue'
-import PhaseLayout from '../components/PhaseLayout.vue'
-import Tagline from '../components/Tagline.vue'
-import { appHref, useOrientation } from '../lib'
+import Tagline from '@/components/elements/Tagline.vue'
+import CanvasPair from '@/components/game/CanvasPair.vue'
+import ImagePicker from '@/components/game/ImagePicker.vue'
+import PhaseLayout from '@/components/layout/PhaseLayout.vue'
+import { appHref, useOrientation } from '@/lib'
 
 const result = ref<PipelineResult | null>(null)
 const meta = ref<PickerMeta | null>(null)

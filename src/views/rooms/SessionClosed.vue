@@ -6,8 +6,8 @@
 // The copy names no cause on purpose: `wipeState` is one funnel for both events and the
 // message carries no reason, so anything cause-specific here would be wrong half the time.
 
-import Logo from '../../components/Logo.vue'
-import { appHref } from '../../lib'
+import Logo from '@/components/elements/Logo.vue'
+import { appHref } from '@/lib'
 
 const roomCode = new URLSearchParams(location.search).get('room') ?? ''
 const baseUrl = appHref()

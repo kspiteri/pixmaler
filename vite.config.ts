@@ -16,6 +16,11 @@ const styleLoadPaths = ['foundation', 'mixins', 'base', 'components', 'screens']
 
 export default defineConfig({
   base: '/pixmaler/',
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
   plugins: [
     vue(),
     {

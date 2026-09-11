@@ -4,10 +4,10 @@
 // imperative DOM built by the parent; we only mount them in slots.
 
 import type { Component } from 'vue'
-import type { PaletteSize, PixelCanvas } from '../lib'
+import type { PaletteSize, PixelCanvas } from '@/lib'
 import { ArrowBigUp, ArrowLeft, ArrowRight, Check, ChevronDown, ChevronUp, GripVertical, Image as ImageIcon, Keyboard, Mouse, Pin, PinOff, Trash2, Undo2 } from '@lucide/vue'
 import { computed, markRaw, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
-import { isTouch, paletteDocked, paletteSize, setPaletteDocked, setPaletteHeight, setPaletteSize, shortcutsEnabled, useAppLayout, useDraggable } from '../lib'
+import { isTouch, paletteDocked, paletteSize, setPaletteDocked, setPaletteHeight, setPaletteSize, shortcutsEnabled, useAppLayout, useDraggable } from '@/lib'
 
 interface Props {
   // The editable PixelCanvas the buttons drive; null for one tick while the parent mounts it.

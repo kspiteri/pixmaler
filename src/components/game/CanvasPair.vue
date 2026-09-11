@@ -3,9 +3,9 @@
 // phase and the /paint sandbox. `PixelCanvas` is imperative: it owns its
 // `<canvas>` and pixels, Vue only owns the surrounding layout.
 
-import type { BrushHandle, SwatchHandle } from '../lib'
+import type { BrushHandle, SwatchHandle } from '@/lib'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
-import { buildBrushControls, buildSwatch, PixelCanvas, useAppLayout, useCanvasShortcuts } from '../lib'
+import { buildBrushControls, buildSwatch, PixelCanvas, useAppLayout, useCanvasShortcuts } from '@/lib'
 import PaletteTools from './PaletteTools.vue'
 
 interface Props {

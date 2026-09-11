@@ -3,10 +3,10 @@
 // `showDrawSeconds`) and the /paint sandbox (without). Owns the file input, scale/colour/
 // ratio controls, sample buttons, and runs the pipeline on change.
 
-import type { CropSelection, PickerMeta, PipelineResult, TargetRatioId } from '../lib'
+import type { CropSelection, PickerMeta, PipelineResult, TargetRatioId } from '@/lib'
 import { Loader2, TriangleAlert } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
-import { asset, clampDrawSeconds, CLASSIC_BASE, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_RATIO, DEFAULT_SCALE, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, nearestRatioFor, PixelCanvas, processImage, rgbToHex, unsupportedImage } from '../lib'
+import { asset, clampDrawSeconds, CLASSIC_BASE, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_RATIO, DEFAULT_SCALE, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, nearestRatioFor, PixelCanvas, processImage, rgbToHex, unsupportedImage } from '@/lib'
 import CropWidget from './CropWidget.vue'
 
 // The bundled sample images (`public/assets/<name>.png`).

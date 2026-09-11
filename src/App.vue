@@ -2,19 +2,19 @@
 // Router (entry / paint / room). Resolves the route and feeds the room state from
 // `lib/useRoom` into the phase views; descendants get `socket`/`clientId` by provide.
 
-import AlertDialog from './components/AlertDialog.vue'
-import PhaseBoundary from './components/PhaseBoundary.vue'
-import { currentDialog, settleDialog, useRoom } from './lib'
-import Entry from './views/Entry.vue'
-import Paint from './views/Paint.vue'
-import Drawing from './views/phases/Drawing.vue'
-import Lobby from './views/phases/Lobby.vue'
-import Results from './views/phases/Results.vue'
-import Voting from './views/phases/Voting.vue'
-import NameGate from './views/rooms/NameGate.vue'
-import SessionClosed from './views/rooms/SessionClosed.vue'
+import AlertDialog from '@/components/elements/AlertDialog.vue'
+import PhaseBoundary from '@/components/layout/PhaseBoundary.vue'
+import { currentDialog, settleDialog, useRoom } from '@/lib'
+import Entry from '@/views/Entry.vue'
+import Paint from '@/views/Paint.vue'
+import Drawing from '@/views/phases/Drawing.vue'
+import Lobby from '@/views/phases/Lobby.vue'
+import Results from '@/views/phases/Results.vue'
+import Voting from '@/views/phases/Voting.vue'
+import NameGate from '@/views/rooms/NameGate.vue'
+import SessionClosed from '@/views/rooms/SessionClosed.vue'
 // Hidden debug route (/taglines), not linked anywhere.
-import Taglines from './views/Taglines.vue'
+import Taglines from '@/views/Taglines.vue'
 
 // ── Routing ──────────────────────────────────────────────────────────────────
 

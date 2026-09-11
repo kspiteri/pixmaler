@@ -3,7 +3,7 @@
 // side, moon on the on (dark) side; `aria-checked` reports the current theme.
 
 import { Moon, Sun } from '@lucide/vue'
-import { theme, toggleTheme } from '../lib'
+import { theme, toggleTheme } from '@/lib'
 import ToggleSwitch from './ToggleSwitch.vue'
 </script>
 

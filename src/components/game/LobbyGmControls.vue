@@ -3,9 +3,9 @@
 // gm:configure on each picker result and gm:start on click. The roster, name and shape
 // controls stay in the lobby; this is only the game-setup column.
 
-import type { ClientMsg, GmConfigureMsg, PipelineResult, Player } from '../lib'
+import type { ClientMsg, GmConfigureMsg, PipelineResult, Player } from '@/lib'
 import { computed, inject, ref, useTemplateRef } from 'vue'
-import { socketKey } from '../lib'
+import { socketKey } from '@/lib'
 import ImagePicker from './ImagePicker.vue'
 
 const props = defineProps<{ players: Player[] }>()

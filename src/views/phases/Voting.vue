@@ -2,11 +2,11 @@
 // VOTING phase — anonymised gallery. Click a thumbnail to cast a vote; click another
 // to change it. Tallies stay hidden until RESULTS — running counts would sway voters.
 
-import type { ClientMsg, ServerMsg, Submission, VoteCategory } from '../../lib'
+import type { ClientMsg, ServerMsg, Submission, VoteCategory } from '@/lib'
 import { CircleSlash } from '@lucide/vue'
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import PhaseLayout from '../../components/PhaseLayout.vue'
-import { artRatio as artRatioFor, asset, clientIdKey, socketKey, useCountdownAnnounce, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '../../lib'
+import PhaseLayout from '@/components/layout/PhaseLayout.vue'
+import { artRatio as artRatioFor, asset, clientIdKey, socketKey, useCountdownAnnounce, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '@/lib'
 
 const props = defineProps<{
   gallery: Gallery | null

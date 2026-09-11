@@ -6,7 +6,7 @@
 
 import { Dices } from '@lucide/vue'
 import { useId, useTemplateRef } from 'vue'
-import { wordPair } from '../lib'
+import { wordPair } from '@/lib'
 
 defineOptions({ inheritAttrs: false })
 defineProps<{ label: string }>()

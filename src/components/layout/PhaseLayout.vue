@@ -2,7 +2,7 @@
 // Shared shell for the in-room phases: a status bar (logo + left/right slots) above the
 // body, and an optional thin progress bar across the top via `progress`/`progressColour`.
 
-import Logo from './Logo.vue'
+import Logo from '@/components/elements/Logo.vue'
 import SettingsMenu from './SettingsMenu.vue'
 
 withDefaults(defineProps<{

@@ -4,7 +4,7 @@
 // The mark is the shared public/mark.svg (also the favicon).
 
 import { computed } from 'vue'
-import { asset } from '../lib'
+import { asset } from '@/lib'
 
 const props = withDefaults(defineProps<{
   size?: 'sm' | 'lg'

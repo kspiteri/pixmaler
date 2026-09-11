@@ -8,7 +8,7 @@
 // the 20px one in a sentence. The name inherits font-size and weight from the host (they
 // differ per site); this component owns the family, so every name uses the display face.
 
-import type { Seat } from '../lib'
+import type { Seat } from '@/lib'
 
 withDefaults(defineProps<{
   seat: Seat

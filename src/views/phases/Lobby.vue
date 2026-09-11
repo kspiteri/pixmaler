@@ -2,18 +2,18 @@
 // LOBBY phase — player list and (for the GM) image picker / start button, or
 // (for everyone else) "Waiting for GM…" with the target preview when ready.
 
-import type { AvatarShape, ClientMsg, ServerMsg } from '../../lib'
+import type { AvatarShape, ClientMsg, ServerMsg } from '@/lib'
 import { Check, CircleSlash, Copy, Power } from '@lucide/vue'
 import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
-import AlertToast from '../../components/AlertToast.vue'
-import LobbyGmControls from '../../components/LobbyGmControls.vue'
-import NameField from '../../components/NameField.vue'
-import PhaseLayout from '../../components/PhaseLayout.vue'
-import PixelThumb from '../../components/PixelThumb.vue'
-import PlayerList from '../../components/PlayerList.vue'
-import PlayerTag from '../../components/PlayerTag.vue'
-import Tagline from '../../components/Tagline.vue'
-import { AVATAR_SHAPES, clientIdKey, seatFor, setName, setShape, socketKey, useGmActions } from '../../lib'
+import AlertToast from '@/components/elements/AlertToast.vue'
+import NameField from '@/components/elements/NameField.vue'
+import PlayerTag from '@/components/elements/PlayerTag.vue'
+import Tagline from '@/components/elements/Tagline.vue'
+import LobbyGmControls from '@/components/game/LobbyGmControls.vue'
+import PixelThumb from '@/components/game/PixelThumb.vue'
+import PlayerList from '@/components/game/PlayerList.vue'
+import PhaseLayout from '@/components/layout/PhaseLayout.vue'
+import { AVATAR_SHAPES, clientIdKey, seatFor, setName, setShape, socketKey, useGmActions } from '@/lib'
 
 type State = Extract<ServerMsg, { type: 'state' }>
 

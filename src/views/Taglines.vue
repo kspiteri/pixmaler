@@ -2,7 +2,7 @@
 // Hidden page (/taglines) — lists every tagline grouped: fixed lines, then each
 // template as its own group (pattern + expanded options). Not linked from anywhere.
 
-import { appHref, taglineGroups } from '../lib'
+import { appHref, taglineGroups } from '@/lib'
 
 const { fixed, templates } = taglineGroups()
 const total = fixed.length + templates.reduce((n, t) => n + t.expanded.length, 0)

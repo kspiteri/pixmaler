@@ -9,7 +9,7 @@
 //   - "Done" is a social signal, not a submit action. Clicking it fires `draw:done`
 //     so the room sees the player in the "X of Y ready" tally; it doesn't gate submission.
 
-import type { ClientMsg, ServerMsg } from '../../lib'
+import type { ClientMsg, ServerMsg } from '@/lib'
 import { CircleSlash, TriangleAlert } from '@lucide/vue'
 import {
   computed,
@@ -19,11 +19,11 @@ import {
   useTemplateRef,
   watch,
 } from 'vue'
-import AlertToast from '../../components/AlertToast.vue'
-import CanvasPair from '../../components/CanvasPair.vue'
-import PhaseLayout from '../../components/PhaseLayout.vue'
-import PixelThumb from '../../components/PixelThumb.vue'
-import { clientIdKey, socketKey, useCountdownAnnounce, useDrawSubmit, useGmActions, useOrientation } from '../../lib'
+import AlertToast from '@/components/elements/AlertToast.vue'
+import CanvasPair from '@/components/game/CanvasPair.vue'
+import PixelThumb from '@/components/game/PixelThumb.vue'
+import PhaseLayout from '@/components/layout/PhaseLayout.vue'
+import { clientIdKey, socketKey, useCountdownAnnounce, useDrawSubmit, useGmActions, useOrientation } from '@/lib'
 
 type State = Extract<ServerMsg, { type: 'state' }>
 

@@ -2,11 +2,11 @@
 // Entry screen — pre-room landing. Create / join / open the paint sandbox.
 
 import { ref } from 'vue'
-import Logo from '../components/Logo.vue'
-import NameField from '../components/NameField.vue'
-import SettingsMenu from '../components/SettingsMenu.vue'
-import Tagline from '../components/Tagline.vue'
-import { appHref, getName, setName, wordPair } from '../lib'
+import Logo from '@/components/elements/Logo.vue'
+import NameField from '@/components/elements/NameField.vue'
+import Tagline from '@/components/elements/Tagline.vue'
+import SettingsMenu from '@/components/layout/SettingsMenu.vue'
+import { appHref, getName, setName, wordPair } from '@/lib'
 
 const name = ref(getName() ?? '')
 const code = ref('')

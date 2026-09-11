@@ -5,9 +5,9 @@
 
 import { Hand, Keyboard, KeyboardOff, Mouse, Settings } from '@lucide/vue'
 import { onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
-import { askConfirm, clearAllData, isTouch, SCALE_STEPS, shortcutsEnabled, stepScale, textScale, toggleShortcuts, toggleTouch } from '../lib'
-import ThemeToggle from './ThemeToggle.vue'
-import ToggleSwitch from './ToggleSwitch.vue'
+import ThemeToggle from '@/components/elements/ThemeToggle.vue'
+import ToggleSwitch from '@/components/elements/ToggleSwitch.vue'
+import { askConfirm, clearAllData, isTouch, SCALE_STEPS, shortcutsEnabled, stepScale, textScale, toggleShortcuts, toggleTouch } from '@/lib'
 
 const min = SCALE_STEPS[0]
 const max = SCALE_STEPS[SCALE_STEPS.length - 1]
