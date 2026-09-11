@@ -28,7 +28,7 @@
 @use 'namegate'; // the pre-join screen — views/rooms/NameGate.vue
 @use 'session-closed'; // the wiped-room screen — views/rooms/SessionClosed.vue
 @use 'taglines'; // /taglines debug route
-@use 'tools-panel'; // CanvasPair's static chrome (panel + canvas-pair layout)
+@use 'tools-panel'; // DrawBoard's static chrome (panel + canvas-pair layout)
 @use 'picker'; // ImagePicker's cards (shared by Lobby GM controls + /paint)
 @use 'player-list'; // the lobby roster — after `buttons`, see the file header
 @use 'player-tag'; // PlayerTag.vue — the seat chip + name pairing

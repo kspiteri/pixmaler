@@ -23,7 +23,7 @@
 }
 
 // Wraps `.art-surface` rather than sharing its box — the canvas sizes off the aspect
-// ratio, so a border on that element would crop it. CanvasPair deliberately has none.
+// ratio, so a border on that element would crop it. DrawBoard deliberately has none.
 .art-frame {
   box-sizing: border-box;
   // Not a radius-scale rung: this is the frame's own milled edge, not a UI

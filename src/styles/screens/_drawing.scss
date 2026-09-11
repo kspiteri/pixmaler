@@ -99,7 +99,7 @@
     gap: $gap-4;
     overflow: hidden;
 
-    // The docked panel's space is reserved *inside* `<CanvasPair>` from the measured
+    // The docked panel's space is reserved *inside* `<DrawBoard>` from the measured
     // palette height, so the shell reserves none — one source of truth.
     @media (max-width: $bp-mobile) {
       max-width: none;

@@ -79,8 +79,7 @@ export class PixelCanvas {
     if (opts.editable) {
       // The drawing's paper (--paper): untouched cells (-1) render transparent onto it.
       this.canvas.style.background = 'var(--paper)'
-      // The only edge this canvas gets — CanvasPair has no `.art-frame`. Themed via inline
-      // `var()`, which resolves against `:root`.
+      // The only edge this canvas gets — DrawBoard has no `.art-frame`.
       this.canvas.style.border = '1px solid var(--canvas-edge)'
     }
 
