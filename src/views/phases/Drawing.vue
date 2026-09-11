@@ -20,8 +20,7 @@ import {
   watch,
 } from 'vue'
 import AlertToast from '@/components/elements/AlertToast.vue'
-import CanvasPair from '@/components/game/CanvasPair.vue'
-import PixelThumb from '@/components/game/PixelThumb.vue'
+import { DrawBoard, PixelThumb } from '@/components/game'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
 import { clientIdKey, socketKey, useCountdownAnnounce, useDrawSubmit, useGmActions, useOrientation } from '@/lib'
 
@@ -59,7 +58,7 @@ const doneText = computed(() =>
   `${props.state.doneCount} of ${props.state.totalDrawing} ready`,
 )
 
-const pairRef = useTemplateRef<InstanceType<typeof CanvasPair>>('pair')
+const pairRef = useTemplateRef<InstanceType<typeof DrawBoard>>('pair')
 
 const { secondsLeft, canvasBlank, onCanvasUpdate } = useDrawSubmit({
   socket,
@@ -203,7 +202,7 @@ onBeforeUnmount(() => {
     </div>
 
     <div v-else class="drawing__body">
-      <CanvasPair
+      <DrawBoard
         ref="pair"
         :grid-w="config.gridW"
         :grid-h="config.gridH"

@@ -9,9 +9,7 @@ import AlertToast from '@/components/elements/AlertToast.vue'
 import NameField from '@/components/elements/NameField.vue'
 import PlayerTag from '@/components/elements/PlayerTag.vue'
 import Tagline from '@/components/elements/Tagline.vue'
-import LobbyGmControls from '@/components/game/LobbyGmControls.vue'
-import PixelThumb from '@/components/game/PixelThumb.vue'
-import PlayerList from '@/components/game/PlayerList.vue'
+import { GmControls, PixelThumb, PlayerList } from '@/components/game'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
 import { AVATAR_SHAPES, clientIdKey, seatFor, setName, setShape, socketKey, useGmActions } from '@/lib'
 
@@ -210,7 +208,7 @@ onBeforeUnmount(() => {
       </aside>
 
       <section class="lobby__settings">
-        <LobbyGmControls v-if="isGm" :players="state.players" />
+        <GmControls v-if="isGm" :players="state.players" />
 
         <template v-else>
           <div class="lobby__waiting">

@@ -6,14 +6,13 @@ import type { PickerMeta, PipelineResult } from '@/lib'
 import { ChevronDown, ChevronUp, Settings } from '@lucide/vue'
 import { computed, ref } from 'vue'
 import Tagline from '@/components/elements/Tagline.vue'
-import CanvasPair from '@/components/game/CanvasPair.vue'
-import ImagePicker from '@/components/game/ImagePicker.vue'
+import { DrawBoard, ImagePicker } from '@/components/game'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
 import { appHref, useOrientation } from '@/lib'
 
 const result = ref<PipelineResult | null>(null)
 const meta = ref<PickerMeta | null>(null)
-const pairRef = ref<InstanceType<typeof CanvasPair> | null>(null)
+const pairRef = ref<InstanceType<typeof DrawBoard> | null>(null)
 
 // Settings start open, collapse once the first image loads; the toggle re-opens them.
 const settingsOpen = ref(true)
@@ -88,7 +87,7 @@ const summary = computed(() => {
       <!-- Only while settings are collapsed: opening them unmounts the pair and its
            teleported palette, so neither overlaps the panel. -->
       <template v-if="!settingsOpen">
-        <CanvasPair
+        <DrawBoard
           v-if="result"
           ref="pairRef"
           :key="`${result.gridW}x${result.gridH}-${result.palette.join(',')}`"
