@@ -49,7 +49,7 @@ const startHint = computed(() => {
     return 'choose an image to start'
   if (missingPlayers.value > 0) {
     const need = `need ${missingPlayers.value} more player${missingPlayers.value === 1 ? '' : 's'}`
-    return import.meta.env.DEV ? `${need} — ignored in dev` : need
+    return import.meta.env.DEV ? `${need} (ignored in dev)` : need
   }
   return ''
 })

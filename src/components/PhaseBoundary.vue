@@ -32,7 +32,7 @@ function reload() {
       this screen stopped working
     </p>
     <p class="phase-error__note">
-      the round is still running and your place is kept. reload to pick it back up.
+      the round is still going and your place is saved. reload to pick it back up.
     </p>
     <button class="btn btn--primary" type="button" @click="reload">
       Reload

@@ -62,8 +62,8 @@ const showWarn = ref(false)
 const COLOUR_OPTIONS: { value: number, label: string }[] = [
   { value: 8, label: 'Very few colours' },
   { value: 16, label: 'A normal number of colours' },
-  { value: 24, label: 'A bit more colours' },
-  { value: 32, label: 'A lot more colours' },
+  { value: 24, label: 'Slightly more colours' },
+  { value: 32, label: 'Many more colours' },
 ]
 
 // The six fill-ramp anchors, reused as background choices: whatever the GM picks is a colour
@@ -165,7 +165,7 @@ async function reprocess() {
     status.value = err instanceof ImageDecodeError
       ? (cachedFile && isHeic(cachedFile)
           ? `${sourceLabel.value} looks like an iPhone HEIC photo, which only Safari can open. Export it as a JPEG, or open this page in Safari.`
-          : `Could not read ${sourceLabel.value} — it looks corrupted, or in a format this browser can't decode. Try a PNG or JPEG.`)
+          : `Could not read ${sourceLabel.value}: it looks corrupted, or in a format this browser can't decode. Try a PNG or JPEG.`)
       : `Error: ${err}`
   }
 }
@@ -214,7 +214,7 @@ function onFileChange() {
     // Whatever is already loaded stays: a mistaken pick shouldn't cost a working target.
     // Clearing the input lets the same file re-fire `change` for a second attempt.
     status.value = unsupported === 'vector'
-      ? `${file.name} is a vector image — there are no pixels to sample. Try a PNG or JPEG.`
+      ? `${file.name} is a vector image, so there are no pixels to sample. Try a PNG or JPEG.`
       : `${file.name} is not an image. Try a PNG or JPEG.`
     if (fileInput.value)
       fileInput.value.value = ''
@@ -315,7 +315,7 @@ onBeforeUnmount(() => {
 
       <!-- Only rendered for an upload that actually has transparent pixels -->
       <div v-if="hasAlpha" class="picker__setting picker__setting--inline">
-        <span id="picker-bg" class="picker__setting-label">Alpha Colour</span>
+        <span id="picker-bg" class="picker__setting-label">Alpha colour</span>
         <div class="picker__bg-list" role="group" aria-labelledby="picker-bg">
           <button
             v-for="opt in BACKGROUND_OPTIONS"
@@ -384,7 +384,7 @@ onBeforeUnmount(() => {
            assertive live region would interrupt each pass. -->
       <p v-if="showWarnNode" class="picker__warn" role="status">
         <TriangleAlert :size="16" />
-        <span>Grid exceeds 64px on its longest side — mobile players may struggle.</span>
+        <span>Grid exceeds 64px on its longest side; mobile players may struggle.</span>
       </p>
 
       <p v-if="status" class="picker__status">

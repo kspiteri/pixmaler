@@ -140,7 +140,7 @@ function onCropKeyDown(e: KeyboardEvent) {
         class="picker__crop-img"
         :src="sourceUrl"
         :style="{ background }"
-        :alt="`${sourceLabel} — full frame`"
+        :alt="`${sourceLabel}, full frame`"
       >
       <div class="picker__crop-shade" />
       <div v-if="cropBox" class="picker__crop-window" :style="cropBox" />
