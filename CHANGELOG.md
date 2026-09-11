@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.8.3](https://github.com/kspiteri/pixmaler/compare/0.8.2...0.8.3) (2026-09-11)
+
+
+### Under the hood
+
+* group components by role ([4b497ae](https://github.com/kspiteri/pixmaler/commit/4b497ae74f71df406c75563cd32e641e732cd756))
+* move scss files into clearer folders ([e65cfd2](https://github.com/kspiteri/pixmaler/commit/e65cfd21a2ba7522d8130e45b4a629f83732a5a8))
+* reorganize game components by feature folders ([da9b5c6](https://github.com/kspiteri/pixmaler/commit/da9b5c6de25e580a0478151e51bb31f85d1397aa))
+* replace `CanvasPair` with `DrawBoard` ([2420646](https://github.com/kspiteri/pixmaler/commit/24206464534db8826f4ca38d6896771275baac92))
+* replace all `CanvasPair` references with `DrawBoard` ([d3b4580](https://github.com/kspiteri/pixmaler/commit/d3b45802c462d1481986d2d22c73e8e51390a9f0))
+
 ## [0.8.2](https://github.com/kspiteri/pixmaler/compare/0.8.1...0.8.2) (2026-09-10)
 
 
