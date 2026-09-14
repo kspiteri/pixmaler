@@ -4,11 +4,11 @@
 // imperative DOM built by the parent; we only mount them in slots.
 
 import type { PixelCanvas } from '@/lib'
-import { Check, ChevronDown, ChevronUp, GripVertical, Image as ImageIcon, Pin, PinOff, Trash2, Undo2 } from '@lucide/vue'
+import { Check, ChevronDown, ChevronUp, Image as ImageIcon, Trash2, Undo2 } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
-import { isTouch, paletteDocked, paletteSize, setPaletteDocked, setPaletteHeight, useAppLayout, useDraggable } from '@/lib'
-import PaletteShortcuts from './PaletteShortcuts.vue'
-import PaletteSizeControl from './PaletteSizeControl.vue'
+import { isTouch, paletteDocked, paletteSize, setPaletteHeight, useAppLayout, useDraggable } from '@/lib'
+import Header from './palette/Header.vue'
+import Shortcuts from './palette/Shortcuts.vue'
 
 interface Props {
   // The editable PixelCanvas the buttons drive; null for one tick while the parent mounts it.
@@ -240,34 +240,7 @@ function clear() {
       :class="[`tools-panel--${paletteSize}`, `tools-panel--${variant}`, { 'tools-panel--docked': isMobile, 'tools-panel--float': floatingDesktop, 'tools-panel--dock-side': inFlow }]"
       :style="floatingDesktop ? { transform: `translate(${panelX}px, ${panelY}px)` } : undefined"
     >
-      <div
-        v-if="!isMobile"
-        class="tools-panel__handle"
-        :title="canDrag ? 'Drag to move' : undefined"
-        @pointerdown="onHandlePointerDown"
-      >
-        <span v-if="canDrag" class="tools-panel__grip"><GripVertical :size="16" /></span>
-        <span class="tools-panel__label">palette</span>
-        <!-- Dock / float toggle. pointerdown stopped so it doesn't start a drag. -->
-        <button
-          class="tools-panel__dock pressable"
-          type="button"
-          :title="paletteDocked ? 'Float palette' : 'Dock palette to the side'"
-          :aria-label="paletteDocked ? 'Float palette' : 'Dock palette'"
-          @pointerdown.stop
-          @click="setPaletteDocked(!paletteDocked)"
-        >
-          <PinOff v-if="paletteDocked" :size="14" />
-          <Pin v-else :size="14" />
-        </button>
-        <PaletteSizeControl />
-      </div>
-
-      <!-- Mobile has no drag handle, so the swatch-size control gets a static header strip. -->
-      <div v-else class="tools-panel__mobile-head">
-        <span class="tools-panel__label">palette</span>
-        <PaletteSizeControl />
-      </div>
+      <Header :is-mobile="isMobile" :can-drag="canDrag" @handledown="onHandlePointerDown" />
 
       <div class="tools-panel__body">
         <!-- Reference: full-width in the desktop panel with a collapse toggle (like the
@@ -337,7 +310,7 @@ function clear() {
             </p>
             <p>saved as you draw, good or not</p>
           </div>
-          <PaletteShortcuts />
+          <Shortcuts />
         </div>
       </div>
     </div>
