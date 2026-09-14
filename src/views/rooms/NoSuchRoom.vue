@@ -3,13 +3,13 @@
 // Prevents users with old urls from opening up rooms unnecessarily.
 
 import RoomInterstitial from '@/components/layout/RoomInterstitial.vue'
-import { appHref, wordPair } from '@/lib'
+import { appHref, roomHref, wordPair } from '@/lib'
 
 const baseUrl = appHref()
 
 // The one route that opens a room: a fresh, well-formed code down the create path.
 function createOwn() {
-  location.href = `${location.pathname}?room=${wordPair()}&create=1`
+  location.href = roomHref(wordPair(), { create: true })
 }
 </script>
 

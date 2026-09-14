@@ -6,7 +6,7 @@
 // message carries no reason, so anything cause-specific here would be wrong half the time.
 
 import RoomInterstitial from '@/components/layout/RoomInterstitial.vue'
-import { appHref } from '@/lib'
+import { appHref, roomHref } from '@/lib'
 
 const baseUrl = appHref()
 
@@ -14,7 +14,7 @@ const baseUrl = appHref()
 // 404 screen, since the room no longer exists. The creator becomes GM, as before. `code`
 // comes from the layout's slot, which reads it off the URL.
 function reopen(code: string) {
-  location.href = `${location.pathname}?room=${code}&create=1`
+  location.href = roomHref(code, { create: true })
 }
 </script>
 
