@@ -84,6 +84,7 @@ async function removePlayer(p: Player) {
           v-if="canTransfer(p)"
           class="player-list__make-gm pressable"
           type="button"
+          :aria-label="`Make ${p.name} GM`"
           @click="transferGm(p)"
         >
           Make GM
@@ -92,6 +93,7 @@ async function removePlayer(p: Player) {
           v-if="canRemove(p)"
           class="player-list__remove pressable"
           type="button"
+          :aria-label="`Remove ${p.name}`"
           @click="removePlayer(p)"
         >
           Remove
