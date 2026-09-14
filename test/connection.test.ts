@@ -231,6 +231,16 @@ describe('handleJoin — reconnect', () => {
     expect(h.state.gmClientId).toBe('gm')
   })
 
+  it('re-promotes GM on rejoin when the seated GM never came back', () => {
+    // Both drop; the non-original returns first — the offline GM must not keep the role.
+    const h = harness([
+      player('gm', { connected: false }),
+      player('other', { connected: false }),
+    ], { gmClientId: 'gm', originalGmClientId: 'gm' })
+    handleJoin(h.ctx, h.conn('c-other'), join('other'))
+    expect(h.state.gmClientId).toBe('other')
+  })
+
   it('does not change whether a player is a spectator', () => {
     const h = harness([player('late', { spectating: true, connected: false })], { phase: 'DRAWING' })
     handleJoin(h.ctx, h.conn('c-new'), join('late'))
@@ -405,5 +415,15 @@ describe('handleClose', () => {
     expect(() => handleClose(h.ctx, 'never-joined')).not.toThrow()
     expect(h.state.players.get('a')!.connected).toBe(true)
     expect(h.stateBroadcasts()).toBe(0)
+  })
+
+  it('keeps the player online while another of their connections remains', () => {
+    // Two tabs share a clientId; closing one must not mark the shared player offline.
+    const h = harness([player('a')]) // connMap: conn-a -> a
+    handleJoin(h.ctx, h.conn('conn-a2'), join('a')) // second tab, same clientId
+    handleClose(h.ctx, 'conn-a')
+    expect(h.state.players.get('a')!.connected).toBe(true)
+    handleClose(h.ctx, 'conn-a2')
+    expect(h.state.players.get('a')!.connected).toBe(false)
   })
 })

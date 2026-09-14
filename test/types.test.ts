@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { GRID_MAX_SIDE, PALETTE_MAX_LEN, parseClientMsg } from '../src/lib/protocol/protocol'
-import { AVATAR_SHAPES, clampDrawSeconds, DEFAULT_AVATAR_SHAPE, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN, normaliseShape, sanitiseName, VOTE_CATEGORIES } from '../src/lib/protocol/types'
+import { AVATAR_SHAPES, clampDrawSeconds, clampName, DEFAULT_AVATAR_SHAPE, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN, NAME_MAX_LEN, normaliseShape, sanitiseName, VOTE_CATEGORIES } from '../src/lib/protocol/types'
 
 // Every assertion parses a raw frame; the short name keeps them readable.
 const parse = parseClientMsg
@@ -87,6 +87,20 @@ describe('sanitiseName', () => {
   })
 })
 
+describe('clampName', () => {
+  it('clamps by code point to NAME_MAX_LEN', () => {
+    expect(clampName('x'.repeat(50))).toHaveLength(NAME_MAX_LEN)
+    expect(clampName('short')).toBe('short')
+  })
+
+  it('never splits an astral character at the boundary', () => {
+    // 23 letters + a 2-unit emoji: a UTF-16 slice(0, 24) would keep a lone surrogate.
+    const clamped = clampName(`${'a'.repeat(23)}😀`)
+    expect([...clamped]).toHaveLength(NAME_MAX_LEN)
+    expect(clamped.endsWith('😀')).toBe(true)
+  })
+})
+
 describe('clampDrawSeconds', () => {
   it('clamps to the advertised range', () => {
     // The floor exists because a GM testing with 20s had the whole config
@@ -154,6 +168,12 @@ describe('parseClientMsg — join, rename, shape', () => {
     expect(parse('{"type":"join","clientId":"c1"}')).toBeNull()
     expect(parse('{"type":"join","name":"ray"}')).toBeNull()
     expect(parse('{"type":"join","clientId":1,"name":"ray"}')).toBeNull()
+  })
+
+  it('rejects an over-long clientId (it becomes a Map key echoed in every state)', () => {
+    expect(parse(`{"type":"join","clientId":"${'x'.repeat(65)}","name":"ray"}`)).toBeNull()
+    expect(parse(`{"type":"join","clientId":"${'x'.repeat(64)}","name":"ray"}`)).not.toBeNull()
+    expect(parse('{"type":"join","clientId":"","name":"ray"}')).toBeNull()
   })
 
   it('drops unknown properties instead of letting them into room state', () => {

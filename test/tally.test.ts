@@ -4,8 +4,9 @@
 
 import type { Player, Submission } from '../src/lib/protocol/types'
 import { describe, expect, it } from 'vitest'
-import { categoryOf, NAME_MAX_LEN, tallyVotes, uniqueName, voteKey, voterOf } from '../party/tally'
+import { categoryOf, tallyVotes, uniqueName, voteKey, voterOf } from '../party/tally'
 import { adjectives } from '../src/lib/content/words'
+import { NAME_MAX_LEN } from '../src/lib/protocol'
 
 type Voter = Pick<Player, 'name' | 'connected'>
 
