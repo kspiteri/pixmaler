@@ -8,6 +8,7 @@ import type { ClientMsg, GalleryMsg, GmConfigureMsg, ResultsMsg } from '../src/l
 import { describe, expect, it } from 'vitest'
 import { handleClose, handleJoin, handleRename, handleShape } from '../party/connection'
 import { voteKey } from '../party/tally'
+import { MAX_PLAYERS } from '../src/lib/protocol/types'
 import { player, harness as room } from './support/room'
 
 const config = {
@@ -97,6 +98,39 @@ describe('handleJoin — new player', () => {
     expect(h.emptySince()).not.toBeNull()
     handleJoin(h.ctx, h.conn('c1'), join('a'))
     expect(h.emptySince()).toBeNull()
+  })
+})
+
+describe('handleJoin — room cap', () => {
+  const fill = (n: number, over: Partial<RoomPlayer> = {}) =>
+    Array.from({ length: n }, (_, i) => player(`p${i}`, over))
+
+  it('refuses a genuinely new player once the room is at MAX_PLAYERS', () => {
+    const h = harness(fill(MAX_PLAYERS), { gmClientId: 'p0', originalGmClientId: 'p0' })
+    handleJoin(h.ctx, h.conn('c-late'), join('late'))
+    expect(h.state.players.has('late')).toBe(false)
+    expect(h.state.players.size).toBe(MAX_PLAYERS)
+    expect(h.sent).toContainEqual({ connId: 'c-late', msg: { type: 'room-full' } })
+    // No seat, no trace: neither the roster nor the live count moves.
+    expect(h.stateBroadcasts()).toBe(0)
+    expect(h.state.connMap.has('c-late')).toBe(false)
+  })
+
+  it('admits the joiner that fills the last free seat', () => {
+    const h = harness(fill(MAX_PLAYERS - 1), { gmClientId: 'p0', originalGmClientId: 'p0' })
+    handleJoin(h.ctx, h.conn('c-last'), join('last'))
+    expect(h.state.players.has('last')).toBe(true)
+    expect(h.state.players.size).toBe(MAX_PLAYERS)
+  })
+
+  it('still admits a reconnect even when the room is full of offline seats', () => {
+    // Offline records keep their seats, so `size` stays at the cap — a reconnect must
+    // still get in (it reclaims a seat rather than taking a new one).
+    const h = harness(fill(MAX_PLAYERS, { connected: false }), { gmClientId: 'p0', originalGmClientId: 'p0' })
+    handleJoin(h.ctx, h.conn('c-p3'), join('p3'))
+    expect(h.state.players.get('p3')!.connected).toBe(true)
+    expect(h.sent).not.toContainEqual({ connId: 'c-p3', msg: { type: 'room-full' } })
+    expect(h.stateBroadcasts()).toBe(1)
   })
 })
 
