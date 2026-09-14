@@ -250,6 +250,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  if (debounceTimer)
+    clearTimeout(debounceTimer)
   if (sourceUrl.value)
     URL.revokeObjectURL(sourceUrl.value)
 })
