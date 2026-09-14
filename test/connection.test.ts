@@ -23,12 +23,13 @@ const config = {
 // `shape` is widened to string on purpose: `parseClientMsg` already normalises it,
 // so an invalid one is unreachable through the real path — `handleJoin` normalising
 // again is defence in depth, and these tests are what keep it honest.
-function join(clientId: string, over: { name?: string, shape?: string } = {}) {
+function join(clientId: string, over: { name?: string, shape?: string, create?: boolean } = {}) {
   return {
     type: 'join',
     clientId,
     name: over.name ?? clientId,
     shape: over.shape ?? 'circle',
+    create: over.create ?? false,
   } as Extract<ClientMsg, { type: 'join' }>
 }
 
@@ -40,7 +41,7 @@ function harness(seated: RoomPlayer[] = [], over: Partial<RoomState> = {}) {
 describe('handleJoin — new player', () => {
   it('seats the first joiner as GM and reclaim target', () => {
     const h = harness()
-    handleJoin(h.ctx, h.conn('c1'), join('a'))
+    handleJoin(h.ctx, h.conn('c1'), join('a', { create: true }))
     expect(h.state.players.get('a')).toMatchObject({ clientId: 'a', connected: true, isGm: false })
     expect(h.state.gmClientId).toBe('a')
     expect(h.state.originalGmClientId).toBe('a')
@@ -62,25 +63,25 @@ describe('handleJoin — new player', () => {
 
   it('falls back to a random name rather than storing an empty one', () => {
     const h = harness()
-    handleJoin(h.ctx, h.conn('c1'), join('a', { name: '   ' }))
+    handleJoin(h.ctx, h.conn('c1'), join('a', { name: '   ', create: true }))
     expect(h.state.players.get('a')!.name.length).toBeGreaterThan(0)
   })
 
   it('caps the stored name', () => {
     const h = harness()
-    handleJoin(h.ctx, h.conn('c1'), join('a', { name: 'x'.repeat(80) }))
+    handleJoin(h.ctx, h.conn('c1'), join('a', { name: 'x'.repeat(80), create: true }))
     expect(h.state.players.get('a')!.name.length).toBeLessThanOrEqual(24)
   })
 
   it('normalises an unknown shape', () => {
     const h = harness()
-    handleJoin(h.ctx, h.conn('c1'), join('a', { shape: 'triangle' }))
+    handleJoin(h.ctx, h.conn('c1'), join('a', { shape: 'triangle', create: true }))
     expect(h.state.players.get('a')!.shape).toBe('rounded')
   })
 
   it('marks a mid-round arrival as a spectator', () => {
     for (const phase of ['DRAWING', 'VOTING', 'RESULTS'] as const) {
-      const h = harness([], { phase })
+      const h = harness([player('host')], { phase })
       handleJoin(h.ctx, h.conn('c1'), join('late'))
       expect(h.state.players.get('late')!.spectating).toBe(true)
     }
@@ -88,7 +89,7 @@ describe('handleJoin — new player', () => {
 
   it('does not make a lobby joiner a spectator', () => {
     const h = harness()
-    handleJoin(h.ctx, h.conn('c1'), join('a'))
+    handleJoin(h.ctx, h.conn('c1'), join('a', { create: true }))
     expect(h.state.players.get('a')!.spectating).toBe(false)
   })
 
@@ -96,7 +97,7 @@ describe('handleJoin — new player', () => {
     const h = harness()
     handleClose(h.ctx, 'gone') // nothing connected -> grace clock starts
     expect(h.emptySince()).not.toBeNull()
-    handleJoin(h.ctx, h.conn('c1'), join('a'))
+    handleJoin(h.ctx, h.conn('c1'), join('a', { create: true }))
     expect(h.emptySince()).toBeNull()
   })
 })
@@ -131,6 +132,36 @@ describe('handleJoin — room cap', () => {
     expect(h.state.players.get('p3')!.connected).toBe(true)
     expect(h.sent).not.toContainEqual({ connId: 'c-p3', msg: { type: 'room-full' } })
     expect(h.stateBroadcasts()).toBe(1)
+  })
+})
+
+describe('handleJoin — room creation (#66)', () => {
+  it('refuses a new player joining an empty room without create intent', () => {
+    const h = harness()
+    handleClose(h.ctx, 'gone') // nothing connected -> empty-room grace clock starts
+    expect(h.emptySince()).not.toBeNull()
+    handleJoin(h.ctx, h.conn('c1'), join('a'))
+    expect(h.state.players.has('a')).toBe(false)
+    expect(h.sent).toContainEqual({ connId: 'c1', msg: { type: 'no-such-room' } })
+    // No seat, no trace: no roster broadcast, no connMap entry, and the refusal returned
+    // before markOccupied, so the pending wipe is still armed.
+    expect(h.stateBroadcasts()).toBe(0)
+    expect(h.state.connMap.has('c1')).toBe(false)
+    expect(h.emptySince()).not.toBeNull()
+  })
+
+  it('refuses create intent when the room code is malformed', () => {
+    const h = room([], {}, { roomName: 'not a real code' })
+    handleJoin(h.ctx, h.conn('c1'), join('a', { create: true }))
+    expect(h.state.players.has('a')).toBe(false)
+    expect(h.sent).toContainEqual({ connId: 'c1', msg: { type: 'no-such-room' } })
+  })
+
+  it('treats create intent into a live room as a normal join, not a second GM', () => {
+    const h = harness([player('a')], { gmClientId: 'a', originalGmClientId: 'a' })
+    handleJoin(h.ctx, h.conn('c2'), join('b', { create: true }))
+    expect(h.state.players.get('b')).toMatchObject({ clientId: 'b', connected: true })
+    expect(h.state.gmClientId).toBe('a')
   })
 })
 
@@ -282,7 +313,7 @@ describe('handleJoin — targeted re-sends', () => {
 
   it('sends nothing extra in LOBBY', () => {
     const h = harness([], {})
-    handleJoin(h.ctx, h.conn('c1'), join('a'))
+    handleJoin(h.ctx, h.conn('c1'), join('a', { create: true }))
     expect(h.sent).toEqual([])
   })
 })

@@ -46,6 +46,8 @@ export interface HarnessOpts {
   /** Defaults to false, matching production — the 2-player start gate applies. */
   devMode?: boolean
   votingMs?: number
+  /** The room name for room-code validation (#66). Defaults to a well-formed code. */
+  roomName?: string
 }
 
 // `players` are seated with `connMap` wired so each has a `conn-<clientId>`. `over` patches
@@ -72,6 +74,7 @@ export function harness(
 
   const ctx: RoomCtx = {
     state,
+    roomName: opts.roomName ?? 'test-room',
     broadcast: (msg) => { broadcasts.push(msg) },
     // Mirrors the real ctx: a real payload, so a test can assert on content as
     // well as on how many times it fired.

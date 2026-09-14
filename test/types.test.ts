@@ -135,11 +135,19 @@ describe('parseClientMsg — rejection', () => {
 })
 
 describe('parseClientMsg — join, rename, shape', () => {
-  it('accepts a join and normalises the shape', () => {
+  it('accepts a join, normalises the shape and defaults create to false', () => {
     expect(parse('{"type":"join","clientId":"c1","name":"ray","shape":"hexagon"}'))
-      .toEqual({ type: 'join', clientId: 'c1', name: 'ray', shape: 'hexagon' })
+      .toEqual({ type: 'join', clientId: 'c1', name: 'ray', shape: 'hexagon', create: false })
     expect(parse('{"type":"join","clientId":"c1","name":"ray","shape":"nope"}'))
-      .toEqual({ type: 'join', clientId: 'c1', name: 'ray', shape: DEFAULT_AVATAR_SHAPE })
+      .toEqual({ type: 'join', clientId: 'c1', name: 'ray', shape: DEFAULT_AVATAR_SHAPE, create: false })
+  })
+
+  it('carries create intent through, only for a literal true', () => {
+    expect(parse('{"type":"join","clientId":"c1","name":"ray","create":true}')!)
+      .toMatchObject({ create: true })
+    // Anything that isn't a literal `true` is a plain join — no accidental creation.
+    expect(parse('{"type":"join","clientId":"c1","name":"ray","create":"1"}')!)
+      .toMatchObject({ create: false })
   })
 
   it('requires clientId and name to be strings', () => {
@@ -151,7 +159,7 @@ describe('parseClientMsg — join, rename, shape', () => {
   it('drops unknown properties instead of letting them into room state', () => {
     const msg = parse('{"type":"join","clientId":"c1","name":"ray","isGm":true,"votes":99}')
     expect(msg).not.toBeNull()
-    expect(Object.keys(msg!).sort()).toEqual(['clientId', 'name', 'shape', 'type'])
+    expect(Object.keys(msg!).sort()).toEqual(['clientId', 'create', 'name', 'shape', 'type'])
   })
 
   it('accepts a bare shape message, since the shape clamps rather than rejects', () => {
