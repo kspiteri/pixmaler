@@ -96,9 +96,10 @@ function emptyVotes(): Record<VoteCategory, string | null> {
   return { funniest: null, best: null }
 }
 
-// Rehydrate my picks from the server's echo on (re)join, filling only reported categories.
-// `immediate` so a reconnect before mount still applies.
-watch(() => props.voteState, (vs) => {
+// Apply the server's echo of my picks (sent on (re)join during VOTING), filling only the
+// categories it reports. Extracted so the gallery watcher can re-apply it after its reshuffle
+// reset — that watcher is `immediate` too and runs second, so it would otherwise wipe these.
+function applyVoteEcho(vs: VoteState | null) {
   if (!vs)
     return
   for (const c of VOTE_CATEGORIES) {
@@ -106,7 +107,10 @@ watch(() => props.voteState, (vs) => {
     if (picked)
       myVotes.value[c.id] = picked
   }
-}, { immediate: true })
+}
+
+// `immediate` so a reconnect before mount still applies.
+watch(() => props.voteState, vs => applyVoteEcho(vs), { immediate: true })
 
 // Which of my category votes landed on a given submission — drives its stickers.
 function votedCategoriesFor(submissionId: string) {
@@ -150,6 +154,7 @@ watch(() => props.gallery, () => {
   if (!sameSet(ordered.value, subs)) {
     ordered.value = shuffle(subs)
     myVotes.value = emptyVotes()
+    applyVoteEcho(props.voteState) // restore picks a mid-VOTING reload just rehydrated
   }
 }, { immediate: true })
 
