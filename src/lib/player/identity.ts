@@ -7,6 +7,7 @@
 
 import type { AvatarShape } from '../protocol/types'
 import { normaliseShape } from '../protocol/types'
+import { readStored, removeStored, storedKeys, writeStored } from '../storage'
 
 const CLIENT_ID = 'pixmaler:clientId'
 const NAME = 'pixmaler:name'
@@ -15,10 +16,10 @@ const SHAPE = 'pixmaler:shape'
 // A stable per-browser id so a reconnect reclaims the same player slot. Minted on
 // first read and persisted; every later call returns the same value.
 export function getClientId(): string {
-  let id = localStorage.getItem(CLIENT_ID)
+  let id = readStored(CLIENT_ID)
   if (!id) {
     id = crypto.randomUUID()
-    localStorage.setItem(CLIENT_ID, id)
+    writeStored(CLIENT_ID, id)
   }
   return id
 }
@@ -28,22 +29,22 @@ export function getClientId(): string {
 // merely loads a room URL must not acquire a name (and therefore a socket, and
 // therefore a ghost player).
 export function getName(): string | null {
-  return localStorage.getItem(NAME)?.trim() || null
+  return readStored(NAME)?.trim() || null
 }
 
 export function setName(name: string): void {
-  localStorage.setItem(NAME, name)
+  writeStored(NAME, name)
 }
 
 // The chosen avatar shape, validated through the shared `normaliseShape` — the same
 // predicate the server runs on receipt, so an old or hand-edited key degrades to the
 // default identically on both sides.
 export function getShape(): AvatarShape {
-  return normaliseShape(localStorage.getItem(SHAPE))
+  return normaliseShape(readStored(SHAPE))
 }
 
 export function setShape(shape: AvatarShape): void {
-  localStorage.setItem(SHAPE, shape)
+  writeStored(SHAPE, shape)
 }
 
 // Wipe every `pixmaler:*` key — the "clear my data" action. Deliberately broad: it takes
@@ -51,8 +52,8 @@ export function setShape(shape: AvatarShape): void {
 // promises to clear everything. The caller then reloads to Entry, which closes any open
 // socket. `Object.keys` snapshots, so mutating in the loop is safe.
 export function clearAllData(): void {
-  for (const key of Object.keys(localStorage)) {
+  for (const key of storedKeys()) {
     if (key.startsWith('pixmaler:'))
-      localStorage.removeItem(key)
+      removeStored(key)
   }
 }
