@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { readStored, writeStored } from '../storage'
 
 // "Touch mode" — larger, drag-free interaction for coarse pointers, decoupled from the
 // width-based `isMobile` (which stays a pure layout/space signal). Module-level like the
@@ -14,7 +15,7 @@ const KEY = 'pixmaler:touch'
 
 // Absent means "no choice made", not "off". Unrecognised values degrade to absent.
 function stored(): boolean | null {
-  const raw = localStorage.getItem(KEY)
+  const raw = readStored(KEY)
   return raw === 'on' ? true : raw === 'off' ? false : null
 }
 
@@ -32,5 +33,5 @@ coarse.addEventListener('change', () => {
 export function toggleTouch(): void {
   const next = !isTouch.value
   isTouch.value = next
-  localStorage.setItem(KEY, next ? 'on' : 'off')
+  writeStored(KEY, next ? 'on' : 'off')
 }

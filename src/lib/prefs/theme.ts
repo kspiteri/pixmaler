@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { readStored, writeStored } from '../storage'
 import { withViewTransition } from './motion'
 
 // The theme switch. Module-level like `lib/dialog.ts` — one theme per document.
@@ -12,7 +13,7 @@ export type Theme = 'dark' | 'light'
 
 // Absent means "no choice made", not "dark". Unrecognised values degrade to absent.
 function storedTheme(): Theme | null {
-  const raw = localStorage.getItem(KEY)
+  const raw = readStored(KEY)
   return raw === 'dark' || raw === 'light' ? raw : null
 }
 
@@ -43,7 +44,7 @@ export function toggleTheme(): void {
   const next: Theme = theme.value === 'dark' ? 'light' : 'dark'
   withViewTransition(() => {
     theme.value = next
-    localStorage.setItem(KEY, next)
+    writeStored(KEY, next)
     document.documentElement.dataset.theme = next
   }, 'theme')
 }

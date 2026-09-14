@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { readStored, removeStored, writeStored } from '../storage'
 
 // The text-size control. Module-level like `lib/theme.ts` — one scale per document.
 //
@@ -15,7 +16,7 @@ export const SCALE_STEPS = [90, 100, 110, 125, 150] as const
 const DEFAULT = 100
 
 function storedScale(): number {
-  const raw = Number(localStorage.getItem(KEY))
+  const raw = Number(readStored(KEY))
   return (SCALE_STEPS as readonly number[]).includes(raw) ? raw : DEFAULT
 }
 
@@ -32,9 +33,9 @@ export function setScale(pct: number): void {
   document.documentElement.style.setProperty('--text-scale', String(pct / 100))
   // Default stores nothing, so a returning reader on the default size carries no key.
   if (pct === DEFAULT)
-    localStorage.removeItem(KEY)
+    removeStored(KEY)
   else
-    localStorage.setItem(KEY, String(pct))
+    writeStored(KEY, String(pct))
 }
 
 // Move one rung, clamped at the ends.

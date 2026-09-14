@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { readStored, removeStored, writeStored } from '../storage'
 
 // The drawing-surface shortcuts (hold-Shift colour overlay, arrow-key colour cycling, wheel
 // brush sizing, undo) as one on/off preference. Module-level like the other prefs.
@@ -10,12 +11,12 @@ import { ref } from 'vue'
 
 const KEY = 'pixmaler:shortcuts'
 
-export const shortcutsEnabled = ref(localStorage.getItem(KEY) !== 'off')
+export const shortcutsEnabled = ref(readStored(KEY) !== 'off')
 
 export function toggleShortcuts(): void {
   shortcutsEnabled.value = !shortcutsEnabled.value
   if (shortcutsEnabled.value)
-    localStorage.removeItem(KEY)
+    removeStored(KEY)
   else
-    localStorage.setItem(KEY, 'off')
+    writeStored(KEY, 'off')
 }
