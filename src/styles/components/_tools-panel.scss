@@ -1,6 +1,6 @@
 // Static layout for DrawBoard.vue — the canvas-pair flex row and the floating tools
-// panel chrome. The component's `:deep()` rules and the `--sw` swatch var stay in its
-// scoped block.
+// panel chrome. The swatch/brush DOM is built imperatively by `lib/canvas/tools.ts` and
+// styled here as descendants (see the foot of this file), so the component has no scoped block.
 
 @use 'tokens' as *;
 @use 'chrome' as *;
@@ -45,8 +45,8 @@
 
   // The single knob the S / M / L control turns: swatch cell + grid gap, the between-element
   // spacing, button padding and the panel width. `--md` values are the base; `--sm` tightens
-  // and `--lg` loosens the whole panel, not just the swatches. `--sw*` are read by the
-  // swatch `:deep()` rules in PaletteTools.vue.
+  // and `--lg` loosens the whole panel, not just the swatches. `--sw*` are read by the swatch
+  // descendant rules at the foot of this file.
   --sw: 26px;
   --sw-gap: 6px;
   --panel-pad: #{$gap-3};
@@ -402,6 +402,81 @@
   &__shortcuts-chevron {
     flex-shrink: 0;
     color: $fg-30;
+  }
+
+  // ── The imperative swatch + brush DOM (built by lib/canvas/tools.ts) ─────────
+  // Styled as descendants, not in a scoped `:deep()` block: the classes are unique to the
+  // palette, so `.tools-panel .swatch*` reaches the injected DOM with no scope-id. `--sw*`
+  // (above) drive the cell size the S / M / L control sets.
+  .swatch {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, var(--sw));
+    justify-content: space-between;
+    gap: var(--sw-gap);
+  }
+
+  .swatch__cell {
+    position: relative;
+    width: var(--sw);
+    aspect-ratio: 1;
+    padding: 0;
+    border: 2px solid color-mix(in oklab, $paper, transparent 85%);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 80ms;
+  }
+
+  .swatch__cell--selected {
+    border-color: $accent-ink;
+    transform: scale(1.12);
+  }
+
+  .swatch__cell--highlighted {
+    border-color: $accent-ink;
+  }
+
+  // Hold-Shift quick-swap overlay: a key badge per swatch, hidden until the overlay is on.
+  // Dark scrim + paper glyph reads on any swatch colour, like the selected-cell border.
+  .swatch__key {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: $scrim;
+    color: $paper;
+    font-family: $font-body;
+    font-size: 0.7rem;
+    font-weight: 700;
+    pointer-events: none;
+  }
+
+  .swatch--keys .swatch__key {
+    display: flex;
+  }
+
+  .brush {
+    display: flex;
+    align-items: center;
+    gap: $gap-2;
+    font-family: $font-body;
+    font-size: $fs-xs;
+    color: $muted;
+  }
+
+  .brush__slider {
+    flex: 1;
+    // Firefox won't shrink `input[type=range]` below its intrinsic min-width as a flex item,
+    // clipping the label; `min-width: 0` lets it give the label its space back.
+    min-width: 0;
+    accent-color: $primary;
+  }
+
+  .brush__label {
+    min-width: 56px;
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 }
 
