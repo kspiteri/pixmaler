@@ -77,6 +77,11 @@ export function handleJoin(
     state.players.set(msg.clientId, player)
   }
 
+  // Re-run promotion on rejoin: `handleClose` can only hand GM to a *connected* player, so a
+  // room whose GM dropped last can be left with an offline GM once someone else returns. A
+  // no-op when the seated GM is connected (including the reclaim just above).
+  autoPromoteGm(state)
+
   // The gallery is broadcast once at `endDrawing`, so re-send the frozen copy to a
   // client that needs it to vote.
   if (state.phase === 'VOTING' && state.gallery && state.config) {
@@ -178,6 +183,12 @@ export function handleClose(ctx: RoomCtx, connId: string) {
   const player = clientId ? state.players.get(clientId) : undefined
   if (!player)
     return
+  // `connMap` is many-to-one: two tabs share a clientId, and a reconnect's `join` can land
+  // before the dead socket's close. Only the last conn going takes the player offline.
+  for (const id of state.connMap.values()) {
+    if (id === clientId)
+      return
+  }
   player.connected = false
   autoPromoteGm(state)
   ctx.broadcastState()
