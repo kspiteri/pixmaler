@@ -2,7 +2,7 @@
 
 A real-time pixel-art party game.
 
-> **Deployed and playable.** Lobby → Drawing → Voting → Results → Play again all work end-to-end, with a dark "party game" visual theme and two-category voting. The frontend is on GitHub Pages and the realtime server is live on Cloudflare Workers. A round of playtest hardening landed 2026-08-23 — GM round/session controls, unique player names, and proper resolutions for the rounds where nobody draws or nobody votes. The **visual personality pass** has since landed its biggest pieces — an asymmetric, framed entry screen, a legible pixel-grid backdrop, and a more flexible drawing palette. What's left is sound and a few deferred engineering pieces.
+> **Deployed and playable.** Lobby → Drawing → Voting → Results → Play again all work end-to-end, with a dark "party game" visual theme and two-category voting. The frontend is on GitHub Pages and the realtime server is live on Cloudflare Workers. A round of playtest hardening landed 2026-08-23 — GM round/session controls, unique player names, and proper resolutions for the rounds where nobody draws or nobody votes. The **visual personality pass** has since landed its biggest pieces — an asymmetric, framed entry screen, a legible pixel-grid backdrop, and a more flexible drawing palette. A batch of **server hardening** is staged in the working tree for the next server deploy — a 16-player room cap, display-name sanitising, room-creation gating (a mistyped or dead code lands on a 404 rather than conjuring a room), and GM removal of offline players. What's left is sound and a few deferred engineering pieces.
 
 ## What it does
 
