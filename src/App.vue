@@ -12,6 +12,7 @@ import Lobby from '@/views/phases/Lobby.vue'
 import Results from '@/views/phases/Results.vue'
 import Voting from '@/views/phases/Voting.vue'
 import NameGate from '@/views/rooms/NameGate.vue'
+import NoSuchRoom from '@/views/rooms/NoSuchRoom.vue'
 import RoomFull from '@/views/rooms/RoomFull.vue'
 import SessionClosed from '@/views/rooms/SessionClosed.vue'
 // Hidden debug route (/taglines), not linked anywhere.
@@ -19,7 +20,17 @@ import Taglines from '@/views/Taglines.vue'
 
 // ── Routing ──────────────────────────────────────────────────────────────────
 
-const roomCode = new URLSearchParams(location.search).get('room')
+const params = new URLSearchParams(location.search)
+const roomCode = params.get('room')
+// Create intent rides in on the URL so it survives Entry's full-page navigation, then is
+// stripped at once (#66): a shared or reloaded create-URL degrades to a plain join (a reload
+// is a reconnect anyway, always allowed). Rewrite through URLSearchParams so the room code
+// and any other params are preserved and correctly escaped.
+const createIntent = params.get('create') === '1'
+if (roomCode && createIntent) {
+  params.delete('create')
+  history.replaceState(null, '', `${location.pathname}?${params}`)
+}
 const path = location.pathname.replace(/\/+$/, '')
 const isPaintRoute = path.endsWith('/paint')
 // Hidden debug page — read all taglines in bulk.
@@ -37,11 +48,12 @@ const {
   connectionStatus,
   sessionClosed,
   roomFull,
+  noSuchRoom,
   roundCancelled,
   showNameGate,
   spectating,
   submitName,
-} = useRoom(route === 'room' ? roomCode : null)
+} = useRoom(route === 'room' ? roomCode : null, createIntent)
 </script>
 
 <template>
@@ -55,6 +67,9 @@ const {
 
     <!-- Refused: the room is at MAX_PLAYERS. Terminal, like session-closed. -->
     <RoomFull v-else-if="roomFull" />
+
+    <!-- Refused: the room does not exist and we did not ask to create it (#66). -->
+    <NoSuchRoom v-else-if="noSuchRoom" />
 
     <!-- Name gate: shown before connecting when the player has no stored name -->
     <NameGate v-else-if="showNameGate" @submit="submitName" />

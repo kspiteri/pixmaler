@@ -13,13 +13,15 @@ const code = ref('')
 
 const sandboxHref = appHref('paint')
 
-// Belt-and-braces: both buttons are `:disabled` until their fields are filled.
-function enterRoom(room: string) {
+// Belt-and-braces: both buttons are `:disabled` until their fields are filled. A create
+// carries `&create=1` so the room route opens the room; a join omits it and 404s if the
+// code isn't a live room (#66).
+function enterRoom(room: string, create = false) {
   const trimmed = sanitiseName(name.value)
   if (!trimmed || !room)
     return
   setName(trimmed)
-  location.href = `${location.pathname}?room=${room}`
+  location.href = `${location.pathname}?room=${room}${create ? '&create=1' : ''}`
 }
 </script>
 
@@ -63,7 +65,7 @@ function enterRoom(room: string) {
             class="btn btn--primary"
             type="button"
             :disabled="!name.trim()"
-            @click="enterRoom(wordPair())"
+            @click="enterRoom(wordPair(), true)"
           >
             Create room (GM)
           </button>
