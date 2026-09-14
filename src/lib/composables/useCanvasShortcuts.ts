@@ -42,7 +42,13 @@ export function useCanvasShortcuts({ player, swatch, brush, canvas }: Refs) {
     if (!pc || !sw)
       return
 
-    // Undo — always, even from a form field, matching the platform.
+    // Editing keys stand down while a form control owns focus, so its own undo, Shift and
+    // arrow keys keep working — notably /paint's "draw seconds" input, which is on screen
+    // alongside the canvas.
+    if (inFormField())
+      return
+
+    // Undo.
     if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
       e.preventDefault()
       pc.undo()
@@ -63,10 +69,6 @@ export function useCanvasShortcuts({ player, swatch, brush, canvas }: Refs) {
       }
       return
     }
-
-    // Stand down while a form control owns focus so the brush slider's own arrows work.
-    if (inFormField())
-      return
 
     // Arrow keys step through the swatch, wrapping — previous colour left/up, next right/down.
     switch (e.key) {
