@@ -6,7 +6,7 @@ import type { ClientMsg, ServerMsg, VoteCategory } from '../src/lib/protocol'
 import type { RoomConn, RoomCtx } from './ctx'
 import type { RoomPlayer } from './state'
 import { wordPair } from '../src/lib/content/words'
-import { normaliseShape, sanitiseName } from '../src/lib/protocol'
+import { MAX_PLAYERS, normaliseShape, sanitiseName } from '../src/lib/protocol'
 import { autoPromoteGm } from './state'
 import { categoryOf, NAME_MAX_LEN, uniqueName, voterOf } from './tally'
 
@@ -16,10 +16,18 @@ export function handleJoin(
   msg: Extract<ClientMsg, { type: 'join' }>,
 ) {
   const { state } = ctx
+
+  // Refuse a genuinely new player past the cap; a reconnect (an existing seat) is always
+  // allowed, so a dropped player reclaims their slot even at capacity. Before markOccupied
+  // and connMap so a refused socket leaves no trace once the client closes on `room-full`.
+  const existing = state.players.get(msg.clientId)
+  if (!existing && state.players.size >= MAX_PLAYERS) {
+    ctx.send(conn, { type: 'room-full' })
+    return
+  }
+
   ctx.markOccupied() // somebody is here — cancel any pending empty-room wipe
   state.connMap.set(conn.id, msg.clientId)
-
-  const existing = state.players.get(msg.clientId)
   if (existing) {
     existing.connected = true
     // Only the lobby may apply a stored shape. `handleShape` refuses mid-game

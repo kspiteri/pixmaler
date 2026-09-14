@@ -41,6 +41,9 @@ export function useRoom(roomCode: string | null) {
   // Terminal: the server wiped the room (idle timeout), so this client's slot is gone and
   // reconnecting can't recover it. Stop trying and say so.
   const sessionClosed = ref(false)
+  // Terminal: the room is at `MAX_PLAYERS`, so this client was refused a seat. Same shape
+  // as `sessionClosed` — stop reconnecting and show the full-room screen.
+  const roomFull = ref(false)
   // The GM abandoned the round in flight, so LOBBY owes everyone a reason: their canvas
   // emptied. Held here, not in `Lobby.vue`, because the message arrives while `Drawing.vue`
   // is still mounted. Cleared when the next round starts or the player dismisses it.
@@ -79,9 +82,9 @@ export function useRoom(roomCode: string | null) {
     })
 
     socket.addEventListener('close', () => {
-      // A close after `session-closed` is our own deliberate teardown, not a blip —
-      // don't contradict the closed screen with a "Reconnecting…" banner.
-      if (sessionClosed.value)
+      // A close after `session-closed`/`room-full` is our own deliberate teardown, not a
+      // blip — don't contradict the terminal screen with a "Reconnecting…" banner.
+      if (sessionClosed.value || roomFull.value)
         return
       // partysocket auto-reconnects, so a close is "reconnecting", not dead — the next
       // `open` re-sends `join` and reclaims the slot. Surface it rather than freeze silently.
@@ -132,6 +135,12 @@ export function useRoom(roomCode: string | null) {
           // teardown was deliberate. Closing stops auto-reconnect, which would otherwise
           // re-join us to a pristine room as a new player and silently make us its GM.
           sessionClosed.value = true
+          socket.close()
+          break
+        case 'room-full':
+          // Same teardown order as `session-closed`: flag before close, so the `close`
+          // handler treats it as deliberate and doesn't show "Reconnecting…".
+          roomFull.value = true
           socket.close()
           break
         case 'results': results.value = msg; break
@@ -194,6 +203,7 @@ export function useRoom(roomCode: string | null) {
     targetGrid,
     connectionStatus,
     sessionClosed,
+    roomFull,
     roundCancelled,
     showNameGate,
     spectating,

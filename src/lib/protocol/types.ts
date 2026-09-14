@@ -94,6 +94,12 @@ export const VOTE_CATEGORIES: { id: VoteCategory, label: string, icon: string }[
   { id: 'best', label: 'Best', icon: 'assets/icons/star.svg' },
 ]
 
+// Hard cap on players in one room, GM included — enforced server-side in `handleJoin`
+// (a new join past it is refused with `room-full`) and shown in the lobby as `x/16`.
+// A game-design limit, not a technical one: 16 keeps a room manageable for one GM and
+// every seat an active drawer/voter. Well inside the 21-colour seat ramp.
+export const MAX_PLAYERS = 16
+
 export interface VoteCastMsg {
   type: 'vote:cast'
   category: VoteCategory
@@ -267,6 +273,12 @@ export interface SessionClosedMsg {
   type: 'session-closed'
 }
 
+// Broadcast to a single joiner refused because the room is at `MAX_PLAYERS`. Terminal
+// like `session-closed`: the client stops reconnecting and shows the full-room screen.
+export interface RoomFullMsg {
+  type: 'room-full'
+}
+
 // Broadcast right after `resetToLobby` when the GM abandoned a round mid-game.
 export interface RoundCancelledMsg {
   type: 'round-cancelled'
@@ -300,6 +312,7 @@ export type ServerMsg
     | VoteStateMsg
     | DrawStateMsg
     | SessionClosedMsg
+    | RoomFullMsg
     | RoundCancelledMsg
     | TargetMsg
     | VersionMsg
