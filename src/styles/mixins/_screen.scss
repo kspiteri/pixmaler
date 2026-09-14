@@ -1,9 +1,9 @@
 @use 'tokens' as *;
 
 // The interstitial recipe: a whole screen replaced by one short message and one action.
-// Three of them exist — the name gate and the closed room (`_entry`), and the phase-error
-// fallback (`_phase`). They are deliberately the same kind of screen, so the shape lives
-// here once and the copy carries the whole difference between them.
+// Two things share it — `RoomInterstitial.vue`'s shell (`_room-interstitial`), which backs
+// the name gate and the three terminal refusals, and the phase-error fallback (`_phase`).
+// The shape lives here once and the copy carries the whole difference between them.
 //
 // **Emits no CSS on purpose**, as `_chrome` does: a rule here would land wherever the
 // first `@use` resolves and reorder the cascade.

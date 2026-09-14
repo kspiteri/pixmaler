@@ -25,9 +25,7 @@
 @use 'paint';
 @use 'voting';
 @use 'results';
-@use 'namegate'; // the pre-join screen — views/rooms/NameGate.vue
-@use 'room-full'; // the full-room refusal screen — views/rooms/RoomFull.vue
-@use 'session-closed'; // the wiped-room screen — views/rooms/SessionClosed.vue
+@use 'room-interstitial'; // the shared room-screen shell — layout/RoomInterstitial.vue
 @use 'taglines'; // /taglines debug route
 @use 'tools-panel'; // DrawBoard's static chrome (panel + canvas-pair layout)
 @use 'picker'; // ImagePicker's cards (shared by Lobby GM controls + /paint)

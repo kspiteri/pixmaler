@@ -1,0 +1,26 @@
+@use 'screen' as *;
+@use 'tokens' as *;
+
+// The shared shell for the room interstitials — `components/layout/RoomInterstitial.vue`,
+// used by the name gate and the three terminal refusals. The interstitial *shape* is a mixin
+// (see `_screen.scss`) so `PhaseBoundary`'s error fallback can share it without mounting a
+// component.
+.room-screen {
+  @include interstitial;
+
+  &__code {
+    @include interstitial-code;
+
+    margin: 0;
+  }
+
+  &__note {
+    @include interstitial-note;
+  }
+
+  &__form {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-4;
+  }
+}

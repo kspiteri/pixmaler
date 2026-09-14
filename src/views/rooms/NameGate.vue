@@ -1,14 +1,10 @@
 <script setup lang="ts">
-// The name gate — shown on the room route until the player has a stored name, so nothing
-// connects before a human acts: bots that merely load a room URL never open a socket, so
-// they never become ghost players.
-//
-// Only the chosen name leaves here; storing it and opening the socket stay in `App.vue`.
-// The random word-pair is offered as the placeholder rather than pre-filled, so an empty
-// submit accepts it and typing replaces it.
+// Shown only when the room exists, but the joiner has no stored name/session. Quick and easy bot prevention method.
+// The word-pair is the placeholder, not pre-filled, so an empty submission accepts it, and typing replaces it.
 
 import { ref } from 'vue'
 import NameField from '@/components/elements/NameField.vue'
+import RoomInterstitial from '@/components/layout/RoomInterstitial.vue'
 import { wordPair } from '@/lib'
 
 const emit = defineEmits<{
@@ -16,7 +12,6 @@ const emit = defineEmits<{
   submit: [name: string]
 }>()
 
-const roomCode = new URLSearchParams(location.search).get('room') ?? ''
 const nameInput = ref('')
 const randomName = wordPair()
 
@@ -26,18 +21,12 @@ function submitName() {
 </script>
 
 <template>
-  <div class="page page--narrow namegate">
-    <p class="label label--eyebrow">
-      joining room
-    </p>
-    <p class="namegate__room">
-      {{ roomCode }}
-    </p>
-    <form class="namegate__form" @submit.prevent="submitName">
+  <RoomInterstitial eyebrow="joining room">
+    <form class="room-screen__form" @submit.prevent="submitName">
       <NameField v-model="nameInput" label="Your name" autofocus />
       <button class="btn btn--primary" type="submit">
         {{ nameInput.trim() ? "Join" : `Join as ${randomName}` }}
       </button>
     </form>
-  </div>
+  </RoomInterstitial>
 </template>
