@@ -195,7 +195,7 @@ Milestones name **themes, not versions**: `Image pipeline`, `Server refactor`, `
 
 ## Plans & issues
 
-The working plans in [`docs/.plans/`](./docs/.plans/README.md) were **retired to an archive on 2026-09-14** — kept for their reasoning (measurements, rejected alternatives, the "why"), no longer maintained. **[GitHub Issues](https://github.com/kspiteri/pixmaler/issues) now own everything**: open work *and* its reasoning. File all new work as an issue; the body carries the full "why" (see #66, #68, #69 for the shape). Deferred / post-1.0 work is indexed in [#70](https://github.com/kspiteri/pixmaler/issues/70).
+**[`docs/.plans/`](./docs/.plans/) is temporary working space** — design notes and in-flight planning for whatever's being built right now. When the work lands, its doc is moved to [`docs/.plans/archive/`](./docs/.plans/archive/) and kept as a dated record, not maintained; the standing plans were archived there on 2026-09-14. **[GitHub Issues](https://github.com/kspiteri/pixmaler/issues) own everything durable** — open work *and* its reasoning; file all new work as an issue, its body carrying the full "why" (see #66, #68, #69). CLAUDE.md owns how the code works. Deferred / post-1.0 work is indexed in [#70](https://github.com/kspiteri/pixmaler/issues/70).
 
 Component is a label (`area:drawing`, `area:server`, `area:pipeline`, `area:a11y`, …) rather than a container, so an item spanning two areas carries both and closes as one unit. Priority is **which milestone it sits in**, ordered by severity not date; no milestone means unscheduled. Plan-item numbers cited in older titles (`[56] …`) resolve into the frozen archive — a closed namespace, **not** GitHub issue numbers (plan-item 33 is issue #69).
 
