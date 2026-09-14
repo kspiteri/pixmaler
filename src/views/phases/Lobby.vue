@@ -11,7 +11,7 @@ import PlayerTag from '@/components/elements/PlayerTag.vue'
 import Tagline from '@/components/elements/Tagline.vue'
 import { GmControls, PixelThumb, PlayerList } from '@/components/game'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
-import { AVATAR_SHAPES, clientIdKey, seatFor, setName, setShape, socketKey, useGmActions } from '@/lib'
+import { AVATAR_SHAPES, clientIdKey, sanitiseName, seatFor, setName, setShape, socketKey, useGmActions } from '@/lib'
 
 type State = Extract<ServerMsg, { type: 'state' }>
 
@@ -55,7 +55,7 @@ watch(myName, (name) => {
 
 function commitName() {
   renaming.value = false
-  const next = nameDraft.value.trim()
+  const next = sanitiseName(nameDraft.value)
   if (!next || next === myName.value) {
     nameDraft.value = myName.value // revert empty edits
     return
