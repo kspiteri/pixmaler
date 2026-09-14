@@ -101,6 +101,10 @@ export class PixmalerServer extends Server<Env> {
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': req.headers.get('Origin') ?? '*',
+          // Vary on Origin because the ACAO echoes it; no-store because a cached negative
+          // would 404 a room the GM has since created.
+          'Vary': 'Origin',
+          'Cache-Control': 'no-store',
         },
       })
     }
@@ -135,9 +139,12 @@ export class PixmalerServer extends Server<Env> {
     if (msg === null)
       return
 
-    // Any message counts as activity — pushes back the idle-wipe deadline.
-    // Deliberately after validation: a malformed frame must not keep a room alive.
-    this.lastActivityAt = Date.now()
+    // Activity from a *seated* connection pushes back the idle-wipe deadline. A `join` counts
+    // (it's how you become seated); a frame from a conn the room can't act on — never joined,
+    // or refused with room-full/no-such-room — must not keep the room alive, and neither does
+    // a malformed frame (this is deliberately after validation).
+    if (msg.type === 'join' || this.state.connMap.has(sender.id))
+      this.lastActivityAt = Date.now()
 
     switch (msg.type) {
       case 'join': handleJoin(this.ctxFor(), sender, msg); break
@@ -188,19 +195,31 @@ export class PixmalerServer extends Server<Env> {
     }
   }
 
-  // (Re)arm the DO alarm to the soonest pending deadline. Fire-and-forget: the
-  // storage write is awaited internally; errors are logged, not propagated (the DO
-  // keeps running and the next event re-arms).
+  // (Re)arm the DO alarm to the soonest pending deadline. Fire-and-forget: the storage write
+  // is awaited internally and its failure logged, not propagated — but the coalescing target
+  // is cleared on failure, so the next event retries rather than latching a deadline that was
+  // never written and leaving the round unable to end.
   private armedFor: number | null = null
 
   private armAlarm(): void {
+    // Nothing to wake for: no seats and no live sockets is an evicted or pristine room, where
+    // an idle wake would only re-arm itself every idle window forever. Clear the slot instead.
+    if (this.state.players.size === 0 && this.state.connMap.size === 0) {
+      this.armedFor = null
+      this.ctx.storage.deleteAlarm().catch(err =>
+        console.error('[pixmaler] deleteAlarm failed', err),
+      )
+      return
+    }
     const when = nextWake(this.state, this.clock())
     if (!shouldArm(when, this.armedFor))
       return
     this.armedFor = when
-    this.ctx.storage.setAlarm(when).catch(err =>
-      console.error('[pixmaler] setAlarm failed', err),
-    )
+    this.ctx.storage.setAlarm(when).catch((err) => {
+      if (this.armedFor === when)
+        this.armedFor = null
+      console.error('[pixmaler] setAlarm failed', err)
+    })
   }
 
   // Fired by the runtime when the alarm is due. Idempotent (alarms auto-retry):
