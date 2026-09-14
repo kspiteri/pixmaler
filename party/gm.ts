@@ -48,6 +48,28 @@ export function handleTransfer(
   ctx.broadcastState()
 }
 
+// Remove an offline player from the roster to free their seat (#68). LOBBY-only, GM-only
+// and offline-only: a connected player is a kick (#69), a separate feature. A real splice —
+// the "never removed" contract was relaxed 2026-09-14 — so the seat and its cap slot free
+// up; colours below shift, but shape and name follow the player, not the seat.
+export function handleRemove(
+  ctx: RoomCtx,
+  conn: RoomConn,
+  msg: Extract<ClientMsg, { type: 'gm:remove' }>,
+) {
+  const { state } = ctx
+  if (!isGm(state, conn.id) || state.phase !== 'LOBBY')
+    return
+  const target = state.players.get(msg.toClientId)
+  if (!target || target.connected || target.clientId === state.gmClientId)
+    return
+  state.players.delete(msg.toClientId)
+  // Drop the reclaim target too, or a removed original GM silently reclaims on rejoin.
+  if (state.originalGmClientId === msg.toClientId)
+    state.originalGmClientId = ''
+  ctx.broadcastState()
+}
+
 // RESULTS-only, and load-bearing: unguarded, a stale RESULTS tab nulled the `config`
 // the GM had just chosen in the lobby, silently losing their image.
 export function handlePlayAgain(ctx: RoomCtx, conn: RoomConn) {

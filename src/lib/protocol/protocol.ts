@@ -80,6 +80,9 @@ export function parseClientMsg(raw: string): ClientMsg | null {
     case 'gm:transfer':
       return isStr(m.toClientId) ? { type: 'gm:transfer', toClientId: m.toClientId } : null
 
+    case 'gm:remove':
+      return isStr(m.toClientId) ? { type: 'gm:remove', toClientId: m.toClientId } : null
+
     // Bodiless: the type is the whole payload, so there is nothing left to check.
     case 'gm:start':
     case 'draw:done':

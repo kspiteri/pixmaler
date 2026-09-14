@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// Player list — one row per player: avatar chip, name, GM pill, and an optional "Make GM"
-// transfer button when the viewer is the GM and the row is a connected non-self player.
+// Player list — one row per player: avatar chip, name, GM pill, an optional "Make GM"
+// transfer button (connected non-self rows), and a "Remove" button on offline rows — both GM-only.
 // Styles live in `styles/_player-list.scss`.
 
 import type { ClientMsg, Player } from '@/lib'
@@ -39,6 +39,18 @@ async function transferGm(p: Player) {
   const msg: ClientMsg = { type: 'gm:transfer', toClientId: p.clientId }
   socket.send(JSON.stringify(msg))
 }
+
+function canRemove(p: Player): boolean {
+  return viewerIsGm() && !p.connected && !p.isGm
+}
+
+// Offline-only, and reversible on their side: a removed player can rejoin if there's room.
+async function removePlayer(p: Player) {
+  if (!await askConfirm(`Remove ${p.name}? They can rejoin if there's space.`))
+    return
+  const msg: ClientMsg = { type: 'gm:remove', toClientId: p.clientId }
+  socket.send(JSON.stringify(msg))
+}
 </script>
 
 <template>
@@ -75,6 +87,14 @@ async function transferGm(p: Player) {
           @click="transferGm(p)"
         >
           Make GM
+        </button>
+        <button
+          v-if="canRemove(p)"
+          class="player-list__remove pressable"
+          type="button"
+          @click="removePlayer(p)"
+        >
+          Remove
         </button>
       </li>
     </ul>

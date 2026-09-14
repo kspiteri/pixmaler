@@ -137,6 +137,13 @@ export interface GmTransferMsg {
   toClientId: string
 }
 
+// GM removes an offline player from the roster (#68). A real splice that frees the seat;
+// distinct from the connected-griefer kick + rejoin block (#69).
+export interface GmRemoveMsg {
+  type: 'gm:remove'
+  toClientId: string
+}
+
 export type ClientMsg
   = | JoinMsg
     | RenameMsg
@@ -152,6 +159,7 @@ export type ClientMsg
     | GmCancelRoundMsg
     | GmEndSessionMsg
     | GmTransferMsg
+    | GmRemoveMsg
 
 // A floor on a *playable* round, enforced on both sides: the picker clamps to make the
 // limit visible, the server clamps so a stale client cannot shorten a round. Clamps

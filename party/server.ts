@@ -13,6 +13,7 @@ import {
   handleConfigure,
   handleEndSession,
   handlePlayAgain,
+  handleRemove,
   handleTransfer,
 } from './gm'
 import { endDrawing, endVoting, handleStart } from './phases'
@@ -137,6 +138,7 @@ export class PixmalerServer extends Server<Env> {
       case 'gm:configure': handleConfigure(this.ctxFor(), sender, msg); break
       case 'gm:start': handleStart(this.ctxFor(), sender); break
       case 'gm:transfer': handleTransfer(this.ctxFor(), sender, msg); break
+      case 'gm:remove': handleRemove(this.ctxFor(), sender, msg); break
       case 'draw:done': handleDrawDone(this.ctxFor(), sender); break
       case 'draw:submit': handleSubmit(this.ctxFor(), sender, msg); break
       case 'vote:cast': handleVote(this.ctxFor(), sender, msg); break

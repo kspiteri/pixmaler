@@ -13,6 +13,7 @@ import {
   handleConfigure,
   handleEndSession,
   handlePlayAgain,
+  handleRemove,
   handleTransfer,
 } from '../party/gm'
 import { autoPromoteGm } from '../party/state'
@@ -127,6 +128,48 @@ describe('handleTransfer', () => {
     expect(h.state.gmClientId).toBe('gm')
     expect(h.stateBroadcasts()).toBe(0)
     expect(h.sent).toEqual([])
+  })
+})
+
+describe('handleRemove', () => {
+  const rm = (toClientId: string) => ({ type: 'gm:remove', toClientId } as const)
+
+  it('splices an offline player, freeing the seat', () => {
+    const h = harness([player('ghost', { connected: false }), player('here')])
+    handleRemove(h.ctx, h.conn('conn-gm'), rm('ghost'))
+    expect(h.state.players.has('ghost')).toBe(false)
+    expect(h.state.players.size).toBe(2) // gm + here
+    expect(h.stateBroadcasts()).toBe(1)
+  })
+
+  it('drops the reclaim target when the removed player held it', () => {
+    // An offline original GM, with a caretaker ('gm') now holding the role.
+    const h = harness([player('founder', { connected: false })], { originalGmClientId: 'founder' })
+    handleRemove(h.ctx, h.conn('conn-gm'), rm('founder'))
+    expect(h.state.players.has('founder')).toBe(false)
+    expect(h.state.originalGmClientId).toBe('')
+  })
+
+  it('refuses a connected player — that is a kick (#69), not a seat tidy', () => {
+    // Also how the GM itself is protected: the GM is always connected.
+    const h = harness([player('here')])
+    handleRemove(h.ctx, h.conn('conn-gm'), rm('here'))
+    expect(h.state.players.has('here')).toBe(true)
+    expect(h.stateBroadcasts()).toBe(0)
+  })
+
+  it('refuses outside LOBBY', () => {
+    for (const phase of ALL_PHASES.filter(p => p !== 'LOBBY')) {
+      const h = harness([player('ghost', { connected: false })], { phase })
+      handleRemove(h.ctx, h.conn('conn-gm'), rm('ghost'))
+      expect(h.state.players.has('ghost')).toBe(true)
+    }
+  })
+
+  it('refuses a non-GM sender', () => {
+    const h = harness([player('rando'), player('ghost', { connected: false })])
+    handleRemove(h.ctx, h.conn('conn-rando'), rm('ghost'))
+    expect(h.state.players.has('ghost')).toBe(true)
   })
 })
 

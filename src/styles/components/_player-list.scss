@@ -70,4 +70,24 @@
       border-color: $fg-25;
     }
   }
+
+  // Destructive, so a warn-ink hover rather than make-gm's neutral one. Same base recipe;
+  // also wears `.pressable`, so the after-`buttons` ordering note above covers it too.
+  &__remove {
+    font-size: $fs-2xs;
+    padding: 0.25rem 0.5rem;
+    border-radius: $radius-sm;
+    background: transparent;
+    border: 1px solid $border;
+    color: $fg-50;
+    cursor: pointer;
+    transition:
+      color 0.15s,
+      border-color 0.15s;
+
+    &:hover {
+      color: $warn-ink;
+      border-color: color-mix(in oklab, $warn-ink, transparent 55%);
+    }
+  }
 }
