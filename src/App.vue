@@ -11,6 +11,7 @@ import Drawing from '@/views/phases/Drawing.vue'
 import Lobby from '@/views/phases/Lobby.vue'
 import Results from '@/views/phases/Results.vue'
 import Voting from '@/views/phases/Voting.vue'
+import DuplicateTab from '@/views/rooms/DuplicateTab.vue'
 import NameGate from '@/views/rooms/NameGate.vue'
 import NoSuchRoom from '@/views/rooms/NoSuchRoom.vue'
 import RoomFull from '@/views/rooms/RoomFull.vue'
@@ -49,6 +50,7 @@ const {
   sessionClosed,
   roomFull,
   noSuchRoom,
+  duplicateTab,
   roundCancelled,
   showNameGate,
   spectating,
@@ -70,6 +72,9 @@ const {
 
     <!-- Refused: the room does not exist and we did not ask to create it (#66). -->
     <NoSuchRoom v-else-if="noSuchRoom" />
+
+    <!-- Same room already open in another tab of this browser; this one takes over on close. -->
+    <DuplicateTab v-else-if="duplicateTab" />
 
     <!-- Name gate: shown before connecting when the player has no stored name -->
     <NameGate v-else-if="showNameGate" @submit="submitName" />
