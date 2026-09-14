@@ -32,6 +32,18 @@ export function sanitiseName(raw: string): string {
     .trim()
 }
 
+// The display-name length cap, in code points. Shared — like MAX_PLAYERS — so the field's
+// `maxlength`, the server's clamp and the uniquify stem can't drift. `maxlength` on an input
+// is not a check; every write path clamps.
+export const NAME_MAX_LEN = 24
+
+// Clamp a display name to a maximum number of *code points*, not UTF-16 units: `sanitiseName`
+// leaves emoji alone, and a plain `.slice` would split a surrogate pair and store a lone half
+// that renders as the replacement character.
+export function clampName(name: string, max: number = NAME_MAX_LEN): string {
+  return [...name].slice(0, max).join('')
+}
+
 // ── Client → Server ──────────────────────────────────────────────────────────
 
 export interface JoinMsg {

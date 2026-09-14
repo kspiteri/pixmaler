@@ -15,6 +15,9 @@ export const PALETTE_MAX_LEN = 64 // the picker offers 8/16/24/32; headroom over
 const isStr = (v: unknown): v is string => typeof v === 'string'
 const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v)
 const isSide = (v: unknown): v is number => isInt(v) && v >= 1 && v <= GRID_MAX_SIDE
+// Identifiers are Map keys and, for clientId, echoed to the room in every `state`. Cap the
+// length so a crafted client can't push a broadcast past the Workers 1 MiB message limit.
+const isId = (v: unknown): v is string => isStr(v) && v.length > 0 && v.length <= 64
 
 // Palette entries reach the DOM as CSS values and the canvas as fill styles, so the shape
 // is checked rather than trusted.
@@ -40,7 +43,7 @@ export function parseClientMsg(raw: string): ClientMsg | null {
 
   switch (m.type) {
     case 'join':
-      return isStr(m.clientId) && isStr(m.name)
+      return isId(m.clientId) && isStr(m.name)
         ? { type: 'join', clientId: m.clientId, name: m.name, shape: normaliseShape(m.shape), create: m.create === true }
         : null
 
@@ -73,15 +76,15 @@ export function parseClientMsg(raw: string): ClientMsg | null {
       return isCells(m.grid, GRID_MAX_CELLS) ? { type: 'draw:submit', grid: m.grid } : null
 
     case 'vote:cast':
-      return isStr(m.submissionId) && VOTE_CATEGORIES.some(c => c.id === m.category)
+      return isId(m.submissionId) && VOTE_CATEGORIES.some(c => c.id === m.category)
         ? { type: 'vote:cast', category: m.category as VoteCategory, submissionId: m.submissionId }
         : null
 
     case 'gm:transfer':
-      return isStr(m.toClientId) ? { type: 'gm:transfer', toClientId: m.toClientId } : null
+      return isId(m.toClientId) ? { type: 'gm:transfer', toClientId: m.toClientId } : null
 
     case 'gm:remove':
-      return isStr(m.toClientId) ? { type: 'gm:remove', toClientId: m.toClientId } : null
+      return isId(m.toClientId) ? { type: 'gm:remove', toClientId: m.toClientId } : null
 
     // Bodiless: the type is the whole payload, so there is nothing left to check.
     case 'gm:start':
