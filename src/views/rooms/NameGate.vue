@@ -5,7 +5,7 @@
 import { ref } from 'vue'
 import NameField from '@/components/elements/NameField.vue'
 import RoomInterstitial from '@/components/layout/RoomInterstitial.vue'
-import { wordPair } from '@/lib'
+import { sanitiseName, wordPair } from '@/lib'
 
 const emit = defineEmits<{
   // The name the player settled on, never empty — `App.vue` stores it and connects.
@@ -16,7 +16,7 @@ const nameInput = ref('')
 const randomName = wordPair()
 
 function submitName() {
-  emit('submit', nameInput.value.trim() || randomName)
+  emit('submit', sanitiseName(nameInput.value) || randomName)
 }
 </script>
 
