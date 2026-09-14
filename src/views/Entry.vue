@@ -6,7 +6,7 @@ import Logo from '@/components/elements/Logo.vue'
 import NameField from '@/components/elements/NameField.vue'
 import Tagline from '@/components/elements/Tagline.vue'
 import SettingsMenu from '@/components/layout/SettingsMenu.vue'
-import { appHref, getName, sanitiseName, setName, wordPair } from '@/lib'
+import { appHref, getName, roomHref, sanitiseName, setName, wordPair } from '@/lib'
 
 const name = ref(getName() ?? '')
 const code = ref('')
@@ -21,7 +21,7 @@ function enterRoom(room: string, create = false) {
   if (!trimmed || !room)
     return
   setName(trimmed)
-  location.href = `${location.pathname}?room=${room}${create ? '&create=1' : ''}`
+  location.href = roomHref(room, { create })
 }
 </script>
 
