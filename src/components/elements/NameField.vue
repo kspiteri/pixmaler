@@ -6,7 +6,7 @@
 
 import { Dices } from '@lucide/vue'
 import { useId, useTemplateRef } from 'vue'
-import { wordPair } from '@/lib'
+import { NAME_MAX_LEN, wordPair } from '@/lib'
 
 defineOptions({ inheritAttrs: false })
 defineProps<{ label: string }>()
@@ -31,7 +31,7 @@ function randomise() {
         v-model="model"
         class="input"
         type="text"
-        maxlength="24"
+        :maxlength="NAME_MAX_LEN"
         placeholder="a nickname is enough"
         v-bind="$attrs"
       >

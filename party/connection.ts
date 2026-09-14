@@ -6,9 +6,9 @@ import type { ClientMsg, ServerMsg, VoteCategory } from '../src/lib/protocol'
 import type { RoomConn, RoomCtx } from './ctx'
 import type { RoomPlayer } from './state'
 import { isRoomCode, wordPair } from '../src/lib/content/words'
-import { MAX_PLAYERS, normaliseShape, sanitiseName } from '../src/lib/protocol'
+import { clampName, MAX_PLAYERS, normaliseShape, sanitiseName } from '../src/lib/protocol'
 import { autoPromoteGm } from './state'
-import { categoryOf, NAME_MAX_LEN, uniqueName, voterOf } from './tally'
+import { categoryOf, uniqueName, voterOf } from './tally'
 
 export function handleJoin(
   ctx: RoomCtx,
@@ -57,7 +57,7 @@ export function handleJoin(
       // `msg.name`, which is what stops a returning player being suffixed against
       // themselves. An empty name falls back to a random pair, not "".
       name: uniqueName(
-        sanitiseName(msg.name).slice(0, NAME_MAX_LEN) || wordPair(),
+        clampName(sanitiseName(msg.name)) || wordPair(),
         msg.clientId,
         state.players.values(),
       ),
@@ -145,7 +145,7 @@ export function handleRename(
   const player = clientId ? state.players.get(clientId) : undefined
   if (!clientId || !player)
     return
-  const name = sanitiseName(msg.name).slice(0, NAME_MAX_LEN)
+  const name = clampName(sanitiseName(msg.name))
   if (!name)
     return
   player.name = uniqueName(name, clientId, state.players.values())

@@ -5,10 +5,7 @@
 
 import type { Player, RankedResult, Submission, VoteCategory } from '../src/lib/protocol'
 import { adjectives } from '../src/lib/content/words'
-
-// Enforced on BOTH write paths (join and rename): a name reaches the DOM as a class
-// name, and `maxlength="24"` on the inputs is not a check.
-export const NAME_MAX_LEN = 24
+import { clampName, NAME_MAX_LEN } from '../src/lib/protocol'
 
 // One vote per voter per category. clientIds are UUIDs (no colons), so the LAST colon
 // is always the separator — hence `lastIndexOf` rather than `split(':')`.
@@ -86,7 +83,7 @@ export function uniqueName(
     const adj = adjectives[(start + i) % adjectives.length]
     // Clamp the BASE, not the result: prefixing first and clamping after cuts the
     // name off its own tail.
-    const stem = base.trimStart().slice(0, NAME_MAX_LEN - adj.length - 1)
+    const stem = clampName(base.trimStart(), NAME_MAX_LEN - adj.length - 1)
     const candidate = `${adj}-${stem}`
     if (!taken.has(candidate.toLowerCase()))
       return candidate
@@ -96,7 +93,7 @@ export function uniqueName(
   // function can never fail to return.
   for (let n = 2; ; n++) {
     const tail = `-${n}`
-    const candidate = `${base.slice(0, NAME_MAX_LEN - tail.length).trimEnd()}${tail}`
+    const candidate = `${clampName(base, NAME_MAX_LEN - tail.length).trimEnd()}${tail}`
     if (!taken.has(candidate.toLowerCase()))
       return candidate
   }
