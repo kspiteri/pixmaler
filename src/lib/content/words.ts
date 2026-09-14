@@ -146,3 +146,10 @@ export function wordPair(): string {
     style: 'lowerCase',
   })
 }
+
+// A well-formed room code: two lowercase words joined by a single hyphen, e.g.
+// "feral-crayon". The server refuses to *create* a room for anything else (#66), so a typo
+// or guessed code can't conjure one; a live room is joined on existence, not on shape.
+export function isRoomCode(code: string): boolean {
+  return /^[a-z]+-[a-z]+$/.test(code)
+}

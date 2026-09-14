@@ -5,7 +5,7 @@
 import type { ClientMsg, ServerMsg, VoteCategory } from '../src/lib/protocol'
 import type { RoomConn, RoomCtx } from './ctx'
 import type { RoomPlayer } from './state'
-import { wordPair } from '../src/lib/content/words'
+import { isRoomCode, wordPair } from '../src/lib/content/words'
 import { MAX_PLAYERS, normaliseShape, sanitiseName } from '../src/lib/protocol'
 import { autoPromoteGm } from './state'
 import { categoryOf, NAME_MAX_LEN, uniqueName, voterOf } from './tally'
@@ -23,6 +23,16 @@ export function handleJoin(
   const existing = state.players.get(msg.clientId)
   if (!existing && state.players.size >= MAX_PLAYERS) {
     ctx.send(conn, { type: 'room-full' })
+    return
+  }
+
+  // An empty room means "no such room". A genuinely new player may only open one with
+  // explicit create intent *and* a well-formed code, so a typo or guessed code can't conjure
+  // a room. `size === 0` already implies a new player (a reconnect has a seat), and a join to
+  // a live room (size > 0) falls through. Before markOccupied/connMap, like the cap refusal,
+  // so a refused socket leaves no trace.
+  if (state.players.size === 0 && !(msg.create && isRoomCode(ctx.roomName))) {
+    ctx.send(conn, { type: 'no-such-room' })
     return
   }
 

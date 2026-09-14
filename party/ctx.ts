@@ -13,6 +13,8 @@ export interface RoomConn {
 
 export interface RoomCtx {
   state: RoomState
+  /** The room / instance name (the code off the URL), for room-code validation (#66). */
+  roomName: string
   broadcast: (msg: ServerMsg) => void
   broadcastState: () => void
   broadcastDoneStatus: () => void

@@ -42,6 +42,11 @@ export interface JoinMsg {
   // rather than defaulting and then correcting. Optional: the server normalises
   // anything missing or unrecognised to DEFAULT_AVATAR_SHAPE.
   shape?: AvatarShape
+  // Create intent (#66): a genuinely new player may only open an *empty* room when this
+  // is set (and the code is well-formed). Otherwise an empty room means "no such room" and
+  // the join is refused rather than conjuring one. Reconnects and joins to live rooms
+  // ignore it. Optional: absent is a plain join.
+  create?: boolean
 }
 
 // Change of avatar shape. LOBBY-only server-side, like `rename`: the chip shows in
@@ -287,6 +292,13 @@ export interface RoomFullMsg {
   type: 'room-full'
 }
 
+// Broadcast to a single joiner refused because the room does not exist and they did not
+// ask to create it (#66). Terminal like `room-full`: the client stops reconnecting and
+// shows the 404 screen. Defence-in-depth behind the client's pre-flight existence check.
+export interface NoSuchRoomMsg {
+  type: 'no-such-room'
+}
+
 // Broadcast right after `resetToLobby` when the GM abandoned a round mid-game.
 export interface RoundCancelledMsg {
   type: 'round-cancelled'
@@ -321,6 +333,7 @@ export type ServerMsg
     | DrawStateMsg
     | SessionClosedMsg
     | RoomFullMsg
+    | NoSuchRoomMsg
     | RoundCancelledMsg
     | TargetMsg
     | VersionMsg

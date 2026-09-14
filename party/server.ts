@@ -89,11 +89,19 @@ export class PixmalerServer extends Server<Env> {
   private emptySince: number | null = null
 
   // ── HTTP existence check ───────────────────────────────────────────────────
+  // A dormant existence probe the client pre-flights before a *join* (#66): a room "exists"
+  // once it has been created and not yet wiped (`players.size > 0`, not "some connected", so
+  // a room whose players are all briefly offline is still joinable). CORS-open because the
+  // Pages origin and the Worker origin differ; `guardOrigin` (onBeforeRequest) has already
+  // vetted the caller, so echoing its Origin is safe and lets the browser read the JSON.
   async onRequest(req: Request): Promise<Response> {
     if (req.method === 'GET') {
-      const exists = [...this.state.players.values()].some(p => p.connected)
+      const exists = this.state.players.size > 0
       return new Response(JSON.stringify({ exists }), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': req.headers.get('Origin') ?? '*',
+        },
       })
     }
     return new Response('Method not allowed', { status: 405 })
@@ -247,6 +255,7 @@ export class PixmalerServer extends Server<Env> {
   private ctxFor(): RoomCtx {
     return {
       state: this.state,
+      roomName: this.name,
       broadcast: msg => this.broadcastAll(msg),
       broadcastState: () => this.broadcastState(),
       broadcastDoneStatus: () => this.broadcastDoneStatus(),
