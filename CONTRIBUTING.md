@@ -71,7 +71,7 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 
 **Types** — `strict` is on. `pnpm build` runs `vue-tsc --noEmit` first, so a type error fails the build; `pnpm typecheck` also covers `party/` against Workers globals via `tsconfig.worker.json`. Keep the tree green.
 
-**Tests** — `pnpm test` runs Vitest over `test/`: 14 files, 351 tests, and [`ci.yml`](./.github/workflows/ci.yml) runs them on every push and PR. Coverage is deliberately narrow *and* deliberately DOM-free: pure, load-bearing logic that a plausible refactor could silently break, reachable without a browser. That constraint shaped the code as much as it shaped the tests — `src/lib/canvas/palette.ts` and `party/tally.ts` both exist because the logic in them was worth testing and was trapped inside something that needed a canvas or a Durable Object, and `party/ctx.ts` is the seam that lets every room handler run against a fake `RoomCtx` (`test/support/room.ts`) instead of a live one.
+**Tests** — `pnpm test` runs Vitest over `test/`: 14 files, 365 tests, and [`ci.yml`](./.github/workflows/ci.yml) runs them on every push and PR. Coverage is deliberately narrow *and* deliberately DOM-free: pure, load-bearing logic that a plausible refactor could silently break, reachable without a browser. That constraint shaped the code as much as it shaped the tests — `src/lib/canvas/palette.ts` and `party/tally.ts` both exist because the logic in them was worth testing and was trapped inside something that needed a canvas or a Durable Object, and `party/ctx.ts` is the seam that lets every room handler run against a fake `RoomCtx` (`test/support/room.ts`) instead of a live one.
 
 | Suite | Guards |
 |---|---|
@@ -193,16 +193,23 @@ Milestones name **themes, not versions**: `Image pipeline`, `Server refactor`, `
 
 **Pre-1.0 a `feat` bumps the minor and a `!` never forces 1.0** (`bump-minor-pre-major`), so reaching 1.0 stays a deliberate act.
 
-## Plans
+## Plans & issues
 
-Working plans live in the gitignored [`docs/.plans/`](./docs/.plans/README.md). Three are standing: **01** is the general plan (architecture, state machine, pipeline, protocol, locked-in decisions), **13** is the only backlog for behaviour/data/server work, and **14** is the only backlog for anything visual. File new work accordingly — behaviour to `13`, pixels and copy to `14`, a game-rule change to `01`.
+The working plans in [`docs/.plans/`](./docs/.plans/README.md) were **retired to an archive on 2026-09-14** — kept for their reasoning (measurements, rejected alternatives, the "why"), no longer maintained. **[GitHub Issues](https://github.com/kspiteri/pixmaler/issues) now own everything**: open work *and* its reasoning. File all new work as an issue; the body carries the full "why" (see #66, #68, #69 for the shape). Deferred / post-1.0 work is indexed in [#70](https://github.com/kspiteri/pixmaler/issues/70).
 
-**15** is a transient register, not a fourth backlog: it holds the findings from a design critique and routes each into its owning plan. It archives once emptied. Item numbers are shared across all of them and never reused, so check `.plans/README.md` for the next free one before filing.
+Component is a label (`area:drawing`, `area:server`, `area:pipeline`, `area:a11y`, …) rather than a container, so an item spanning two areas carries both and closes as one unit. Priority is **which milestone it sits in**, ordered by severity not date; no milestone means unscheduled. Plan-item numbers cited in older titles (`[56] …`) resolve into the frozen archive — a closed namespace, **not** GitHub issue numbers (plan-item 33 is issue #69).
 
-**[GitHub Issues](https://github.com/kspiteri/pixmaler/issues) own status; the plans own reasoning.** Adopted 2026-08-24. An issue says whether something is open, being worked on, or done. The plan says *why* — the measurements, the rejected alternatives, and the predictions that turned out wrong. An issue body is a summary plus a pointer into the plan; nothing in an issue should be the only copy of a decision.
+**Anyone can report a bug** through the form in [`.github/ISSUE_TEMPLATE/`](./.github/ISSUE_TEMPLATE/) — it asks for room code, phase, device and player count, because a playtest showed two of six reports were not what they first looked like for want of that context.
 
-Component is a label (`area:drawing`, `area:server`, `area:pipeline`, `area:a11y`, …) rather than a container, so an item spanning two areas carries both and still closes as one unit. Priority is **which milestone it sits in**, and those are ordered by severity rather than by date; no milestone at all means unscheduled. Issue titles carry the plan id in brackets — `[56] Clearing the canvas…` — because archived plans cite plan ids and those citations have to keep resolving.
+### Sequencing the board can't express
 
-Shipped items live in each plan's `NN-name.done.md` sibling, split out when closed work had grown to 52 % of the plans' prose. Items not yet migrated to Issues use positional status: in `NN-name.md` means open, in `NN-name.done.md` means shipped.
+Milestones own *what* is left and its priority; these are the ordering constraints between open issues, recorded because getting them wrong means redoing work:
 
-**Anyone can report a bug** through the form in [`.github/ISSUE_TEMPLATE/`](./.github/ISSUE_TEMPLATE/) — no need to know the codebase. It asks for room code, phase, device and player count, because the 2026-08-23 playtest showed two of six reports were not what they first looked like, purely for want of that context.
+- **[#11](https://github.com/kspiteri/pixmaler/issues/11) before the orchestrated entrance** (frozen `14` item 28, indexed in [#70](https://github.com/kspiteri/pixmaler/issues/70)). Animating into a grid that reserves empty tracks bakes the misalignment into the motion.
+- **[#12](https://github.com/kspiteri/pixmaler/issues/12) before the winner-screen celebration** (frozen `14` item 15). Celebrating one winner harder while everyone else gets no rank or category credit makes the imbalance worse.
+- **[#10](https://github.com/kspiteri/pixmaler/issues/10) and [#15](https://github.com/kspiteri/pixmaler/issues/15) together** — both add to the phase status slot (one a live region, one a GM signal that can un-fire); same edit site, and apart they risk two competing announcers.
+- **[#5](https://github.com/kspiteri/pixmaler/issues/5) before inviting strangers** — an unguarded `grid` lets one crafted message strand a room.
+- **[#18](https://github.com/kspiteri/pixmaler/issues/18)'s `reason` flag last, its `<Interstitial>` component later still** — extracting a component before the screen is designed guesses at its shape, and `PhaseBoundary` can't use it (an error boundary renders no children). The flag touches `party/` + the protocol, so batch it with other protocol work.
+- **[#16](https://github.com/kspiteri/pixmaler/issues/16) waits on nothing** — it needs no server change (`resetToLobby`'s two callers let a client infer a cancel), and it's a lobby notice, not the terminal closed screen of #18.
+- **`Player.hasVoted` + the compact player strip ship together or not at all** (frozen `13` 66.a + `14` 66.b, in [#70](https://github.com/kspiteri/pixmaler/issues/70)) — the flag has no consumer without the strip, and the strip is half-blind without the flag.
+- **Protocol/server work batches into one Worker deploy.** The 16-player cap, name sanitiser (#64), room gating (#66), offline removal (#68) and kick (#69) each end every game in progress on deploy — pay that price once.
