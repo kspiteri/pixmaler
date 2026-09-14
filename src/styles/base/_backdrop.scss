@@ -30,7 +30,7 @@ body::before {
   // Layer order is paint order, topmost first: the vignette sits *over* the grid,
   // so the pixel field dissolves into the dark instead of ending sharply.
   background-image:
-    radial-gradient(ellipse at center, rgba(0, 0, 0, 0) $backdrop-vignette-clear, $backdrop-vignette 100%),
+    radial-gradient(ellipse at center, transparent $backdrop-vignette-clear, $backdrop-vignette 100%),
     linear-gradient($backdrop-line 1px, transparent 1px), linear-gradient(90deg, $backdrop-line 1px, transparent 1px);
   background-size:
     100% 100%,
