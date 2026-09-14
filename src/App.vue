@@ -12,6 +12,7 @@ import Lobby from '@/views/phases/Lobby.vue'
 import Results from '@/views/phases/Results.vue'
 import Voting from '@/views/phases/Voting.vue'
 import NameGate from '@/views/rooms/NameGate.vue'
+import RoomFull from '@/views/rooms/RoomFull.vue'
 import SessionClosed from '@/views/rooms/SessionClosed.vue'
 // Hidden debug route (/taglines), not linked anywhere.
 import Taglines from '@/views/Taglines.vue'
@@ -35,6 +36,7 @@ const {
   targetGrid,
   connectionStatus,
   sessionClosed,
+  roomFull,
   roundCancelled,
   showNameGate,
   spectating,
@@ -50,6 +52,9 @@ const {
   <template v-else-if="route === 'room'">
     <!-- Session closed by a GM or timeout. -->
     <SessionClosed v-if="sessionClosed" />
+
+    <!-- Refused: the room is at MAX_PLAYERS. Terminal, like session-closed. -->
+    <RoomFull v-else-if="roomFull" />
 
     <!-- Name gate: shown before connecting when the player has no stored name -->
     <NameGate v-else-if="showNameGate" @submit="submitName" />

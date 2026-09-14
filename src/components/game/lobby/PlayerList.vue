@@ -6,7 +6,7 @@
 import type { ClientMsg, Player } from '@/lib'
 import { computed, inject } from 'vue'
 import PlayerTag from '@/components/elements/PlayerTag.vue'
-import { askConfirm, clientIdKey, seatFor, socketKey } from '@/lib'
+import { askConfirm, clientIdKey, MAX_PLAYERS, seatFor, socketKey } from '@/lib'
 
 const props = defineProps<Props>()
 
@@ -44,7 +44,7 @@ async function transferGm(p: Player) {
 <template>
   <div class="player-list">
     <p class="label label--eyebrow">
-      players ({{ players.length }})
+      players ({{ players.length }}/{{ MAX_PLAYERS }})
     </p>
     <ul class="player-list__rows">
       <li
