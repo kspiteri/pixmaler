@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.9.0](https://github.com/kspiteri/pixmaler/compare/0.8.3...0.9.0) (2026-09-14)
+
+
+### New
+
+* add "no such room" handling with create intent ([11f7eae](https://github.com/kspiteri/pixmaler/commit/11f7eae5e4641fb2f32b22b1842222db7bd486b3))
+* add "room full" handling for player cap enforcement ([acce489](https://github.com/kspiteri/pixmaler/commit/acce489b3d5a54e78e574748ddf143e24da4bcc3))
+* add `DuplicateTab` component for multi-tab handling ([9c1e886](https://github.com/kspiteri/pixmaler/commit/9c1e886eb534f90014057111de0a5fe2f022d92d))
+* add GM-only "remove player" functionality for offline users ([3138d10](https://github.com/kspiteri/pixmaler/commit/3138d10c843c482fd3c37d1aae7d5061e2ec5d82))
+* harden room existence checks ([750b702](https://github.com/kspiteri/pixmaler/commit/750b70226a525199bb9883dc1c9c0d0c8dd20fb4))
+
+
+### Fixes
+
+* add aria-labels for GM transfer and player removal buttons ([802a532](https://github.com/kspiteri/pixmaler/commit/802a53253d122b5fda3e5e0bca6e5a9fabc8036e))
+* clear debounce timer on component unmount ([d1367cc](https://github.com/kspiteri/pixmaler/commit/d1367cc8ead565d889bfe212185ac70b781323ee))
+* enforce name and identifier length limits ([9524763](https://github.com/kspiteri/pixmaler/commit/9524763b5b065f059461a20654054fff4133c11c))
+* enforce player cap restriction ([31d541b](https://github.com/kspiteri/pixmaler/commit/31d541b150299caf2f2bb32859feca4207cd597d))
+* ensure canvas shortcuts respect form field focus ([53d48b2](https://github.com/kspiteri/pixmaler/commit/53d48b20deee1e67fb8bb9ad5da9e1051a38c084))
+* improve room lifecycle handling and cache logic ([91b1605](https://github.com/kspiteri/pixmaler/commit/91b1605837df5d561b52938fe9cb53356f4d41f3))
+* prevent premature player disconnect ([fef658e](https://github.com/kspiteri/pixmaler/commit/fef658e2dcb86620734c25387c9c520d81352a14))
+* sanitise display names with `sanitiseName` during edits ([2fe648d](https://github.com/kspiteri/pixmaler/commit/2fe648d3c97bbe1488032b077acc13a6bdb089a5))
+* sanitise player names in `NameGate` submission ([708b5b1](https://github.com/kspiteri/pixmaler/commit/708b5b19582b3f17308c2f95b62f754e1d6ccd6b))
+
+
+### Under the hood
+
+* add URL builders for room links ([6114f7e](https://github.com/kspiteri/pixmaler/commit/6114f7efa3bc5462a4034d3213c0a84d0868702f))
+* centralize name length validation with `clampName` ([86c7558](https://github.com/kspiteri/pixmaler/commit/86c7558335cf0d6ea155312e2a5dc259fa10648f))
+* extract `applyVoteEcho` for reuse ([a8c794f](https://github.com/kspiteri/pixmaler/commit/a8c794f60a38810b8929f146c0527ad0459bb1ee))
+* extract and modularize palette controls ([15e0ec6](https://github.com/kspiteri/pixmaler/commit/15e0ec6300558269730bc8d4edac8dd96603ddda))
+* modularize `useRoom` for maintainability ([1a216a7](https://github.com/kspiteri/pixmaler/commit/1a216a7ca37e2250dfcafe308a6c813b4c5b7d85))
+* modularize palette header and shortcuts ([32491fa](https://github.com/kspiteri/pixmaler/commit/32491faf91ee7af485312159f80acb37802ef808))
+* move swatch/brush styles from scoped block to shared SCSS ([b66a203](https://github.com/kspiteri/pixmaler/commit/b66a203612090b5e839a4165c69aed04ea0e8455))
+* replace `localStorage` calls with centralised utility ([75fd7d7](https://github.com/kspiteri/pixmaler/commit/75fd7d7ee13ec35b8d70799b46e13a793d930d28))
+* replace `localStorage` calls with centralised utility ([8dd3214](https://github.com/kspiteri/pixmaler/commit/8dd3214700c0d68dec74732d93de83b26ac89115))
+* unify room interstitial screens into shared component ([e2f51dc](https://github.com/kspiteri/pixmaler/commit/e2f51dca5ac6e55381ae2020b6dfcc8a86d9e0ea))
+* use `roomHref` for constructing room links ([36c7e41](https://github.com/kspiteri/pixmaler/commit/36c7e41b72b065f72e8d1ce2547eea0aa2e25f00))
+* use `roomHref` for Entry room link construction ([132a737](https://github.com/kspiteri/pixmaler/commit/132a737b9a13326b7c545bb3b4f401a70325241a))
+
 ## [0.8.3](https://github.com/kspiteri/pixmaler/compare/0.8.2...0.8.3) (2026-09-14)
 
 
