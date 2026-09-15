@@ -8,7 +8,7 @@
       "include-component-in-tag": false,
       "include-v-in-tag": false,
       "draft": false,
-      "prerelease": false,
+      "prerelease": true,
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": false,
       "changelog-sections": [
