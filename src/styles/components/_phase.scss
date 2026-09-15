@@ -68,7 +68,7 @@
 
   // Narrow screens: tighten the bar so the shared status cluster (room chip, GM
   // controls, gear) fits one row without wrapping. Controls that would still be too
-  // wide collapse to icons via `.btn--icon-mobile`; this only reclaims the padding.
+  // wide collapse to icons via `.btn--collapse`; this only reclaims the padding.
   @media (max-width: $bp-mobile) {
     &__bar {
       padding: $gap-2;

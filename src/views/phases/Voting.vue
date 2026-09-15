@@ -3,8 +3,9 @@
 // to change it. Tallies stay hidden until RESULTS — running counts would sway voters.
 
 import type { ClientMsg, ServerMsg, Submission, VoteCategory } from '@/lib'
-import { CircleSlash } from '@lucide/vue'
+import { Check, CircleSlash } from '@lucide/vue'
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import Button from '@/components/elements/Button.vue'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
 import { artRatio as artRatioFor, asset, clientIdKey, socketKey, useCountdownAnnounce, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '@/lib'
 
@@ -189,25 +190,31 @@ function castVote(category: VoteCategory, submissionId: string) {
         {{ secondsLeft }}s to vote
       </span>
       <span class="sr-only" role="status">{{ countdownAnnounce }}</span>
-      <button
+      <Button
         v-if="isGm && gallery"
-        class="btn btn--primary voting__stop"
-        type="button"
+        variant="primary"
+        size="small"
         @click="stopVoting(allVoted)"
       >
+        <template #icon>
+          <Check :size="18" aria-hidden="true" />
+        </template>
         End voting
-      </button>
-      <button
+      </Button>
+      <Button
         v-if="isGm"
-        class="btn btn--ghost btn--icon-mobile voting__cancel"
-        type="button"
+        variant="secondary"
+        collapse
+        size="small"
         title="Abandon this round and return everyone to the lobby"
         aria-label="Cancel round"
         @click="cancelRound"
       >
-        <CircleSlash class="btn__icon" :size="16" aria-hidden="true" />
-        <span class="btn__label">Cancel round</span>
-      </button>
+        <template #icon>
+          <CircleSlash :size="16" aria-hidden="true" />
+        </template>
+        Cancel round
+      </Button>
     </template>
 
     <div class="voting" :style="{ '--art-ratio': artRatio }">

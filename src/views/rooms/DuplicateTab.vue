@@ -5,6 +5,8 @@
 // takes over on its own the moment the other closes (the lock releases), so there's no button
 // to press beyond an escape home.
 
+import { House } from '@lucide/vue'
+import Button from '@/components/elements/Button.vue'
 import RoomInterstitial from '@/components/layout/RoomInterstitial.vue'
 import { appHref } from '@/lib'
 
@@ -16,8 +18,11 @@ const baseUrl = appHref()
     <p class="room-screen__note">
       this identical room is open in another tab on the same browser.<br>close that one and this tab takes over.
     </p>
-    <a class="btn btn--primary" :href="baseUrl">
+    <Button variant="primary" :href="baseUrl">
+      <template #icon>
+        <House :size="18" aria-hidden="true" />
+      </template>
       Back to homepage
-    </a>
+    </Button>
   </RoomInterstitial>
 </template>

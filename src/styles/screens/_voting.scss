@@ -193,13 +193,6 @@
     letter-spacing: $ls-alert;
     color: var(--timer-danger);
   }
-
-  // Shared with the cancel control beside it: same status bar, same scale.
-  &__stop,
-  &__cancel {
-    font-size: $fs-sm;
-    padding: 0.5rem 0.875rem;
-  }
 }
 
 @keyframes voting-pop {

@@ -5,6 +5,7 @@
 import AlertDialog from '@/components/elements/AlertDialog.vue'
 import PhaseBoundary from '@/components/layout/PhaseBoundary.vue'
 import { currentDialog, settleDialog, useRoom } from '@/lib'
+import Components from '@/views/Components.vue'
 import Entry from '@/views/Entry.vue'
 import Paint from '@/views/Paint.vue'
 import Drawing from '@/views/phases/Drawing.vue'
@@ -36,7 +37,9 @@ const path = location.pathname.replace(/\/+$/, '')
 const isPaintRoute = path.endsWith('/paint')
 // Hidden debug page — read all taglines in bulk.
 const isTaglinesRoute = path.endsWith('/taglines')
-const route = isTaglinesRoute ? 'taglines' : isPaintRoute ? 'paint' : roomCode ? 'room' : 'entry'
+// Dev-only component gallery; gated so `/components` never resolves in a production build.
+const isComponentsRoute = import.meta.env.DEV && path.endsWith('/components')
+const route = isComponentsRoute ? 'components' : isTaglinesRoute ? 'taglines' : isPaintRoute ? 'paint' : roomCode ? 'room' : 'entry'
 
 // Connect only on the room route; useRoom leaves its state inert off it.
 const {
@@ -62,6 +65,7 @@ const {
   <Entry v-if="route === 'entry'" />
   <Paint v-else-if="route === 'paint'" />
   <Taglines v-else-if="route === 'taglines'" />
+  <Components v-else-if="route === 'components'" />
 
   <template v-else-if="route === 'room'">
     <!-- Session closed by a GM or timeout. -->

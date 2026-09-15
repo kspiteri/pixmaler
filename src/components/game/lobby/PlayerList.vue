@@ -5,6 +5,7 @@
 
 import type { ClientMsg, Player } from '@/lib'
 import { computed, inject } from 'vue'
+import Button from '@/components/elements/Button.vue'
 import PlayerTag from '@/components/elements/PlayerTag.vue'
 import { askConfirm, clientIdKey, MAX_PLAYERS, seatFor, socketKey } from '@/lib'
 
@@ -80,24 +81,25 @@ async function removePlayer(p: Player) {
           </template>
         </PlayerTag>
         <span v-if="p.isGm" class="player-list__pill">GM</span>
-        <button
+        <Button
           v-if="canTransfer(p)"
-          class="player-list__make-gm pressable"
-          type="button"
+          variant="subtle"
+          size="x-small"
           :aria-label="`Make ${p.name} GM`"
           @click="transferGm(p)"
         >
           Make GM
-        </button>
-        <button
+        </Button>
+        <Button
           v-if="canRemove(p)"
-          class="player-list__remove pressable"
-          type="button"
+          variant="subtle"
+          size="x-small"
+          tone="danger"
           :aria-label="`Remove ${p.name}`"
           @click="removePlayer(p)"
         >
           Remove
-        </button>
+        </Button>
       </li>
     </ul>
   </div>

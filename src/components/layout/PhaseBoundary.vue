@@ -34,7 +34,7 @@ function reload() {
     <p class="phase-error__note">
       the round is still going and your place is saved. reload to pick it back up.
     </p>
-    <button class="btn btn--primary" type="button" @click="reload">
+    <button class="btn btn--primary btn--default" type="button" @click="reload">
       Reload
     </button>
   </div>

@@ -2,7 +2,9 @@
 // Shown only when the room exists, but the joiner has no stored name/session. Quick and easy bot prevention method.
 // The word-pair is the placeholder, not pre-filled, so an empty submission accepts it, and typing replaces it.
 
+import { LogIn } from '@lucide/vue'
 import { ref } from 'vue'
+import Button from '@/components/elements/Button.vue'
 import NameField from '@/components/elements/NameField.vue'
 import RoomInterstitial from '@/components/layout/RoomInterstitial.vue'
 import { sanitiseName, wordPair } from '@/lib'
@@ -24,9 +26,12 @@ function submitName() {
   <RoomInterstitial eyebrow="joining room">
     <form class="room-screen__form" @submit.prevent="submitName">
       <NameField v-model="nameInput" label="Your name" autofocus />
-      <button class="btn btn--primary" type="submit">
+      <Button variant="primary" type="submit">
+        <template #icon>
+          <LogIn :size="18" aria-hidden="true" />
+        </template>
         {{ nameInput.trim() ? "Join" : `Join as ${randomName}` }}
-      </button>
+      </Button>
     </form>
   </RoomInterstitial>
 </template>

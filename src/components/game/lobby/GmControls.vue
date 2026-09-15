@@ -4,7 +4,9 @@
 // controls stay in the lobby; this is only the game-setup column.
 
 import type { ClientMsg, GmConfigureMsg, PipelineResult, Player } from '@/lib'
+import { Play } from '@lucide/vue'
 import { computed, inject, ref, useTemplateRef } from 'vue'
+import Button from '@/components/elements/Button.vue'
 import { socketKey } from '@/lib'
 import ImagePicker from '../image/ImagePicker.vue'
 
@@ -80,14 +82,17 @@ function startGame() {
     @result="onResult"
   />
   <div>
-    <button
-      class="btn btn--primary lobby__start"
-      type="button"
+    <Button
+      variant="primary"
+      class="lobby__start"
       :disabled="startDisabled"
       @click="startGame"
     >
+      <template #icon>
+        <Play :size="18" aria-hidden="true" />
+      </template>
       Start game
-    </button>
+    </Button>
     <p v-if="startHint" class="lobby__start-hint">
       {{ startHint }}
     </p>

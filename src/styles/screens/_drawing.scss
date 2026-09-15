@@ -43,14 +43,6 @@
     top: $gap-3;
     z-index: 1;
   }
-  // `.btn--ghost`, not primary: adding time is a correction, not the round's main action.
-  // Shared, not duplicated: both sit in `.phase__status` and must match the bar's
-  // scale rather than `.btn`'s default size.
-  &__extend,
-  &__cancel {
-    padding: 0.25rem 0.625rem;
-    font-size: $fs-xs;
-  }
 
   // Spectator view: the reference and a line of copy, centred in the space the
   // canvas pair would have filled. No `phase--fixed` fight — there is nothing to
@@ -110,7 +102,7 @@
 }
 
 // Consistent bar-control width on mobile: the icon-only Cancel round is square (via
-// `.btn.btn--icon-mobile`), so give the text `+15s` the same footprint. `.btn.<class>` is
+// `.btn.btn--collapse`), so give the text `+15s` the same footprint. `.btn.<class>` is
 // 0-2-0 and this partial loads after `_buttons`, so it wins the tie and overrides even the
 // utility's own width on the cancel button.
 @media (max-width: $bp-mobile) {

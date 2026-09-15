@@ -1,19 +1,20 @@
 @use 'tokens' as *;
 
-// Buttons — display font, rounded, with press/hover micro-interactions.
-// Variants: --primary (lime CTA), --ghost (purple outline), --plain (surface).
+// The one button (Button.vue). `--{variant}` picks the fill/ink recipe, `--{size}` the scale;
+// `--icon` is a square icon-only control, `--block` full-width, `--collapse` drops the label to
+// its icon under $bp-mobile, `--danger` a warn hover. Press/hover/focus/disabled live here; a
+// caller keeps only layout (position, flex, width).
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: $gap-2;
-  padding: 0.875rem 1rem;
-  border-radius: $radius;
   border: none;
+  border-radius: $radius;
+  // Loud typography for the CTA family; `--subtle` resets it to the quiet body voice below.
   font-family: $font-alert;
   font-weight: $fw-bold;
-  font-size: $fs-md;
   letter-spacing: $ls-alert;
   cursor: pointer;
   transition:
@@ -29,78 +30,152 @@
     box-shadow: none;
     transform: none;
   }
+}
 
-  &--primary {
-    --press: 4px;
-    --press-colour: #{$accent-deep};
-    background: $accent;
-    color: $accent-fg;
+// ── Sizes ──────────────────────────────────────────────────────────────────
+.btn--large {
+  padding: 1rem 1.5rem;
+  font-size: $fs-lg;
+}
+.btn--default {
+  padding: 0.875rem 1rem;
+  font-size: $fs-md;
+}
+.btn--small {
+  padding: 0.625rem 1rem;
+  font-size: $fs-sm;
+}
+.btn--x-small {
+  padding: 0.25rem 0.5rem;
+  font-size: $fs-2xs;
+  border-radius: $radius-sm;
+}
 
-    // The global lime ring reads as a detached halo on a lime fill — go white.
-    &:focus-visible {
-      outline-color: $fg;
-    }
+// Square icon-only control — no padding, a fixed side per size (52 / 44 / 36 / 28px targets).
+.btn--icon {
+  padding: 0;
 
-    // The offset grows by exactly what the button rises, so its bottom edge stays
-    // pinned to the page and the key reads as having left it.
-    &:not(:disabled):hover {
-      transform: translateY(-2px);
-      box-shadow: 0 calc(var(--press) + 2px) 0 var(--press-colour);
-    }
+  &.btn--large {
+    width: 3.25rem;
+    height: 3.25rem;
   }
-
-  &--ghost {
-    --press-colour: #{$primary-deep};
-    background: transparent;
-    // Ink and outline, so the themed variant — `$primary` unmodified is 3.18:1 on
-    // the light page. The hover *fill* keeps `$primary`: it carries its own ink.
-    border: 2px solid $primary-ink;
-    color: $primary-ink;
-
-    &:not(:disabled):hover {
-      background: $primary;
-      color: $fg;
-    }
+  &.btn--default {
+    width: 2.75rem;
+    height: 2.75rem;
   }
-
-  // Subdued surface button — Undo / Clear / Stop voting. Keeps the defaults.
-  &--plain {
-    background: $surface;
-    border: 1px solid $border;
-    color: $fg-60;
-    font-size: $fs-sm;
-    padding: 0.625rem 1rem;
-
-    &:not(:disabled):hover {
-      color: $fg;
-      border-color: $fg-25;
-    }
+  &.btn--small {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+  &.btn--x-small {
+    width: 1.75rem;
+    height: 1.75rem;
   }
 }
 
-// A bar control that keeps its words on desktop but collapses to just its icon under
-// `$bp-mobile`, where the shared phase bar runs out of room. Wrap the text in
-// `.btn__label` and the icon in `.btn__icon`; the button needs an `aria-label` too,
-// since the visible text leaves the accessibility tree when hidden. `.btn.btn--icon-mobile`
-// so its 0-2-0 specificity beats any per-phase single-class sizing (`.lobby__end` etc.).
-.btn--icon-mobile .btn__icon {
-  display: none;
+.btn--block {
+  width: 100%;
 }
+
+// Leading icon and trailing affordance (a disclosure chevron). The icon is always visible,
+// including on desktop; `--collapse` hides the label under $bp-mobile, leaving just the icon.
+.btn__icon,
+.btn__trailing {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.btn__trailing {
+  margin-left: auto;
+}
+
+// ── Variants ───────────────────────────────────────────────────────────────
+.btn--primary {
+  --press: 4px;
+  --press-colour: #{$accent-deep};
+  background: $accent;
+  color: $accent-fg;
+
+  // The global lime ring reads as a detached halo on a lime fill — go white.
+  &:focus-visible {
+    outline-color: $fg;
+  }
+
+  // The offset grows by exactly what the button rises, so its bottom edge stays pinned to
+  // the page and the key reads as having left it.
+  &:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 calc(var(--press) + 2px) 0 var(--press-colour);
+  }
+}
+
+.btn--secondary {
+  --press-colour: #{$primary-deep};
+  background: transparent;
+  // Ink and outline, so the themed variant — `$primary` unmodified is 3.18:1 on the light
+  // page. The hover *fill* keeps `$primary`: it carries its own ink.
+  border: 2px solid $primary-ink;
+  color: $primary-ink;
+
+  &:not(:disabled):hover {
+    background: $primary;
+    color: $fg;
+  }
+}
+
+// Surface button — a filled but quiet neutral (dialog cancel, palette Undo, the dice).
+.btn--tertiary {
+  background: $surface;
+  border: 1px solid $border;
+  color: $fg-60;
+
+  &:not(:disabled):hover {
+    color: $fg;
+    border-color: $fg-25;
+  }
+}
+
+// The quiet bordered control — transparent, body voice. The small chrome buttons (settings,
+// make-GM, dock, disclosures) all share this recipe.
+.btn--subtle {
+  background: transparent;
+  border: 1px solid $border;
+  color: $fg-60;
+  font-family: inherit;
+  font-weight: $fw-regular;
+  letter-spacing: normal;
+
+  &:not(:disabled):hover {
+    color: $fg;
+    border-color: $fg-25;
+  }
+}
+
+// Destructive intent — the hover shifts to warn ink rather than neutral (Remove player).
+.btn--danger:not(:disabled):hover {
+  color: $warn-ink;
+  border-color: color-mix(in oklab, $warn-ink, transparent 55%);
+}
+
+// Collapse to the icon under the mobile breakpoint, where the phase bar runs out of room.
+// The button needs an `aria-label` — the visible text leaves the accessibility tree when hidden.
+// `.btn.btn--collapse` (0-2-0), so the square footprint beats any per-phase single-class bar
+// sizing (`.lobby__end`, `.voting__cancel`) that `@use`s after this file.
 @media (max-width: $bp-mobile) {
-  .btn.btn--icon-mobile {
+  .btn.btn--collapse {
     padding: 0.5rem;
     min-width: 2.25rem;
   }
-  .btn--icon-mobile .btn__icon {
-    display: inline-flex;
-  }
-  .btn--icon-mobile .btn__label {
+  .btn--collapse .btn__label {
     display: none;
+  }
+  .btn--collapse .btn__trailing {
+    margin-left: 0;
   }
 }
 
-// One press for every control in the app: it rests on a hard offset shadow and travels
-// down onto the page by that distance. `--press` / `--press-colour` are a variant's only knobs.
+// One press for every control in the app: it rests on a hard offset shadow and travels down
+// onto the page by that distance. `--press` / `--press-colour` are a variant's only knobs.
 .btn,
 .pressable {
   box-shadow: 0 var(--press, 2px) 0 var(--press-colour, #{$shadow-press});
@@ -115,8 +190,8 @@
   }
 }
 
-// Drops the easing only — the `:active` press travel stays, since on touch the
-// movement is the only feedback there is.
+// Drops the easing only — the `:active` press travel stays, since on touch the movement is
+// the only feedback there is.
 @media (prefers-reduced-motion: reduce) {
   .btn {
     transition-property: background, color, border-color;

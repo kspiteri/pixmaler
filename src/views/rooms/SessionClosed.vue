@@ -5,6 +5,8 @@
 // The copy names no cause on purpose: `wipeState` is one funnel for both events and the
 // message carries no reason, so anything cause-specific here would be wrong half the time.
 
+import { RotateCcw } from '@lucide/vue'
+import Button from '@/components/elements/Button.vue'
 import RoomInterstitial from '@/components/layout/RoomInterstitial.vue'
 import { appHref, roomHref } from '@/lib'
 
@@ -23,11 +25,14 @@ function reopen(code: string) {
     <p class="room-screen__note">
       the session has been closed down
     </p>
-    <button class="btn btn--primary" type="button" @click="reopen(code)">
+    <Button variant="primary" @click="reopen(code)">
+      <template #icon>
+        <RotateCcw :size="18" aria-hidden="true" />
+      </template>
       Reopen (first player will be GM)
-    </button>
-    <a class="btn btn--ghost" type="button" :href="baseUrl">
+    </Button>
+    <Button variant="secondary" :href="baseUrl">
       Back to homepage
-    </a>
+    </Button>
   </RoomInterstitial>
 </template>

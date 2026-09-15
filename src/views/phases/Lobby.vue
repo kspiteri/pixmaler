@@ -6,6 +6,7 @@ import type { AvatarShape, ClientMsg, ServerMsg } from '@/lib'
 import { Check, CircleSlash, Copy, Power } from '@lucide/vue'
 import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
 import AlertToast from '@/components/elements/AlertToast.vue'
+import Button from '@/components/elements/Button.vue'
 import NameField from '@/components/elements/NameField.vue'
 import PlayerTag from '@/components/elements/PlayerTag.vue'
 import Tagline from '@/components/elements/Tagline.vue'
@@ -145,17 +146,20 @@ onBeforeUnmount(() => {
         <span class="lobby__code">{{ roomCode }}</span>
         <component :is="copied ? Check : Copy" class="lobby__copy-icon" :size="15" aria-hidden="true" />
       </button>
-      <button
+      <Button
         v-if="isGm"
-        class="btn btn--ghost btn--icon-mobile lobby__end"
-        type="button"
+        variant="secondary"
+        collapse
+        size="small"
         title="Close the room for everyone and release this code"
         aria-label="End session"
         @click="endSession"
       >
-        <Power class="btn__icon" :size="16" aria-hidden="true" />
-        <span class="btn__label">End session</span>
-      </button>
+        <template #icon>
+          <Power :size="16" aria-hidden="true" />
+        </template>
+        End session
+      </Button>
     </template>
 
     <AlertToast

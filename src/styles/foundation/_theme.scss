@@ -29,7 +29,7 @@
   --accent-ink: #c8ff2d;
   --warn-ink: #ff8c00;
   // Purple as ink/outline — `$primary` unmodified is under the floor for the 12px
-  // `.btn--ghost` label, so the ink variant lifts.
+  // `.btn--secondary` label, so the ink variant lifts.
   --primary-ink: #8c7aff;
 
   // Timer ribbon fill, in urgency order. Needs 3:1 against the `$surface` track.

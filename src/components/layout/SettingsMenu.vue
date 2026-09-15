@@ -5,6 +5,7 @@
 
 import { Hand, Keyboard, KeyboardOff, Mouse, Settings } from '@lucide/vue'
 import { onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
+import Button from '@/components/elements/Button.vue'
 import ThemeToggle from '@/components/elements/ThemeToggle.vue'
 import ToggleSwitch from '@/components/elements/ToggleSwitch.vue'
 import { askConfirm, clearAllData, isTouch, SCALE_STEPS, shortcutsEnabled, stepScale, textScale, toggleShortcuts, toggleTouch } from '@/lib'
@@ -17,7 +18,7 @@ const version = document.querySelector('meta[name="pixmaler:client"]')?.getAttri
 
 const open = ref(false)
 const root = useTemplateRef<HTMLElement>('root')
-const trigger = useTemplateRef<HTMLButtonElement>('trigger')
+const trigger = useTemplateRef<InstanceType<typeof Button>>('trigger')
 
 function onDocPointer(e: PointerEvent) {
   if (root.value && !root.value.contains(e.target as Node))
@@ -65,18 +66,20 @@ async function clearData() {
 
 <template>
   <div ref="root" class="settings-menu">
-    <button
+    <Button
       ref="trigger"
-      class="settings-menu__trigger pressable"
-      type="button"
+      variant="subtle"
+      icon
       aria-haspopup="true"
       :aria-expanded="open"
       aria-label="Settings"
       title="Settings"
       @click="open = !open"
     >
-      <Settings :size="18" aria-hidden="true" />
-    </button>
+      <template #icon>
+        <Settings :size="18" aria-hidden="true" />
+      </template>
+    </Button>
 
     <div v-if="open" class="settings-menu__panel" role="group" aria-label="Settings">
       <div class="settings-menu__row">
@@ -119,32 +122,34 @@ async function clearData() {
       <div class="settings-menu__row">
         <span id="settings-menu-text" class="settings-menu__label">Text size</span>
         <div class="settings-menu__stepper" role="group" aria-labelledby="settings-menu-text">
-          <button
-            class="settings-menu__step pressable"
-            type="button"
+          <Button
+            variant="subtle"
+            icon
+            size="small"
             :disabled="textScale <= min"
             aria-label="Smaller text"
             @click="stepScale(-1)"
           >
             A&minus;
-          </button>
+          </Button>
           <span class="settings-menu__scale" aria-live="polite">{{ textScale }}%</span>
-          <button
-            class="settings-menu__step pressable"
-            type="button"
+          <Button
+            variant="subtle"
+            icon
+            size="small"
             :disabled="textScale >= max"
             aria-label="Larger text"
             @click="stepScale(1)"
           >
             A+
-          </button>
+          </Button>
         </div>
       </div>
 
       <hr class="settings-menu__sep">
-      <button class="settings-menu__clear pressable" type="button" @click="clearData">
+      <Button variant="subtle" size="small" block @click="clearData">
         Clear my data
-      </button>
+      </Button>
       <p v-if="version" class="settings-menu__version">
         pixmaler v{{ version }}
       </p>

@@ -7,6 +7,7 @@
 import { Dices } from '@lucide/vue'
 import { useId, useTemplateRef } from 'vue'
 import { NAME_MAX_LEN, wordPair } from '@/lib'
+import Button from './Button.vue'
 
 defineOptions({ inheritAttrs: false })
 defineProps<{ label: string }>()
@@ -35,15 +36,18 @@ function randomise() {
         placeholder="a nickname is enough"
         v-bind="$attrs"
       >
-      <button
-        type="button"
-        class="name-field__dice pressable"
+      <Button
+        variant="tertiary"
+        icon
+        class="name-field__dice"
         aria-label="Suggest a random name"
         title="Random name"
         @click="randomise"
       >
-        <Dices :size="18" aria-hidden="true" />
-      </button>
+        <template #icon>
+          <Dices :size="18" aria-hidden="true" />
+        </template>
+      </Button>
     </div>
   </div>
 </template>

@@ -3,7 +3,9 @@
 // <dialog> + showModal(), so focus trapping, restore, Esc and the top layer come from the
 // platform. Don't call directly — go through lib/dialog.ts, which owns the single instance.
 
+import { Check } from '@lucide/vue'
 import { onMounted, useId, useTemplateRef } from 'vue'
+import Button from './Button.vue'
 
 const props = withDefaults(defineProps<{
   message: string
@@ -42,23 +44,25 @@ function onEscape() {
       {{ message }}
     </p>
     <div class="alert-dialog__actions">
-      <button
+      <Button
         v-if="mode === 'confirm'"
-        class="btn btn--plain"
-        type="button"
+        variant="tertiary"
+        size="small"
         autofocus
         @click="emit('cancel')"
       >
         Cancel
-      </button>
-      <button
-        class="btn btn--primary"
-        type="button"
+      </Button>
+      <Button
+        variant="primary"
         :autofocus="mode === 'alert'"
         @click="emit('confirm')"
       >
+        <template #icon>
+          <Check :size="18" aria-hidden="true" />
+        </template>
         OK
-      </button>
+      </Button>
     </div>
   </dialog>
 </template>

@@ -118,6 +118,9 @@ $panel-w: 24rem;
 }
 .entry__join-field {
   flex: 1;
+  .input {
+    padding: 1rem;
+  }
 }
 .entry__join-btn {
   flex-shrink: 0;
@@ -134,15 +137,6 @@ $panel-w: 24rem;
 
 .entry__sandbox {
   align-self: center;
-  margin-top: $gap-1;
-  color: $fg-35;
-  font-size: $fs-sm;
-  text-underline-offset: 2px;
-  transition: color 0.15s;
-
-  &:hover {
-    color: $fg-50;
-  }
 }
 
 // Privacy notice — a quiet, collapsible footnote under the hero. Closed by default.

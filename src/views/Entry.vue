@@ -1,7 +1,9 @@
 <script setup lang="ts">
 // Entry screen — pre-room landing. Create / join / open the paint sandbox.
 
+import { Play } from '@lucide/vue'
 import { ref } from 'vue'
+import Button from '@/components/elements/Button.vue'
 import Logo from '@/components/elements/Logo.vue'
 import NameField from '@/components/elements/NameField.vue'
 import Tagline from '@/components/elements/Tagline.vue'
@@ -61,14 +63,17 @@ function enterRoom(room: string, create = false) {
         <div class="entry__form">
           <NameField v-model="name" label="Your name" />
 
-          <button
-            class="btn btn--primary"
-            type="button"
+          <Button
+            variant="primary"
+            size="large"
             :disabled="!name.trim()"
             @click="enterRoom(wordPair(), true)"
           >
+            <template #icon>
+              <Play :size="20" aria-hidden="true" />
+            </template>
             Create room (GM)
-          </button>
+          </Button>
 
           <div class="entry__divider">
             <span class="entry__rule" />
@@ -77,24 +82,24 @@ function enterRoom(room: string, create = false) {
           </div>
 
           <div class="entry__join">
-            <label class="field entry__join-field">
-              <span class="label">Room code</span>
+            <div class="field entry__join-field">
+              <label class="label" for="entry-room-code">Room code</label>
               <input
+                id="entry-room-code"
                 v-model="code"
                 class="input"
                 type="text"
                 placeholder="e.g. feral-crayon"
               >
-            </label>
-
-            <button
-              class="btn btn--ghost entry__join-btn"
-              type="button"
+            </div>
+            <Button
+              variant="secondary"
+              class="entry__join-btn"
               :disabled="!name.trim() || !code.trim()"
               @click="enterRoom(code.trim().toLowerCase())"
             >
               Join room
-            </button>
+            </Button>
           </div>
 
           <div class="entry__divider">
@@ -103,13 +108,9 @@ function enterRoom(room: string, create = false) {
             <span class="entry__rule" />
           </div>
 
-          <a
-            class="btn btn--ghost entry__sandbox"
-            type="button"
-            :href="sandboxHref"
-          >
+          <Button variant="secondary" class="entry__sandbox" :href="sandboxHref">
             Free mode
-          </a>
+          </Button>
         </div>
       </div>
     </div>

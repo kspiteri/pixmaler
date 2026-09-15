@@ -5,6 +5,7 @@
 // header with the same size control and no drag.
 
 import { GripVertical, Pin, PinOff } from '@lucide/vue'
+import Button from '@/components/elements/Button.vue'
 import { paletteDocked, setPaletteDocked } from '@/lib'
 import SizeControl from './SizeControl.vue'
 
@@ -30,17 +31,21 @@ const emit = defineEmits<{
     <span v-if="canDrag" class="tools-panel__grip"><GripVertical :size="16" /></span>
     <span class="tools-panel__label">palette</span>
     <!-- Dock / float toggle. pointerdown stopped so it doesn't start a drag. -->
-    <button
-      class="tools-panel__dock pressable"
-      type="button"
+    <Button
+      variant="subtle"
+      icon
+      size="x-small"
+      class="tools-panel__dock"
       :title="paletteDocked ? 'Float palette' : 'Dock palette to the side'"
       :aria-label="paletteDocked ? 'Float palette' : 'Dock palette'"
       @pointerdown.stop
       @click="setPaletteDocked(!paletteDocked)"
     >
-      <PinOff v-if="paletteDocked" :size="14" />
-      <Pin v-else :size="14" />
-    </button>
+      <template #icon>
+        <PinOff v-if="paletteDocked" :size="14" />
+        <Pin v-else :size="14" />
+      </template>
+    </Button>
     <SizeControl />
   </div>
 

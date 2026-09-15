@@ -2,6 +2,8 @@
 // Terminal screen for a joiner whose room does not exist and who did not ask to create it.
 // Prevents users with old urls from opening up rooms unnecessarily.
 
+import { Plus } from '@lucide/vue'
+import Button from '@/components/elements/Button.vue'
 import RoomInterstitial from '@/components/layout/RoomInterstitial.vue'
 import { appHref, roomHref, wordPair } from '@/lib'
 
@@ -18,11 +20,14 @@ function createOwn() {
     <p class="room-screen__note">
       this room doesn't exist, want to create one of your own?
     </p>
-    <button class="btn btn--primary" type="button" @click="createOwn">
+    <Button variant="primary" @click="createOwn">
+      <template #icon>
+        <Plus :size="18" aria-hidden="true" />
+      </template>
       Create a room
-    </button>
-    <a class="btn btn--ghost" type="button" :href="baseUrl">
+    </Button>
+    <Button variant="secondary" :href="baseUrl">
       Back to homepage
-    </a>
+    </Button>
   </RoomInterstitial>
 </template>

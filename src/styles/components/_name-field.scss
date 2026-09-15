@@ -16,26 +16,11 @@
     min-width: 0;
   }
 
-  &__dice {
+  // The dice matches the input's stretched height, not the icon button's fixed square. The
+  // `.name-field__dice.btn` / `.btn--icon.btn--default` tie (both 0-2-0) is broken by source
+  // order, so `@use 'name-field'` must stay after `buttons` in main.scss.
+  &__dice.btn {
+    height: auto;
     flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    // 44px touch target; height comes from the stretched row.
-    width: 2.75rem;
-    padding: 0;
-    border: 1px solid $border;
-    border-radius: $radius;
-    background: $surface;
-    color: $fg-60;
-    cursor: pointer;
-    transition:
-      color 0.15s,
-      border-color 0.15s;
-
-    &:hover {
-      color: $fg;
-      border-color: $fg-25;
-    }
   }
 }

@@ -1,36 +1,13 @@
 @use 'tokens' as *;
 @use 'chrome' as *;
 
-// SettingsMenu.vue — the header trigger plus its dropdown. Trigger is 44px, bordered,
-// `.pressable`; the panel is a Chrome surface floating on `$shadow-2`.
+// SettingsMenu.vue — the header trigger plus its dropdown. The trigger is a subtle icon
+// Button; the panel is a Chrome surface floating on `$shadow-2`.
 
 .settings-menu {
   position: relative;
   display: inline-flex;
   flex-shrink: 0;
-
-  &__trigger {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    // 44px — the touch-target floor.
-    width: 2.75rem;
-    height: 2.75rem;
-    padding: 0;
-    border: 1px solid $border;
-    border-radius: $radius;
-    background: transparent;
-    color: $fg-60;
-    cursor: pointer;
-    transition:
-      color 0.15s,
-      border-color 0.15s;
-
-    &:hover {
-      color: $fg;
-      border-color: $fg-25;
-    }
-  }
 
   &__panel {
     position: absolute;
@@ -78,57 +55,10 @@
     font-variant-numeric: tabular-nums;
   }
 
-  &__step {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    border: 1px solid $border;
-    border-radius: $radius-sm;
-    background: $bg;
-    color: $fg;
-    font-family: $font-alert;
-    font-weight: $fw-bold;
-    font-size: $fs-sm;
-    cursor: pointer;
-    transition:
-      color 0.15s,
-      border-color 0.15s;
-
-    &:hover:not(:disabled) {
-      border-color: $fg-25;
-    }
-    &:disabled {
-      color: $fg-25;
-      cursor: not-allowed;
-    }
-  }
-
   &__sep {
     border: none;
     border-top: 1px solid $border-soft;
     margin: 0;
-  }
-
-  &__clear {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid $border;
-    border-radius: $radius-sm;
-    background: transparent;
-    color: $fg-60;
-    font-family: $font-alert;
-    font-size: $fs-sm;
-    cursor: pointer;
-    transition:
-      color 0.15s,
-      border-color 0.15s;
-
-    &:hover {
-      color: $fg;
-      border-color: $fg-25;
-    }
   }
 
   // Build version at the foot of the drawer — quiet metadata, not a control.

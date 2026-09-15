@@ -6,6 +6,7 @@
 import type { Component } from 'vue'
 import { ArrowBigUp, ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Keyboard, Mouse } from '@lucide/vue'
 import { markRaw, ref } from 'vue'
+import Button from '@/components/elements/Button.vue'
 import { isTouch, shortcutsEnabled } from '@/lib'
 
 const open = ref(false)
@@ -31,19 +32,24 @@ const SHORTCUTS: Shortcut[] = [
 
 <template>
   <div v-if="!isTouch && shortcutsEnabled" class="tools-panel__shortcuts">
-    <button
-      class="tools-panel__shortcuts-toggle pressable"
-      type="button"
+    <Button
+      variant="subtle"
+      size="x-small"
+      block
       aria-label="Keyboard shortcuts"
       :aria-expanded="open"
       @pointerdown.stop
       @click="open = !open"
     >
-      <Keyboard :size="14" />
-      <span class="tools-panel__shortcuts-title">for the pros</span>
-      <ChevronUp v-if="open" :size="14" class="tools-panel__shortcuts-chevron" />
-      <ChevronDown v-else :size="14" class="tools-panel__shortcuts-chevron" />
-    </button>
+      <template #icon>
+        <Keyboard :size="14" />
+      </template>
+      for the pros
+      <template #trailing>
+        <ChevronUp v-if="open" :size="14" />
+        <ChevronDown v-else :size="14" />
+      </template>
+    </Button>
     <ul v-if="open">
       <li v-for="s in SHORTCUTS" :key="s.desc">
         <kbd role="img" :aria-label="s.aria ?? s.key">

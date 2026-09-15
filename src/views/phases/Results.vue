@@ -4,8 +4,9 @@
 // The GM gets a "Play again" button that returns the room to LOBBY.
 
 import type { Player, RankedResult, ServerMsg } from '@/lib'
-import { Power } from '@lucide/vue'
+import { Power, RotateCcw } from '@lucide/vue'
 import { computed, inject } from 'vue'
+import Button from '@/components/elements/Button.vue'
 import PlayerTag from '@/components/elements/PlayerTag.vue'
 import Tagline from '@/components/elements/Tagline.vue'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
@@ -146,25 +147,32 @@ const { setSlot } = useReadonlyCanvases(
       <!-- Never gate the GM's only control on the payload arriving: if the `results`
            replay ever fails the GM must still be able to restart the room. Non-GMs get
            the hint unconditionally so a rejoining player never sees a blank status bar. -->
-      <button
+      <Button
         v-if="isGm"
-        class="btn btn--primary results__again"
-        type="button"
+        variant="primary"
+        size="small"
+        collapse
         @click="playAgain"
       >
+        <template #icon>
+          <RotateCcw :size="18" aria-hidden="true" />
+        </template>
         Play again
-      </button>
-      <button
+      </Button>
+      <Button
         v-if="isGm"
-        class="btn btn--ghost btn--icon-mobile"
-        type="button"
+        variant="secondary"
+        size="small"
+        collapse
         title="Close the room for everyone and release this code"
         aria-label="End session"
         @click="endSession"
       >
-        <Power class="btn__icon" :size="16" aria-hidden="true" />
-        <span class="btn__label">End session</span>
-      </button>
+        <template #icon>
+          <Power :size="16" aria-hidden="true" />
+        </template>
+        End session
+      </Button>
       <span v-if="!isGm" class="results__hint">waiting for the GM…</span>
     </template>
 

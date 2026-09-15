@@ -20,6 +20,7 @@ import {
   watch,
 } from 'vue'
 import AlertToast from '@/components/elements/AlertToast.vue'
+import Button from '@/components/elements/Button.vue'
 import { DrawBoard, PixelThumb } from '@/components/game'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
 import { clientIdKey, socketKey, useCountdownAnnounce, useDrawSubmit, useGmActions, useOrientation } from '@/lib'
@@ -163,26 +164,29 @@ onBeforeUnmount(() => {
       <!-- The visible timer ticks silently; this reads the remaining time aloud at
            milestones only (see `countdownAnnounce`), so it isn't sight-only. -->
       <span class="sr-only" role="status">{{ countdownAnnounce }}</span>
-      <button
+      <Button
         v-if="isGm && canExtend"
-        class="btn btn--ghost drawing__extend"
-        type="button"
+        variant="secondary"
+        size="small"
         title="Give everyone another 15 seconds"
         @click="extendTime"
       >
         +15s
-      </button>
-      <button
+      </Button>
+      <Button
         v-if="isGm"
-        class="btn btn--ghost btn--icon-mobile drawing__cancel"
-        type="button"
+        variant="secondary"
+        collapse
+        size="small"
         title="Abandon this round and return everyone to the lobby"
         aria-label="Cancel round"
         @click="cancelRound"
       >
-        <CircleSlash class="btn__icon" :size="16" aria-hidden="true" />
-        <span class="btn__label">Cancel round</span>
-      </button>
+        <template #icon>
+          <CircleSlash :size="16" aria-hidden="true" />
+        </template>
+        Cancel round
+      </Button>
     </template>
 
     <!-- Spectators get the reference and the room's progress, but no canvas: they joined

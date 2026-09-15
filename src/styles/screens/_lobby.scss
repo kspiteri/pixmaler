@@ -4,12 +4,6 @@
 // and logo come from PhaseLayout; the room copy-link button sits in its status slot.
 
 .lobby {
-  // Compact, to match the room-code control it sits beside — the lobby status bar is thin.
-  &__end {
-    padding: 0.25rem 0.625rem;
-    font-size: $fs-xs;
-  }
-
   &__room {
     display: inline-flex;
     align-items: center;

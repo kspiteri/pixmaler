@@ -6,6 +6,7 @@
 import type { PixelCanvas } from '@/lib'
 import { Check, ChevronDown, ChevronUp, Image as ImageIcon, Trash2, Undo2 } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import Button from '@/components/elements/Button.vue'
 import { isTouch, paletteDocked, paletteSize, setPaletteHeight, useAppLayout, useDraggable } from '@/lib'
 import Header from './palette/Header.vue'
 import Shortcuts from './palette/Shortcuts.vue'
@@ -246,20 +247,25 @@ function clear() {
         <!-- Reference: full-width in the desktop panel with a collapse toggle (like the
              shortcuts); on the mobile dock it's a compact thumbnail beside the controls. -->
         <div class="tools-panel__reference">
-          <button
+          <Button
             v-if="!isMobile"
-            class="tools-panel__reference-toggle pressable"
-            type="button"
+            variant="subtle"
+            size="x-small"
+            block
             aria-label="Reference image"
             :aria-expanded="referenceOpen"
             @pointerdown.stop
             @click="referenceOpen = !referenceOpen"
           >
-            <ImageIcon :size="14" />
-            <span class="tools-panel__reference-title">reference</span>
-            <ChevronUp v-if="referenceOpen" :size="14" class="tools-panel__reference-chevron" />
-            <ChevronDown v-else :size="14" class="tools-panel__reference-chevron" />
-          </button>
+            <template #icon>
+              <ImageIcon :size="14" />
+            </template>
+            reference
+            <template #trailing>
+              <ChevronUp v-if="referenceOpen" :size="14" />
+              <ChevronDown v-else :size="14" />
+            </template>
+          </Button>
           <div v-show="isMobile || referenceOpen" ref="dockTargetSlot" class="tools-panel__target" />
         </div>
         <div class="tools-panel__controls">
@@ -267,37 +273,43 @@ function clear() {
           <div ref="brushSlot" class="tools-panel__brush" />
           <div class="tools-panel__row">
             <div class="tools-panel__actions">
-              <button
-                class="btn btn--plain tools-panel__btn"
-                type="button"
+              <Button
+                variant="tertiary"
+                class="tools-panel__btn"
                 :title="undoTitle"
                 aria-label="Undo"
                 :disabled="!canUndo"
                 @click="undo"
               >
-                <Undo2 :size="18" />
-              </button>
-              <button
+                <template #icon>
+                  <Undo2 :size="18" />
+                </template>
+              </Button>
+              <Button
                 v-if="variant === 'paint'"
-                class="btn btn--plain tools-panel__btn"
-                type="button"
+                variant="tertiary"
+                class="tools-panel__btn"
                 title="Clear"
                 aria-label="Clear canvas"
                 @click="clear"
               >
-                <Trash2 :size="18" />
-              </button>
-              <button
+                <template #icon>
+                  <Trash2 :size="18" />
+                </template>
+              </Button>
+              <Button
                 v-else
-                class="btn btn--primary tools-panel__btn tools-panel__btn--done"
-                type="button"
+                variant="primary"
+                class="tools-panel__btn tools-panel__btn--done"
                 :aria-pressed="flaggedDone"
                 :disabled="flaggedDone"
                 @click="emit('done')"
               >
-                <Check :size="18" />
-                <span>{{ flaggedDone ? "ready!" : 'mark as ready' }}</span>
-              </button>
+                <template #icon>
+                  <Check :size="18" />
+                </template>
+                {{ flaggedDone ? "ready!" : 'mark as ready' }}
+              </Button>
             </div>
           </div>
           <div v-if="variant === 'drawing' && !isTouch" class="tools-panel__hint">

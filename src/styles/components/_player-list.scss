@@ -4,9 +4,6 @@
 // Lobby roster — one row per player: avatar chip, name, GM pill and the GM's
 // "Make GM" transfer button. Global, not scoped: static chrome, no `:deep()`.
 
-// **Must be `@use`d after `buttons`.** `.player-list__make-gm` also wears
-// `.pressable`; unscoped they tie at one class each, so the later file wins.
-
 .player-list {
   &__rows {
     list-style: none;
@@ -51,43 +48,5 @@
     border-radius: 999px;
     border: 1px solid color-mix(in oklab, $primary, transparent 50%);
     color: $primary-ink;
-  }
-
-  &__make-gm {
-    font-size: $fs-2xs;
-    padding: 0.25rem 0.5rem;
-    border-radius: $radius-sm;
-    background: transparent;
-    border: 1px solid $border;
-    color: $fg-50;
-    cursor: pointer;
-    transition:
-      color 0.15s,
-      border-color 0.15s;
-
-    &:hover {
-      color: $fg;
-      border-color: $fg-25;
-    }
-  }
-
-  // Destructive, so a warn-ink hover rather than make-gm's neutral one. Same base recipe;
-  // also wears `.pressable`, so the after-`buttons` ordering note above covers it too.
-  &__remove {
-    font-size: $fs-2xs;
-    padding: 0.25rem 0.5rem;
-    border-radius: $radius-sm;
-    background: transparent;
-    border: 1px solid $border;
-    color: $fg-50;
-    cursor: pointer;
-    transition:
-      color 0.15s,
-      border-color 0.15s;
-
-    &:hover {
-      color: $warn-ink;
-      border-color: color-mix(in oklab, $warn-ink, transparent 55%);
-    }
   }
 }

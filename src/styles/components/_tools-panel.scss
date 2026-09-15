@@ -107,31 +107,10 @@
     font-size: $fs-2xs;
   }
 
-  // Dock-to-default button — small pin icon on the handle bar, next to S/M/L.
+  // Dock-to-default toggle on the handle bar; the subtle icon Button styles it, this only
+  // keeps it from shrinking beside the S / M / L control.
   &__dock {
     flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    padding: 0;
-    background: transparent;
-    border: 1px solid $border;
-    border-radius: $radius-sm;
-    color: $fg-60;
-    font-size: $fs-sm;
-    line-height: 1;
-    cursor: pointer;
-    transition:
-      background 0.15s,
-      color 0.15s,
-      border-color 0.15s;
-
-    &:hover {
-      color: $fg;
-      border-color: $fg-25;
-    }
   }
 
   &__body {
@@ -158,36 +137,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--panel-gap-inner);
-  }
-
-  &__reference-toggle {
-    display: flex;
-    align-items: center;
-    gap: $gap-2;
-    width: 100%;
-    padding: $gap-1 $gap-2;
-    background: transparent;
-    border: 1px solid $border;
-    border-radius: $radius-sm;
-    color: $muted;
-    font-size: $fs-2xs;
-    letter-spacing: 0.08em;
-    cursor: pointer;
-
-    &:hover {
-      color: $fg;
-      border-color: $fg-25;
-    }
-  }
-
-  &__reference-title {
-    margin-right: auto;
-    text-align: left;
-  }
-
-  &__reference-chevron {
-    flex-shrink: 0;
-    color: $fg-30;
   }
 
   &__target {
@@ -371,37 +320,6 @@
       color: $fg;
       font-family: $font-body;
     }
-  }
-
-  &__shortcuts-toggle {
-    display: flex;
-    align-items: center;
-    gap: $gap-2;
-    width: 100%;
-    padding: $gap-1 $gap-2;
-    background: transparent;
-    border: 1px solid $border;
-    border-radius: $radius-sm;
-    color: $muted;
-    font-size: $fs-2xs;
-    letter-spacing: 0.08em;
-    cursor: pointer;
-
-    &:hover {
-      color: $fg;
-      border-color: $fg-25;
-    }
-  }
-
-  // The label takes the slack, pushing the chevron to the far end.
-  &__shortcuts-title {
-    margin-right: auto;
-    text-align: left;
-  }
-
-  &__shortcuts-chevron {
-    flex-shrink: 0;
-    color: $fg-30;
   }
 
   // ── The imperative swatch + brush DOM (built by lib/canvas/tools.ts) ─────────
