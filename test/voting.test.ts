@@ -11,9 +11,16 @@ import { voteKey } from '../party/tally'
 import { handleStopVoting, handleVote } from '../party/voting'
 import { player, harness as room } from './support/room'
 
-// Every case here starts in VOTING with a frozen gallery.
+// Every case here starts in VOTING with a frozen gallery. Owners mirror the gallery with
+// identity ids (submissionId === clientId) so the self-vote guard resolves — the real server
+// mints opaque ids, but these suites predate that and read cleaner with the id as the name.
 function harness(players: RoomPlayer[], gallery: Submission[], over: Partial<RoomState> = {}) {
-  return room(players, { phase: 'VOTING', gallery, ...over })
+  return room(players, {
+    phase: 'VOTING',
+    gallery,
+    submissionOwners: new Map(gallery.map(s => [s.submissionId, s.submissionId])),
+    ...over,
+  })
 }
 
 // `endVoting` reads the config for the results payload's palette and dimensions.
@@ -60,8 +67,12 @@ describe('handleVote', () => {
   })
 
   it('answers a self-vote with an error and records nothing', () => {
-    const h = harness([player('artist')], [drawing])
-    handleVote(h.ctx, h.conn('conn-artist'), cast('artist'))
+    // Opaque id as the server mints it: the guard must resolve the drawer through
+    // `submissionOwners`, not by comparing the gallery id to the clientId.
+    const h = harness([player('artist')], [{ submissionId: 'op-1', grid: [1, 2, 3] }], {
+      submissionOwners: new Map([['op-1', 'artist']]),
+    })
+    handleVote(h.ctx, h.conn('conn-artist'), cast('op-1'))
     expect(h.state.votes.size).toBe(0)
     expect(h.sent).toEqual([{ connId: 'conn-artist', msg: { type: 'error', message: 'Cannot vote for yourself.' } }])
   })

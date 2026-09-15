@@ -300,27 +300,41 @@ describe('handleJoin — targeted re-sends', () => {
     const h = harness([player('v'), player('a'), player('b')], {
       phase: 'VOTING',
       config,
-      gallery: [{ submissionId: 'a', grid: [0, 1, 1, 0] }, { submissionId: 'b', grid: [1, 0, 0, 1] }],
+      gallery: [{ submissionId: 'op-a', grid: [0, 1, 1, 0] }, { submissionId: 'op-b', grid: [1, 0, 0, 1] }],
+      submissionOwners: new Map([['op-a', 'a'], ['op-b', 'b']]),
     })
     // The other voter's pick differs in BOTH category and target on purpose: with
     // the same pair, leaking their vote would produce an identical payload and this
     // would pass against the very bug it guards.
-    h.state.votes.set(voteKey('v', 'best'), 'a')
-    h.state.votes.set(voteKey('other', 'funniest'), 'b')
+    h.state.votes.set(voteKey('v', 'best'), 'op-a')
+    h.state.votes.set(voteKey('other', 'funniest'), 'op-b')
 
     handleJoin(h.ctx, h.conn('conn-v'), join('v'))
 
     const gallery = h.sent.find(s => s.msg.type === 'gallery')!.msg as GalleryMsg
     expect(gallery).toMatchObject({ palette: config.palette, gridW: 2, gridH: 2 })
-    // Only their own picks — never anyone else's, since tallies stay hidden.
+    // Only their own picks, and no own id: v owns neither card, so nothing extra leaks.
     const votes = h.sent.find(s => s.msg.type === 'vote-state')!.msg
-    expect(votes).toEqual({ type: 'vote-state', votes: { best: 'a' } })
+    expect(votes).toEqual({ type: 'vote-state', votes: { best: 'op-a' }, mySubmissionId: null })
   })
 
   it('sends an empty vote-state to a joiner who has not voted', () => {
     const h = harness([player('v')], { phase: 'VOTING', config, gallery: [] })
     handleJoin(h.ctx, h.conn('conn-v'), join('v'))
-    expect(h.sent.find(s => s.msg.type === 'vote-state')!.msg).toEqual({ type: 'vote-state', votes: {} })
+    expect(h.sent.find(s => s.msg.type === 'vote-state')!.msg).toEqual({ type: 'vote-state', votes: {}, mySubmissionId: null })
+  })
+
+  it('hands a rejoining drawer back its own opaque submission id, resolved by owner (#73)', () => {
+    // A second card owned by someone else, listed first, so a "return the first entry" bug fails.
+    const h = harness([player('v'), player('w')], {
+      phase: 'VOTING',
+      config,
+      gallery: [{ submissionId: 'op-w', grid: [1, 0, 0, 1] }, { submissionId: 'op-v', grid: [0, 1, 1, 0] }],
+      submissionOwners: new Map([['op-w', 'w'], ['op-v', 'v']]),
+    })
+    handleJoin(h.ctx, h.conn('conn-v'), join('v'))
+    const vs = h.sent.find(s => s.msg.type === 'vote-state')!.msg
+    expect(vs).toEqual({ type: 'vote-state', votes: {}, mySubmissionId: 'op-v' })
   })
 
   it('sends the target grid to the arrival only, never to the room', () => {

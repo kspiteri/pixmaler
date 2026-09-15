@@ -84,6 +84,17 @@ export function harness(
     broadcastState: () => { states++; broadcasts.push(buildState(state)) },
     broadcastDoneStatus: () => { doneStatus++; broadcasts.push({ type: 'done-status', ...drawProgress(state) }) },
     send: (conn, msg) => { sent.push({ connId: conn.id, msg }) },
+    // Mirrors the DO: fan out over live connections only (an offline player has no socket),
+    // resolving each to its clientId via connMap, and skip a null build.
+    sendEach: (build) => {
+      for (const [connId, clientId] of state.connMap) {
+        if (!state.players.get(clientId)?.connected)
+          continue
+        const msg = build(clientId)
+        if (msg)
+          sent.push({ connId, msg })
+      }
+    },
     devMode: opts.devMode ?? false,
     votingMs: opts.votingMs ?? 300_000,
     markEmpty: () => { empty = Date.now() },

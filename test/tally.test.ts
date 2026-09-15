@@ -38,9 +38,16 @@ describe('vote keys', () => {
   })
 })
 
+// Counting/ranking tests use identity owners (submissionId === clientId) via `t`, keeping their
+// focus off the id indirection #73 introduced; the two resolution tests below pass explicit
+// opaque owners, so they prove a drawing is named from the map rather than from its id.
+function t(g: Submission[], votes: Map<string, string>, players: Map<string, Voter>, owners: Map<string, string> = new Map(g.map(s => [s.submissionId, s.submissionId]))) {
+  return tallyVotes(g, votes, players, owners)
+}
+
 describe('tallyVotes', () => {
   it('returns one entry per gallery submission, even with no votes', () => {
-    const ranked = tallyVotes(gallery('a', 'b'), new Map(), room([['a', 'Ann'], ['b', 'Bob']]))
+    const ranked = t(gallery('a', 'b'), new Map(), room([['a', 'Ann'], ['b', 'Bob']]))
     expect(ranked.map(r => r.submissionId).sort()).toEqual(['a', 'b'])
     expect(ranked.every(r => r.votes === 0)).toBe(true)
     expect(ranked[0].breakdown).toEqual({ funniest: 0, best: 0 })
@@ -52,7 +59,7 @@ describe('tallyVotes', () => {
       [voteKey('v2', 'funniest'), 'a'],
       [voteKey('v1', 'best'), 'a'],
     ])
-    const ranked = tallyVotes(gallery('a'), votes, room([['a', 'Ann'], ['v1', 'V1'], ['v2', 'V2']]))
+    const ranked = t(gallery('a'), votes, room([['a', 'Ann'], ['v1', 'V1'], ['v2', 'V2']]))
     expect(ranked[0].breakdown).toEqual({ funniest: 2, best: 1 })
     expect(ranked[0].votes).toBe(3)
   })
@@ -63,7 +70,7 @@ describe('tallyVotes', () => {
       [voteKey('v2', 'funniest'), 'b'],
       [voteKey('v1', 'best'), 'a'],
     ])
-    const ranked = tallyVotes(gallery('a', 'b', 'c'), votes, room([
+    const ranked = t(gallery('a', 'b', 'c'), votes, room([
       ['a', 'Ann'],
       ['b', 'Bob'],
       ['c', 'Cal'],
@@ -81,13 +88,13 @@ describe('tallyVotes', () => {
       [voteKey('gone', 'funniest'), 'a'],
     ])
     const players = room([['a', 'Ann'], ['v1', 'V1'], ['gone', 'Ghost', false]])
-    expect(tallyVotes(gallery('a'), votes, players)[0].votes).toBe(1)
+    expect(t(gallery('a'), votes, players)[0].votes).toBe(1)
   })
 
   it('counts a voter again once they reconnect', () => {
     const votes = new Map([[voteKey('v1', 'best'), 'a']])
-    expect(tallyVotes(gallery('a'), votes, room([['a', 'Ann'], ['v1', 'V1', false]]))[0].votes).toBe(0)
-    expect(tallyVotes(gallery('a'), votes, room([['a', 'Ann'], ['v1', 'V1', true]]))[0].votes).toBe(1)
+    expect(t(gallery('a'), votes, room([['a', 'Ann'], ['v1', 'V1', false]]))[0].votes).toBe(0)
+    expect(t(gallery('a'), votes, room([['a', 'Ann'], ['v1', 'V1', true]]))[0].votes).toBe(1)
   })
 
   it('ignores a vote for a submission not in the gallery', () => {
@@ -98,32 +105,37 @@ describe('tallyVotes', () => {
       [voteKey('v2', 'best'), 'a'],
     ])
     const players = room([['a', 'Ann'], ['v1', 'V1'], ['v2', 'V2']])
-    expect(() => tallyVotes(gallery('a'), votes, players)).not.toThrow()
-    expect(tallyVotes(gallery('a'), votes, players)[0].votes).toBe(1)
+    expect(() => t(gallery('a'), votes, players)).not.toThrow()
+    expect(t(gallery('a'), votes, players)[0].votes).toBe(1)
   })
 
   it('ignores a vote from someone who is not in the room at all', () => {
     const votes = new Map([[voteKey('nobody', 'best'), 'a']])
-    expect(tallyVotes(gallery('a'), votes, room([['a', 'Ann']]))[0].votes).toBe(0)
+    expect(t(gallery('a'), votes, room([['a', 'Ann']]))[0].votes).toBe(0)
   })
 
-  it('names the drawing after its author, falling back when they are gone', () => {
-    const ranked = tallyVotes(gallery('a', 'b'), new Map(), room([['a', 'Ann']]))
-    expect(ranked.find(r => r.submissionId === 'a')!.name).toBe('Ann')
-    expect(ranked.find(r => r.submissionId === 'b')!.name).toBe('Unknown')
+  it('names the drawing after its author via the owners map, opaque id and all (#73)', () => {
+    const g = gallery('sub-1', 'sub-2')
+    const owners = new Map([['sub-1', 'ann-id'], ['sub-2', 'bob-id']])
+    const ranked = tallyVotes(g, new Map(), room([['ann-id', 'Ann']]), owners)
+    expect(ranked.find(r => r.submissionId === 'sub-1')!.name).toBe('Ann')
+    // Author gone from the roster -> Unknown, never the raw id.
+    expect(ranked.find(r => r.submissionId === 'sub-2')!.name).toBe('Unknown')
   })
 
   it('carries the grid through so results can render without a second lookup', () => {
-    expect(tallyVotes(gallery('a'), new Map(), room([['a', 'Ann']]))[0].grid).toEqual([0, 1])
+    expect(t(gallery('a'), new Map(), room([['a', 'Ann']]))[0].grid).toEqual([0, 1])
   })
 
-  it('sets clientId to the submissionId, which the vote self-check relies on', () => {
-    const ranked = tallyVotes(gallery('a'), new Map(), room([['a', 'Ann']]))
-    expect(ranked[0].clientId).toBe(ranked[0].submissionId)
+  it('resolves clientId from the owners map, not the opaque submissionId (#73)', () => {
+    // The reveal needs the real author; the gallery id is deliberately not it.
+    const ranked = tallyVotes(gallery('opaque-1'), new Map(), room([['ann-id', 'Ann']]), new Map([['opaque-1', 'ann-id']]))
+    expect(ranked[0].submissionId).toBe('opaque-1')
+    expect(ranked[0].clientId).toBe('ann-id')
   })
 
   it('handles an empty gallery', () => {
-    expect(tallyVotes([], new Map([[voteKey('v1', 'best'), 'a']]), room([['v1', 'V1']]))).toEqual([])
+    expect(t([], new Map([[voteKey('v1', 'best'), 'a']]), room([['v1', 'V1']]))).toEqual([])
   })
 })
 

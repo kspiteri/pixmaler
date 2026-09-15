@@ -52,7 +52,7 @@ function drawing(drew: string[], wiped: string[] = [], idle: string[] = []) {
 
 describe('handleStart', () => {
   it('opens DRAWING with a deadline and clears the previous round', () => {
-    const h = lobby({ ranked: [], gallery: [] })
+    const h = lobby({ ranked: [], gallery: [], submissionOwners: new Map([['op', 'p1']]) })
     h.state.submissions.set('p1', [0])
     h.state.votes.set(voteKey('p1', 'best'), 'p2')
     h.state.players.get('p1')!.doneDrawing = true
@@ -67,6 +67,7 @@ describe('handleStart', () => {
     expect(h.state.submissions.size).toBe(0)
     expect(h.state.votes.size).toBe(0)
     expect(h.state.gallery).toBeNull()
+    expect(h.state.submissionOwners.size).toBe(0)
     expect(h.state.ranked).toBeNull()
     // All three per-player flags reset together — a new round makes everyone a
     // competitor again with nothing drawn yet.
@@ -138,7 +139,11 @@ describe('endDrawing', () => {
     const h = drawing(['p1', 'p2'])
     endDrawing(h.ctx)
     expect(h.state.phase).toBe('VOTING')
-    expect(h.state.gallery?.map(s => s.submissionId).sort()).toEqual(['p1', 'p2'])
+    expect([...h.state.submissionOwners.values()].sort()).toEqual(['p1', 'p2'])
+    // Opaque on the wire: the gallery id is not the drawer's clientId (#73).
+    expect(h.state.gallery?.some(s => s.submissionId === 'p1' || s.submissionId === 'p2')).toBe(false)
+    // Every card is resolvable server-side: the owners map keys ARE the gallery's ids.
+    expect([...h.state.submissionOwners.keys()].sort()).toEqual(h.state.gallery!.map(s => s.submissionId).sort())
     expect(h.state.deadline).toBeGreaterThan(Date.now())
   })
 
@@ -147,14 +152,28 @@ describe('endDrawing', () => {
     // a player who painted then cleared out of voting AND results, with no feedback.
     const h = drawing(['p1'], ['p2'])
     endDrawing(h.ctx)
-    expect(h.state.gallery?.map(s => s.submissionId).sort()).toEqual(['p1', 'p2'])
-    expect(h.state.gallery?.find(s => s.submissionId === 'p2')?.grid.every(c => c === -1)).toBe(true)
+    expect([...h.state.submissionOwners.values()].sort()).toEqual(['p1', 'p2'])
+    const p2sub = [...h.state.submissionOwners.entries()].find(([, cid]) => cid === 'p2')![0]
+    expect(h.state.gallery?.find(s => s.submissionId === p2sub)?.grid.every(c => c === -1)).toBe(true)
   })
 
   it('leaves out someone who never touched the canvas', () => {
     const h = drawing(['p1'], [], ['idle'])
     endDrawing(h.ctx)
-    expect(h.state.gallery?.map(s => s.submissionId)).toEqual(['p1'])
+    expect([...h.state.submissionOwners.values()]).toEqual(['p1'])
+  })
+
+  it('hands each drawer its own submission id, and nobody else\'s', () => {
+    const h = drawing(['p1', 'p2'])
+    endDrawing(h.ctx)
+    const own = new Map(h.sent.flatMap(s =>
+      s.msg.type === 'vote-state' ? [[s.connId, s.msg.mySubmissionId] as const] : [],
+    ))
+    const idByOwner = new Map([...h.state.submissionOwners].map(([sid, cid]) => [cid, sid]))
+    expect(own.get('conn-p1')).toBe(idByOwner.get('p1'))
+    expect(own.get('conn-p2')).toBe(idByOwner.get('p2'))
+    // The GM drew nothing this round, so learns no card of their own.
+    expect(own.get('conn-gm')).toBeNull()
   })
 
   it('broadcasts the gallery before the phase', () => {
@@ -258,6 +277,7 @@ describe('resetToLobby', () => {
       deadline: 123,
       gallery: [],
       ranked: [],
+      submissionOwners: new Map([['op', 'gm']]),
     })
     h.state.submissions.set('gm', [0])
     h.state.votes.set(voteKey('gm', 'best'), 'gm')
@@ -268,6 +288,7 @@ describe('resetToLobby', () => {
     expect(h.state.config).toBeNull()
     expect(h.state.deadline).toBeNull()
     expect(h.state.gallery).toBeNull()
+    expect(h.state.submissionOwners.size).toBe(0)
     expect(h.state.ranked).toBeNull()
     expect(h.state.submissions.size).toBe(0)
     expect(h.state.votes.size).toBe(0)
