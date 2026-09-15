@@ -9,6 +9,7 @@
 //   - it must CONSTRUCT its result, so unknown properties cannot ride along into
 //     room state and back out over a broadcast.
 
+import type { ClientMsg } from '../src/lib/protocol/types'
 import { describe, expect, it } from 'vitest'
 import { GRID_MAX_SIDE, PALETTE_MAX_LEN, parseClientMsg } from '../src/lib/protocol/protocol'
 import { AVATAR_SHAPES, clampDrawSeconds, clampName, DEFAULT_AVATAR_SHAPE, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN, NAME_MAX_LEN, normaliseShape, sanitiseName, VOTE_CATEGORIES } from '../src/lib/protocol/types'
@@ -164,6 +165,15 @@ describe('parseClientMsg — join, rename, shape', () => {
       .toMatchObject({ create: false })
   })
 
+  it('carries a seat secret through, bounded like an id (#72)', () => {
+    expect(parse('{"type":"join","clientId":"c1","name":"ray","secret":"sek-123"}')!)
+      .toMatchObject({ secret: 'sek-123' })
+    // Absent is a genuine first join; over-long is dropped, so that reconnect is refused
+    // rather than admitted on an unbounded string.
+    expect((parse('{"type":"join","clientId":"c1","name":"ray"}') as Extract<ClientMsg, { type: 'join' }>).secret).toBeUndefined()
+    expect((parse(`{"type":"join","clientId":"c1","name":"ray","secret":"${'x'.repeat(65)}"}`) as Extract<ClientMsg, { type: 'join' }>).secret).toBeUndefined()
+  })
+
   it('requires clientId and name to be strings', () => {
     expect(parse('{"type":"join","clientId":"c1"}')).toBeNull()
     expect(parse('{"type":"join","name":"ray"}')).toBeNull()
@@ -179,7 +189,7 @@ describe('parseClientMsg — join, rename, shape', () => {
   it('drops unknown properties instead of letting them into room state', () => {
     const msg = parse('{"type":"join","clientId":"c1","name":"ray","isGm":true,"votes":99}')
     expect(msg).not.toBeNull()
-    expect(Object.keys(msg!).sort()).toEqual(['clientId', 'create', 'name', 'shape', 'type'])
+    expect(Object.keys(msg!).sort()).toEqual(['clientId', 'create', 'name', 'secret', 'shape', 'type'])
   })
 
   it('accepts a bare shape message, since the shape clamps rather than rejects', () => {

@@ -44,7 +44,7 @@ export function parseClientMsg(raw: string): ClientMsg | null {
   switch (m.type) {
     case 'join':
       return isId(m.clientId) && isStr(m.name)
-        ? { type: 'join', clientId: m.clientId, name: m.name, shape: normaliseShape(m.shape), create: m.create === true }
+        ? { type: 'join', clientId: m.clientId, name: m.name, shape: normaliseShape(m.shape), create: m.create === true, secret: isId(m.secret) ? m.secret : undefined }
         : null
 
     case 'rename':

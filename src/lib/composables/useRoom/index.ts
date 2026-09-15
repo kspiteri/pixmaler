@@ -11,7 +11,7 @@ import type { DrawStateMsg, GalleryMsg, ResultsMsg, RoomRefs, StateMsg, VoteStat
 import PartySocket from 'partysocket'
 import { computed, onMounted, provide, ref, shallowRef } from 'vue'
 import { clientIdKey, socketKey } from '../../keys'
-import { getClientId, getName, getShape, setName } from '../../player/identity'
+import { getClientId, getName, getSecret, getShape, setName, setSecret } from '../../player/identity'
 import { acquireRoomTab, roomExists } from './gate'
 import { applyServerMessage } from './messages'
 
@@ -90,7 +90,9 @@ export function useRoom(roomCode: string | null, createIntent = false) {
 
     socket.addEventListener('open', () => {
       connectionStatus.value = 'connected'
-      const msg: ClientMsg = { type: 'join', clientId: myClientId, name, shape: getShape(), create: joinCreate.value }
+      // getSecret/getShape are read on every open, not captured, so a reconnect echoes the
+      // secret the server issued after the first join — that is what reclaims the seat (#72).
+      const msg: ClientMsg = { type: 'join', clientId: myClientId, name, shape: getShape(), create: joinCreate.value, secret: getSecret(roomCode!) ?? undefined }
       socket.send(JSON.stringify(msg))
     })
 
@@ -109,6 +111,12 @@ export function useRoom(roomCode: string | null, createIntent = false) {
       let msg: ServerMsg
       try { msg = JSON.parse(ev.data as string) as ServerMsg }
       catch { console.error('[pixmaler] bad message', ev.data); return }
+      // The seat secret is identity, not reactive room state, so it is persisted here rather
+      // than in the message reducer. Issued once, on the first join (#72).
+      if (msg.type === 'session') {
+        setSecret(roomCode!, msg.secret)
+        return
+      }
       applyServerMessage(msg, refs, socket)
     })
   }

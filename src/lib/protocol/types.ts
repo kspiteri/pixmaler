@@ -59,6 +59,12 @@ export interface JoinMsg {
   // the join is refused rather than conjuring one. Reconnects and joins to live rooms
   // ignore it. Optional: absent is a plain join.
   create?: boolean
+  // Proof of seat ownership on reconnect (#72). Minted server-side on the first join and
+  // returned in a `session` message; the client stores it per room and echoes it here.
+  // clientId is public (broadcast in every `state`), so without this anyone could present
+  // a victim's id and take the seat. Absent on a genuine first join; a reconnect without a
+  // matching secret is refused rather than seated.
+  secret?: string
 }
 
 // Change of avatar shape. LOBBY-only server-side, like `rename`: the chip shows in
@@ -298,6 +304,14 @@ export interface SessionClosedMsg {
   type: 'session-closed'
 }
 
+// Sent to a single connection the moment it claims a *new* seat (#72): the secret that
+// proves ownership of it on a later reconnect. Never broadcast — a reconnect already holds
+// it, so it is only issued on mint. The client persists it per room and echoes it on `join`.
+export interface SessionMsg {
+  type: 'session'
+  secret: string
+}
+
 // Broadcast to a single joiner refused because the room is at `MAX_PLAYERS`. Terminal
 // like `session-closed`: the client stops reconnecting and shows the full-room screen.
 export interface RoomFullMsg {
@@ -344,6 +358,7 @@ export type ServerMsg
     | VoteStateMsg
     | DrawStateMsg
     | SessionClosedMsg
+    | SessionMsg
     | RoomFullMsg
     | NoSuchRoomMsg
     | RoundCancelledMsg

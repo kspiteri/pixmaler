@@ -32,6 +32,7 @@ function player(clientId: string, over: Partial<RoomPlayer> = {}): RoomPlayer {
     drewThisRound: false,
     spectating: false,
     shape: 'rounded',
+    secret: `secret-${clientId}`,
     ...over,
   }
 }
@@ -184,6 +185,14 @@ describe('buildState', () => {
     const s = room([player('a', { drewThisRound: true }), player('b')])
     for (const p of buildState(s).players)
       expect(p).not.toHaveProperty('drewThisRound')
+  })
+
+  it('never ships the seat secret, which would defeat the seat binding', () => {
+    // #72: the secret authenticates a reconnect. Leaking it in a broadcast would let any
+    // reader reclaim the seat, which is exactly the hole it closes.
+    const s = room([player('a'), player('b')])
+    for (const p of buildState(s).players)
+      expect(p).not.toHaveProperty('secret')
   })
 
   it('never ships the target grid, which cannot change mid-round', () => {

@@ -10,10 +10,11 @@ import { voterOf } from './tally'
 export const EXTEND_STEP_MS = 15_000
 export const MAX_EXTENSIONS = 2
 
-// The server's player carries one field the wire does not: `drewThisRound` decides
-// gallery membership in `endDrawing` and has no client reader, and broadcasting it meant
-// shipping a value that is stale between the last stroke and RESULTS (#27).
-export type RoomPlayer = Player & { drewThisRound: boolean }
+// The server's player carries two fields the wire does not. `drewThisRound` decides gallery
+// membership in `endDrawing` and has no client reader; broadcasting it meant shipping a value
+// stale between the last stroke and RESULTS (#27). `secret` proves seat ownership on
+// reconnect (#72) and must never be broadcast — both are stripped in `buildState`.
+export type RoomPlayer = Player & { drewThisRound: boolean, secret: string }
 
 export interface RoomState {
   phase: Phase
@@ -121,10 +122,11 @@ export function roundConfig(config: GmConfigureMsg | null): RoundConfig | null {
 }
 
 export function buildState(state: RoomState): StateMsg {
-  // `isGm` is derived here so it cannot drift from `gmClientId`, and `drewThisRound` is
-  // dropped here rather than at each write: this is the one place the room becomes a wire
-  // payload, so it is the one place that has to stay honest (#27).
-  const players: Player[] = [...state.players.values()].map(({ drewThisRound: _, ...p }) => ({
+  // `isGm` is derived here so it cannot drift from `gmClientId`; `drewThisRound` and `secret`
+  // are dropped here rather than at each write, because this is the one place the room becomes
+  // a wire payload and so the one place that has to stay honest (#27, #72). Leaking `secret`
+  // would defeat the seat binding — it must never reach the wire.
+  const players: Player[] = [...state.players.values()].map(({ drewThisRound: _, secret: _s, ...p }) => ({
     ...p,
     isGm: p.clientId === state.gmClientId,
   }))

@@ -23,13 +23,16 @@ const config = {
 // `shape` is widened to string on purpose: `parseClientMsg` already normalises it,
 // so an invalid one is unreachable through the real path — `handleJoin` normalising
 // again is defence in depth, and these tests are what keep it honest.
-function join(clientId: string, over: { name?: string, shape?: string, create?: boolean } = {}) {
+function join(clientId: string, over: { name?: string, shape?: string, create?: boolean, secret?: string } = {}) {
   return {
     type: 'join',
     clientId,
     name: over.name ?? clientId,
     shape: over.shape ?? 'circle',
     create: over.create ?? false,
+    // Matches the `player` helper's default seat secret, so a reconnect reclaims by default;
+    // the mismatch tests pass a wrong one explicitly (#72).
+    secret: over.secret ?? `secret-${clientId}`,
   } as Extract<ClientMsg, { type: 'join' }>
 }
 
@@ -209,7 +212,7 @@ describe('handleJoin — reconnect', () => {
 
   it('does not reset a shape when the reconnect carries none', () => {
     const h = harness([player('a', { shape: 'leaf', connected: false })], { phase: 'DRAWING' })
-    handleJoin(h.ctx, h.conn('c-new'), { type: 'join', clientId: 'a', name: 'a', shape: 'rounded' })
+    handleJoin(h.ctx, h.conn('c-new'), join('a', { shape: 'rounded' }))
     expect(h.state.players.get('a')!.shape).toBe('leaf')
   })
 
@@ -245,6 +248,50 @@ describe('handleJoin — reconnect', () => {
     const h = harness([player('late', { spectating: true, connected: false })], { phase: 'DRAWING' })
     handleJoin(h.ctx, h.conn('c-new'), join('late'))
     expect(h.state.players.get('late')!.spectating).toBe(true)
+  })
+})
+
+describe('handleJoin — seat secret (#72)', () => {
+  it('issues the new seat its secret in a session message', () => {
+    const h = harness()
+    handleJoin(h.ctx, h.conn('c1'), join('a', { create: true }))
+    const seat = h.state.players.get('a')!
+    expect(h.sent).toContainEqual({ connId: 'c1', msg: { type: 'session', secret: seat.secret } })
+  })
+
+  it('reclaims a seat only when the reconnect presents the matching secret', () => {
+    const h = harness([player('a', { secret: 'sek', connected: false })])
+    handleJoin(h.ctx, h.conn('c-new'), join('a', { secret: 'sek' }))
+    expect(h.state.players.get('a')!.connected).toBe(true)
+    expect(h.state.connMap.get('c-new')).toBe('a')
+  })
+
+  it('refuses a reconnect with the wrong secret, leaving the seat untouched', () => {
+    const h = harness([player('a', { secret: 'sek', connected: false })])
+    handleJoin(h.ctx, h.conn('attacker'), join('a', { secret: 'nope' }))
+    expect(h.state.players.get('a')!.connected).toBe(false)
+    expect(h.state.connMap.has('attacker')).toBe(false)
+    expect(h.sent.some(s => s.connId === 'attacker' && s.msg.type === 'error')).toBe(true)
+    // No seat, no trace — the refusal returns before any broadcast.
+    expect(h.stateBroadcasts()).toBe(0)
+  })
+
+  it('refuses a reconnect that carries no secret at all', () => {
+    const h = harness([player('a', { secret: 'sek', connected: false })])
+    handleJoin(h.ctx, h.conn('attacker'), { type: 'join', clientId: 'a', name: 'a' } as Extract<ClientMsg, { type: 'join' }>)
+    expect(h.state.players.get('a')!.connected).toBe(false)
+    expect(h.state.connMap.has('attacker')).toBe(false)
+  })
+
+  it('cannot seize GM by presenting a victim clientId without the secret', () => {
+    const h = harness([
+      player('gm', { secret: 'gm-sek', connected: false }),
+      player('other'),
+    ], { gmClientId: 'gm', originalGmClientId: 'gm' })
+    handleJoin(h.ctx, h.conn('attacker'), join('gm', { secret: 'guess' }))
+    expect(h.state.gmClientId).toBe('gm')
+    expect(h.state.connMap.has('attacker')).toBe(false)
+    expect(h.state.players.get('gm')!.connected).toBe(false)
   })
 })
 
@@ -321,10 +368,11 @@ describe('handleJoin — targeted re-sends', () => {
     expect(h.sent.find(s => s.msg.type === 'results')!.msg as ResultsMsg).toMatchObject({ ranked })
   })
 
-  it('sends nothing extra in LOBBY', () => {
+  it('sends nothing extra in LOBBY beyond the seat handshake', () => {
     const h = harness([], {})
     handleJoin(h.ctx, h.conn('c1'), join('a', { create: true }))
-    expect(h.sent).toEqual([])
+    // The `session` send is the seat's own secret (#72), not a round re-send; nothing else.
+    expect(h.sent.filter(s => s.msg.type !== 'session')).toEqual([])
   })
 })
 

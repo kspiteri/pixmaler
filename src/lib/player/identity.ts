@@ -12,6 +12,7 @@ import { readStored, removeStored, storedKeys, writeStored } from '../storage'
 const CLIENT_ID = 'pixmaler:clientId'
 const NAME = 'pixmaler:name'
 const SHAPE = 'pixmaler:shape'
+const SECRET = 'pixmaler:secret'
 
 // A stable per-browser id so a reconnect reclaims the same player slot. Minted on
 // first read and persisted; every later call returns the same value.
@@ -45,6 +46,18 @@ export function getShape(): AvatarShape {
 
 export function setShape(shape: AvatarShape): void {
   writeStored(SHAPE, shape)
+}
+
+// The seat secret proving ownership of this room's slot on reconnect (#72). Keyed per room,
+// since a secret is only valid for the seat it was minted for. Returned by the server in a
+// `session` message on the first join; echoed on every later `join`. Null until one is held,
+// which is a plain first join. Covered by `clearAllData`'s `pixmaler:*` wipe.
+export function getSecret(room: string): string | null {
+  return readStored(`${SECRET}:${room}`) || null
+}
+
+export function setSecret(room: string, secret: string): void {
+  writeStored(`${SECRET}:${room}`, secret)
 }
 
 // Wipe every `pixmaler:*` key — the "clear my data" action. Deliberately broad: it takes

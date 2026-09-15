@@ -26,6 +26,16 @@ export function handleJoin(
     return
   }
 
+  // A reconnect must prove it owns the seat (#72). clientId is public — broadcast in every
+  // `state` — so without this anyone could present a victim's id and reclaim their seat,
+  // GM included. The secret is minted on the first join (below) and never broadcast, so a
+  // mismatch (wrong, or absent because the client never held it) is refused rather than
+  // seated. Before markOccupied/connMap, like the other refusals, so it leaves no trace.
+  if (existing && msg.secret !== existing.secret) {
+    ctx.send(conn, { type: 'error', message: 'Could not rejoin this room. Try reloading the page.' })
+    return
+  }
+
   // An empty room means "no such room". A genuinely new player may only open one with
   // explicit create intent *and* a well-formed code, so a typo or guessed code can't conjure
   // a room. `size === 0` already implies a new player (a reconnect has a seat), and a join to
@@ -69,12 +79,17 @@ export function handleJoin(
       // changes what someone is.
       spectating: state.phase !== 'LOBBY',
       shape: normaliseShape(msg.shape),
+      // Minted here and returned in `session` below; required on every later reconnect (#72).
+      secret: crypto.randomUUID(),
     }
     if (isFirst) {
       state.gmClientId = msg.clientId
       state.originalGmClientId = msg.clientId
     }
     state.players.set(msg.clientId, player)
+    // Hand the new seat its proof of ownership. Only on mint — a reconnect already holds it,
+    // and it never joins a broadcast, so this targeted send is the one time it crosses the wire.
+    ctx.send(conn, { type: 'session', secret: player.secret })
   }
 
   // Re-run promotion on rejoin: `handleClose` can only hand GM to a *connected* player, so a

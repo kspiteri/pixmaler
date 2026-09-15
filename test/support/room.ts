@@ -19,6 +19,9 @@ export function player(clientId: string, over: Partial<RoomPlayer> = {}): RoomPl
     drewThisRound: false,
     spectating: false,
     shape: 'rounded',
+    // A deterministic seat secret so a reconnect via the `join` helper reclaims by default;
+    // tests that exercise the mismatch pass a wrong one explicitly (#72).
+    secret: `secret-${clientId}`,
     ...over,
   }
 }
