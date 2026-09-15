@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.9.1](https://github.com/kspiteri/pixmaler/compare/0.9.0...0.9.1) (2026-09-15)
+
+
+### Fixes
+
+* add seat ownership with server-issued secrets ([d727afc](https://github.com/kspiteri/pixmaler/commit/d727afc6754ded9a112fbcc1b94fcb3b82fc3f37))
+* enforce word-list validation for room code creation ([fb5abaf](https://github.com/kspiteri/pixmaler/commit/fb5abaf3d7d6a9d537091c90b4865d9fc5e00681))
+* implement opaque submission IDs for anonymous voting ([e8240d5](https://github.com/kspiteri/pixmaler/commit/e8240d5e39d2c0ab8b49d69f74dbd55f8e1dc2c8))
+* implement per-connection rate limiting for messages ([4484733](https://github.com/kspiteri/pixmaler/commit/4484733fdbea5557c201632e1149655371939b52))
+
+
+### Under the hood
+
+* consolidate buttons into a Button component ([b7334b1](https://github.com/kspiteri/pixmaler/commit/b7334b12636720c758b66ea199efb5632fdad1d0))
+
 ## [0.9.0](https://github.com/kspiteri/pixmaler/compare/0.8.3...0.9.0) (2026-09-14)
 
 
