@@ -147,9 +147,12 @@ export function wordPair(): string {
   })
 }
 
-// A well-formed room code: two lowercase words joined by a single hyphen, e.g.
-// "feral-crayon". The server refuses to *create* a room for anything else (#66), so a typo
-// or guessed code can't conjure one; a live room is joined on existence, not on shape.
+// A room code the server will *create*: an adjective-noun pair drawn from the word lists,
+// exactly what `wordPair()` emits (#66, #74). A shape-only check (`{word}-{word}`) let any
+// string that looked like a code mint a Durable Object, so an off-list pair, a typo or a
+// guess is now refused rather than spawning a room. A live room is still *joined* on
+// existence, not on shape, so this gates creation only.
 export function isRoomCode(code: string): boolean {
-  return /^[a-z]+-[a-z]+$/.test(code)
+  const parts = code.split('-')
+  return parts.length === 2 && adjectives.includes(parts[0]) && nouns.includes(parts[1])
 }

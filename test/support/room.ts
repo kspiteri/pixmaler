@@ -49,7 +49,7 @@ export interface HarnessOpts {
   /** Defaults to false, matching production — the 2-player start gate applies. */
   devMode?: boolean
   votingMs?: number
-  /** The room name for room-code validation (#66). Defaults to a well-formed code. */
+  /** The room name for room-code validation (#66, #74). Defaults to a real word-list code. */
   roomName?: string
 }
 
@@ -77,7 +77,7 @@ export function harness(
 
   const ctx: RoomCtx = {
     state,
-    roomName: opts.roomName ?? 'test-room',
+    roomName: opts.roomName ?? 'feral-crayon',
     broadcast: (msg) => { broadcasts.push(msg) },
     // Mirrors the real ctx: a real payload, so a test can assert on content as
     // well as on how many times it fired.
