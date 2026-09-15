@@ -22,8 +22,8 @@ export function handleVote(
     return
   if (!VOTE_CATEGORIES.some(c => c.id === msg.category))
     return
-  // submissionId is the submitter's clientId (see handleSubmit).
-  if (msg.submissionId === voter.clientId) {
+  // The gallery is anonymous, so the owner is resolved server-side from the opaque id (#73).
+  if (state.submissionOwners.get(msg.submissionId) === voter.clientId) {
     ctx.send(conn, { type: 'error', message: 'Cannot vote for yourself.' })
     return
   }

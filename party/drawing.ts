@@ -38,8 +38,8 @@ export function handleSubmit(
   if (msg.grid.some(cell => cell < -1 || cell >= cfg.palette.length))
     return
 
-  // submissionId === clientId — the vote self-check relies on it. `doneDrawing` is
-  // deliberately not set here; that flag is driven only by the player clicking it.
+  // Keyed by clientId; the opaque gallery submissionId is minted later, at endDrawing (#73).
+  // `doneDrawing` is deliberately not set here; that flag is driven only by the player clicking it.
   state.submissions.set(player.clientId, msg.grid)
 
   // Sticky, only ever set. Clearing the canvas sends an all-`-1` grid down this same

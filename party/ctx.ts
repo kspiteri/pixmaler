@@ -19,6 +19,13 @@ export interface RoomCtx {
   broadcastState: () => void
   broadcastDoneStatus: () => void
   send: (conn: RoomConn, msg: ServerMsg) => void
+  /**
+   * Send a per-recipient message to every connected client, resolving each connection to its
+   * clientId (#73). Used to hand each drawer its own opaque submission id without leaking
+   * anyone else's; a non-drawer still receives the message (with a null id inside), not a skip.
+   * `build` may return null to skip a recipient entirely — a general escape hatch, unused today.
+   */
+  sendEach: (build: (clientId: string) => ServerMsg | null) => void
   /** `PIXMALER_DEV=1` — relaxes the lobby start gate. Never set in production. */
   devMode: boolean
   /** VOTING backstop length, ms. */

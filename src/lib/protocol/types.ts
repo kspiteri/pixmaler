@@ -282,12 +282,17 @@ export interface ErrorMsg {
   message: string
 }
 
-// Sent to a single voter when they (re)join mid-VOTING, echoing back their own
-// per-category picks so the client can rehydrate `myVotes` after a reconnect.
-// Only their own votes — never anyone else's (running tallies stay hidden).
+// Sent to each client when VOTING opens and to a single voter when they (re)join mid-VOTING:
+// their own per-category picks (so the vote UI rehydrates) plus their own opaque submission id
+// (so the client can flag its own card and stop it being voted for). Only their own picks —
+// else's, since running tallies stay hidden — and only their own submission id (#73).
 export interface VoteStateMsg {
   type: 'vote-state'
   votes: Partial<Record<VoteCategory, string>> // category → submissionId
+  // This client's own opaque submission id, or null if they did not draw (spectator, or a
+  // wiped-only round). The gallery is anonymous to everyone else; this is the one id a client
+  // learns about itself.
+  mySubmissionId: string | null
 }
 
 // Sent to a single player when they (re)join mid-DRAWING, echoing back their

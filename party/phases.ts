@@ -4,7 +4,7 @@
 
 import type { ServerMsg, Submission } from '../src/lib/protocol'
 import type { RoomConn, RoomCtx } from './ctx'
-import { isGm } from './state'
+import { buildVoteState, isGm } from './state'
 import { tallyVotes } from './tally'
 
 export function handleStart(ctx: RoomCtx, conn: RoomConn) {
@@ -30,6 +30,7 @@ export function handleStart(ctx: RoomCtx, conn: RoomConn) {
   state.submissions.clear()
   state.votes.clear()
   state.gallery = null
+  state.submissionOwners.clear()
   state.ranked = null
   // All three on one line deliberately — it is what stops them drifting apart.
   for (const p of state.players.values()) { p.doneDrawing = false; p.spectating = false; p.drewThisRound = false }
@@ -49,6 +50,7 @@ export function resetToLobby(ctx: RoomCtx) {
   state.submissions.clear()
   state.votes.clear()
   state.gallery = null
+  state.submissionOwners.clear()
   state.ranked = null
   for (const p of state.players.values()) { p.doneDrawing = false; p.spectating = false; p.drewThisRound = false }
   ctx.broadcastState()
@@ -63,16 +65,29 @@ export function endDrawing(ctx: RoomCtx) {
   // Built BEFORE any mutation: this used to run after `phase` moved to VOTING, so a
   // throw left the room in VOTING with no gallery, and the alarm retry then matched
   // the VOTING branch and discarded every submission.
+  // Opaque ids, not the drawer's clientId (#73): the gallery is broadcast to everyone, so a
+  // clientId here would map each drawing to a name and defeat the blind vote. The owner is
+  // kept server-side in `owners` to resolve self-votes, the reveal and each drawer's own card.
+  // Anonymity here is Classic's contract, not the app's: #80 gates wire-identity on the mode's
+  // `anonymousJudging`, so identity-aware modes (Puzzle) include the owner on the wire (gallery
+  // + vote-state). The opaque ids and owners map stay regardless — self-votes and the reveal
+  // need them in every mode; only whether identity reaches the wire is per-mode.
+  const owners = new Map<string, string>()
   const gallery = [...state.submissions.entries()]
     // `drewThisRound`, not grid content: a wiped canvas is all `-1` and filtering on
     // content dropped its owner from voting and results with no feedback.
     .filter(([clientId]) => state.players.get(clientId)?.drewThisRound)
-    .map(([clientId, grid]): Submission => ({ submissionId: clientId, grid }))
+    .map(([clientId, grid]): Submission => {
+      const submissionId = crypto.randomUUID()
+      owners.set(submissionId, clientId)
+      return { submissionId, grid }
+    })
 
   // Set before the delegate below, or `endVoting`'s own phase guard rejects it.
   // Nothing is broadcast until we know which way the round resolves.
   state.phase = 'VOTING'
   state.gallery = gallery
+  state.submissionOwners = owners
 
   // Nobody drew: VOTING would be a phase in which no one can act, so skip it. Clients
   // see DRAWING → RESULTS, since the transient VOTING is never broadcast.
@@ -92,6 +107,10 @@ export function endDrawing(ctx: RoomCtx) {
     gridW: cfg.gridW,
     gridH: cfg.gridH,
   } satisfies ServerMsg)
+  // Hand each connected client its own opaque submission id (and any picks), so it can flag
+  // its own card without any client learning another's. Per-recipient, unlike the gallery
+  // above, and before the phase flip so the view mounts with it in hand.
+  ctx.sendEach(clientId => buildVoteState(state, clientId))
   ctx.broadcast({ type: 'phase', phase: 'VOTING', deadline: state.deadline })
 }
 
@@ -103,7 +122,7 @@ export function endVoting(ctx: RoomCtx) {
   state.deadline = null
   const cfg = state.config!
 
-  const ranked = tallyVotes(state.gallery ?? [], state.votes, state.players)
+  const ranked = tallyVotes(state.gallery ?? [], state.votes, state.players, state.submissionOwners)
 
   // `results` before `phase`: the other way round, Results mounts against the payload
   // the client still holds — the previous round's — and flashes last round's winner.

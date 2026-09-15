@@ -32,6 +32,11 @@ const { stopVoting, cancelRound } = useGmActions(socket)
 
 const isGm = computed(() => props.gmClientId === clientId)
 
+// This client's own opaque submission id, learned privately via `vote-state` (#73). The
+// gallery is anonymous, so this is the only card the client can identify as its own — used to
+// flag it "Yours" and to stop it being voted for. Null for a spectator or a wiped-only round.
+const mySubmissionId = computed(() => props.voteState?.mySubmissionId ?? null)
+
 // Every submission shares the GM's image dimensions, so one aspect ratio drives all
 // thumbnail slots (via `--art-ratio`). Falls back to 1 (square) until the gallery lands.
 const artRatio = computed(() =>
@@ -160,7 +165,7 @@ watch(() => props.gallery, () => {
 
 function castVote(category: VoteCategory, submissionId: string) {
   // Self-vote guard mirrors the server's; let the click do nothing.
-  if (submissionId === clientId)
+  if (submissionId === mySubmissionId.value)
     return
   // No-op if this category already points here.
   if (myVotes.value[category] === submissionId)
@@ -241,7 +246,7 @@ function castVote(category: VoteCategory, submissionId: string) {
           v-for="sub in ordered"
           :key="sub.submissionId"
           class="voting__card"
-          :class="{ 'voting__card--mine': sub.submissionId === clientId }"
+          :class="{ 'voting__card--mine': sub.submissionId === mySubmissionId }"
         >
           <div class="voting__art art-frame">
             <div :ref="el => setSlot('gallery', sub.submissionId, el)" class="art-surface" />
@@ -253,10 +258,10 @@ function castVote(category: VoteCategory, submissionId: string) {
                 class="voting__sticker"
               ><img :src="asset(c.icon)" :alt="c.label" class="voting__sticker-icon"></span>
             </div>
-            <span v-if="sub.submissionId === clientId" class="voting__tag">Yours</span>
+            <span v-if="sub.submissionId === mySubmissionId" class="voting__tag">Yours</span>
           </div>
 
-          <div v-if="!spectating && sub.submissionId !== clientId" class="voting__cats">
+          <div v-if="!spectating && sub.submissionId !== mySubmissionId" class="voting__cats">
             <button
               v-for="c in VOTE_CATEGORIES"
               :key="c.id"

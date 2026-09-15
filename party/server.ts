@@ -279,6 +279,20 @@ export class PixmalerServer extends Server<Env> {
       broadcastState: () => this.broadcastState(),
       broadcastDoneStatus: () => this.broadcastDoneStatus(),
       send: (conn, msg) => conn.send(JSON.stringify(msg)),
+      sendEach: (build) => {
+        for (const conn of this.getConnections()) {
+          const clientId = this.state.connMap.get(conn.id)
+          if (!clientId)
+            continue
+          const msg = build(clientId)
+          if (!msg)
+            continue
+          // Isolate a dead socket, as Server.broadcast does: one failed send must not
+          // starve the rest of the room of their own submission id.
+          try { conn.send(JSON.stringify(msg)) }
+          catch (err) { console.error('[pixmaler] sendEach failed', err) }
+        }
+      },
       devMode: this.env.PIXMALER_DEV === '1',
       votingMs: this.votingMs,
       markEmpty: () => { this.emptySince = Date.now() },

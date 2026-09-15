@@ -2,9 +2,9 @@
 // here is a function of `RoomState` alone — no connections, no broadcasts, no
 // Durable Object — so the rules deciding what players see are directly testable.
 
-import type { GmConfigureMsg, Phase, Player, RankedResult, RoundConfig, StateMsg, Submission } from '../src/lib/protocol'
+import type { GmConfigureMsg, Phase, Player, RankedResult, RoundConfig, StateMsg, Submission, VoteCategory, VoteStateMsg } from '../src/lib/protocol'
 import { VOTE_CATEGORIES } from '../src/lib/protocol'
-import { voterOf } from './tally'
+import { categoryOf, voterOf } from './tally'
 
 // GM "+15s" during DRAWING. Capped server-side — a client-side cap is decoration.
 export const EXTEND_STEP_MS = 15_000
@@ -36,6 +36,10 @@ export interface RoomState {
   // Retained so a client joining during RESULTS can be sent the reveal it missed —
   // `results` is broadcast exactly once. Cleared on every path out of RESULTS.
   ranked: RankedResult[] | null
+  // submissionId → clientId for the frozen gallery (#73). The gallery ships opaque ids so a
+  // drawing can't be mapped to a name mid-VOTING; this server-only reverse resolves self-votes,
+  // the reveal's real identities, and each drawer's own card. Frozen with `gallery`.
+  submissionOwners: Map<string, string>
 }
 
 export function freshRoomState(): RoomState {
@@ -53,6 +57,7 @@ export function freshRoomState(): RoomState {
     votes: new Map(),
     gallery: null,
     ranked: null,
+    submissionOwners: new Map(),
   }
 }
 
@@ -109,6 +114,31 @@ export function votingProgress(state: RoomState): { votedCount: number, totalVot
     votedCount: players.filter(p => (perVoter.get(p.clientId) ?? 0) >= VOTE_CATEGORIES.length).length,
     totalVoters: players.length,
   }
+}
+
+// This client's own opaque submission id for the frozen gallery, or null if they did not
+// draw (#73). A scan of the owners map (a room is <= 16 seats), so no second index to keep
+// in step. Multiple connections can share a clientId (multi-tab), but a clientId owns at
+// most one submission per round.
+function submissionIdFor(state: RoomState, clientId: string): string | null {
+  for (const [submissionId, owner] of state.submissionOwners) {
+    if (owner === clientId)
+      return submissionId
+  }
+  return null
+}
+
+// The per-client VOTING echo (#73): this voter's own picks plus their own opaque submission
+// id. Only their own picks — never anyone else's, since running tallies stay hidden — and
+// only their own id, since the gallery is anonymous to everyone else. Shared by the VOTING
+// broadcast (`sendEach`) and the mid-VOTING rejoin re-send.
+export function buildVoteState(state: RoomState, clientId: string): VoteStateMsg {
+  const votes: Partial<Record<VoteCategory, string>> = {}
+  for (const [key, subId] of state.votes) {
+    if (voterOf(key) === clientId)
+      votes[categoryOf(key)] = subId
+  }
+  return { type: 'vote-state', votes, mySubmissionId: submissionIdFor(state, clientId) }
 }
 
 // The wire's view of the round settings: everything except the target grid, which travels

@@ -2,13 +2,13 @@
 // `handleJoin`'s rules exist because a reconnect is not a new player — partysocket
 // reconnects unprompted, so anything re-applied here fires on every network blip.
 
-import type { ClientMsg, ServerMsg, VoteCategory } from '../src/lib/protocol'
+import type { ClientMsg, ServerMsg } from '../src/lib/protocol'
 import type { RoomConn, RoomCtx } from './ctx'
 import type { RoomPlayer } from './state'
 import { isRoomCode, wordPair } from '../src/lib/content/words'
 import { clampName, MAX_PLAYERS, normaliseShape, sanitiseName } from '../src/lib/protocol'
-import { autoPromoteGm } from './state'
-import { categoryOf, uniqueName, voterOf } from './tally'
+import { autoPromoteGm, buildVoteState } from './state'
+import { uniqueName } from './tally'
 
 export function handleJoin(
   ctx: RoomCtx,
@@ -109,13 +109,9 @@ export function handleJoin(
       gridH: cfg.gridH,
     } satisfies ServerMsg)
 
-    // Their OWN picks only, so the vote UI rehydrates — tallies stay hidden.
-    const own: Partial<Record<VoteCategory, string>> = {}
-    for (const [key, subId] of state.votes.entries()) {
-      if (voterOf(key) === msg.clientId)
-        own[categoryOf(key)] = subId
-    }
-    ctx.send(conn, { type: 'vote-state', votes: own })
+    // Their own picks and own submission id only, so the vote UI rehydrates and the client can
+    // flag its own card — never anyone else's, since tallies and the gallery stay anonymous.
+    ctx.send(conn, buildVoteState(state, msg.clientId))
   }
 
   // So a reload restores the drawing instead of a blank canvas.

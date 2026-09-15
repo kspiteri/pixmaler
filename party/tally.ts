@@ -24,13 +24,15 @@ export function voterOf(key: string): string {
 // Narrowed so a test can build one without inventing a whole `Player`.
 type Voter = Pick<Player, 'name' | 'connected'>
 
-// Counted from the gallery, not `submissions`, so a non-drawer cannot appear. Votes
-// from disconnected players are skipped, keeping the tally on the same population as
-// the "N of M voted" readout the GM decided on. Unknown submissionIds are ignored.
+// Counted from the gallery, not `submissions`, so a non-drawer cannot appear. Votes from
+// disconnected players are skipped, keeping the tally on the same population as the "N of M
+// voted" readout the GM decided on. Unknown submissionIds are ignored. `owners` (submissionId
+// → clientId) turns each opaque gallery id back into the real player for the reveal (#73).
 export function tallyVotes(
   gallery: Submission[],
   votes: Map<string, string>,
   players: Map<string, Voter>,
+  owners: Map<string, string>,
 ): RankedResult[] {
   const breakdowns = new Map<string, Record<VoteCategory, number>>()
   for (const sub of gallery)
@@ -47,10 +49,11 @@ export function tallyVotes(
   return gallery
     .map((sub) => {
       const breakdown = breakdowns.get(sub.submissionId)!
+      const clientId = owners.get(sub.submissionId) ?? ''
       return {
         submissionId: sub.submissionId,
-        clientId: sub.submissionId,
-        name: players.get(sub.submissionId)?.name ?? 'Unknown',
+        clientId,
+        name: players.get(clientId)?.name ?? 'Unknown',
         votes: breakdown.funniest + breakdown.best,
         breakdown,
         grid: sub.grid,
