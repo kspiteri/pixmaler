@@ -2,6 +2,7 @@ import type { Connection, ConnectionContext } from 'partyserver'
 import type { ServerMsg } from '../src/lib/protocol'
 import type { LifecycleClock } from './alarm'
 import type { RoomCtx } from './ctx'
+import type { Bucket, RateLimit } from './rateLimit'
 import type { RoomState } from './state'
 import { routePartykitRequest, Server } from 'partyserver'
 import { parseClientMsg } from '../src/lib/protocol'
@@ -17,6 +18,7 @@ import {
   handleTransfer,
 } from './gm'
 import { endDrawing, endVoting, handleStart } from './phases'
+import { takeToken } from './rateLimit'
 import { buildState, drawProgress, freshRoomState } from './state'
 import { handleStopVoting, handleVote } from './voting'
 
@@ -34,6 +36,11 @@ interface Env {
   IDLE_MS?: string // wipe a room after this long with no messages (default 45 min)
   EMPTY_GRACE_MS?: string // wipe this long after the last connection closes (default 60 s)
   VOTING_MS?: string // resolve a stalled VOTING phase after this long (default 5 min)
+  // Message hot-path guards (#75). Per-connection token bucket + a byte ceiling before
+  // JSON.parse. Strings, like the windows above; tunable via vars/dashboard without a redeploy.
+  RATE_BURST?: string // max frames a connection may send back-to-back (default 40)
+  RATE_PER_SEC?: string // sustained frames/sec once the burst is spent (default 20)
+  MAX_FRAME_BYTES?: string // drop a frame longer than this before parsing (default 1,000,000)
   // Injected by Cloudflare (see `version_metadata` in wrangler.jsonc). Optional:
   // `wrangler dev` does not always provide it, and a missing version must never stop
   // a room working.
@@ -51,7 +58,15 @@ const DEFAULT_EMPTY_GRACE_MS = 60 * 1000 // 60 s after last tab closes → wipe
 // resolving it. Deliberately generous: nobody in a real game should ever meet it.
 const DEFAULT_VOTING_MS = 5 * 60 * 1000
 
-function parseMs(value: string | undefined, fallback: number): number {
+// Message hot-path guard defaults (#75). Generous enough that real play never meets them — the
+// client debounces draw:submit to ~2/s — but a flooding script is throttled with O(1) arithmetic
+// before any parse. The byte ceiling sits under the Workers 1 MiB frame limit and above the
+// largest structurally-valid frame (a 512² grid as JSON is ~0.8 MB).
+const DEFAULT_RATE_BURST = 40
+const DEFAULT_RATE_PER_SEC = 20
+const DEFAULT_MAX_FRAME_BYTES = 1_000_000
+
+function parseIntVar(value: string | undefined, fallback: number): number {
   const n = value ? Number.parseInt(value, 10) : Number.NaN
   return Number.isFinite(n) && n > 0 ? n : fallback
 }
@@ -87,6 +102,11 @@ export class PixmalerServer extends Server<Env> {
   // in ms epoch; null when not applicable.
   private lastActivityAt = Date.now()
   private emptySince: number | null = null
+
+  // Per-connection token buckets for the message hot path (#75). Instance-level, not in
+  // RoomState: it's transient bookkeeping like `lastActivityAt`, and a wipe must not reset a
+  // live connection's throttle. Keyed by conn.id; dropped in onClose.
+  private buckets = new Map<string, Bucket>()
 
   // ── HTTP existence check ───────────────────────────────────────────────────
   // A dormant existence probe the client pre-flights before a *join* (#66): a room "exists"
@@ -127,24 +147,38 @@ export class PixmalerServer extends Server<Env> {
 
   onClose(conn: Connection) {
     handleClose(this.ctxFor(), conn.id)
+    this.buckets.delete(conn.id)
     this.armAlarm()
   }
 
   // ── Message handler ────────────────────────────────────────────────────────
   onMessage(sender: Connection, raw: string) {
-    // Structural validation up front, so no handler can be reached by a payload
-    // of the wrong shape. This used to be `JSON.parse(raw) as ClientMsg`, which
-    // checked nothing at runtime — see `parseClientMsg` for what that cost.
+    const now = Date.now()
+    // Throttle before any work (#75): a flood is dropped with O(1) arithmetic and never reaches
+    // JSON.parse. Per-connection, so one abusive socket can't starve the room's single thread.
+    const gate = takeToken(this.buckets.get(sender.id), now, this.rateLimit)
+    this.buckets.set(sender.id, gate.bucket)
+    if (!gate.allowed)
+      return
+
+    // Reject an oversized frame before parsing it. `raw.length` is UTF-16 units, a close proxy
+    // for bytes on these ASCII-dominated frames; the platform hard-caps 1 MiB regardless.
+    if (raw.length > this.maxFrameBytes)
+      return
+
+    // Structural validation up front, so no handler can be reached by a payload of the wrong
+    // shape. This used to be `JSON.parse(raw) as ClientMsg`, which checked nothing at runtime —
+    // see `parseClientMsg` for what that cost.
     const msg = parseClientMsg(raw)
     if (msg === null)
       return
 
     // Activity from a *seated* connection pushes back the idle-wipe deadline. A `join` counts
     // (it's how you become seated); a frame from a conn the room can't act on — never joined,
-    // or refused with room-full/no-such-room — must not keep the room alive, and neither does
-    // a malformed frame (this is deliberately after validation).
+    // or refused with room-full/no-such-room — must not keep the room alive, and neither does a
+    // malformed or throttled frame (this is deliberately after those returns).
     if (msg.type === 'join' || this.state.connMap.has(sender.id))
-      this.lastActivityAt = Date.now()
+      this.lastActivityAt = now
 
     switch (msg.type) {
       case 'join': handleJoin(this.ctxFor(), sender, msg); break
@@ -174,15 +208,26 @@ export class PixmalerServer extends Server<Env> {
   // The decisions live in `./alarm`; this keeps only what needs the Durable Object.
 
   private get idleMs(): number {
-    return parseMs(this.env.IDLE_MS, DEFAULT_IDLE_MS)
+    return parseIntVar(this.env.IDLE_MS, DEFAULT_IDLE_MS)
   }
 
   private get emptyGraceMs(): number {
-    return parseMs(this.env.EMPTY_GRACE_MS, DEFAULT_EMPTY_GRACE_MS)
+    return parseIntVar(this.env.EMPTY_GRACE_MS, DEFAULT_EMPTY_GRACE_MS)
   }
 
   private get votingMs(): number {
-    return parseMs(this.env.VOTING_MS, DEFAULT_VOTING_MS)
+    return parseIntVar(this.env.VOTING_MS, DEFAULT_VOTING_MS)
+  }
+
+  private get rateLimit(): RateLimit {
+    return {
+      capacity: parseIntVar(this.env.RATE_BURST, DEFAULT_RATE_BURST),
+      refillPerSec: parseIntVar(this.env.RATE_PER_SEC, DEFAULT_RATE_PER_SEC),
+    }
+  }
+
+  private get maxFrameBytes(): number {
+    return parseIntVar(this.env.MAX_FRAME_BYTES, DEFAULT_MAX_FRAME_BYTES)
   }
 
   private clock(): LifecycleClock {
@@ -262,6 +307,7 @@ export class PixmalerServer extends Server<Env> {
     this.state = freshRoomState()
     this.emptySince = null
     this.lastActivityAt = Date.now()
+    this.buckets.clear()
     this.armedFor = null
     this.ctx.storage.deleteAlarm().catch(err =>
       console.error('[pixmaler] deleteAlarm failed', err),

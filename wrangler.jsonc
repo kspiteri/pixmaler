@@ -17,13 +17,17 @@
   // deploys the Worker before merging the Release PR, so package.json still holds
   // the previous version at that point and would misreport.
   "version_metadata": { "binding": "CF_VERSION_METADATA" },
-  // Public (non-secret) config. ALLOWED_ORIGINS: web origins allowed to connect
-  // in prod (guardOrigin). IDLE_MS / EMPTY_GRACE_MS: room-lifecycle windows in
-  // ms (armAlarm/onAlarm) — tweak in the dashboard to test without a redeploy.
+  // Public (non-secret) config. ALLOWED_ORIGINS: web origins allowed to connect in prod
+  // (guardOrigin). IDLE_MS / EMPTY_GRACE_MS: room-lifecycle windows in ms (armAlarm/onAlarm).
+  // RATE_BURST / RATE_PER_SEC / MAX_FRAME_BYTES: message hot-path guards (#75) — token bucket
+  // per connection plus a pre-parse byte ceiling. All tunable in the dashboard without a redeploy.
   "vars": {
     "ALLOWED_ORIGINS": "https://kspiteri.github.io",
     "IDLE_MS": "2700000",
-    "EMPTY_GRACE_MS": "60000"
+    "EMPTY_GRACE_MS": "60000",
+    "RATE_BURST": "40",
+    "RATE_PER_SEC": "20",
+    "MAX_FRAME_BYTES": "1000000"
   },
   "dev": {
     "port": 1999
