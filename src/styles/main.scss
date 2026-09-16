@@ -8,7 +8,7 @@
 @use 'theme'; // the dark/light palettes — must come first, everything reads it
 @use 'fonts'; // self-hosted @font-face — vendored, no Google CDN
 @use 'backdrop'; // html base colour + the app-wide pixel grid & vignette
-@use 'alerts'; // the alert register — .conn-banner + AlertDialog
+@use 'alerts'; // the alert register — AlertNotice (+ .conn-banner) + AlertDialog
 @use 'avatar'; // the seat chip + its shape modifiers (shared: roster + results)
 @use 'buttons';
 @use 'name-field'; // NameField.vue — display-name input + dice randomise

@@ -33,7 +33,7 @@
     }
   }
 
-  // Placement only — the look is `.toast` in the alert register. Overlaid, not in flow,
+  // Placement only — the look is `.notice` in the alert register. Overlaid, not in flow,
   // because `.phase--fixed` has a hard height budget and an in-column element would shrink
   // the drawing area for a message usually absent. Pinned to the top, where the eye goes
   // for the clock and the free edge on mobile (the palette docks at the bottom).

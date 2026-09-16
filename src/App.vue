@@ -3,6 +3,7 @@
 // `lib/useRoom` into the phase views; descendants get `socket`/`clientId` by provide.
 
 import AlertDialog from '@/components/elements/AlertDialog.vue'
+import AlertNotice from '@/components/elements/AlertNotice.vue'
 import PhaseBoundary from '@/components/layout/PhaseBoundary.vue'
 import { currentDialog, settleDialog, useRoom } from '@/lib'
 import Components from '@/views/Components.vue'
@@ -88,11 +89,16 @@ const {
     </div>
 
     <template v-else>
-      <!-- Connection banner: a drop shows here rather than freezing silently.
-           partysocket auto-reconnects; self-clearing, so no dismiss control. -->
-      <div v-if="connectionStatus === 'reconnecting'" class="conn-banner" role="status">
+      <!-- Connection state: a drop surfaces here rather than freezing silently. A
+           non-dismissable notice (you can't change a dropped connection) shown and hidden
+           purely from connectionStatus; partysocket auto-reconnects. -->
+      <AlertNotice
+        v-if="connectionStatus === 'reconnecting'"
+        class="conn-banner"
+        :dismissable="false"
+      >
         Reconnecting…
-      </div>
+      </AlertNotice>
 
       <!-- Keyed by phase so the boundary remounts when the room moves on, clearing
            a captured error. The banner above sits outside it: connection state is

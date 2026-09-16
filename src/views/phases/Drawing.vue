@@ -19,7 +19,7 @@ import {
   useTemplateRef,
   watch,
 } from 'vue'
-import AlertToast from '@/components/elements/AlertToast.vue'
+import AlertNotice from '@/components/elements/AlertNotice.vue'
 import Button from '@/components/elements/Button.vue'
 import { DrawBoard, PixelThumb } from '@/components/game'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
@@ -219,12 +219,12 @@ onBeforeUnmount(() => {
         @update="onCanvasUpdate"
         @done="flagDone"
       />
-      <AlertToast v-if="warnBlank" class="drawing__blank-warn">
+      <AlertNotice v-if="warnBlank" class="drawing__blank-warn">
         <template #icon>
-          <TriangleAlert class="toast__icon" :size="16" aria-hidden="true" />
+          <TriangleAlert class="notice__icon" :size="16" aria-hidden="true" />
         </template>
         hello? your canvas is empty
-      </AlertToast>
+      </AlertNotice>
     </div>
   </PhaseLayout>
 </template>

@@ -1,42 +1,17 @@
 @use 'tokens' as *;
 
-// The alert register: `.conn-banner` (self-clearing status), `.toast` (self-clearing
-// warning, scoped to one phase) and `.alert-dialog` (answered by the user). They
-// can't share markup — a native <dialog> lives in the browser's top layer, a banner
-// is pinned to the page, a toast is placed by whatever hosts it — so they share this
-// file instead. What they *do* share is the alert voice: `$font-alert`,
-// `$fw-semibold`, `$ls-alert`.
+// The alert register's two non-blocking rungs are one component — `.notice` (rendered by
+// `AlertNotice.vue`, dismissable or not) — plus the modal `.alert-dialog` (a native <dialog>
+// in the browser's top layer, answered by the user). A notice owns only its *look*; the host
+// positions it, because the host knows its own layout budget (`.phase--fixed` has none to
+// spare). The connection banner is a non-dismissable notice pinned top-centre via `.conn-banner`.
+// All three share the alert voice: `$font-alert`, `$fw-semibold`, `$ls-alert`.
 
-// ── LIVE STATUS ─────────────────────────────────────────────────────────────
+// ── NOTICE ───────────────────────────────────────────────────────────────────
 
-.conn-banner {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 200;
-  padding: $gap-2 $gap-3;
-  text-align: center;
-  font-family: $font-alert;
-  font-weight: $fw-semibold;
-  font-size: $fs-sm;
-  letter-spacing: $ls-alert;
-  color: $accent-fg;
-  background: $accent;
-}
-
-// ── TOAST ───────────────────────────────────────────────────────────────────
-
-// Self-clearing like `.conn-banner`, but scoped to a single phase, carrying a warning
-// rather than connection state, and **dismissable** — the banner is not, because it
-// reports something the user cannot change. Rendered by `AlertToast.vue`.
-//
-// Owns only its *look*. The host positions it, because the host is what knows its own
-// layout budget (`.phase--fixed` has none to spare).
-//
 // Border rather than a filled background: `$warn-ink` filled would compete with the
 // timer, which is already showing the danger ink at the moment this appears.
-.toast {
+.notice {
   display: flex;
   align-items: center;
   gap: $gap-2;
@@ -55,6 +30,11 @@
   // means it can swallow the start of a stroke — one tap, which also clears the
   // obstruction. An ✕-only hit area avoided that but made dismissal fiddly on a phone.
   cursor: pointer;
+
+  // Non-dismissable (host-controlled state, e.g. connection loss): nothing to click.
+  &--static {
+    cursor: default;
+  }
 
   &__icon {
     flex: none;
@@ -84,6 +64,18 @@
       color: $fg;
     }
   }
+}
+
+// ── CONNECTION BANNER ────────────────────────────────────────────────────────
+
+// A non-dismissable `.notice` pinned to the top-centre of the viewport. Positioning only;
+// the look comes from `.notice`. Shown and hidden by `App.vue` from `connectionStatus`.
+.conn-banner {
+  position: fixed;
+  top: $gap-3;
+  left: 50%;
+  z-index: 200;
+  transform: translateX(-50%);
 }
 
 // ── MODAL ───────────────────────────────────────────────────────────────────

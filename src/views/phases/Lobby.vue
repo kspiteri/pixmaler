@@ -5,7 +5,7 @@
 import type { AvatarShape, ClientMsg, ServerMsg } from '@/lib'
 import { Check, CircleSlash, Copy, Power } from '@lucide/vue'
 import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
-import AlertToast from '@/components/elements/AlertToast.vue'
+import AlertNotice from '@/components/elements/AlertNotice.vue'
 import Button from '@/components/elements/Button.vue'
 import NameField from '@/components/elements/NameField.vue'
 import PlayerTag from '@/components/elements/PlayerTag.vue'
@@ -162,16 +162,16 @@ onBeforeUnmount(() => {
       </Button>
     </template>
 
-    <AlertToast
+    <AlertNotice
       v-if="roundCancelled"
       class="lobby__notice"
       @dismiss="emit('dismissCancelled')"
     >
       <template #icon>
-        <CircleSlash class="toast__icon" :size="16" aria-hidden="true" />
+        <CircleSlash class="notice__icon" :size="16" aria-hidden="true" />
       </template>
       the round was cancelled and you lost your drawing,<br>a new round will soon begin…
-    </AlertToast>
+    </AlertNotice>
 
     <div class="lobby__body">
       <aside class="lobby__players">
