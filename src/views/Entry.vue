@@ -39,7 +39,10 @@ function enterRoom(room: string, create = false) {
         <details class="entry__privacy">
           <summary>your privacy and what is stored</summary>
           <div class="entry__privacy-body">
-            <p>Pixmaler keeps a nickname you choose, a randomly generated id, and other settings. All stored in your own browser.</p>
+            <p>
+              Pixmaler keeps a nickname you choose, a randomly generated id, your settings,
+              and (in Free mode) your picture and drawing. All stored in your own browser.
+            </p>
             <ul>
               <li>
                 Your nickname, random id and avatar are sent to the game server and held in memory only
@@ -48,6 +51,10 @@ function enterRoom(room: string, create = false) {
               <li>
                 Settings include your dark/light theme preference, text size, your palette preferences and
                 whether you have canvas shortcuts enabled.
+              </li>
+              <li>
+                In Free mode, the pixelated picture you chose and your drawing are stored in this browser,
+                so your work is waiting when you return; it never leaves your device.
               </li>
               <li>Nothing is stored in a database, no cookies, no analytics and no third parties.</li>
             </ul>
