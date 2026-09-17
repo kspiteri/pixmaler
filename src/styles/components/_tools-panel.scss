@@ -92,6 +92,17 @@
     &:active {
       cursor: grabbing;
     }
+
+    // Non-draggable placements (side, bottom): the handle is just a header strip.
+    &--static {
+      cursor: default;
+    }
+
+    // Size sits by the grip; placement is pushed to the trailing edge, where the dropped
+    // wordmark used to hold space.
+    .segmented:last-child {
+      margin-left: auto;
+    }
   }
 
   // Drag handle's grip — a GripVertical Lucide icon.
@@ -105,12 +116,6 @@
     margin-right: auto;
     white-space: nowrap;
     font-size: $fs-2xs;
-  }
-
-  // Dock-to-default toggle on the handle bar; the subtle icon Button styles it, this only
-  // keeps it from shrinking beside the S / M / L control.
-  &__dock {
-    flex-shrink: 0;
   }
 
   &__body {
@@ -151,8 +156,9 @@
     }
   }
 
-  // Mobile dock: a compact thumbnail beside the controls rather than full-width.
-  &--docked &__target {
+  // Bottom dock (mobile or desktop): a compact thumbnail beside the controls, not full-width.
+  &--docked &__target,
+  &--dock-bottom &__target {
     flex: 0 0 auto;
     align-self: center;
 
@@ -223,20 +229,17 @@
     }
   }
 
-  // ── Mobile: dock to the bottom, full-width ──────────────────────────────────
-  &--docked {
+  // ── Bottom dock: shared by mobile (full-width) and the desktop bottom bar (centred) ──
+  &--docked,
+  &--dock-bottom {
     position: fixed;
     z-index: 100;
-    top: auto;
-    right: 0;
     bottom: 0;
-    left: 0;
-    width: 100%;
-    // An entrance, not a transition: `top: auto`/`width` don't interpolate. Safe to
-    // animate `transform` — only the FLOATING panel carries an inline one.
+    // An entrance, not a transition: position/width don't interpolate. Safe to animate
+    // `transform` — only the FLOATING panel carries an inline one.
     animation: tools-panel-dock-in 0.22s ease-out;
-    // Hard cap; the DRAWING shell reserves this same `50vh` as its
-    // `--palette-dock-h` fallback — change both or the canvas hides behind the dock.
+    // Hard cap; the canvas reserves the measured height (via `paletteHeight`) so the
+    // drawing sits cleanly above the bar.
     max-height: 50vh;
     display: flex;
     flex-direction: column;
@@ -252,6 +255,44 @@
       flex-direction: row;
       align-items: flex-start;
       gap: var(--panel-gap);
+    }
+
+    // The disclosure gets its own right-hand column here instead of stacking under the
+    // controls, so opening it grows the bar sideways rather than downward.
+    .tools-panel__shortcuts {
+      flex: 0 1 auto;
+      align-self: stretch;
+      margin-top: 0;
+      padding: 0 0 0 var(--panel-gap);
+      border-top: none;
+      border-left: 1px solid $border;
+      overflow-y: auto;
+    }
+  }
+
+  // Mobile: full-width bottom bar.
+  &--docked {
+    top: auto;
+    right: 0;
+    left: 0;
+    width: 100%;
+  }
+
+  // Desktop: a centred bar only as wide as its content, capped to the viewport.
+  &--dock-bottom {
+    left: 50%;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: calc(100vw - #{$gap-5});
+
+    // Two rows wrapping into columns — width grows with the colour count but never spans
+    // the screen.
+    .swatch {
+      grid-template-columns: none;
+      grid-template-rows: repeat(2, var(--sw));
+      grid-auto-flow: column;
+      grid-auto-columns: var(--sw);
+      justify-content: start;
     }
   }
 
@@ -279,10 +320,6 @@
     max-height: 100%;
     overflow-y: auto;
     margin-right: $gap-4;
-
-    .tools-panel__handle {
-      cursor: default;
-    }
   }
 
   // Keyboard shortcuts help, at the foot of the panel: a disclosure toggle over a list.
@@ -414,7 +451,8 @@
 // Reduced motion: the dock/float entrances just appear.
 @media (prefers-reduced-motion: reduce) {
   .tools-panel--float,
-  .tools-panel--docked {
+  .tools-panel--docked,
+  .tools-panel--dock-bottom {
     animation: none;
   }
 }

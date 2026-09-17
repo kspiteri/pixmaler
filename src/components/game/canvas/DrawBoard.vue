@@ -34,13 +34,11 @@ const emit = defineEmits<{
   done: []
 }>()
 
-// `paletteHeight` is the docked palette's measured height, published by <PaletteTools>.
-const { isMobile, paletteHeight } = useAppLayout()
+// `paletteHeight` is the horizontal dock's measured height, published by <PaletteTools>
+const { paletteHeight } = useAppLayout()
 
-// Space the docked palette needs below the canvas area (mobile only).
-const reservedForPalette = computed(() =>
-  isMobile.value ? paletteHeight.value : 0,
-)
+// Space the bottom-docked palette needs below the canvas area.
+const reservedForPalette = computed(() => paletteHeight.value)
 
 // Layout slots
 const targetSlot = useTemplateRef<HTMLDivElement>('targetSlot')

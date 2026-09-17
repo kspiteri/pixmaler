@@ -7,7 +7,7 @@ import type { PixelCanvas } from '@/lib'
 import { Check, ChevronDown, ChevronUp, Image as ImageIcon, Trash2, Undo2 } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import Button from '@/components/elements/Button.vue'
-import { isTouch, paletteDocked, paletteSize, setPaletteHeight, useAppLayout, useDraggable } from '@/lib'
+import { isTouch, palettePlacement, paletteSize, setPaletteHeight, useAppLayout, useDraggable } from '@/lib'
 import Header from './palette/Header.vue'
 import Shortcuts from './palette/Shortcuts.vue'
 
@@ -58,10 +58,14 @@ const {
 // Below $bp-mobile the panel docks full-width at the bottom and dragging is off.
 const { isMobile } = useAppLayout()
 
-// Desktop-only dock/float (persisted). Floating (draggable, over the canvas) by default;
-// docked renders in-flow as a column beside the canvas (Teleport disabled).
-const floatingDesktop = computed(() => !isMobile.value && !paletteDocked.value)
-const inFlow = computed(() => !isMobile.value && paletteDocked.value)
+// Desktop placement (persisted). `float` draggable over the canvas (default); `side` an
+// in-flow rail beside it (Teleport disabled); `bottom` a centred fixed bar under it.
+const floatingDesktop = computed(() => !isMobile.value && palettePlacement.value === 'float')
+const inFlow = computed(() => !isMobile.value && palettePlacement.value === 'side')
+const dockBottom = computed(() => !isMobile.value && palettePlacement.value === 'bottom')
+// Mobile and the desktop bottom bar lay out horizontally and reserve canvas height; float
+// and side are vertical and reserve none.
+const horizontal = computed(() => isMobile.value || dockBottom.value)
 
 // Draggable only when floating on a fine pointer: Touch mode (or a docked panel) turns the
 // handle into a static header, and useDraggable's `disabled` enforces the same at drag start.
@@ -124,14 +128,15 @@ function onResize() {
   snapToDefault()
 }
 
-// Mobile only — the docked panel's height varies, so publish it as `paletteHeight`, the
-// single source of truth canvas areas reserve.
+// A horizontal dock's height varies, so publish it as `paletteHeight`, the single source of
+// truth canvas areas reserve (mobile, or the desktop bottom bar).
 let dockObserver: ResizeObserver | null = null
 
 function publishDockHeight() {
   const el = panelEl.value
-  if (!isMobile.value || !el) {
-    // Desktop (floating panel): hold no space.
+  // Only a horizontal dock (mobile, or the desktop bottom bar) holds canvas space;
+  // a floating or side panel reserves none.
+  if (!horizontal.value || !el) {
     setPaletteHeight(0)
     return
   }
@@ -184,9 +189,13 @@ watch([paletteSize, referenceOpen], () => {
 
 // Returning to floating re-anchors to the default spot; the canvas refit follows from the
 // draw slot's ResizeObserver in either mode.
-watch(paletteDocked, (isDocked) => {
-  if (!isDocked)
-    nextTick(snapToDefault)
+watch(palettePlacement, () => {
+  nextTick(() => {
+    placeTarget()
+    schedulePublishDockHeight()
+    if (floatingDesktop.value)
+      snapToDefault()
+  })
 })
 
 onMounted(() => {
@@ -238,17 +247,17 @@ function clear() {
       v-show="panelVisible"
       ref="panelEl"
       class="tools-panel"
-      :class="[`tools-panel--${paletteSize}`, `tools-panel--${variant}`, { 'tools-panel--docked': isMobile, 'tools-panel--float': floatingDesktop, 'tools-panel--dock-side': inFlow }]"
+      :class="[`tools-panel--${paletteSize}`, `tools-panel--${variant}`, { 'tools-panel--docked': isMobile, 'tools-panel--float': floatingDesktop, 'tools-panel--dock-side': inFlow, 'tools-panel--dock-bottom': dockBottom }]"
       :style="floatingDesktop ? { transform: `translate(${panelX}px, ${panelY}px)` } : undefined"
     >
-      <Header :is-mobile="isMobile" :can-drag="canDrag" @handledown="onHandlePointerDown" />
+      <Header :is-mobile="isMobile" :can-drag="canDrag" @handle-down="onHandlePointerDown" />
 
       <div class="tools-panel__body">
         <!-- Reference: full-width in the desktop panel with a collapse toggle (like the
              shortcuts); on the mobile dock it's a compact thumbnail beside the controls. -->
         <div class="tools-panel__reference">
           <Button
-            v-if="!isMobile"
+            v-if="!horizontal"
             variant="subtle"
             size="x-small"
             block
@@ -266,7 +275,7 @@ function clear() {
               <ChevronDown v-else :size="14" />
             </template>
           </Button>
-          <div v-show="isMobile || referenceOpen" ref="dockTargetSlot" class="tools-panel__target" />
+          <div v-show="horizontal || referenceOpen" ref="dockTargetSlot" class="tools-panel__target" />
         </div>
         <div class="tools-panel__controls">
           <div ref="swatchSlot" />
@@ -322,8 +331,8 @@ function clear() {
             </p>
             <p>saved as you draw, good or not</p>
           </div>
-          <Shortcuts />
         </div>
+        <Shortcuts />
       </div>
     </div>
   </Teleport>
