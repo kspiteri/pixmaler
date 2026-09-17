@@ -2,6 +2,7 @@
 // an implementation detail and moving a module only touches this file. Inter-lib imports use
 // direct relative paths (never this barrel) to avoid cycles.
 
+export * from './announce'
 export * from './appLayout'
 export * from './assets'
 export * from './canvas/aspect'

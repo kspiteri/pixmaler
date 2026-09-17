@@ -9,15 +9,16 @@
 
 // ── NOTICE ───────────────────────────────────────────────────────────────────
 
-// Border rather than a filled background: `$warn-ink` filled would compete with the
-// timer, which is already showing the danger ink at the moment this appears.
+// Ink is `--notice-ink`, set by the severity variant. A border rather than a filled
+// background: a filled ink would compete with the timer, already showing danger ink here.
 .notice {
+  --notice-ink: $warn-ink; // default; the severity variant overrides
   display: flex;
   align-items: center;
   gap: $gap-2;
   margin: 0;
   padding: $gap-2 $gap-3;
-  border: 1px solid $warn-ink;
+  border: 1px solid var(--notice-ink);
   border-radius: $radius-lg;
   background: $surface;
   box-shadow: $shadow-2;
@@ -36,9 +37,19 @@
     cursor: default;
   }
 
+  &--info {
+    --notice-ink: $accent-ink;
+  }
+  &--warn {
+    --notice-ink: $warn-ink;
+  }
+  &--error {
+    --notice-ink: $danger;
+  }
+
   &__icon {
     flex: none;
-    color: $warn-ink;
+    color: var(--notice-ink);
   }
 
   // Takes the free space so the ✕ is pushed to the trailing edge and the text stays

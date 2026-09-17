@@ -8,18 +8,22 @@
 // which lands on the root.
 
 import { X } from '@lucide/vue'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = withDefaults(defineProps<{
-  // `status` announces politely and waits its turn; `alert` interrupts. Default polite.
-  live?: 'status' | 'alert'
+  // Severity sets the ink colour and the politeness together: only `error` interrupts, the
+  // rest wait their turn. `success` is deliberately absent — no consumer and no colour token yet.
+  variant?: 'info' | 'warn' | 'error'
   // Non-dismissable notices report host-controlled state, so they carry no dismiss control.
   dismissable?: boolean
-}>(), { live: 'status', dismissable: true })
+}>(), { variant: 'warn', dismissable: true })
 
 const emit = defineEmits<{
   dismiss: []
 }>()
+
+// Politeness follows severity — the a11y half of the variant, so no caller passes it by hand.
+const live = computed(() => (props.variant === 'error' ? 'alert' : 'status'))
 
 const dismissed = ref(false)
 
@@ -36,7 +40,7 @@ function dismiss() {
   <div
     v-if="!dismissed"
     class="notice"
-    :class="{ 'notice--static': !dismissable }"
+    :class="[`notice--${variant}`, { 'notice--static': !dismissable }]"
     :role="live"
     @click="dismiss"
   >

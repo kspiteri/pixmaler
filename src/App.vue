@@ -5,7 +5,7 @@
 import AlertDialog from '@/components/elements/AlertDialog.vue'
 import AlertNotice from '@/components/elements/AlertNotice.vue'
 import PhaseBoundary from '@/components/layout/PhaseBoundary.vue'
-import { currentDialog, settleDialog, useRoom } from '@/lib'
+import { assertiveMessage, currentDialog, politeMessage, settleDialog, useRoom } from '@/lib'
 import Components from '@/views/Components.vue'
 import Entry from '@/views/Entry.vue'
 import Paint from '@/views/Paint.vue'
@@ -94,6 +94,7 @@ const {
            purely from connectionStatus; partysocket auto-reconnects. -->
       <AlertNotice
         v-if="connectionStatus === 'reconnecting'"
+        variant="info"
         class="conn-banner"
         :dismissable="false"
       >
@@ -138,6 +139,11 @@ const {
       </PhaseBoundary>
     </template>
   </template>
+
+  <!-- One-off screen-reader announcements with no visible home (lib/announce.ts): a copy
+       confirmation, say. Always present so the live region exists before its text changes. -->
+  <span class="sr-only" aria-live="polite" aria-atomic="true">{{ politeMessage }}</span>
+  <span class="sr-only" aria-live="assertive" aria-atomic="true">{{ assertiveMessage }}</span>
 
   <!-- The app's only dialog instance (lib/dialog.ts), app-global so `askConfirm`/
        `askAlert` work everywhere. Keyed for a fresh <dialog>; outside the phase chain. -->

@@ -219,7 +219,7 @@ onBeforeUnmount(() => {
         @update="onCanvasUpdate"
         @done="flagDone"
       />
-      <AlertNotice v-if="warnBlank" class="drawing__blank-warn">
+      <AlertNotice v-if="warnBlank" variant="warn" class="drawing__blank-warn">
         <template #icon>
           <TriangleAlert class="notice__icon" :size="16" aria-hidden="true" />
         </template>

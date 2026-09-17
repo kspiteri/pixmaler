@@ -12,7 +12,7 @@ import PlayerTag from '@/components/elements/PlayerTag.vue'
 import Tagline from '@/components/elements/Tagline.vue'
 import { GmControls, PixelThumb, PlayerList } from '@/components/game'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
-import { AVATAR_SHAPES, clientIdKey, sanitiseName, seatFor, setName, setShape, socketKey, useGmActions } from '@/lib'
+import { announce, AVATAR_SHAPES, clientIdKey, sanitiseName, seatFor, setName, setShape, socketKey, useGmActions } from '@/lib'
 
 type State = Extract<ServerMsg, { type: 'state' }>
 
@@ -117,6 +117,7 @@ async function copyLink() {
   try {
     await navigator.clipboard.writeText(location.href)
     copied.value = true
+    announce('Room link copied')
     if (copyTimer)
       clearTimeout(copyTimer)
     copyTimer = setTimeout(() => { copied.value = false }, 2000)
@@ -164,6 +165,7 @@ onBeforeUnmount(() => {
 
     <AlertNotice
       v-if="roundCancelled"
+      variant="warn"
       class="lobby__notice"
       @dismiss="emit('dismissCancelled')"
     >
