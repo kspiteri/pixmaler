@@ -12,7 +12,7 @@ import { readStored, removeStored, storedKeys, writeStored } from '../storage'
 const CLIENT_ID = 'pixmaler:clientId'
 const NAME = 'pixmaler:name'
 const SHAPE = 'pixmaler:shape'
-const SECRET = 'pixmaler:secret'
+const SECRETS = 'pixmaler:secrets'
 
 // A stable per-browser id so a reconnect reclaims the same player slot. Minted on
 // first read and persisted; every later call returns the same value.
@@ -48,16 +48,40 @@ export function setShape(shape: AvatarShape): void {
   writeStored(SHAPE, shape)
 }
 
-// The seat secret proving ownership of this room's slot on reconnect (#72). Keyed per room,
-// since a secret is only valid for the seat it was minted for. Returned by the server in a
-// `session` message on the first join; echoed on every later `join`. Null until one is held,
-// which is a plain first join. Covered by `clearAllData`'s `pixmaler:*` wipe.
+// The seat secrets proving ownership of each room's slot on reconnect, keyed by room in a
+// single `pixmaler:secrets` object. Each entry is the secret plus its write time,
+// so a closed room's secret is aged out on the next write.
+const SECRET_MAX_AGE_MS = 48 * 60 * 60 * 1000 // 48 hrs
+
+type SecretMap = Record<string, { s: string, t: number }>
+
+function readSecrets(): SecretMap {
+  const raw = readStored(SECRETS)
+  if (!raw)
+    return {}
+  try {
+    const v = JSON.parse(raw) as SecretMap
+    return v && typeof v === 'object' ? v : {}
+  }
+  catch {
+    return {}
+  }
+}
+
 export function getSecret(room: string): string | null {
-  return readStored(`${SECRET}:${room}`) || null
+  return readSecrets()[room]?.s ?? null
 }
 
 export function setSecret(room: string, secret: string): void {
-  writeStored(`${SECRET}:${room}`, secret)
+  const cutoff = Date.now() - SECRET_MAX_AGE_MS
+  const secrets = readSecrets()
+  secrets[room] = { s: secret, t: Date.now() }
+  // Prune stale rooms on the way out — this write is the one place the set grows.
+  for (const [key, entry] of Object.entries(secrets)) {
+    if (typeof entry?.t !== 'number' || entry.t < cutoff)
+      delete secrets[key]
+  }
+  writeStored(SECRETS, JSON.stringify(secrets))
 }
 
 // Wipe every `pixmaler:*` key — the "clear my data" action. Deliberately broad: it takes
