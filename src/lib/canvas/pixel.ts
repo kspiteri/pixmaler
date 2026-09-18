@@ -74,7 +74,7 @@ export class PixelCanvas {
     this.canvas.width = opts.gridW * CELL_SIZE
     this.canvas.height = opts.gridH * CELL_SIZE
     this.canvas.style.imageRendering = 'pixelated'
-    this.canvas.style.cursor = opts.editable ? 'crosshair' : 'default'
+    this.canvas.style.cursor = opts.editable ? 'crosshair' : 'inherit'
     this.canvas.style.display = 'block'
     if (opts.editable) {
       // The drawing's paper (--paper): untouched cells (-1) render transparent onto it.
