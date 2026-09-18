@@ -5,13 +5,10 @@
 // gallery on every vote — never re-rolls the hang.
 
 import type { MaybeRefOrGetter } from 'vue'
-import type { ServerMsg, Submission } from '../protocol/types'
+import type { GalleryMsg, Submission } from '../protocol/types'
 import { computed, toValue } from 'vue'
 
-type Gallery = Extract<ServerMsg, { type: 'gallery' }>
-
-export interface WallItem {
-  kind: 'piece' | 'filler' | 'original'
+interface HungItem {
   key: string
   rowSpan: number
   colSpan: number
@@ -21,16 +18,16 @@ export interface WallItem {
   grid: number[]
   gw: number
   gh: number
-  submissionId?: string
-  realIndex?: number
 }
 
-// Layout feel: the grid gap, tilt/offset ranges, and roughly how many fillers hang per drawing.
-const TUNE = { gapPx: 18, maxRotDeg: 2.5, maxNudgePx: 4, fillersPerPainting: 4 }
+export type WallItem
+  = | (HungItem & { kind: 'piece', submissionId: string, realIndex: number })
+    | (HungItem & { kind: 'original' })
+    | (HungItem & { kind: 'filler' })
 
-// Grid gap between frames, exported so the wall element can set `--wall-gap` from one source.
-export const SALON_GAP_PX = TUNE.gapPx
-
+// Layout feel: tilt/offset ranges and roughly how many fillers hang per drawing. The grid gap
+// is CSS-owned (--wall-gap in _salon.scss); the span maths below assumes a zero gap regardless.
+const TUNE = { maxRotDeg: 2.5, maxNudgePx: 4, fillersPerPainting: 4 }
 // Filler frame shapes (row/col spans) — a mix of squares and rectangles so the wall reads varied.
 const FILLER_SHAPES: [number, number][] = [
   [1, 1],
@@ -90,6 +87,7 @@ function makeFillerGrid(seed: number, w: number, h: number, palette: string[]): 
   const a = pick()
   const b = pick()
   const cc = pick()
+  const tri = [a, b, cc]
   const pattern = Math.floor(rng() * 4)
   const k = 2 + Math.floor(rng() * 4)
   const grid: number[] = Array.from({ length: w * h })
@@ -97,13 +95,13 @@ function makeFillerGrid(seed: number, w: number, h: number, palette: string[]): 
     for (let x = 0; x < w; x++) {
       let idx: number
       switch (pattern) {
-        case 0: idx = [a, b, cc][(x + y) % 3]; break
+        case 0: idx = tri[(x + y) % 3]; break
         case 1: idx = (Math.floor(x / k) + Math.floor(y / k)) % 2 ? a : b; break
-        case 2: idx = [a, b, cc][Math.floor(x / k) % 3]; break
+        case 2: idx = tri[Math.floor(x / k) % 3]; break
         default: {
           const dx = x - w / 2
           const dy = y - h / 2
-          idx = [a, b, cc][Math.floor(Math.hypot(dx, dy) / k) % 3]
+          idx = tri[Math.floor(Math.hypot(dx, dy) / k) % 3]
         }
       }
       grid[y * w + x] = idx
@@ -126,7 +124,7 @@ export function salonItemStyle(item: WallItem) {
 // Build the hung wall from the (already shuffled) submissions. `targetGrid`, when present, is
 // dropped in around the middle as the non-votable "original".
 export function useSalonWall(
-  gallery: MaybeRefOrGetter<Gallery | null>,
+  gallery: MaybeRefOrGetter<GalleryMsg | null>,
   ordered: MaybeRefOrGetter<Submission[]>,
   targetGrid: MaybeRefOrGetter<number[] | null>,
 ) {

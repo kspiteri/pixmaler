@@ -1,0 +1,139 @@
+@use 'tokens' as *;
+
+// Salon gallery wall — framed pixel drawings hung salon-style with a per-frame tilt/offset,
+// woven with faded filler frames. The frame is a dumb bevelled surface; its size comes from the
+// context it sits in (a wall cell here, or the close-up modal in _voting.scss).
+
+.salon-wall {
+  --wall-gap: 18px;
+  --cell: clamp(20px, 4.2vh, 44px);
+
+  display: grid;
+  grid-auto-flow: column dense;
+  grid-template-rows: repeat(12, var(--cell));
+  grid-auto-columns: var(--cell);
+  gap: var(--wall-gap);
+  align-content: center;
+  justify-content: safe center;
+  flex: 1;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  padding: $gap-4 3%;
+  cursor: grab;
+
+  &.is-dragging {
+    cursor: grabbing;
+    user-select: none;
+  }
+}
+
+.salon-wall__item {
+  --dx: 0px;
+  --dy: 0px;
+  --rot: 0deg;
+
+  // Tilts use standalone translate/rotate, never transform — the press rule owns transform.
+  translate: var(--dx) var(--dy);
+  rotate: var(--rot);
+  transition:
+    translate 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    rotate 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+
+  // The frame fills its wall cell; the modal sizes it differently (see _voting.scss).
+  .salon-frame {
+    width: 100%;
+    height: 100%;
+  }
+
+  &--piece {
+    cursor: pointer;
+
+    &:hover {
+      translate: var(--dx) calc(var(--dy) - 6px);
+      rotate: 0deg;
+    }
+    &:focus-visible {
+      outline-offset: 3px;
+    }
+  }
+
+  // Fabricated decorative frames — faded so they recede behind the real drawings.
+  &--filler {
+    pointer-events: none;
+    opacity: 0.5;
+    filter: saturate(0.35);
+  }
+}
+
+.salon-frame {
+  position: relative;
+  overflow: hidden;
+  background: $paper;
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+  }
+}
+.salon-frame__art {
+  width: 100%;
+  height: 100%;
+}
+
+.salon-frame__tag {
+  position: absolute;
+  top: $gap-1;
+  left: $gap-1;
+  padding: 0.06rem 0.4rem;
+  border-radius: 999px;
+  background: $scrim;
+  color: $fg-60;
+  font-size: $fs-2xs;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+
+  &--original {
+    background: $primary;
+    color: $ink-on-colour;
+  }
+}
+
+.salon-frame__badges {
+  position: absolute;
+  top: $gap-1;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: $gap-1;
+  pointer-events: none;
+}
+.salon-frame__badge {
+  width: 1.5rem;
+  height: 1.5rem;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+  animation: salon-badge-pop 160ms ease-out;
+}
+
+@keyframes salon-badge-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .salon-wall__item {
+    transition: none;
+  }
+  .salon-frame__badge {
+    animation: none;
+  }
+}

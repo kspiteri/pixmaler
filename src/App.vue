@@ -128,6 +128,7 @@ const {
           :vote-state="voteState"
           :deadline="state.deadline"
           :spectating="spectating"
+          :target-grid="targetGrid"
         />
         <Results
           v-else-if="state.phase === 'RESULTS'"

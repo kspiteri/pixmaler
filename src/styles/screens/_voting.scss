@@ -1,194 +1,45 @@
 @use 'tokens' as *;
-@use 'chrome' as *;
-@use 'wonk' as *;
 
-// Voting screen — anonymised gallery: each card holds the drawing (with the voter's emoji
-// stickers on top) and category vote buttons below. The drawing's canvas is sized by the
-// `.art-surface > canvas` rule in `_surfaces.scss`.
+// Voting screen — the salon gallery wall itself lives in _salon.scss (shared). This file is the
+// voting-specific chrome: the prompt/status copy, and the close-up modal where awards are cast.
 
 .voting {
-  max-width: 42rem;
-  margin: 0 auto;
-  padding: $gap-6 $gap-5;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: $gap-2;
 
-  &__head {
+  &__prompt {
+    margin: $gap-3 0 0;
     text-align: center;
-    margin-bottom: $gap-5;
-  }
-  // Balanced because it's the longest display string in the app and wraps to two
-  // lines on a phone; degrades to normal wrapping where unsupported.
-  &__eyebrow {
-    margin: 0;
-    font-family: $font-display;
-    font-weight: 700;
-    font-size: clamp(1.4rem, 4vw, 2rem);
-    text-wrap: balance;
-  }
-  &__hint {
-    margin: $gap-2 0 0;
-    color: $fg-35;
+    color: $fg-50;
     font-size: $fs-sm;
     text-wrap: balance;
   }
-  // Only rendered when somebody wiped their canvas. Quieter than `__hint`, so it doesn't
-  // compete with the eyebrow.
   &__wiped {
     margin: $gap-1 0 0;
+    text-align: center;
     color: $fg-35;
     font-size: $fs-2xs;
   }
-  &__hint-cat {
-    display: inline-flex;
-    vertical-align: middle;
-    margin-left: 0.25rem;
-    opacity: 0.3;
-    filter: grayscale(1);
-
-    &--done {
-      opacity: 1;
-      filter: none;
-    }
-  }
-  &__hint-icon {
-    width: 1rem;
-    height: 1rem;
-    display: block;
-  }
-
-  &__grid {
-    display: grid;
-    // Capped track (not `1fr`) + centring so a lone or partial-row card stays a sane size
-    // and the group centres, instead of `auto-fit` stretching survivors to full width.
-    grid-template-columns: repeat(auto-fit, minmax(180px, 240px));
-    justify-content: center;
-    gap: $gap-4;
-  }
-
-  &__card {
-    position: relative;
-    @include chrome;
-    padding: $gap-3;
-    display: flex;
-    flex-direction: column;
-    gap: $gap-3;
-
-    @include wonk;
-  }
-
-  // Doubles as the artefact's frame (`.art-frame` in the markup) — the stickers and the
-  // "Yours" tag are absolute against it, so they land on the drawing, not the frame.
-  &__art {
-    position: relative;
-  }
-
-  // Emoji stickers for the voter's own picks — top of the drawing, side by side.
-  &__stickers {
-    position: absolute;
-    top: $gap-2;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: $gap-1;
-    pointer-events: none;
-  }
-  &__sticker {
-    display: inline-flex;
-    line-height: 1;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
-    animation: voting-pop 160ms ease-out;
-  }
-  &__sticker-icon {
-    width: 1.75rem;
-    height: 1.75rem;
-    display: block;
-  }
-
-  // "Yours" tag on the player's own (unvotable) submission.
-  &__tag {
-    position: absolute;
-    top: $gap-2;
-    left: $gap-2;
-    padding: 0.125rem 0.5rem;
-    border-radius: 999px;
-    background: $scrim;
-    color: $fg-60;
-    font-size: $fs-2xs;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
-  // Category vote buttons.
-  &__cats {
-    display: flex;
-    gap: $gap-2;
-
-    &--mine {
-      margin: 0;
-      justify-content: center;
-      color: $fg-25;
-      font-size: $fs-xs;
-      font-style: italic;
-    }
-  }
-  &__cat {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    padding: 0.5rem 0.25rem;
-    border-radius: $radius;
-    background: $bg;
-    border: 1px solid $border;
-    color: $fg-50;
-    font-family: $font-body;
-    font-weight: 600;
-    font-size: $fs-xs;
-    cursor: pointer;
-    transition:
-      border-color 120ms,
-      color 120ms,
-      background 120ms;
-
-    &:hover {
-      color: $fg;
-      border-color: $fg-25;
-    }
-    &--active {
-      border-color: $accent-ink;
-      background: color-mix(in srgb, $accent-ink 10%, transparent);
-      color: $accent-ink;
-    }
-  }
-  &__cat-icon {
-    width: 1.1rem;
-    height: 1.1rem;
-    display: block;
-    flex-shrink: 0;
-  }
-
   &__waiting {
+    margin: auto;
     text-align: center;
     color: $muted;
   }
 
-  // Status-bar tally + end button.
+  // Status-bar tally + backstop clock (in the shared phase bar).
   &__tally {
     color: $muted;
     font-size: $fs-sm;
     transition: color 0.3s ease;
 
-    // Reads as a prompt once the click is free. Not `$accent-ink`: lime means
-    // "active/selected" app-wide, and this is a status.
     &--complete {
       color: $fg;
       font-weight: $fw-semibold;
       animation: voting-tally-complete 0.3s ease-out;
     }
   }
-
-  // Urgency without a new colour: reuses the timer's danger ink, tuned per theme in
-  // `_theme.scss`.
   &__clock {
     font-family: $font-alert;
     font-weight: $fw-bold;
@@ -198,25 +49,108 @@
   }
 }
 
-@keyframes voting-pop {
-  from {
-    transform: scale(0.4);
-    opacity: 0;
+// ── Close-up modal ──────────────────────────────────────────────────────────────────
+.voting__modal {
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: $fg;
+  animation: voting-modal-in 150ms ease-out;
+
+  // The scrim is the platform backdrop, not the element — the dialog itself is fit-content and
+  // UA-centred, holding just the card (the nav buttons are fixed to the viewport edges).
+  &::backdrop {
+    background: $scrim;
   }
-  to {
-    transform: scale(1);
-    opacity: 1;
+}
+.voting__modal-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $gap-3;
+
+  // Cap the frame both ways and let the ratio fit inside — a portrait must not push the cast
+  // row off-screen. The frame primitive (_salon.scss) is size-agnostic; this is its modal size.
+  .salon-frame {
+    aspect-ratio: var(--ar);
+    max-width: 78vw;
+    max-height: 62vh;
+    width: min(78vw, calc(62vh * var(--ar)));
+    animation: voting-modal-pop 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+.voting__cast {
+  display: flex;
+  gap: $gap-2;
+  width: min(78vw, calc(62vh * var(--ar)));
+}
+
+.voting__nav {
+  position: fixed;
+  z-index: 1;
+
+  &--close {
+    top: $gap-4;
+    right: $gap-4;
+  }
+  &--prev,
+  &--next {
+    top: 0;
+    bottom: 0;
+    height: fit-content;
+    margin-block: auto;
+  }
+  &--prev {
+    left: $gap-4;
+  }
+  &--next {
+    right: $gap-4;
   }
 }
 
+.voting__award {
+  flex: 1;
+}
+.voting__award-icon {
+  display: block;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.voting__mine {
+  flex: 1;
+  margin: 0;
+  padding: 0.5rem;
+  text-align: center;
+  color: $fg-25;
+  font-size: $fs-xs;
+  font-style: italic;
+}
+
+@keyframes voting-modal-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes voting-modal-pop {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}
 @keyframes voting-tally-complete {
   from {
     opacity: 0.4;
   }
 }
 
-// The state still changes — only the ease goes.
 @media (prefers-reduced-motion: reduce) {
+  .voting__modal,
+  .voting__modal-card .salon-frame {
+    animation: none;
+  }
   .voting__tally {
     transition: none;
 
