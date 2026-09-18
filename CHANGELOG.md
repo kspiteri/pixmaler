@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.10.0](https://github.com/kspiteri/pixmaler/compare/0.9.1...0.10.0) (2026-09-18)
+
+
+### New
+
+* add screen-reader announcements and AlertNotice severity variants ([9333d26](https://github.com/kspiteri/pixmaler/commit/9333d26c2281c24ded914bb635cad9ed611635cb))
+* expand palette placement options with float, side, bottom ([1bccfb7](https://github.com/kspiteri/pixmaler/commit/1bccfb74381ce45918501e70ce87e1ff1e854ebe))
+* introduce salon wall and close-up modal for voting gallery ([e651d46](https://github.com/kspiteri/pixmaler/commit/e651d46e30fa8dee58bed4ff8b2c100140abf665))
+* introduce salon wall layout engine for gallery display ([120c9c5](https://github.com/kspiteri/pixmaler/commit/120c9c5e8f153f98cf7d9b4849855b21c0d1db34))
+* persist paint session state for solo canvas ([c7e9499](https://github.com/kspiteri/pixmaler/commit/c7e949933ce6d79b6aed740e73e63a0775273406))
+
+
+### Fixes
+
+* adjust canvas cursor style for non-editable mode to inherit ([d30c40d](https://github.com/kspiteri/pixmaler/commit/d30c40dcf90f85190bdf3b6d682bb08b4fc91d54))
+* update privacy details to include info on Free mode ([64ee293](https://github.com/kspiteri/pixmaler/commit/64ee29388b80d8f2b439432199f838b7d9c703ea))
+
+
+### Under the hood
+
+* manage room secrets via centralized store ([f22e146](https://github.com/kspiteri/pixmaler/commit/f22e1466945e22012532c0df84d0d1f141ecaace))
+* unify toasts and banners into AlertNotice component ([c94d06a](https://github.com/kspiteri/pixmaler/commit/c94d06a38cd657d02b9e2f17f762aab4c4b6e5c7))
+
 ## [0.9.1](https://github.com/kspiteri/pixmaler/compare/0.9.0...0.9.1) (2026-09-15)
 
 
