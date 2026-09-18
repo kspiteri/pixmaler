@@ -102,7 +102,10 @@
 
   &__gallery {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    // Capped track (not `1fr`) + centring so a lone runner-up (a 2-player reveal) stays a sane
+    // size beside the hero, instead of `auto-fit` stretching it to full width.
+    grid-template-columns: repeat(auto-fit, minmax(140px, 200px));
+    justify-content: center;
     gap: $gap-4;
   }
   &__item {
