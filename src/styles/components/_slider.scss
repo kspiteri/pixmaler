@@ -1,0 +1,18 @@
+@use 'tokens' as *;
+
+// The range slider primitive (Slider.vue) — continuous or stepped. Always flexes to fill its
+// row; the caller supplies the label and any value readout around it. Stepped ticks come from
+// the component's <datalist> (native marks in WebKit/Blink; snapping works everywhere).
+.slider {
+  flex: 1;
+  // A range input's default min-width is its intrinsic ~129px, which blows a stacked picker
+  // wider than a phone; let it shrink so the row's label keeps its space.
+  min-width: 0;
+  accent-color: $primary;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+}
