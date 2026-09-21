@@ -131,12 +131,6 @@
     display: flex;
     flex-direction: column;
     gap: $gap-5;
-
-    // Stack the GM picker's two cards full-width: the settings column (the shell is capped at
-    // $app-max) is too narrow to sit them side by side without squashing the slider rows.
-    .picker__card {
-      flex-basis: 100%;
-    }
   }
 
   &__start {

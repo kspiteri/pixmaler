@@ -71,7 +71,7 @@ function startGame() {
 
 <template>
   <p class="label label--eyebrow">
-    game settings
+    game setup
   </p>
   <ImagePicker
     ref="picker"

@@ -142,6 +142,7 @@ const summary = computed(() => {
         </button>
         <div v-show="settingsOpen" class="paint__settings-body">
           <ImagePicker
+            show-preview
             :auto-load-sample="autoLoadSample"
             @result="onResult"
           />
