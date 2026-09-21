@@ -37,7 +37,10 @@
     align-items: center;
     justify-content: space-between;
     gap: $gap-3;
-    padding: $gap-3 $gap-5;
+    padding-block: $gap-3;
+    // Full-bleed bar, but its content aligns to the capped body: pad the sides to centre an
+    // $app-max zone once the viewport passes the cap, and stay at $gap-5 below it.
+    padding-inline: max(#{$gap-5}, calc((100% - #{$app-max}) / 2));
     background-color: $surface;
     border-bottom: 1px solid $border-soft;
     flex-shrink: 0;
@@ -64,6 +67,9 @@
   &__body {
     flex: 1;
     min-height: 0;
+    width: 100%;
+    max-width: $app-max;
+    margin-inline: auto;
   }
 
   // Narrow screens: tighten the bar so the shared status cluster (room chip, GM
