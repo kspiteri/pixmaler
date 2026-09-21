@@ -21,6 +21,10 @@
   &.is-open {
     border-color: $border;
   }
+
+  &.is-disabled {
+    opacity: 0.55;
+  }
 }
 
 .accordion__heading {
@@ -43,8 +47,12 @@
   cursor: pointer;
   transition: background 0.15s;
 
-  &:hover {
+  &:not(:disabled):hover {
     background: color-mix(in srgb, $fg 6%, transparent);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
   }
 }
 
