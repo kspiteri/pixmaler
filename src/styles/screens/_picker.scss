@@ -1,22 +1,36 @@
 @use 'tokens' as *;
-@use 'chrome' as *;
 
-// ImagePicker's chrome — two cards (settings + image) shared by the Lobby's GM
-// controls and the /paint sandbox. Static and unscoped, so the preview reaches its
-// imperatively-appended canvas with plain descendant selectors, no `:deep()`.
+// ImagePicker — a persistent target preview + a single-open accordion of steps (Image →
+// Framing → Look → Timer), shared by the Lobby's GM controls and the /paint sandbox. Static and
+// unscoped, so the preview reaches its imperatively-appended canvas with plain selectors.
 
 .picker {
   display: flex;
-  flex-wrap: wrap;
+  align-items: flex-start;
   gap: $gap-5;
 
-  &__card {
-    flex: 1 1 320px;
-    // Shrink below the 320px basis on a narrow (stacked) column; without it the card floors
-    // at min-content and scrolls the panel sideways.
+  // Left column: the accordion of steps, plus any source-loading error above it.
+  &__steps {
+    flex: 1;
     min-width: 0;
-    @include chrome;
-    padding: $gap-4;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-4;
+  }
+  // Right column: the live target status (preview + palette), always capped so the
+  // accordion keeps its width — and stays capped when the layout stacks on a phone.
+  &__status {
+    flex: 0 0 auto;
+    max-width: 14rem;
+  }
+  // "Next step" button, tail of an accordion step body.
+  &__next {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  // Source step: upload row + sample tiles.
+  &__source {
     display: flex;
     flex-direction: column;
     gap: $gap-4;
@@ -320,7 +334,7 @@
       margin-top: 0.1em;
     }
   }
-  &__status {
+  &__error {
     margin: 0;
     color: $muted;
     font-size: $fs-sm;
@@ -331,26 +345,26 @@
   &__preview {
     transition: opacity 0.15s;
 
-    // Re-processing: the previous target dims but stays, so the card keeps its height.
+    // Re-processing: the previous target dims but stays, so the height holds.
     &.is-busy {
       opacity: 0.4;
     }
 
-    p {
-      margin: 0 0 $gap-2;
-      color: $fg-60;
-      font-size: $fs-xs;
-    }
     canvas {
-      max-width: 160px;
+      max-width: 95% !important;
       height: auto;
       border-radius: $radius-sm;
       border: 1px solid $border;
     }
   }
+  // Caption above the preview canvas.
+  &__preview-label {
+    margin: 0;
+    color: $fg-60;
+    font-size: $fs-xs;
+  }
 
   &__preview-area {
-    margin-top: $gap-4;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -376,6 +390,13 @@
     height: 1.25rem;
     border-radius: $radius-sm;
     border: 1px solid $border;
+  }
+}
+
+// Stack the two columns on a phone; the status column keeps its max-width.
+@media (max-width: $bp-mobile) {
+  .picker {
+    flex-direction: column;
   }
 }
 
