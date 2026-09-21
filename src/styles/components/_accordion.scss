@@ -1,0 +1,90 @@
+@use 'tokens' as *;
+
+// Single-open accordion (Accordion.vue / AccordionItem.vue): a stack of collapsible steps.
+// Each item is a small card; the collapsed header carries a right-aligned summary so state
+// reads at a glance. Disclosure affordance is a hover tint + chevron flip, not the press
+// travel — a full-width header that lifts on a hard shadow reads as a floating button, not a
+// section.
+
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-2;
+}
+
+.accordion__item {
+  border: 1px solid $border-soft;
+  border-radius: $radius;
+  background: $surface;
+  overflow: hidden;
+
+  &.is-open {
+    border-color: $border;
+  }
+}
+
+.accordion__heading {
+  margin: 0;
+  font: inherit;
+}
+
+.accordion__trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: $gap-3;
+  padding: $gap-3 $gap-4;
+  border: 0;
+  background: none;
+  color: $fg;
+  font-family: $font-display;
+  font-weight: $fw-semibold;
+  font-size: $fs-sm;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: color-mix(in srgb, $fg 6%, transparent);
+  }
+}
+
+.accordion__title {
+  flex-shrink: 0;
+}
+
+// Collapsed-state summary — the step's current value, quiet and right-aligned.
+.accordion__summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  color: $fg-50;
+  font-family: $font-body;
+  font-weight: $fw-regular;
+  font-size: $fs-xs;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.accordion__chevron {
+  flex-shrink: 0;
+  color: $fg-50;
+  transition: transform 0.2s;
+
+  .accordion__item.is-open & {
+    transform: rotate(180deg);
+  }
+}
+
+.accordion__body {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-4;
+  padding: $gap-2 $gap-4 $gap-4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accordion__chevron {
+    transition: none;
+  }
+}

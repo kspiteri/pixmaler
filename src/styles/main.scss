@@ -14,6 +14,7 @@
 @use 'name-field'; // NameField.vue — display-name input + dice randomise
 @use 'forms';
 @use 'slider'; // Slider.vue — the range primitive (continuous + stepped)
+@use 'accordion'; // Accordion.vue / AccordionItem.vue — single-open collapsible steps
 @use 'logo';
 @use 'tagline'; // before the page partials — see the file header
 @use 'phase';
