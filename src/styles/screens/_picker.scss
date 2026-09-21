@@ -32,24 +32,10 @@
       gap: $gap-2;
     }
   }
-  &__setting-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: $gap-4;
-    align-items: center;
-  }
   &__setting-label {
     color: $fg-60;
     font-size: $fs-sm;
     flex-shrink: 0;
-  }
-
-  &__scale {
-    flex: 1;
-    // A range input's default `min-width: auto` is its intrinsic ~129px, which blew the
-    // picker wider than a phone in the stacked layout. Let it shrink.
-    min-width: 0;
-    accent-color: $primary;
   }
   // Readout: "12 → 40×60" plus the busy spinner. Right-aligned in a reserved slot
   // so digit-count changes don't resize the slider beside it.
@@ -65,8 +51,7 @@
     // Space Grotesk, not the display face — a value to be read precisely.
     font-family: $font-alert;
     font-weight: $fw-bold;
-    width: 1.5rem;
-    text-align: center;
+    white-space: nowrap;
   }
   &__scale-grid {
     color: $fg-60;
@@ -362,6 +347,35 @@
       border-radius: $radius-sm;
       border: 1px solid $border;
     }
+  }
+
+  &__preview-area {
+    margin-top: $gap-4;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $gap-2;
+  }
+  // Lowercase eyebrow naming the swatch strip below the preview.
+  &__palette-label {
+    color: $fg-60;
+    font-size: $fs-2xs;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  &__palette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $gap-1;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  &__swatch {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: $radius-sm;
+    border: 1px solid $border;
   }
 }
 

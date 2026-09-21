@@ -420,14 +420,6 @@
     color: $muted;
   }
 
-  .brush__slider {
-    flex: 1;
-    // Firefox won't shrink `input[type=range]` below its intrinsic min-width as a flex item,
-    // clipping the label; `min-width: 0` lets it give the label its space back.
-    min-width: 0;
-    accent-color: $primary;
-  }
-
   .brush__label {
     min-width: 56px;
     flex-shrink: 0;

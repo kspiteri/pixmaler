@@ -13,6 +13,7 @@
 @use 'buttons';
 @use 'name-field'; // NameField.vue — display-name input + dice randomise
 @use 'forms';
+@use 'slider'; // Slider.vue — the range primitive (continuous + stepped)
 @use 'logo';
 @use 'tagline'; // before the page partials — see the file header
 @use 'phase';

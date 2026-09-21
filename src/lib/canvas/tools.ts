@@ -153,7 +153,7 @@ export function buildBrushControls(pc: PixelCanvas): BrushHandle {
   wrap.className = 'brush'
 
   const slider = document.createElement('input')
-  slider.className = 'brush__slider'
+  slider.className = 'slider'
   slider.type = 'range'
   slider.min = '1'
   slider.max = String(pc.getBrushMax())

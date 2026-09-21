@@ -6,6 +6,7 @@
 
 import type { CropSelection, TargetRatioId } from '@/lib'
 import { computed, useTemplateRef } from 'vue'
+import Slider from '@/components/elements/Slider.vue'
 import { CROP_MIN_ZOOM, cropRect, TARGET_RATIO_IDS, TARGET_RATIOS } from '@/lib'
 
 const props = defineProps<{
@@ -80,8 +81,8 @@ function moveCropTo(e: PointerEvent) {
   setCropCentre((e.clientX - box.left) / box.width, (e.clientY - box.top) / box.height)
 }
 
-function onCropZoom(e: Event) {
-  crop.value = { ...crop.value, zoom: Number((e.target as HTMLInputElement).value) / 100 }
+function onCropZoom(percent: number) {
+  crop.value = { ...crop.value, zoom: percent / 100 }
 }
 
 // Keyboard path so framing is not pointer-only. One step is 2% of the source.
@@ -148,13 +149,12 @@ function onCropKeyDown(e: KeyboardEvent) {
 
     <label class="picker__crop-zoom">
       <span class="picker__sr">Crop size</span>
-      <input
-        type="range"
+      <Slider
+        :model-value="Math.round(crop.zoom * 100)"
         :min="Math.round(CROP_MIN_ZOOM * 100)"
-        max="100"
-        :value="Math.round(crop.zoom * 100)"
-        @input="onCropZoom"
-      >
+        :max="100"
+        @update:model-value="onCropZoom"
+      />
       <span class="picker__crop-zoom-val">{{ Math.round(crop.zoom * 100) }}%</span>
     </label>
 
