@@ -4,8 +4,8 @@
 // (Game mode → Image → Adjust Target → Game settings). The step controls and the preview are
 // under ./picker; this file wires them and runs `processImage` on any change.
 
-import type { CropSelection, PickerMeta, PipelineResult, TargetRatioId } from '@/lib'
-import { ChevronDown } from '@lucide/vue'
+import type { CropSelection, PickerMeta, PipelineResult, RoundConfig, TargetRatioId } from '@/lib'
+import { ChevronDown, Trash2 } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Accordion from '@/components/elements/accordion/Accordion.vue'
 import AccordionItem from '@/components/elements/accordion/Item.vue'
@@ -27,6 +27,9 @@ interface Props {
   showMobileWarn?: boolean
   showDrawSeconds?: boolean
   showPreview?: boolean
+  // The room's current target, so a reloaded GM sees it in the preview and can start off it.
+  roomConfig?: RoundConfig | null
+  roomTarget?: number[] | null
   // Autoload a sample on first render, for the sandbox where an image is required.
   autoLoadSample?: SampleName
 }
@@ -36,6 +39,8 @@ const emit = defineEmits<{
   result: [result: PipelineResult, meta: PickerMeta]
   // Fires when input changes but before processing finishes — lets a caller disable Start.
   processing: []
+  // The GM cleared the target — the host un-configures the room.
+  clear: []
 }>()
 
 const DEFAULT_DRAW_SECONDS = 120
@@ -66,7 +71,7 @@ const samples: { name: SampleName, label: string }[] = [
   { name: 'pearls', label: 'Pearl Earring' },
 ]
 
-defineExpose({ getDrawSeconds: () => drawSecs.value })
+defineExpose({ getDrawSeconds: () => drawSecs.value, reset })
 
 let cachedFile: File | null = null
 let runId = 0
@@ -79,8 +84,20 @@ const gridPreview = computed(() => {
   const { gridW, gridH } = gridSizeFor(sourceDims.value.w, sourceDims.value.h, scale.value)
   return `${gridW}×${gridH}`
 })
+// After a reload the GM has no local pick, but the room still holds a target — show that so the
+// GM sees what everyone sees and can start or re-pick off it (a reload is a mistake to correct).
+// A fresh local pick takes over immediately.
+const roomResult = computed<PipelineResult | null>(() => {
+  const c = props.roomConfig
+  const g = props.roomTarget
+  return c && g && g.length > 0
+    ? { gridW: c.gridW, gridH: c.gridH, palette: c.palette, targetGrid: g, sourceW: c.gridW, sourceH: c.gridH }
+    : null
+})
+const previewResult = computed(() => lastResult.value ?? roomResult.value)
+const canClear = computed(() => !!(props.showDrawSeconds && previewResult.value))
 const warn = computed(() =>
-  !!(props.showMobileWarn && lastResult.value && isMobileWarning(Math.max(lastResult.value.gridW, lastResult.value.gridH))),
+  !!(props.showMobileWarn && previewResult.value && isMobileWarning(Math.max(previewResult.value.gridW, previewResult.value.gridH))),
 )
 
 // Accordion summaries — the current value of each collapsed step.
@@ -207,6 +224,41 @@ async function loadSample(name: string) {
   }
 }
 
+// A reload is treated as a mistake, not state to rehydrate: this drops the local pick back to a
+// blank picker. Exposed for the host's "clear image", and used by `clearImage` below.
+function reset() {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer)
+    debounceTimer = null
+  }
+  if (sourceUrl.value)
+    URL.revokeObjectURL(sourceUrl.value)
+  cachedFile = null
+  runId++ // invalidate any in-flight reprocess
+  sourceUrl.value = ''
+  naturalDims.value = null
+  sourceDims.value = null
+  hasAlpha.value = false
+  lastResult.value = null
+  selected.value = null
+  sourceLabel.value = ''
+  status.value = ''
+  busy.value = false
+  scale.value = DEFAULT_SCALE
+  colorCount.value = DEFAULT_COLOR_COUNT
+  ratio.value = DEFAULT_RATIO
+  crop.value = { ...FULL_CROP }
+  background.value = DEFAULT_BACKGROUND
+  drawSecs.value = DEFAULT_DRAW_SECONDS
+  openStep.value = 'source'
+}
+
+// Clear the room's target: blank the local picker, then tell the host to un-configure the room.
+function clearImage() {
+  reset()
+  emit('clear')
+}
+
 onMounted(() => {
   if (props.autoLoadSample)
     loadSample(props.autoLoadSample)
@@ -276,7 +328,13 @@ onBeforeUnmount(() => {
     </div>
 
     <div v-if="showPreview" class="picker__status">
-      <TargetPreview :result="lastResult" :busy="busy" :warn="warn" />
+      <TargetPreview :result="previewResult" :busy="busy" :warn="warn" />
+      <Button v-if="canClear" variant="subtle" size="small" @click="clearImage">
+        <template #icon>
+          <Trash2 :size="15" aria-hidden="true" />
+        </template>
+        Clear image
+      </Button>
     </div>
   </div>
 </template>

@@ -11,6 +11,7 @@ import { handleClose, handleJoin, handleRename, handleShape } from './connection
 import { handleDrawDone, handleSubmit } from './drawing'
 import {
   handleCancelRound,
+  handleClear,
   handleConfigure,
   handleEndSession,
   handlePlayAgain,
@@ -188,6 +189,7 @@ export class PixmalerServer extends Server<Env> {
       case 'gm:start': handleStart(this.ctxFor(), sender); break
       case 'gm:transfer': handleTransfer(this.ctxFor(), sender, msg); break
       case 'gm:remove': handleRemove(this.ctxFor(), sender, msg); break
+      case 'gm:clear': handleClear(this.ctxFor(), sender); break
       case 'draw:done': handleDrawDone(this.ctxFor(), sender); break
       case 'draw:submit': handleSubmit(this.ctxFor(), sender, msg); break
       case 'vote:cast': handleVote(this.ctxFor(), sender, msg); break

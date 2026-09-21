@@ -168,6 +168,13 @@ export interface GmRemoveMsg {
   toClientId: string
 }
 
+// GM-only, LOBBY-only. Un-configures the room's target so the lobby shows "no image" for
+// everyone. A reload is treated as a mistake the GM corrects, not state to preserve, so this
+// is the only way to get back to an empty room; the GM re-picks to set a new target.
+export interface GmClearMsg {
+  type: 'gm:clear'
+}
+
 export type ClientMsg
   = | JoinMsg
     | RenameMsg
@@ -184,6 +191,7 @@ export type ClientMsg
     | GmEndSessionMsg
     | GmTransferMsg
     | GmRemoveMsg
+    | GmClearMsg
 
 // A floor on a *playable* round, enforced on both sides: the picker clamps to make the
 // limit visible, the server clamps so a stale client cannot shorten a round. Clamps

@@ -5,31 +5,37 @@
 
 import type { PipelineResult } from '@/lib'
 import { TriangleAlert } from '@lucide/vue'
-import { useTemplateRef, watch } from 'vue'
+import { onMounted, useTemplateRef, watch } from 'vue'
 import { PixelCanvas } from '@/lib'
 
 const props = defineProps<{ result: PipelineResult | null, busy: boolean, warn: boolean }>()
 
 const slot = useTemplateRef<HTMLDivElement>('slot')
 
-watch(
-  () => props.result,
-  (r) => {
-    if (!r || !slot.value)
-      return
-    const pc = new PixelCanvas({
-      gridW: r.gridW,
-      gridH: r.gridH,
-      palette: r.palette,
-      targetGrid: r.targetGrid,
-      editable: false,
-    })
-    pc.canvas.style.maxWidth = '160px'
-    pc.canvas.style.height = 'auto'
-    slot.value.replaceChildren(pc.canvas)
-  },
-  { flush: 'post' },
-)
+// Mount a fresh read-only canvas for the current result. Driven from both `onMounted` (the
+// result may already be present when a reloaded GM's room target arrives before mount) and a
+// change watch (a fresh pick after mount). `flush: 'post'` keeps the slot mounted.
+function render(r: PipelineResult | null) {
+  if (!slot.value)
+    return
+  // Cleared target (GM "clear image"): empty the slot so the old canvas doesn't linger.
+  if (!r) {
+    slot.value.replaceChildren()
+    return
+  }
+  const pc = new PixelCanvas({
+    gridW: r.gridW,
+    gridH: r.gridH,
+    palette: r.palette,
+    targetGrid: r.targetGrid,
+    editable: false,
+  })
+  pc.canvas.style.maxWidth = '160px'
+  pc.canvas.style.height = 'auto'
+  slot.value.replaceChildren(pc.canvas)
+}
+watch(() => props.result, render, { flush: 'post' })
+onMounted(() => render(props.result))
 </script>
 
 <template>

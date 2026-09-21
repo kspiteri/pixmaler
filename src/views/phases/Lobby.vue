@@ -214,7 +214,7 @@ onBeforeUnmount(() => {
       </aside>
 
       <section class="lobby__settings">
-        <GmControls v-if="isGm" :players="state.players" />
+        <GmControls v-if="isGm" :players="state.players" :config="state.config" :target-grid="targetGrid" />
 
         <template v-else>
           <div class="lobby__waiting">

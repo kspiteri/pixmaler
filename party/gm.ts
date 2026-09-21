@@ -21,6 +21,18 @@ export function handleConfigure(
   ctx.broadcastState()
 }
 
+// LOBBY-only, GM-only: drop the room's target so the lobby clears for everyone. The GM
+// re-picks to set a new one — a reload is a mistake to correct, not state to rehydrate.
+export function handleClear(ctx: RoomCtx, conn: RoomConn) {
+  if (!isGm(ctx.state, conn.id) || ctx.state.phase !== 'LOBBY')
+    return
+  ctx.state.config = null
+  // Empty grid so a client that cached the old target drops it; the display keys on `config`,
+  // but this stops a stale grid lingering behind a later configure.
+  ctx.broadcast({ type: 'target', grid: [] })
+  ctx.broadcastState()
+}
+
 export function handleTransfer(
   ctx: RoomCtx,
   conn: RoomConn,

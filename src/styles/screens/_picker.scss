@@ -22,6 +22,10 @@
   &__status {
     flex: 0 0 auto;
     max-width: 14rem;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-3;
+    align-items: flex-start;
   }
   // "Next step" button, tail of an accordion step body.
   &__next {

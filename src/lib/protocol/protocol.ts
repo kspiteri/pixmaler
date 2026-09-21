@@ -94,6 +94,7 @@ export function parseClientMsg(raw: string): ClientMsg | null {
     case 'gm:playAgain':
     case 'gm:cancelRound':
     case 'gm:endSession':
+    case 'gm:clear':
       return { type: m.type }
 
     default:

@@ -3,14 +3,20 @@
 // gm:configure on each picker result and gm:start on click. The roster, name and shape
 // controls stay in the lobby; this is only the game-setup column.
 
-import type { ClientMsg, GmConfigureMsg, PipelineResult, Player } from '@/lib'
+import type { ClientMsg, GmConfigureMsg, PipelineResult, Player, RoundConfig } from '@/lib'
 import { Play } from '@lucide/vue'
 import { computed, inject, ref, useTemplateRef } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import { socketKey } from '@/lib'
 import ImagePicker from '../image/ImagePicker.vue'
 
-const props = defineProps<{ players: Player[] }>()
+// `config`/`targetGrid` are the room's authoritative target — after a GM reload the local
+// picker is blank but the room still holds one, so it seeds the preview and enables Start.
+const props = defineProps<{
+  players: Player[]
+  config: RoundConfig | null
+  targetGrid: number[] | null
+}>()
 
 const socket = inject(socketKey)!.value!
 
@@ -42,12 +48,14 @@ const missingPlayers = computed(() => {
   return Math.max(0, MIN_PLAYERS - present)
 })
 
+// The room having a target is what enables Start — a fresh local pick or, after a reload, the
+// config the server still holds. `startGame` sends a bare `gm:start` in the reload case.
 const startDisabled = computed(() =>
-  !imageReady.value || (missingPlayers.value > 0 && !import.meta.env.DEV),
+  (!imageReady.value && !props.config) || (missingPlayers.value > 0 && !import.meta.env.DEV),
 )
 
 const startHint = computed(() => {
-  if (!imageReady.value)
+  if (!imageReady.value && !props.config)
     return 'choose an image to start'
   if (missingPlayers.value > 0) {
     const need = `need ${missingPlayers.value} more player${missingPlayers.value === 1 ? '' : 's'}`
@@ -57,15 +65,27 @@ const startHint = computed(() => {
 })
 
 function startGame() {
-  if (!lastConfig)
-    return
-  // Read drawSeconds fresh in case the GM edited it after the last reprocess.
-  const finalConfig: GmConfigureMsg = {
-    ...lastConfig,
-    drawSeconds: pickerRef.value?.getDrawSeconds() ?? 120,
+  // A fresh pick re-sends its config (with the latest drawSeconds); after a reload the server
+  // already holds the room's config, so a bare start is enough.
+  if (lastConfig) {
+    const finalConfig: GmConfigureMsg = {
+      ...lastConfig,
+      drawSeconds: pickerRef.value?.getDrawSeconds() ?? 120,
+    }
+    socket.send(JSON.stringify(finalConfig))
   }
-  socket.send(JSON.stringify(finalConfig))
+  else if (!props.config) {
+    return
+  }
   socket.send(JSON.stringify({ type: 'gm:start' } satisfies ClientMsg))
+}
+
+// The GM cleared the target: the picker has already reset itself, so drop our cached config and
+// tell the server to un-configure the room.
+function clearImage() {
+  imageReady.value = false
+  lastConfig = null
+  socket.send(JSON.stringify({ type: 'gm:clear' } satisfies ClientMsg))
 }
 </script>
 
@@ -78,8 +98,11 @@ function startGame() {
     show-mobile-warn
     show-draw-seconds
     show-preview
+    :room-config="config"
+    :room-target="targetGrid"
     @processing="onProcessing"
     @result="onResult"
+    @clear="clearImage"
   />
   <div>
     <Button
