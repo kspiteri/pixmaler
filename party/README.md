@@ -50,7 +50,9 @@ Two orderings are load-bearing, pinned by `test/phases.test.ts`:
 
 ## State: in memory, on purpose (for now)
 
-`RoomState` lives entirely in memory — `ctx.storage` holds the alarm and nothing else. An evicted or hibernated DO therefore resets to a pristine lobby, which is also why **a Worker deploy ends every game in progress**. This is a known, deliberate deferral, filed as the one urgent item in [#93](https://github.com/kspiteri/pixmaler/issues/93); fixing it (persist + rehydrate) also unblocks the existence probe after hibernation and removes the main reason Worker deploys are manual.
+`RoomState` lives entirely in memory — `ctx.storage` holds the alarm and nothing else. **Hibernation is off**: `Server`'s default is `{ hibernate: false }` and we don't override it, so open WebSockets pin the DO in memory. A live room is therefore *not* evicted during a quiet lobby or an input-free stretch of DRAWING — the sockets keep it warm with no message traffic, and `IDLE_MS` (45 min) is a deliberate app-level wipe, not platform eviction. The one in-game state loss that actually happens is a **Worker deploy**, which restarts the DO and so **ends every game in progress** — accepted, because deploys are by hand at quiet moments. A platform eviction under memory pressure is possible in theory but is not inactivity-driven, and sessions run minutes.
+
+[#93](https://github.com/kspiteri/pixmaler/issues/93) files persistence as urgent on the premise of idle/hibernation resets mid-game and an existence probe that lies afterwards; with hibernation off, neither path applies, so the realistic residual is only "a deploy ends games." Persist + rehydrate would survive a deploy, but it also writes the target image to `ctx.storage` — the residue the memory-only design deliberately avoids (#44) — and adds a state-shape migration burden across deploys. So it stays a deliberate deferral, not an urgent fix.
 
 Roster rules that follow from the state shape:
 
