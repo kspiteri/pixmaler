@@ -41,6 +41,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Lint CSS
+        run: pnpm lint:css
+
       # Explicit, though `pnpm build` would also catch it — a type error failing inside
       # a step called "Build" reports the wrong thing.
       - name: Typecheck
@@ -61,3 +64,7 @@ jobs:
         env:
           VITE_PARTYKIT_HOST: ${{ vars.VITE_PARTYKIT_HOST }}
         run: pnpm build
+
+      # Verify the Worker actually bundles — typecheck checks types but never compiles it.
+      - name: Worker bundle check
+        run: pnpm exec wrangler deploy --dry-run
