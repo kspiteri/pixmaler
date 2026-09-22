@@ -284,6 +284,9 @@ export function derivePalette(pixels: Rgb[], colorCount: number): Rgb[] {
 // Collapses pairs into their mean until no pair is within the threshold. Real-photo
 // median-cut clusters near-identical browns and greys in shadows, which nobody can
 // pick apart on a swatch. The default 400 is 20 RGB units — "barely distinguishable".
+// The restart on each merge is deliberate, not just the lazy O(n²) path: averaging is
+// order-dependent, so merging the first close pair then rescanning from the top pins a
+// stable palette — a single pass would change output. Don't "tidy" it without a golden test.
 export function mergeNearDuplicates(palette: Rgb[], thresholdSquared = 400): Rgb[] {
   const out = [...palette]
   let merged = true
