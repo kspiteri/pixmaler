@@ -96,7 +96,13 @@ function onWheel(e: WheelEvent) {
 }
 
 onMounted(() => wallEl.value?.addEventListener('wheel', onWheel, { passive: false }))
-onBeforeUnmount(() => wallEl.value?.removeEventListener('wheel', onWheel))
+onBeforeUnmount(() => {
+  wallEl.value?.removeEventListener('wheel', onWheel)
+  // A drag in progress leaves these on `window`; unmounting mid-drag (a phase flip) would leak them.
+  window.removeEventListener('pointermove', onWallPointerMove)
+  window.removeEventListener('pointerup', onWallPointerUp)
+  window.removeEventListener('pointercancel', onWallPointerUp)
+})
 </script>
 
 <template>
