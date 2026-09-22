@@ -106,7 +106,10 @@ export class PixmalerServer extends Server<Env> {
 
   // Per-connection token buckets for the message hot path (#75). Instance-level, not in
   // RoomState: it's transient bookkeeping like `lastActivityAt`, and a wipe must not reset a
-  // live connection's throttle. Keyed by conn.id; dropped in onClose.
+  // live connection's throttle. Keyed by conn.id, not clientId: the throttle runs before the
+  // frame is parsed, so clientId isn't known yet — and it's client-chosen, so keying by it
+  // would let a flooder reset their own budget at will. A reconnect starting fresh is the
+  // accepted cost; dropped in onClose.
   private buckets = new Map<string, Bucket>()
 
   // ── HTTP existence check ───────────────────────────────────────────────────
