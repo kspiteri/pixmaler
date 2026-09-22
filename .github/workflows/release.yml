@@ -46,7 +46,7 @@ jobs:
       # On a normal push this only opens or updates the Release PR. It sets
       # `release_created` on the push that *merges* that PR, which is the release.
       - id: release
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@v5
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
