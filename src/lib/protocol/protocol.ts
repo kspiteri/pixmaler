@@ -33,6 +33,14 @@ function isCells(v: unknown, maxLen: number): v is number[] {
   return Array.isArray(v) && v.length <= maxLen && v.every(isInt)
 }
 
+// A fully quantised target grid, validated in one pass: exact length, integer cells, every
+// index in [0, paletteLen). One loop rather than an isInt pass then a separate range pass —
+// the grid runs up to GRID_MAX_CELLS long, on the server hot path.
+function isTargetGrid(v: unknown, expectedLen: number, paletteLen: number): v is number[] {
+  return Array.isArray(v) && v.length === expectedLen
+    && v.every(c => isInt(c) && c >= 0 && c < paletteLen)
+}
+
 export function parseClientMsg(raw: string): ClientMsg | null {
   let parsed: unknown
   try { parsed = JSON.parse(raw) }
@@ -63,11 +71,8 @@ export function parseClientMsg(raw: string): ClientMsg | null {
       // a finite number: `"120"` or `NaN` is a broken client, not a typo.
       if (typeof drawSeconds !== 'number' || !Number.isFinite(drawSeconds))
         return null
-      // The target is a fully quantised image, so unlike a player's grid it has no `-1`
-      // holes and its length is exact.
-      if (!isCells(targetGrid, GRID_MAX_CELLS) || targetGrid.length !== gridW * gridH)
-        return null
-      if (!targetGrid.every(c => c >= 0 && c < palette.length))
+      // The target is a fully quantised image: no `-1` holes, length exact, indices in range.
+      if (!isTargetGrid(targetGrid, gridW * gridH, palette.length))
         return null
       return { type: 'gm:configure', gridW, gridH, palette, targetGrid, drawSeconds: clampDrawSeconds(drawSeconds) }
     }
