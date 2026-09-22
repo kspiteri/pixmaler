@@ -59,8 +59,8 @@ catalogs:
       specifier: ^1.23.0
       version: 1.23.0
     partyserver:
-      specifier: ^0.5.8
-      version: 0.5.8
+      specifier: ^0.5.10
+      version: 0.5.10
     partysocket:
       specifier: ^1.0.3
       version: 1.1.19
@@ -80,7 +80,7 @@ importers:
         version: 1.23.0(vue@3.5.35(typescript@5.9.3))
       partyserver:
         specifier: catalog:prod
-        version: 0.5.8(@cloudflare/workers-types@4.20260625.1)
+        version: 0.5.10(@cloudflare/workers-types@4.20260625.1)
       partysocket:
         specifier: catalog:prod
         version: 1.1.19
@@ -2566,11 +2566,6 @@ packages:
   muggle-string@0.4.1:
     resolution: {integrity: sha512-VNTrAak/KhO2i8dqqnqnAHOa3cYBwXEZe9h+D5h/1ZqFSTEFHdM65lR7RoIqq3tBBYavsOXV84NoHXZ0AkPyqQ==}
 
-  nanoid@3.3.12:
-    resolution: {integrity: sha512-ZB9RH/39qpq5Vu6Y+NmUaFhQR6pp+M2Xt76XBnEwDaGcVAqhlvxrl3B2bKS5D3NH3QR76v3aSrKaF/Kiy7lEtQ==}
-    engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
-    hasBin: true
-
   nanoid@3.3.18:
     resolution: {integrity: sha512-DTg4MJbGMWkfi6VZFdNt2/caMbQy4Ou+Op/hJQvGEWcnVfoA1QA+xzRKAzw9jD6+GVOOeYr/mIcuDSdug6F6+w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
@@ -2654,10 +2649,10 @@ packages:
   parse-statements@1.0.11:
     resolution: {integrity: sha512-HlsyYdMBnbPQ9Jr/VgJ1YF4scnldvJpJxCVx6KgqPL4dxppsWrJHCIIxQXMJrqGnsRkNPATbeMJ8Yxu7JMsYcA==}
 
-  partyserver@0.5.8:
-    resolution: {integrity: sha512-htgSwiBcBu9zIYLrsxBAOvdkjukHvncbTk0nDrJgfruvZ08rxtEN1Ab4T7j9osykP80Bq3zA2oWFd3ngc4Z9uw==}
+  partyserver@0.5.10:
+    resolution: {integrity: sha512-t2B3mhTL1IOxCsj8rZgn4TxTuub7oLhypjc1/fGPNsbgnn9OsHms6uR3QEd5bFJ/7xrFo771j3DdUlll8cxgBg==}
     peerDependencies:
-      '@cloudflare/workers-types': ^4.20260424.1
+      '@cloudflare/workers-types': ^4.20260424.1 || ^5.20260703.1
 
   partysocket@1.1.19:
     resolution: {integrity: sha512-hPwsXSdUc8PKNCinET6TD3JQOxzQ2JaP0bUZQXBVl6UM8UuLn1odgf1LcJXHy4UHSQwWL/RU3AnyhEsGM+W+sg==}
@@ -5567,8 +5562,6 @@ snapshots:
 
   muggle-string@0.4.1: {}
 
-  nanoid@3.3.12: {}
-
   nanoid@3.3.18: {}
 
   nanoid@5.1.15: {}
@@ -5660,7 +5653,7 @@ snapshots:
 
   parse-statements@1.0.11: {}
 
-  partyserver@0.5.8(@cloudflare/workers-types@4.20260625.1):
+  partyserver@0.5.10(@cloudflare/workers-types@4.20260625.1):
     dependencies:
       '@cloudflare/workers-types': 4.20260625.1
       nanoid: 5.1.15
@@ -5732,7 +5725,7 @@ snapshots:
 
   postcss@8.5.15:
     dependencies:
-      nanoid: 3.3.12
+      nanoid: 3.3.18
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
