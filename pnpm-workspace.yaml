@@ -14,7 +14,7 @@ catalogs:
     '@antfu/eslint-config': ^9.0.0
     '@cloudflare/workers-types': ^4.20260625.1
     '@vitejs/plugin-vue': ^6.0.7
-    eslint: ^10.5.0
+    eslint: ^10.11.0
     eslint-plugin-format: ^2.0.1
     lint-staged: ^17.0.7
     postcss-html: ^2.0.0
