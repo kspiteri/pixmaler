@@ -13,8 +13,8 @@ catalogs:
       specifier: ^4.20260625.1
       version: 4.20260625.1
     '@vitejs/plugin-vue':
-      specifier: ^6.0.7
-      version: 6.0.7
+      specifier: ^6.0.9
+      version: 6.0.9
     eslint:
       specifier: ^10.11.0
       version: 10.11.0
@@ -99,7 +99,7 @@ importers:
         version: 4.20260625.1
       '@vitejs/plugin-vue':
         specifier: catalog:dev
-        version: 6.0.7(vite@7.3.5(sass@1.100.0)(yaml@2.9.0))(vue@3.5.35(typescript@5.9.3))
+        version: 6.0.9(vite@7.3.5(sass@1.100.0)(yaml@2.9.0))(vue@3.5.35(typescript@5.9.3))
       eslint:
         specifier: catalog:dev
         version: 10.11.0(supports-color@10.2.2)
@@ -1439,8 +1439,8 @@ packages:
     resolution: {integrity: sha512-QVLZu3ZPQEE+HICQyAMZ2yLQhxf0meY/wx6Hx14YcTNj13JB3qHlX3lJ02L3fLGHgERRH71kvYDwiXIguT3AjQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@vitejs/plugin-vue@6.0.7':
-    resolution: {integrity: sha512-km+p+XdSz9Sxm5rqUbqcSfZYaAniKxWBj1KURl+Jr7UaPvvX7BmaWMdP69I5rrFDeQGyxAG7NXdc57vz+snhWg==}
+  '@vitejs/plugin-vue@6.0.9':
+    resolution: {integrity: sha512-rD/MORlhaZMlXWW0rEn4FB4wMinWC0z/D7Ye160S5+Rs1mC8ZDAdcDp4SjKfUhG5t8q1ktcPVw4xuTkPRlzrSA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     peerDependencies:
       vite: ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
@@ -4174,7 +4174,7 @@ snapshots:
       '@typescript-eslint/types': 8.61.0
       eslint-visitor-keys: 5.0.1
 
-  '@vitejs/plugin-vue@6.0.7(vite@7.3.5(sass@1.100.0)(yaml@2.9.0))(vue@3.5.35(typescript@5.9.3))':
+  '@vitejs/plugin-vue@6.0.9(vite@7.3.5(sass@1.100.0)(yaml@2.9.0))(vue@3.5.35(typescript@5.9.3))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
       vite: 7.3.5(sass@1.100.0)(yaml@2.9.0)
