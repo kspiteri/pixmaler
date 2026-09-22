@@ -101,7 +101,7 @@ jobs:
             echo "### Pages is live at \`${{ needs.release.outputs.tag }}\`"
             echo
             echo "The **Worker is not deployed by CI** — and it only needs deploying when"
-            echo "the server changed, i.e. \`party/\` or \`src/lib/types.ts\`. A Worker deploy"
+            echo "the server changed, i.e. \`party/\` or \`src/lib/protocol/\`. A Worker deploy"
             echo "**ends every game in progress**, so skip it when nothing there moved:"
             echo
             echo '```bash'

@@ -16,5 +16,5 @@
     "isolatedModules": true,
     "skipLibCheck": true
   },
-  "include": ["party", "src/lib/types.ts"]
+  "include": ["party", "src/lib/protocol"]
 }
