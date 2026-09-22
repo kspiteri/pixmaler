@@ -7,7 +7,8 @@
 import type { ComponentPublicInstance } from 'vue'
 import type { VoteCategoryMeta, WallItem } from '@/lib'
 import { onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
-import { asset, salonItemStyle } from '@/lib'
+import GameIcon from '@/components/game/shared/GameIcon.vue'
+import { salonItemStyle } from '@/lib'
 import SalonFrame from './SalonFrame.vue'
 
 const props = defineProps<{
@@ -123,7 +124,7 @@ onBeforeUnmount(() => wallEl.value?.removeEventListener('wheel', onWheel))
         <SalonFrame :grid-w="item.gw" :grid-h="item.gh" :palette="palette" :grid="item.grid">
           <span v-if="item.submissionId === mySubmissionId" class="salon-frame__tag">yours</span>
           <div v-if="awardsOn(item.submissionId).length" class="salon-frame__badges">
-            <img v-for="c in awardsOn(item.submissionId)" :key="c.id" :src="asset(c.icon)" :alt="c.label" class="salon-frame__badge">
+            <GameIcon v-for="c in awardsOn(item.submissionId)" :key="c.id" :name="c.id" class="salon-frame__badge" />
           </div>
         </SalonFrame>
       </article>

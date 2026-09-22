@@ -8,7 +8,8 @@ import type { Submission, VoteCategory, VoteCategoryMeta } from '@/lib'
 import { ChevronLeft, ChevronRight, X } from '@lucide/vue'
 import { onMounted, useTemplateRef } from 'vue'
 import Button from '@/components/elements/Button.vue'
-import { asset, VOTE_CATEGORIES } from '@/lib'
+import GameIcon from '@/components/game/shared/GameIcon.vue'
+import { VOTE_CATEGORIES } from '@/lib'
 import SalonFrame from './SalonFrame.vue'
 
 defineProps<{
@@ -71,7 +72,7 @@ function onArrow(e: KeyboardEvent) {
       <SalonFrame :key="sub.submissionId" :grid-w="gridW" :grid-h="gridH" :palette="palette" :grid="sub.grid">
         <span v-if="sub.submissionId === mySubmissionId" class="salon-frame__tag">yours</span>
         <div v-if="awardsOn(sub.submissionId).length" class="salon-frame__badges">
-          <img v-for="c in awardsOn(sub.submissionId)" :key="c.id" :src="asset(c.icon)" :alt="c.label" class="salon-frame__badge">
+          <GameIcon v-for="c in awardsOn(sub.submissionId)" :key="c.id" :name="c.id" class="salon-frame__badge" />
         </div>
       </SalonFrame>
 
@@ -92,7 +93,7 @@ function onArrow(e: KeyboardEvent) {
             @click="emit('vote', c.id, sub.submissionId)"
           >
             <template #icon>
-              <img :src="asset(c.icon)" alt="" class="voting__award-icon">
+              <GameIcon :name="c.id" class="voting__award-icon" />
             </template>
             {{ c.label }}
           </Button>

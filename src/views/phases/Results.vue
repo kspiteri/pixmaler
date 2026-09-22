@@ -9,8 +9,9 @@ import { computed, inject } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import PlayerTag from '@/components/elements/PlayerTag.vue'
 import Tagline from '@/components/elements/Tagline.vue'
+import GameIcon from '@/components/game/shared/GameIcon.vue'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
-import { artRatio as artRatioFor, asset, clientIdKey, seatFor, socketKey, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '@/lib'
+import { artRatio as artRatioFor, clientIdKey, seatFor, socketKey, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '@/lib'
 
 const props = defineProps<{
   results: Results | null
@@ -102,7 +103,6 @@ function breakdownItems(entry: Entry) {
   return VOTE_CATEGORIES.map(c => ({
     id: c.id,
     label: c.label,
-    icon: asset(c.icon),
     count: entry.breakdown?.[c.id] ?? 0,
   }))
 }
@@ -185,7 +185,7 @@ const { setSlot } = useReadonlyCanvases(
         <!-- Hero: overall winner(s), or the target image when nobody voted. -->
         <div class="results__hero">
           <p class="results__crown">
-            <img :src="asset('assets/icons/crown.svg')" alt="crown" class="results__crown-icon">
+            <GameIcon name="crown" class="results__crown-icon" />
             {{ noWinner ? (nobodyDrew ? "nobody drew, so the original wins" : "nobody voted, so the original wins") : winners.length > 1 ? "joint winners" : "overall winner" }}
           </p>
           <div class="results__winners">
@@ -228,7 +228,7 @@ const { setSlot } = useReadonlyCanvases(
                   >
                     <template v-if="i > 0"> · </template>
                     {{ b.count }}
-                    <img :src="b.icon" :alt="b.label" class="results__breakdown-icon">
+                    <GameIcon :name="b.id" class="results__breakdown-icon" />
                   </span>
                 </p>
               </div>

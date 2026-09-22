@@ -109,13 +109,11 @@ export interface DrawDoneMsg {
 
 export type VoteCategory = 'funniest' | 'best'
 
-// Display order, shared by client (buttons, stickers) and server (tally) so they cannot
-// drift. Icon paths are relative so they resolve under the Vite `base` once a consumer
-// prepends `import.meta.env.BASE_URL`.
-export interface VoteCategoryMeta { id: VoteCategory, label: string, icon: string }
+// Display order, shared by client (buttons, stickers) and server (tally) so they cannot drift.
+export interface VoteCategoryMeta { id: VoteCategory, label: string }
 export const VOTE_CATEGORIES: VoteCategoryMeta[] = [
-  { id: 'funniest', label: 'Funniest', icon: 'assets/icons/laugh.svg' },
-  { id: 'best', label: 'Best', icon: 'assets/icons/star.svg' },
+  { id: 'funniest', label: 'Funniest' },
+  { id: 'best', label: 'Best' },
 ]
 
 // Hard cap on players in one room, GM included — enforced server-side in `handleJoin`
