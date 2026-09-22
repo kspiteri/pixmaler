@@ -18,6 +18,7 @@ let pc: PixelCanvas | null = null
 function render() {
   if (!root.value)
     return
+  pc?.destroy()
   pc = new PixelCanvas({
     gridW: props.gridW,
     gridH: props.gridH,
@@ -30,7 +31,7 @@ function render() {
 
 onMounted(render)
 watch(() => [props.gridW, props.gridH, props.palette, props.grid], render, { flush: 'post' })
-onBeforeUnmount(() => { pc = null })
+onBeforeUnmount(() => { pc?.destroy(); pc = null })
 </script>
 
 <template>

@@ -32,6 +32,8 @@ export function useReadonlyCanvases(deps: () => unknown, thumbs: () => ReadonlyT
   }
 
   function mount() {
+    for (const pc of canvases)
+      pc.destroy()
     canvases = []
     for (const t of thumbs()) {
       let slot: HTMLElement | undefined
@@ -60,8 +62,12 @@ export function useReadonlyCanvases(deps: () => unknown, thumbs: () => ReadonlyT
     mount()
   }, { immediate: true })
 
-  // Listeners live on the canvas elements; once they leave the DOM, dropping refs is enough.
-  onBeforeUnmount(() => { canvases = [] })
+  // Detach each canvas's listeners deterministically rather than waiting for GC.
+  onBeforeUnmount(() => {
+    for (const pc of canvases)
+      pc.destroy()
+    canvases = []
+  })
 
   return { setSlot }
 }

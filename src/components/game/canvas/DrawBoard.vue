@@ -178,10 +178,12 @@ watch(reservedForPalette, () => {
 })
 
 onBeforeUnmount(() => {
-  // Drop references so PixelCanvas's listeners fall away with the DOM nodes.
+  // Detach each canvas's listeners deterministically, then drop references.
   drawResizeObserver?.disconnect()
   drawResizeObserver = null
+  target?.destroy()
   target = null
+  playerRef.value?.destroy()
   playerRef.value = null
   swatchEl.value = null
   brushEl.value = null

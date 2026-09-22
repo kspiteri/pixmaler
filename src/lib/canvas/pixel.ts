@@ -59,6 +59,9 @@ export class PixelCanvas {
   private undoStack: number[][] = []
   private static UNDO_DEPTH = 30
 
+  // One controller for every DOM listener attached below; `destroy()` aborts it to detach them.
+  private readonly listeners = new AbortController()
+
   constructor(opts: CanvasOptions) {
     this.opts = opts
     this.brushMax = brushMaxFor(opts.gridW, opts.gridH)
@@ -89,6 +92,12 @@ export class PixelCanvas {
     if (opts.editable)
       this.attachInput()
     else this.attachReadOnlyHover()
+  }
+
+  // Detaches every DOM listener this instance attached. Call when replacing or discarding a
+  // canvas (e.g. a fresh PixelThumb per grid change) so nothing outlives its element.
+  destroy(): void {
+    this.listeners.abort()
   }
 
   // ── Public API ─────────────────────────────────────────────────────────────
@@ -346,6 +355,7 @@ export class PixelCanvas {
 
   private attachInput() {
     const el = this.canvas
+    const { signal } = this.listeners
     // Don't let the browser hijack drags as scroll/pan/selection on touch —
     // we handle all pointer movement ourselves.
     el.style.touchAction = 'none'
@@ -364,7 +374,7 @@ export class PixelCanvas {
       // Promote the hover preview into a real paint at the same cell.
       this.hoverCells.clear()
       this.paintAt(e.clientX, e.clientY)
-    })
+    }, { signal })
 
     el.addEventListener('pointermove', (e) => {
       if (this.locked)
@@ -396,7 +406,7 @@ export class PixelCanvas {
         this.showHover(x, y)
       else
         this.clearHover()
-    })
+    }, { signal })
 
     const endStroke = (e: PointerEvent) => {
       if (!this.painting)
@@ -406,8 +416,8 @@ export class PixelCanvas {
       try { el.releasePointerCapture(e.pointerId) }
       catch { /* no-op if capture was never taken */ }
     }
-    el.addEventListener('pointerup', endStroke)
-    el.addEventListener('pointercancel', endStroke)
+    el.addEventListener('pointerup', endStroke, { signal })
+    el.addEventListener('pointercancel', endStroke, { signal })
 
     // Hides the hover preview only. An in-progress stroke is NOT ended — capture keeps
     // delivering moves so a drag can come back in.
@@ -417,20 +427,21 @@ export class PixelCanvas {
         this.cursorCell = null
         this.opts.onHover?.(null)
       }
-    })
+    }, { signal })
   }
 
   // Lightweight hover tracking for read-only canvases — fires `onHover` only, no
   // preview/marker (they're the destination of a marker, not its source).
   private attachReadOnlyHover() {
     const el = this.canvas
+    const { signal } = this.listeners
     el.addEventListener('mousemove', (e) => {
       const { x, y } = this.eventCell(e.clientX, e.clientY)
       const { gridW, gridH } = this.opts
       const inBounds = x >= 0 && y >= 0 && x < gridW && y < gridH
       this.opts.onHover?.(inBounds ? { x, y } : null)
-    })
-    el.addEventListener('mouseleave', () => this.opts.onHover?.(null))
+    }, { signal })
+    el.addEventListener('mouseleave', () => this.opts.onHover?.(null), { signal })
   }
 
   private resetStroke() {

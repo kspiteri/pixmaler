@@ -5,12 +5,13 @@
 
 import type { PipelineResult } from '@/lib'
 import { TriangleAlert } from '@lucide/vue'
-import { onMounted, useTemplateRef, watch } from 'vue'
+import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 import { PixelCanvas } from '@/lib'
 
 const props = defineProps<{ result: PipelineResult | null, busy: boolean, warn: boolean }>()
 
 const slot = useTemplateRef<HTMLDivElement>('slot')
+let pc: PixelCanvas | null = null
 
 // Mount a fresh read-only canvas for the current result. Driven from both `onMounted` (the
 // result may already be present when a reloaded GM's room target arrives before mount) and a
@@ -18,12 +19,14 @@ const slot = useTemplateRef<HTMLDivElement>('slot')
 function render(r: PipelineResult | null) {
   if (!slot.value)
     return
+  pc?.destroy()
+  pc = null
   // Cleared target (GM "clear image"): empty the slot so the old canvas doesn't linger.
   if (!r) {
     slot.value.replaceChildren()
     return
   }
-  const pc = new PixelCanvas({
+  pc = new PixelCanvas({
     gridW: r.gridW,
     gridH: r.gridH,
     palette: r.palette,
@@ -36,6 +39,7 @@ function render(r: PipelineResult | null) {
 }
 watch(() => props.result, render, { flush: 'post' })
 onMounted(() => render(props.result))
+onBeforeUnmount(() => { pc?.destroy(); pc = null })
 </script>
 
 <template>
