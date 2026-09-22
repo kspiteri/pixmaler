@@ -109,6 +109,7 @@ function clearImage() {
       variant="primary"
       class="lobby__start"
       :disabled="startDisabled"
+      :aria-describedby="startHint ? 'lobby-start-hint' : undefined"
       @click="startGame"
     >
       <template #icon>
@@ -116,7 +117,7 @@ function clearImage() {
       </template>
       Start game
     </Button>
-    <p v-if="startHint" class="lobby__start-hint">
+    <p v-if="startHint" id="lobby-start-hint" class="lobby__start-hint" role="status">
       {{ startHint }}
     </p>
   </div>
