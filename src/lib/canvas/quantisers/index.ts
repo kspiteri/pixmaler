@@ -21,9 +21,9 @@ export interface PixelationStyleMeta {
 // GM-facing, outcome-first — the order is the segmented control's order. Bold = median-cut,
 // Balanced = Wu, Faithful = k-means; the GM picks by the live preview, not the algorithm.
 export const PIXELATION_STYLES: PixelationStyleMeta[] = [
-  { id: 'bold', label: 'Bold', blurb: 'Fewer, stronger colours and big flat areas. The boldest look, and the easiest to copy.', quantise: medianCutQuantiser },
-  { id: 'balanced', label: 'Balanced', blurb: 'A fuller mix of colours. A good all-rounder for most pictures.', quantise: wuQuantiser },
-  { id: 'faithful', label: 'Faithful', blurb: 'Closest to the original, with softer, more subtle shades. The prettiest, but the hardest to copy.', quantise: kmeansQuantiser },
+  { id: 'bold', label: 'Bold', blurb: 'Fewer, stronger colours and big flat areas, the easiest to copy.', quantise: medianCutQuantiser },
+  { id: 'balanced', label: 'Balanced', blurb: 'Fuller mix of colours. Good all-rounder for most pictures.', quantise: wuQuantiser },
+  { id: 'faithful', label: 'Faithful', blurb: 'Closest to the original, softer and subtle shades. Hardest to copy.', quantise: kmeansQuantiser },
 ]
 
 export const DEFAULT_PIXELATION_STYLE: PixelationStyle = 'balanced'
