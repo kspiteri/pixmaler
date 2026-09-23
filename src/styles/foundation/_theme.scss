@@ -28,6 +28,9 @@
 
   --accent-ink: #c8ff2d;
   --warn-ink: #ff8c00;
+  // Red ink for the error notice — brighter than --timer-danger, which is tuned to read on a
+  // dark track, not on $surface.
+  --danger-ink: #ff6b61;
   // Purple as ink/outline — `$primary` unmodified is under the floor for the 12px
   // `.btn--secondary` label, so the ink variant lifts.
   --primary-ink: #8c7aff;
@@ -84,6 +87,7 @@
   // The lime *fills* are untouched — they carry their own ink.
   --accent-ink: #485f01;
   --warn-ink: #944f00;
+  --danger-ink: #bb0a05; // 6:1 on the light $surface
   // 3.18:1 unmodified; oklch L 0.50 brings it to 4.90:1 on the page.
   --primary-ink: #6239dc;
 

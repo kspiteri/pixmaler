@@ -9,10 +9,12 @@
 
 // ── NOTICE ───────────────────────────────────────────────────────────────────
 
-// Ink is `--notice-ink`, set by the severity variant. A border rather than a filled
-// background: a filled ink would compete with the timer, already showing danger ink here.
+// Ink is `--notice-ink`, set by the severity variant, and carried by both the border and the
+// icon (`.notice__icon` wraps the slot, so any icon inherits the variant colour). A border
+// rather than a filled background: a filled ink would compete with the timer, already showing
+// danger ink here.
 .notice {
-  --notice-ink: $warn-ink; // default; the severity variant overrides
+  --notice-ink: #{$warn-ink}; // default; the severity variant overrides
   display: flex;
   align-items: center;
   gap: $gap-2;
@@ -38,17 +40,19 @@
   }
 
   &--info {
-    --notice-ink: $accent-ink;
+    --notice-ink: #{$accent-ink};
   }
   &--warn {
-    --notice-ink: $warn-ink;
+    --notice-ink: #{$warn-ink};
   }
   &--error {
-    --notice-ink: $danger;
+    --notice-ink: #{$danger-ink};
   }
 
   &__icon {
     flex: none;
+    display: grid;
+    place-items: center;
     color: var(--notice-ink);
   }
 

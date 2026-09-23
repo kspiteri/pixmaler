@@ -92,6 +92,7 @@ $primary: #7c5cff; // purple — secondary / GM
 // Bright lime is 1.16:1 on light grey and fails 1.4.11 even as a border.
 $accent-ink: var(--accent-ink);
 $warn-ink: var(--warn-ink);
+$danger-ink: var(--danger-ink); // red ink — the error notice; distinct from the timer's fill red
 $primary-ink: var(--primary-ink);
 
 // The modal scrim. Not themed — a scrim darkens either way. Don't re-point it at $bg.

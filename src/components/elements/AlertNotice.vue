@@ -44,7 +44,7 @@ function dismiss() {
     :role="live"
     @click="dismiss"
   >
-    <slot name="icon" />
+    <span v-if="$slots.icon" class="notice__icon"><slot name="icon" /></span>
     <span class="notice__msg"><slot /></span>
     <button
       v-if="dismissable"

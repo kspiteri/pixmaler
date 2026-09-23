@@ -170,7 +170,7 @@ onBeforeUnmount(() => {
       @dismiss="emit('dismissCancelled')"
     >
       <template #icon>
-        <CircleSlash class="notice__icon" :size="16" aria-hidden="true" />
+        <CircleSlash :size="16" aria-hidden="true" />
       </template>
       the round was cancelled and you lost your drawing,<br>a new round will soon begin…
     </AlertNotice>
