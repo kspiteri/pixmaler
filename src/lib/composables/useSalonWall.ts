@@ -26,19 +26,12 @@ export type WallItem
     | (HungItem & { kind: 'filler' })
 
 // Layout feel: tilt/offset ranges and roughly how many fillers hang per drawing. The grid gap
-// is CSS-owned (--wall-gap in _salon.scss); the span maths below assumes a zero gap regardless.
-const TUNE = { maxRotDeg: 2.5, maxNudgePx: 4, fillersPerPainting: 4 }
-// Filler frame shapes (row/col spans) — a mix of squares and rectangles so the wall reads varied.
+// is CSS-owned (--wall-gap in _salon.scss).
+const TUNE = { maxRotDeg: 2.5, maxNudgePx: 4, fillersPerPainting: 2 }
+// Filler frame shapes [rowSpan, colSpan] — the same three footprints a piece can take, so a
+// faded frame never outweighs a real drawing and the column-dense flow packs without holes.
 const FILLER_SHAPES: [number, number][] = [
   [1, 1],
-  [2, 2],
-  [3, 3],
-  [2, 3],
-  [3, 4],
-  [2, 4],
-  [3, 2],
-  [4, 3],
-  [4, 2],
   [1, 2],
   [2, 1],
 ]
@@ -66,12 +59,13 @@ function wobble(rng: () => number) {
     dy: Math.round((rng() - 0.5) * 2 * TUNE.maxNudgePx),
   }
 }
-// Equal-area span per ratio (~24 cells), landing on the exact aspect: 4×6 / 5×5 / 6×4.
+// Span keyed to aspect ratio, packed into the 3-row band: square is the 1×1 unit, landscape
+// widens (colSpan up to 3), portrait heightens (rowSpan up to 3). Cells are square, so the
+// block's aspect tracks the drawing's — 3:2 → 2×1, 2:3 → 1×2, 1:1 → 1×1.
 function spanFor(ratio: number): { rowSpan: number, colSpan: number } {
-  return {
-    rowSpan: Math.max(2, Math.round(Math.sqrt(24 / ratio))),
-    colSpan: Math.max(2, Math.round(Math.sqrt(24 * ratio))),
-  }
+  return ratio >= 1
+    ? { rowSpan: 1, colSpan: Math.min(3, Math.max(1, Math.round(ratio))) }
+    : { rowSpan: Math.min(3, Math.max(1, Math.round(1 / ratio))), colSpan: 1 }
 }
 // Filler grid dims matching the frame's random shape, so the faded art isn't stretched.
 function fillerDims(rowSpan: number, colSpan: number): { gw: number, gh: number } {

@@ -6,11 +6,15 @@
 
 .salon-wall {
   --wall-gap: 18px;
-  --cell: clamp(20px, 4.2vh, 44px);
+  // Square cells in exactly three rows (the old grid had twelve). The height budget subtracts the
+  // header, prompt and a margin for the tilt/nudge, so a rotated frame never pokes past the box,
+  // and align-content centres the band in whatever slack is left. Three rows drop the ~470px
+  // floor that clipped short viewports; the cap keeps a tall desktop from blowing the frames up.
+  --cell: clamp(64px, calc((100svh - 220px) / 3), 220px);
 
   display: grid;
   grid-auto-flow: column dense;
-  grid-template-rows: repeat(12, var(--cell));
+  grid-template-rows: repeat(3, var(--cell));
   grid-auto-columns: var(--cell);
   gap: var(--wall-gap);
   align-content: center;
