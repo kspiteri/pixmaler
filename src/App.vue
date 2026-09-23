@@ -45,7 +45,11 @@ const isComponentsRoute = import.meta.env.DEV && path.endsWith('/components')
 const Components = import.meta.env.DEV
   ? defineAsyncComponent(() => import('@/views/Components.vue'))
   : null
-const route = isComponentsRoute ? 'components' : isTaglinesRoute ? 'taglines' : isPaintRoute ? 'paint' : roomCode ? 'room' : 'entry'
+const isQuantiseRoute = import.meta.env.DEV && path.endsWith('/quantise')
+const Quantise = import.meta.env.DEV
+  ? defineAsyncComponent(() => import('@/views/Quantise.vue'))
+  : null
+const route = isQuantiseRoute ? 'quantise' : isComponentsRoute ? 'components' : isTaglinesRoute ? 'taglines' : isPaintRoute ? 'paint' : roomCode ? 'room' : 'entry'
 
 // Connect only on the room route; useRoom leaves its state inert off it.
 const {
@@ -72,6 +76,7 @@ const {
   <Paint v-else-if="route === 'paint'" />
   <Taglines v-else-if="route === 'taglines'" />
   <Components v-else-if="route === 'components'" />
+  <Quantise v-else-if="route === 'quantise'" />
 
   <template v-else-if="route === 'room'">
     <!-- Session closed by a GM or timeout. -->
