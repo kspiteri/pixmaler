@@ -12,7 +12,7 @@ allowBuilds:
 catalogs:
   dev:
     '@antfu/eslint-config': ^9.0.0
-    '@cloudflare/workers-types': ^4.20260625.1
+    '@cloudflare/workers-types': ^4.20260702.1
     '@vitejs/plugin-vue': ^6.0.7
     eslint: ^10.11.0
     eslint-plugin-format: ^2.0.1

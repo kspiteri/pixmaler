@@ -10,8 +10,8 @@ catalogs:
       specifier: ^9.0.0
       version: 9.0.0
     '@cloudflare/workers-types':
-      specifier: ^4.20260625.1
-      version: 4.20260625.1
+      specifier: ^4.20260702.1
+      version: 4.20260702.1
     '@vitejs/plugin-vue':
       specifier: ^6.0.7
       version: 6.0.7
@@ -80,7 +80,7 @@ importers:
         version: 1.23.0(vue@3.5.35(typescript@5.9.3))
       partyserver:
         specifier: catalog:prod
-        version: 0.5.10(@cloudflare/workers-types@4.20260625.1)
+        version: 0.5.10(@cloudflare/workers-types@4.20260702.1)
       partysocket:
         specifier: catalog:prod
         version: 1.1.19
@@ -96,7 +96,7 @@ importers:
         version: 9.0.0(@typescript-eslint/rule-tester@8.61.0(eslint@10.11.0(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3))(@typescript-eslint/typescript-estree@8.61.0(supports-color@10.2.2)(typescript@5.9.3))(@typescript-eslint/utils@8.61.0(eslint@10.11.0(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3))(@vue/compiler-sfc@3.5.35)(eslint-plugin-format@2.0.1(eslint@10.11.0(supports-color@10.2.2)))(eslint@10.11.0(supports-color@10.2.2))(supports-color@10.2.2)(typescript@5.9.3)(vitest@5.0.1(vite@8.3.0(esbuild@0.28.1)(sass@1.100.0)(yaml@2.9.0)))
       '@cloudflare/workers-types':
         specifier: catalog:dev
-        version: 4.20260625.1
+        version: 4.20260702.1
       '@vitejs/plugin-vue':
         specifier: catalog:dev
         version: 6.0.7(vite@8.3.0(esbuild@0.28.1)(sass@1.100.0)(yaml@2.9.0))(vue@3.5.35(typescript@5.9.3))
@@ -138,7 +138,7 @@ importers:
         version: 3.3.4(typescript@5.9.3)
       wrangler:
         specifier: catalog:dev
-        version: 4.105.0(@cloudflare/workers-types@4.20260625.1)
+        version: 4.105.0(@cloudflare/workers-types@4.20260702.1)
 
 packages:
 
@@ -284,8 +284,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@cloudflare/workers-types@4.20260625.1':
-    resolution: {integrity: sha512-asH0RhPHiNu/IUSssyiOJYAcGqysy0DJpO9fihC6KATaayD9CE1E9bgNQozTLUraxrCT2qkM4CBOIcV0M5NPJw==}
+  '@cloudflare/workers-types@4.20260702.1':
+    resolution: {integrity: sha512-mOhf5TUEB1m2vPrxtqoIGfz0fUC9xyxRDx5gWHy5s+OCo6dcV+g7wI1R7gYCMFohhqF/2y2xeKVwMwCJjfn/WA==}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -3229,7 +3229,7 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20260625.1':
     optional: true
 
-  '@cloudflare/workers-types@4.20260625.1': {}
+  '@cloudflare/workers-types@4.20260702.1': {}
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -5410,9 +5410,9 @@ snapshots:
 
   parse-statements@1.0.11: {}
 
-  partyserver@0.5.10(@cloudflare/workers-types@4.20260625.1):
+  partyserver@0.5.10(@cloudflare/workers-types@4.20260702.1):
     dependencies:
-      '@cloudflare/workers-types': 4.20260625.1
+      '@cloudflare/workers-types': 4.20260702.1
       nanoid: 5.1.15
 
   partysocket@1.1.19:
@@ -5929,7 +5929,7 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20260625.1
       '@cloudflare/workerd-windows-64': 1.20260625.1
 
-  wrangler@4.105.0(@cloudflare/workers-types@4.20260625.1):
+  wrangler@4.105.0(@cloudflare/workers-types@4.20260702.1):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.5.0
       '@cloudflare/unenv-preset': 2.16.1(unenv@2.0.0-rc.24)(workerd@1.20260625.1)
@@ -5940,7 +5940,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       workerd: 1.20260625.1
     optionalDependencies:
-      '@cloudflare/workers-types': 4.20260625.1
+      '@cloudflare/workers-types': 4.20260702.1
       fsevents: 2.3.3
     transitivePeerDependencies:
       - bufferutil
