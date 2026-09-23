@@ -1,5 +1,52 @@
 # Changelog
 
+## [0.11.0](https://github.com/kspiteri/pixmaler/compare/0.10.0...0.11.0) (2026-09-23)
+
+
+### New
+
+* add `/quantise` route and dev-only quantiser comparison tool ([f49b7a7](https://github.com/kspiteri/pixmaler/commit/f49b7a77a822a5579801da4a45c3188959c9be50))
+* add `Disclosure` component ([42d3253](https://github.com/kspiteri/pixmaler/commit/42d3253245c8be59b787aae13d6890c2f6ec5682))
+* add reusable range slider component ([8045ae6](https://github.com/kspiteri/pixmaler/commit/8045ae635a14cc01b793a71f1d23cfafc13b87c1))
+* add single-open accordion component with styles ([2c71e8a](https://github.com/kspiteri/pixmaler/commit/2c71e8a10f06b619cf4c7633c22de5d6790989a7))
+* allow GM to clear image and reset room configuration ([5845f33](https://github.com/kspiteri/pixmaler/commit/5845f333f41e8d38638f7fbb8b3d3e376d4d25e1))
+* **image-picker:** add pixelation style control ([bbd42bc](https://github.com/kspiteri/pixmaler/commit/bbd42bc413d2d685eee66df651aebb237c33488b))
+* improve accessibility for GM start game button ([7711fa3](https://github.com/kspiteri/pixmaler/commit/7711fa3d675d6904de2ae6d76afb5885c9ee8e8b))
+* modularize and enhance image picker ([3387f63](https://github.com/kspiteri/pixmaler/commit/3387f6392ae94ea397a3c99759beed5b59988bd1))
+* update voting icons and crown ([19135a6](https://github.com/kspiteri/pixmaler/commit/19135a66e7bdc7b2fbff7350ce2c0c8374f644bd))
+
+
+### Fixes
+
+* ensure cleanup of PixelCanvas instances and DOM listeners ([e099018](https://github.com/kspiteri/pixmaler/commit/e09901822ca9bec0a5153c89e496af90b03e61d9))
+* improve `AlertNotice` styles ([e4deb00](https://github.com/kspiteri/pixmaler/commit/e4deb00751484f45c1768eb20777fb7699d07f44))
+* prevent event listener leaks during `SalonWall` unmounting ([e12fb7b](https://github.com/kspiteri/pixmaler/commit/e12fb7be6d107c10a0f1fae1aff5a03e08a73d8a))
+* **protocol:** add `isTargetGrid` helper for grid validation ([068e660](https://github.com/kspiteri/pixmaler/commit/068e660033d501136fe1a810e6823729bc9ff1c3))
+
+
+### Under the hood
+
+* add CSS linting and worker bundle check to CI workflow ([4407691](https://github.com/kspiteri/pixmaler/commit/44076912747680dab40bc65ca26d5a28b353a816))
+* add Dependabot configuration for npm and GitHub Actions updates ([37b1162](https://github.com/kspiteri/pixmaler/commit/37b1162c345ba5aac0b9dbbfd5d48bf5c29d7049))
+* add disabled state to accordion items ([b91dec7](https://github.com/kspiteri/pixmaler/commit/b91dec7950c4620b3d999df154abc3df45d59665))
+* add test bot script for local playtesting ([58be22c](https://github.com/kspiteri/pixmaler/commit/58be22cb93fe7345b709c5510ea41756a78adfd8))
+* adjust Dependabot ([3869f7e](https://github.com/kspiteri/pixmaler/commit/3869f7e055f405c6014596255792298a3670fd24))
+* adjust salon wall to 3-row layout ([854d92c](https://github.com/kspiteri/pixmaler/commit/854d92c5a75acfe531062c574feb60d6cb6bab6b))
+* **deps:** bump eslint from 10.5.0 to 10.11.0 ([44ee0f8](https://github.com/kspiteri/pixmaler/commit/44ee0f86792692d1ca80c6a7dfa7415940220dc1))
+* **deps:** bump eslint from 10.5.0 to 10.11.0 ([2ee0b38](https://github.com/kspiteri/pixmaler/commit/2ee0b380cd248164e319c78f05ddc13a11872668))
+* **deps:** bump partyserver from 0.5.8 to 0.5.10 ([f3ade54](https://github.com/kspiteri/pixmaler/commit/f3ade54fe9daf39f9ba490134f49674a78065893))
+* **deps:** bump partyserver from 0.5.8 to 0.5.10 ([fc949c1](https://github.com/kspiteri/pixmaler/commit/fc949c11c6d8663a1f49c2428d88ed3bd8bd0149))
+* **deps:** bump vite from 7.3.5 to 8.3.0 ([a7c37d8](https://github.com/kspiteri/pixmaler/commit/a7c37d8054da691a2d39bb7de845d98ca7c33a5a))
+* **deps:** bump vite from 7.3.5 to 8.3.0 ([8d462ac](https://github.com/kspiteri/pixmaler/commit/8d462acd994c8c6160da1dec0fc5f0c96b764a1f))
+* **deps:** bump vitest from 4.1.11 to 5.0.1 ([9db7613](https://github.com/kspiteri/pixmaler/commit/9db76137a6937b3faf22c267fb86b76c45e9c668))
+* **deps:** bump vitest from 4.1.11 to 5.0.1 ([4f9c5a0](https://github.com/kspiteri/pixmaler/commit/4f9c5a0a900bdba2b941d60f2e0071eac4e7060a))
+* integrate slider component into crop and picker ([155b7ad](https://github.com/kspiteri/pixmaler/commit/155b7ad9fa08cac5dc0184ebbeaed23d3c34ef86))
+* **pipeline:** modularize pipeline steps and add new quantisers ([9c06fde](https://github.com/kspiteri/pixmaler/commit/9c06fde3b91235c7075373a2ed0c79303d545dc9))
+* remove explicit `pnpm` version specification in workflows ([f89a06a](https://github.com/kspiteri/pixmaler/commit/f89a06a52f76dc4cf53852d7bf04300ad8338669))
+* replace inline award icons with `GameIcon` component ([749f3b1](https://github.com/kspiteri/pixmaler/commit/749f3b12962a229f7b89cd674975811c0c4e74d1))
+* rework dev-only `/components` gallery ([7ac6d6a](https://github.com/kspiteri/pixmaler/commit/7ac6d6ae91ad937836ef4f873f084aeafe0d11e6))
+* simplify PixelationStyle blurbs for clarity ([d0cda5d](https://github.com/kspiteri/pixmaler/commit/d0cda5d2d09406686f252825040a6f9bb082bdc5))
+
 ## [0.10.0](https://github.com/kspiteri/pixmaler/compare/0.9.1...0.10.0) (2026-09-18)
 
 
