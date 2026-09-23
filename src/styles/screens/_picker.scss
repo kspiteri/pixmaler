@@ -1,4 +1,5 @@
 @use 'tokens' as *;
+@use 'chrome' as *;
 
 // ImagePicker — a persistent target preview + a single-open accordion of steps (Image →
 // Framing → Look → Timer), shared by the Lobby's GM controls and the /paint sandbox. Static and
@@ -54,6 +55,40 @@
     color: $fg-60;
     font-size: $fs-sm;
     flex-shrink: 0;
+  }
+  &__style {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-2;
+  }
+  &__style-help {
+    @include chrome($rung: $radius);
+    padding: $gap-3;
+    display: flex;
+    flex-direction: column;
+    gap: $gap-2;
+    color: $fg-50;
+    font-size: $fs-xs;
+    line-height: $lh-snug;
+    background-color: $bg;
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: $gap-1;
+    }
+
+    strong {
+      color: $fg;
+      font-weight: $fw-semibold;
+    }
+  }
+  &__style-note {
+    margin: 0;
+    color: $fg-50;
   }
   // Readout: "12 → 40×60" plus the busy spinner. Right-aligned in a reserved slot
   // so digit-count changes don't resize the slider beside it.

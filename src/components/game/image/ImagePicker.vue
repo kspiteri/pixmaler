@@ -4,17 +4,18 @@
 // (Game mode → Image → Adjust Target → Game settings). The step controls and the preview are
 // under ./picker; this file wires them and runs `processImage` on any change.
 
-import type { CropSelection, PickerMeta, PipelineResult, RoundConfig, TargetRatioId } from '@/lib'
+import type { CropSelection, PickerMeta, PipelineResult, PixelationStyle, RoundConfig, TargetRatioId } from '@/lib'
 import { ChevronDown, Trash2 } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Accordion from '@/components/elements/accordion/Accordion.vue'
 import AccordionItem from '@/components/elements/accordion/Item.vue'
 import Button from '@/components/elements/Button.vue'
-import { asset, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_RATIO, DEFAULT_SCALE, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, nearestRatioFor, processImage, TARGET_RATIOS, unsupportedImage } from '@/lib'
+import { asset, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_PIXELATION_STYLE, DEFAULT_RATIO, DEFAULT_SCALE, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, nearestRatioFor, processImage, quantiserFor, TARGET_RATIOS, unsupportedImage } from '@/lib'
 import AlphaControl from './picker/AlphaControl.vue'
 import ColourControl from './picker/ColourControl.vue'
 import CropWidget from './picker/CropWidget.vue'
 import DetailControl from './picker/DetailControl.vue'
+import PixelationStyleControl from './picker/PixelationStyleControl.vue'
 import SourcePicker from './picker/SourcePicker.vue'
 import { detailLabel, DURATION_STOPS } from './picker/stops'
 import TargetPreview from './picker/TargetPreview.vue'
@@ -47,6 +48,7 @@ const DEFAULT_DRAW_SECONDS = 120
 
 const scale = ref(DEFAULT_SCALE)
 const colorCount = ref(DEFAULT_COLOR_COUNT)
+const pixelationStyle = ref<PixelationStyle>(DEFAULT_PIXELATION_STYLE)
 const ratio = ref<TargetRatioId>(DEFAULT_RATIO)
 const crop = ref<CropSelection>({ ...FULL_CROP })
 const background = ref(DEFAULT_BACKGROUND)
@@ -134,7 +136,7 @@ async function reprocess() {
   emit('processing')
 
   try {
-    const result = await processImage(cachedFile, scale.value, colorCount.value, ratio.value, crop.value, background.value)
+    const result = await processImage(cachedFile, scale.value, colorCount.value, ratio.value, crop.value, background.value, quantiserFor(pixelationStyle.value))
     if (myRun !== runId)
       return // stale
 
@@ -164,7 +166,7 @@ function scheduleReprocess() {
   debounceTimer = setTimeout(reprocess, 150)
 }
 
-watch([scale, colorCount, ratio, background, crop], scheduleReprocess)
+watch([scale, colorCount, ratio, background, crop, pixelationStyle], scheduleReprocess)
 
 // Adopt a newly-chosen image: preselect the ratio closest to its own framing and reset the crop
 // to the whole frame, so any crop is a deliberate second choice. Costs one extra decode.
@@ -305,6 +307,7 @@ onBeforeUnmount(() => {
             :source-label="sourceLabel"
             :background="background"
           />
+          <PixelationStyleControl v-model="pixelationStyle" />
           <DetailControl v-model="scale" :grid-preview="gridPreview" :busy="busy" />
           <ColourControl v-model="colorCount" />
           <AlphaControl v-if="hasAlpha" v-model="background" />
