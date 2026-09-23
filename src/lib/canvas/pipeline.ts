@@ -5,15 +5,10 @@
 
 import type { CropSelection, TargetRatioId } from './aspect'
 import type { Rgb } from './palette'
+import type { Quantiser } from './quantisers'
 import { cropRect, FULL_CROP, ratioBox } from './aspect'
-import {
-  derivePalette,
-  mergeNearDuplicates,
-  nearestIndex,
-  paletteSortOrder,
-  rgbToHex,
-  withClassics,
-} from './palette'
+import { nearestIndex, paletteSortOrder, rgbToHex, withClassics } from './palette'
+import { DEFAULT_PIXELATION_STYLE, quantiserFor } from './quantisers'
 
 export interface PipelineResult {
   gridW: number
@@ -140,14 +135,27 @@ async function decodeViaElement(file: File): Promise<ImageBitmap> {
   }
 }
 
-export async function processImage(
+export interface ImageSample {
+  gridW: number
+  gridH: number
+  sourceW: number
+  sourceH: number
+  // The downscaled grid as RGBA (row-major), for `quantiseToPalette`; and the same pixels as
+  // RGB tuples, for a quantiser.
+  rgba: Uint8ClampedArray
+  pixels: Rgb[]
+}
+
+// The colour-independent half of the pipeline: decode → crop to ratio → downscale to the grid →
+// read the pixels. Split out so `processImage` and the /quantise comparison share one sample
+// rather than each re-decoding, and so an alternative quantiser runs on identical input.
+export async function sampleImage(
   file: File,
-  scale: number, // cells per 100 source px, 1-50; clamped if out of range
-  colorCount: number, // swatch length; exact unless the image has fewer distinct colours
+  scale: number,
   ratio: TargetRatioId,
   crop: CropSelection = FULL_CROP,
-  background: string = DEFAULT_BACKGROUND, // CSS colour behind a transparent upload
-): Promise<PipelineResult> {
+  background: string = DEFAULT_BACKGROUND,
+): Promise<ImageSample> {
   const bitmap = await decodeImage(file)
 
   // Constrain to one of three shapes (see `aspect.ts`): take the rect the GM framed, then
@@ -169,30 +177,40 @@ export async function processImage(
   sourceCtx.drawImage(bitmap, sx, sy, sw, sh, 0, 0, sourceW, sourceH)
   bitmap.close()
 
-  // ── Step 1: downscale the source to exactly the grid in one step. A `gridW × gridH`
-  // destination consumes the whole source rect, so no pixel is dropped — the vendored
-  // pixelit round-trip this replaces lost the right and bottom edges.
+  // Downscale the source to exactly the grid in one step. A `gridW × gridH` destination
+  // consumes the whole source rect, so no pixel is dropped.
   const { gridW, gridH } = gridSizeFor(sourceW, sourceH, scale)
-
   const sampleCanvas = document.createElement('canvas')
   sampleCanvas.width = gridW
   sampleCanvas.height = gridH
   const sampleCtx = sampleCanvas.getContext('2d')!
-  // Whole source rect → whole grid rect. No padding, no leftover partial block.
   sampleCtx.drawImage(sourceCanvas, 0, 0, sourceW, sourceH, 0, 0, gridW, gridH)
-  const sampleData = sampleCtx.getImageData(0, 0, gridW, gridH).data
+  const rgba = sampleCtx.getImageData(0, 0, gridW, gridH).data
 
-  // ── Step 2: derive the palette from that same downscale. The target uses only
-  // image-derived colours; classics top the swatch up to `colorCount` afterwards.
-  const samplePixels: Rgb[] = []
-  for (let i = 0; i < sampleData.length; i += 4) {
-    samplePixels.push([sampleData[i], sampleData[i + 1], sampleData[i + 2]])
-  }
-  const derived = mergeNearDuplicates(derivePalette(samplePixels, colorCount))
+  const pixels: Rgb[] = []
+  for (let i = 0; i < rgba.length; i += 4)
+    pixels.push([rgba[i], rgba[i + 1], rgba[i + 2]])
 
-  // ── Step 3: quantise each cell against the derived palette.
-  // Indices map into `derived` (which is the prefix of the wire palette below).
-  const targetGrid = quantiseToPalette(sampleData, gridW, gridH, derived)
+  return { gridW, gridH, sourceW, sourceH, rgba, pixels }
+}
+
+export async function processImage(
+  file: File,
+  scale: number, // cells per 100 source px, 1-50; clamped if out of range
+  colorCount: number, // swatch length; exact unless the image has fewer distinct colours
+  ratio: TargetRatioId,
+  crop: CropSelection = FULL_CROP,
+  background: string = DEFAULT_BACKGROUND, // CSS colour behind a transparent upload
+  quantise: Quantiser = quantiserFor(DEFAULT_PIXELATION_STYLE),
+): Promise<PipelineResult> {
+  const { gridW, gridH, sourceW, sourceH, rgba, pixels } = await sampleImage(file, scale, ratio, crop, background)
+
+  // The target uses only image-derived colours; classics top the swatch up to `colorCount`.
+  const derived = quantise(pixels, colorCount)
+
+  // Quantise each cell against the derived palette. Indices map into `derived`, the prefix
+  // of the wire palette below.
+  const targetGrid = quantiseToPalette(rgba, gridW, gridH, derived)
 
   // Derived first so targetGrid indices stay valid; classics are swatch-only, and only
   // as many as it takes to reach the count the GM asked for.
