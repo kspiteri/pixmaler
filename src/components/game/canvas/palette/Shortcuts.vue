@@ -4,12 +4,10 @@
 // `.tools-panel__shortcuts*` chrome lives in `_tools-panel.scss` (this renders inside the panel).
 
 import type { Component } from 'vue'
-import { ArrowBigUp, ArrowLeft, ArrowRight, ChevronDown, ChevronUp, Keyboard, Mouse } from '@lucide/vue'
-import { markRaw, ref } from 'vue'
-import Button from '@/components/elements/Button.vue'
+import { ArrowBigUp, ArrowLeft, ArrowRight, Keyboard, Mouse } from '@lucide/vue'
+import { markRaw } from 'vue'
+import Disclosure from '@/components/elements/Disclosure.vue'
 import { isTouch, shortcutsEnabled } from '@/lib'
-
-const open = ref(false)
 
 interface Shortcut {
   // The actual key, in words — the truth, the fallback when there's no icon, and what a
@@ -32,37 +30,24 @@ const SHORTCUTS: Shortcut[] = [
 
 <template>
   <div v-if="!isTouch && shortcutsEnabled" class="tools-panel__shortcuts">
-    <Button
-      variant="subtle"
-      size="x-small"
-      block
-      aria-label="Keyboard shortcuts"
-      :aria-expanded="open"
-      @pointerdown.stop
-      @click="open = !open"
-    >
+    <Disclosure label="for the pros" aria-label="Keyboard shortcuts" block @pointerdown.stop>
       <template #icon>
         <Keyboard :size="14" />
       </template>
-      for the pros
-      <template #trailing>
-        <ChevronUp v-if="open" :size="14" />
-        <ChevronDown v-else :size="14" />
-      </template>
-    </Button>
-    <ul v-if="open">
-      <li v-for="s in SHORTCUTS" :key="s.desc">
-        <kbd role="img" :aria-label="s.aria ?? s.key">
-          <template v-if="s.shortcut">
-            <template v-for="(t, i) in s.shortcut" :key="i">
-              <component :is="t" v-if="typeof t !== 'string'" :size="13" />
-              <span v-else>{{ t }}</span>
+      <ul>
+        <li v-for="s in SHORTCUTS" :key="s.desc">
+          <kbd role="img" :aria-label="s.aria ?? s.key">
+            <template v-if="s.shortcut">
+              <template v-for="(t, i) in s.shortcut" :key="i">
+                <component :is="t" v-if="typeof t !== 'string'" :size="13" />
+                <span v-else>{{ t }}</span>
+              </template>
             </template>
-          </template>
-          <template v-else>{{ s.key }}</template>
-        </kbd>
-        <span>{{ s.desc }}</span>
-      </li>
-    </ul>
+            <template v-else>{{ s.key }}</template>
+          </kbd>
+          <span>{{ s.desc }}</span>
+        </li>
+      </ul>
+    </Disclosure>
   </div>
 </template>

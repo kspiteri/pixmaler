@@ -4,6 +4,7 @@
 import { Play } from '@lucide/vue'
 import { ref } from 'vue'
 import Button from '@/components/elements/Button.vue'
+import Disclosure from '@/components/elements/Disclosure.vue'
 import Logo from '@/components/elements/Logo.vue'
 import NameField from '@/components/elements/NameField.vue'
 import Tagline from '@/components/elements/Tagline.vue'
@@ -36,8 +37,7 @@ function enterRoom(room: string, create = false) {
         <Logo size="lg" />
         <Tagline class="entry__sub" />
 
-        <details class="entry__privacy">
-          <summary>your privacy and what is stored</summary>
+        <Disclosure label="your privacy and what is stored" class="entry__privacy">
           <div class="entry__privacy-body">
             <p>
               Pixmaler keeps a nickname you choose, a randomly generated id, your settings,
@@ -63,7 +63,7 @@ function enterRoom(room: string, create = false) {
               top right, at any time.
             </p>
           </div>
-        </details>
+        </Disclosure>
       </header>
 
       <div class="entry__panel">

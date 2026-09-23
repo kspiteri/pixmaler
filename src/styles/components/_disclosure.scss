@@ -1,0 +1,13 @@
+@use 'tokens' as *;
+
+// Disclosure.vue - a subtle toggle over revealed content. The trigger and chevron are the
+// Button's; this only stacks the two and keeps a non-block trigger from stretching. The revealed
+// body styles itself at each site.
+.disclosure {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-2;
+}
+.disclosure__trigger {
+  align-self: flex-start;
+}
