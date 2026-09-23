@@ -22,7 +22,6 @@
 @use 'salon'; // the salon gallery wall + frame primitive (SalonWall/SalonFrame — voting)
 
 // Page partials — per-screen static layout.
-@use 'components'; // /components dev-only gallery (screens/_components.scss, not the folder)
 @use 'drawing'; // DRAWING screen chrome — see also `.phase--fixed` in _phase
 @use 'entry';
 @use 'lobby';

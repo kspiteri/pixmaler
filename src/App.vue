@@ -2,11 +2,11 @@
 // Router (entry / paint / room). Resolves the route and feeds the room state from
 // `lib/useRoom` into the phase views; descendants get `socket`/`clientId` by provide.
 
+import { defineAsyncComponent } from 'vue'
 import AlertDialog from '@/components/elements/AlertDialog.vue'
 import AlertNotice from '@/components/elements/AlertNotice.vue'
 import PhaseBoundary from '@/components/layout/PhaseBoundary.vue'
 import { assertiveMessage, currentDialog, politeMessage, settleDialog, useRoom } from '@/lib'
-import Components from '@/views/Components.vue'
 import Entry from '@/views/Entry.vue'
 import Paint from '@/views/Paint.vue'
 import Drawing from '@/views/phases/Drawing.vue'
@@ -38,8 +38,13 @@ const path = location.pathname.replace(/\/+$/, '')
 const isPaintRoute = path.endsWith('/paint')
 // Hidden debug page — read all taglines in bulk.
 const isTaglinesRoute = path.endsWith('/taglines')
-// Dev-only component gallery; gated so `/components` never resolves in a production build.
+// Dev-only component gallery: the route only resolves under import.meta.env.DEV, and the
+// conditional import is dropped from the production graph when that's statically false, so
+// neither the view nor its CSS ships to players.
 const isComponentsRoute = import.meta.env.DEV && path.endsWith('/components')
+const Components = import.meta.env.DEV
+  ? defineAsyncComponent(() => import('@/views/Components.vue'))
+  : null
 const route = isComponentsRoute ? 'components' : isTaglinesRoute ? 'taglines' : isPaintRoute ? 'paint' : roomCode ? 'room' : 'entry'
 
 // Connect only on the room route; useRoom leaves its state inert off it.
