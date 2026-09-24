@@ -6,6 +6,7 @@
 // (position, flex, width) as a class, which merges in via $attrs.
 
 import { useTemplateRef } from 'vue'
+import { playSfx } from '@/lib'
 
 // $attrs (class, @click, :disabled, title, aria-*, type="submit"…) lands on the root element,
 // not this wrapper.
@@ -44,6 +45,7 @@ defineExpose({ focus: () => root.value?.focus() })
     :type="href ? undefined : 'button'"
     :href="href"
     v-bind="$attrs"
+    @click="variant === 'primary' && playSfx('ding')"
   >
     <span v-if="$slots.icon" class="btn__icon"><slot name="icon" /></span>
     <span v-if="$slots.default" class="btn__label"><slot /></span>
