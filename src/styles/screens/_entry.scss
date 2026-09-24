@@ -96,6 +96,41 @@ $panel-w: 24rem;
   gap: $gap-4;
 }
 
+// The entry actions confirm with a label → icon morph before their full-page navigation: a tick
+// on create, a forward arrow on the secondary actions. The label and icon are grid-stacked (same
+// cell) so the button keeps the label's width and never reflows as they cross-fade.
+.entry__morph {
+  display: inline-grid;
+  place-items: center;
+}
+.entry__morph-text,
+.entry__morph-icon {
+  grid-area: 1 / 1;
+  transition:
+    opacity 0.18s ease,
+    scale 0.18s ease;
+}
+.entry__morph-icon {
+  opacity: 0;
+  scale: 0.6;
+}
+.entry__morph--active {
+  .entry__morph-text {
+    opacity: 0;
+    scale: 0.6;
+  }
+  .entry__morph-icon {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .entry__morph-text,
+  .entry__morph-icon {
+    transition: none;
+  }
+}
+
 .entry__divider {
   display: flex;
   align-items: center;
