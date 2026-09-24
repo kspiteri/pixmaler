@@ -65,8 +65,11 @@ const sfxHowl = new Howl({
 // Per-key last-played stamp for the repeat throttle (see `shouldPlay`).
 const lastPlayed = new Map<SfxKey, number>()
 
-/** Sound an sfx key, subject to its channel toggle and the repeat throttle. */
+/** Sound an sfx key, if its clip exists yet, subject to its channel toggle and the repeat throttle. */
 export function playSfx(key: SfxKey): void {
+  // A typed key with no clip yet (awaiting the recorded sprite, #95) is a silent no-op, not a warn.
+  if (!(key in SPRITE))
+    return
   const now = Date.now()
   if (!shouldPlay(key, currentPrefs(), now, lastPlayed.get(key) ?? null))
     return
