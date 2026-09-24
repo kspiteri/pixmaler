@@ -13,6 +13,7 @@ catalogs:
   dev:
     '@antfu/eslint-config': ^9.0.0
     '@cloudflare/workers-types': ^4.20260625.1
+    '@types/howler': ^2.2.12
     '@vitejs/plugin-vue': ^6.0.7
     eslint: ^10.11.0
     eslint-plugin-format: ^2.0.1
@@ -29,6 +30,7 @@ catalogs:
     wrangler: ^4.105.0
   prod:
     '@lucide/vue': ^1.23.0
+    howler: ^2.2.4
     partyserver: ^0.5.10
     partysocket: ^1.0.3
     unique-names-generator: ^4.7.1
