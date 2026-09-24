@@ -4,7 +4,7 @@
 // The chosen image, its settings and the canvas progress persist across reloads (lib/paintSession).
 
 import type { PickerMeta, PipelineResult } from '@/lib'
-import { ChevronDown, ChevronUp, Eraser, Settings } from '@lucide/vue'
+import { ChevronDown, ChevronUp, Eraser, Palette } from '@lucide/vue'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import Tagline from '@/components/elements/Tagline.vue'
@@ -129,7 +129,7 @@ const summary = computed(() => {
           @click="settingsOpen = !settingsOpen"
         >
           <span class="paint__toggle-label">
-            <Settings :size="16" />
+            <Palette :size="16" />
             <span>Settings</span>
             <span v-if="!settingsOpen && summary" class="paint__toggle-summary">
               · {{ summary }}
