@@ -5,6 +5,7 @@
 export * from './announce'
 export * from './appLayout'
 export * from './assets'
+export * from './audio'
 export * from './canvas/aspect'
 export * from './canvas/grid'
 export * from './canvas/palette'
