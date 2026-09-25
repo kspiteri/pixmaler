@@ -56,6 +56,35 @@
     font-size: $fs-sm;
     flex-shrink: 0;
   }
+  // Music picker: a styled native <select> (OS arrow off, lucide chevron overlaid).
+  &__select {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    display: flex;
+  }
+  &__select-input {
+    @include chrome($rung: $radius);
+    width: 100%;
+    padding: $gap-2 $gap-5 $gap-2 $gap-3;
+    appearance: none;
+    color: $fg;
+    font-family: $font-body;
+    font-size: $fs-sm;
+    cursor: pointer;
+
+    &:hover {
+      border-color: $border;
+    }
+  }
+  &__select-chevron {
+    position: absolute;
+    top: 50%;
+    right: $gap-3;
+    translate: 0 -50%;
+    color: $fg-50;
+    pointer-events: none;
+  }
   &__style {
     display: flex;
     flex-direction: column;
