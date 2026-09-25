@@ -3,18 +3,27 @@
 // the pair re-mounts on each new picker result so PixelCanvas instances tear down cleanly.
 // The chosen image, its settings and the canvas progress persist across reloads (lib/paintSession).
 
-import type { PickerMeta, PipelineResult } from '@/lib'
+import type { MusicTrackId, PickerMeta, PipelineResult } from '@/lib'
 import { ChevronDown, ChevronUp, Eraser, Palette } from '@lucide/vue'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import Tagline from '@/components/elements/Tagline.vue'
 import { DrawBoard, ImagePicker } from '@/components/game'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
-import { appHref, loadPaintSession, savePaintSession, useOrientation } from '@/lib'
+import { appHref, loadPaintSession, playMusic, savePaintSession, stopMusic, useOrientation } from '@/lib'
 
 const result = ref<PipelineResult | null>(null)
 const meta = ref<PickerMeta | null>(null)
 const pairRef = ref<InstanceType<typeof DrawBoard> | null>(null)
+
+// Free Mode picks its background track in the picker's Game settings; playing it lights up the
+// header MusicWidget. Not persisted — a reload starts silent.
+function onMusic(track: MusicTrackId | null) {
+  if (track)
+    playMusic(track)
+  else
+    stopMusic()
+}
 
 // Restore a previous session up front. `restoredGrid` seeds the canvas once (mount only);
 // `currentGrid` tracks the live drawing for the header's Clear control and the debounced save.
@@ -79,6 +88,7 @@ onBeforeUnmount(() => {
     if (result.value && meta.value)
       savePaintSession(result.value, meta.value, currentGrid.value)
   }
+  stopMusic()
 })
 
 // Collapsed toggle caption — "Mona Lisa · 32×48 · 16 colours".
@@ -145,6 +155,7 @@ const summary = computed(() => {
             show-preview
             :auto-load-sample="autoLoadSample"
             @result="onResult"
+            @music="onMusic"
           />
         </div>
       </div>
