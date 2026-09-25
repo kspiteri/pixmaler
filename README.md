@@ -19,6 +19,7 @@ A game master uploads any image. It's quantised in the browser into chunky, limi
 - **Cross-canvas hover marker** — hovering your canvas lights up a marker on the reference and highlights the matching swatch, so you don't have to squint at six near-identical browns.
 - **A palette that stays out of the way** — the reference image tucks into the palette panel and collapses when you don't need it; the panel docks to the side or floats over the canvas, sizes S / M / L, and remembers how you left it.
 - **Exact palettes, any raster upload** — the colour count is the whole swatch, not a request: ask for 24 and the room paints with 24, topped up from a ramp of classic colours when the image itself can't supply that many. An upload carrying transparency is flattened onto a background you choose first, so a logo's empty page stops merging into its own dark ink. A vector or a non-image is refused up front, in words, instead of failing behind a preview that looked fine.
+- **Music and sound** — the GM picks a per-round soundtrack (royalty-free chiptune that fades in when drawing starts and carries through the reveal), and the UI has subtle sound effects. Music, effects and the countdown tick are three independent per-device toggles, all off-friendly.
 - **Solo paint sandbox** — the [`/paint`](#paint-sandbox) route opens a single-player canvas with the same pipeline; useful for testing brushes and palettes, or just goofing around.
 
 ## Stack
@@ -26,6 +27,7 @@ A game master uploads any image. It's quantised in the browser into chunky, limi
 - Vite + Vue 3 (Composition API, `<script setup>`) + TypeScript, canvas-based drawing
 - [PartyServer](https://github.com/cloudflare/partyserver) on Cloudflare Durable Objects for realtime rooms, deployed with `wrangler` — see [`party/README.md`](./party/README.md) for the server guide
 - `partysocket` WebSocket client (auto-reconnect)
+- [Howler.js](https://howlerjs.com/) for audio — one preloaded sprite for zero-latency sound effects, streamed per-track music, per-device mute toggles
 - `unique-names-generator` for memorable room codes and for de-duplicating player names, both from a custom curated word list
 - Client-side image pipeline: flatten onto an opaque background, one exact downscale to the grid, median-cut palette derivation + near-duplicate merge, then per-cell quantisation. No dependencies, no server image processing, no image storage.
 
@@ -42,3 +44,7 @@ Both are needed to play; the `/paint` sandbox needs only `pnpm dev`. Set `VITE_P
 ## Paint sandbox
 
 `/pixmaler/paint` opens a solo canvas — pick a sample (Mona Lisa / The Scream / Pearl Earring) or upload your own image, tweak the scale and colour count (and, if the upload has transparency, what shows through behind it), then paint. No lobby, no timer, no socket. Linked from the entry screen.
+
+## Licences
+
+Third-party assets are recorded in [`LICENSE.md`](./LICENSE.md): the background music (Kevin MacLeod, **CC-BY 4.0**), the self-hosted fonts (**SIL OFL 1.1**) and the bundled dependencies (MIT/ISC). The music credit is also shown in-app, under **Credits** in the settings menu — CC-BY requires a visible attribution.
