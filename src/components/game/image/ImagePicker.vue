@@ -10,7 +10,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Accordion from '@/components/elements/accordion/Accordion.vue'
 import AccordionItem from '@/components/elements/accordion/Item.vue'
 import Button from '@/components/elements/Button.vue'
-import { asset, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_PIXELATION_STYLE, DEFAULT_RATIO, DEFAULT_SCALE, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, nearestRatioFor, processImage, quantiserFor, TARGET_RATIOS, unsupportedImage } from '@/lib'
+import { asset, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_PIXELATION_STYLE, DEFAULT_RATIO, DEFAULT_SCALE, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, nearestRatioFor, processImage, quantiserFor, TARGET_RATIOS, trackLabel, unsupportedImage } from '@/lib'
 import AlphaControl from './picker/AlphaControl.vue'
 import ColourControl from './picker/ColourControl.vue'
 import CropWidget from './picker/CropWidget.vue'
@@ -43,6 +43,8 @@ const emit = defineEmits<{
   processing: []
   // The GM cleared the target — the host un-configures the room.
   clear: []
+  // Free Mode plays the picked track live; the lobby ignores this (music starts at DRAWING).
+  music: [track: MusicTrackId | null]
 }>()
 
 const DEFAULT_DRAW_SECONDS = 120
@@ -116,6 +118,11 @@ const adjustSummary = computed(() =>
   hasImage.value ? `${ratioLabel.value} · ${lookSummary.value}` : 'pick an image first',
 )
 
+// With no timer (Free Mode) the section is music-only, so its summary follows the track.
+const settingsSummary = computed(() =>
+  props.showDrawSeconds ? timerSummary.value : (musicTrack.value ? trackLabel(musicTrack.value) : 'no music'),
+)
+
 // Flow-ordered steps for the "Next step" buttons — advance to the next *enabled* step. The
 // disabled 'mode' placeholder sits above the flow, so it is not a target.
 const flowSteps = computed(() => [
@@ -169,6 +176,7 @@ function scheduleReprocess() {
 }
 
 watch([scale, colorCount, ratio, background, crop, pixelationStyle], scheduleReprocess)
+watch(musicTrack, t => emit('music', t))
 
 // Adopt a newly-chosen image: preselect the ratio closest to its own framing and reset the crop
 // to the whole frame, so any crop is a deliberate second choice. Costs one extra decode.
@@ -323,11 +331,11 @@ onBeforeUnmount(() => {
           </div>
         </AccordionItem>
 
-        <AccordionItem v-if="showDrawSeconds" id="settings" title="Game settings" :disabled="!hasImage">
+        <AccordionItem id="settings" title="Game settings" :disabled="!hasImage">
           <template #summary>
-            {{ timerSummary }}
+            {{ settingsSummary }}
           </template>
-          <TimerControl v-model="drawSecs" />
+          <TimerControl v-if="showDrawSeconds" v-model="drawSecs" />
           <MusicControl v-model="musicTrack" />
         </AccordionItem>
       </Accordion>
