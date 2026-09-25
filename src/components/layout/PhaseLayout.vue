@@ -3,6 +3,7 @@
 // body, and an optional thin progress bar across the top via `progress`/`progressColour`.
 
 import Logo from '@/components/elements/Logo.vue'
+import { MusicWidget } from '@/components/game'
 import SettingsMenu from './SettingsMenu.vue'
 
 withDefaults(defineProps<{
@@ -27,6 +28,7 @@ withDefaults(defineProps<{
       <Logo v-else size="sm" />
       <div class="phase__status">
         <slot name="status" />
+        <MusicWidget class="phase__music" />
         <SettingsMenu />
       </div>
     </header>

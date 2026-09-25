@@ -1,8 +1,10 @@
 import type { AudioPrefs, SfxKey } from './audio.gate'
+import type { MusicTrackId } from './protocol/types'
 import { Howl } from 'howler'
 import { ref } from 'vue'
 import { asset } from './assets'
 import { DEFAULT_AUDIO_PREFS, shouldPlay } from './audio.gate'
+import { trackSrc } from './content/music'
 import { readStored, writeStored } from './storage'
 
 export type { SfxKey } from './audio.gate'
@@ -77,22 +79,31 @@ export function playSfx(key: SfxKey): void {
   sfxHowl.play(key)
 }
 
-// -- music channel (built here, wired to the DRAWING phase in #2) -----------------------------
+// -- music channel (#2) -----------------------------------------------------------------------
 
 const MUSIC_VOLUME = 0.4
 const MUSIC_FADE_MS = 2000
 
 let musicHowl: Howl | null = null
+let musicId: number | undefined
+
+// Reactive so a transport widget can reflect and drive the channel. `music` (the toggle) is the
+// master enable; pause/resume and volume are transport, independent of it.
+export const currentTrack = ref<MusicTrackId | null>(null)
+export const musicPaused = ref(false)
+export const musicVolume = ref(MUSIC_VOLUME)
 
 /** Play a streamed, looping track, fading in from silence. Gated on the `music` toggle. */
-export function playMusic(src: string, { fadeMs = MUSIC_FADE_MS, volume = MUSIC_VOLUME } = {}): void {
+export function playMusic(track: MusicTrackId, { fadeMs = MUSIC_FADE_MS } = {}): void {
   if (!music.value)
     return
   stopMusic({ fadeMs: 0 })
-  const howl = new Howl({ src: [src], html5: true, loop: true, volume: 0 })
+  const howl = new Howl({ src: [trackSrc(track)], html5: true, loop: true, volume: 0 })
   musicHowl = howl
-  const id = howl.play()
-  howl.fade(0, volume, fadeMs, id)
+  currentTrack.value = track
+  musicPaused.value = false
+  musicId = howl.play()
+  howl.fade(0, musicVolume.value, fadeMs, musicId)
 }
 
 /** Fade out and unload the current track, if any. */
@@ -101,6 +112,9 @@ export function stopMusic({ fadeMs = MUSIC_FADE_MS } = {}): void {
   if (!howl)
     return
   musicHowl = null
+  musicId = undefined
+  currentTrack.value = null
+  musicPaused.value = false
   if (fadeMs > 0) {
     howl.once('fade', () => howl.unload())
     howl.fade(howl.volume(), 0, fadeMs)
@@ -108,6 +122,28 @@ export function stopMusic({ fadeMs = MUSIC_FADE_MS } = {}): void {
   else {
     howl.unload()
   }
+}
+
+/** Transport: pause the current track in place (it stays loaded). */
+export function pauseMusic(): void {
+  if (!musicHowl || musicPaused.value)
+    return
+  musicHowl.pause()
+  musicPaused.value = true
+}
+
+/** Transport: resume a paused track. */
+export function resumeMusic(): void {
+  if (!musicHowl || !musicPaused.value)
+    return
+  musicHowl.play(musicId)
+  musicPaused.value = false
+}
+
+/** Set the music channel volume (0–1); live, and remembered for the next track. */
+export function setMusicVolume(v: number): void {
+  musicVolume.value = Math.min(1, Math.max(0, v))
+  musicHowl?.volume(musicVolume.value)
 }
 
 // -- toggles ----------------------------------------------------------------------------------

@@ -31,3 +31,8 @@ export const MUSIC_TRACKS: MusicTrack[] = MUSIC_TRACK_IDS.map(id => ({
 export function trackSrc(id: MusicTrackId): string {
   return asset(`assets/audio/music/${id}.webm`)
 }
+
+/** The display label for a track id. */
+export function trackLabel(id: MusicTrackId): string {
+  return LABELS[id]
+}
