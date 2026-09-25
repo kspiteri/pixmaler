@@ -1,0 +1,85 @@
+@use 'tokens' as *;
+@use 'chrome' as *;
+
+// MusicWidget.vue — a compact header transport. Collapsed it's a single music button; expanded it
+// reveals play/pause + title + volume, sliding out horizontally. Play/pause is transport,
+// separate from the Sound → Music mute toggle.
+.music-widget {
+  display: inline-flex;
+  align-items: center;
+  @include chrome($rung: $radius);
+  padding: $gap-1;
+
+  &__body {
+    display: none;
+    align-items: center;
+    gap: $gap-2;
+    max-width: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition:
+      max-width 0.25s ease,
+      opacity 0.2s ease;
+  }
+
+  &--expanded &__body {
+    display: flex;
+    max-width: 18rem;
+    margin-left: $gap-1;
+    opacity: 1;
+  }
+
+  &__container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  &__title {
+    max-width: 8rem;
+    overflow: hidden;
+    color: $accent-ink;
+    font-size: $fs-2xs;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__vol {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex-direction: row;
+
+    &-icon {
+      flex-shrink: 0;
+      color: $fg-50;
+    }
+
+    &-slider {
+      width: 4rem;
+    }
+  }
+}
+
+// A lit border pulse while a track is actually playing (paused → no pulse).
+.music-widget--playing {
+  animation: music-pulse 1.6s ease-in-out infinite;
+}
+@keyframes music-pulse {
+  0%,
+  100% {
+    border-color: color-mix(in srgb, $accent-ink 30%, transparent);
+  }
+  50% {
+    border-color: $accent-ink;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .music-widget__body {
+    transition: none;
+  }
+  .music-widget--playing {
+    animation: none;
+  }
+}
