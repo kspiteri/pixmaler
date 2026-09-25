@@ -146,5 +146,30 @@ const backHref = appHref()
         </Button>
       </div>
     </section>
+
+    <section class="demo__section">
+      <h4 class="demo__heading">
+        click sound (sfx / silent)
+      </h4>
+      <p class="demo__note">
+        Enable Sound in settings and unmute your device. The sfx prop overrides the click sound on
+        any variant; silent mutes an instance. submit has no clip until the recorded sprite lands,
+        so it stays silent for now.
+      </p>
+      <div class="demo__row">
+        <Button variant="primary">
+          primary (dings)
+        </Button>
+        <Button variant="secondary" sfx="ding">
+          secondary, sfx="ding"
+        </Button>
+        <Button variant="primary" silent>
+          primary, silent
+        </Button>
+        <Button variant="primary" sfx="submit">
+          I am ready (submit)
+        </Button>
+      </div>
+    </section>
   </div>
 </template>

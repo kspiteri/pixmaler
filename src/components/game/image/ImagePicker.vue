@@ -4,17 +4,18 @@
 // (Game mode → Image → Adjust Target → Game settings). The step controls and the preview are
 // under ./picker; this file wires them and runs `processImage` on any change.
 
-import type { CropSelection, PickerMeta, PipelineResult, PixelationStyle, RoundConfig, TargetRatioId } from '@/lib'
+import type { CropSelection, MusicTrackId, PickerMeta, PipelineResult, PixelationStyle, RoundConfig, TargetRatioId } from '@/lib'
 import { ChevronDown, Trash2 } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Accordion from '@/components/elements/accordion/Accordion.vue'
 import AccordionItem from '@/components/elements/accordion/Item.vue'
 import Button from '@/components/elements/Button.vue'
-import { asset, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_PIXELATION_STYLE, DEFAULT_RATIO, DEFAULT_SCALE, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, nearestRatioFor, processImage, quantiserFor, TARGET_RATIOS, unsupportedImage } from '@/lib'
+import { asset, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_PIXELATION_STYLE, DEFAULT_RATIO, DEFAULT_SCALE, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, nearestRatioFor, processImage, quantiserFor, TARGET_RATIOS, trackLabel, unsupportedImage } from '@/lib'
 import AlphaControl from './picker/AlphaControl.vue'
 import ColourControl from './picker/ColourControl.vue'
 import CropWidget from './picker/CropWidget.vue'
 import DetailControl from './picker/DetailControl.vue'
+import MusicControl from './picker/MusicControl.vue'
 import PixelationStyleControl from './picker/PixelationStyleControl.vue'
 import SourcePicker from './picker/SourcePicker.vue'
 import { detailLabel, DURATION_STOPS } from './picker/stops'
@@ -42,6 +43,8 @@ const emit = defineEmits<{
   processing: []
   // The GM cleared the target — the host un-configures the room.
   clear: []
+  // Free Mode plays the picked track live; the lobby ignores this (music starts at DRAWING).
+  music: [track: MusicTrackId | null]
 }>()
 
 const DEFAULT_DRAW_SECONDS = 120
@@ -56,6 +59,7 @@ const hasAlpha = ref(false)
 const naturalDims = ref<{ w: number, h: number } | null>(null)
 const sourceUrl = ref('')
 const drawSecs = ref(DEFAULT_DRAW_SECONDS)
+const musicTrack = ref<MusicTrackId | null>(null)
 const status = ref('')
 const busy = ref(false)
 // Scale-independent source dims from the last result, so the grid readout recomputes live as
@@ -73,7 +77,7 @@ const samples: { name: SampleName, label: string }[] = [
   { name: 'pearls', label: 'Pearl Earring' },
 ]
 
-defineExpose({ getDrawSeconds: () => drawSecs.value, reset })
+defineExpose({ getDrawSeconds: () => drawSecs.value, getMusicTrack: () => musicTrack.value, reset })
 
 let cachedFile: File | null = null
 let runId = 0
@@ -112,6 +116,11 @@ const timerSummary = computed(() =>
 
 const adjustSummary = computed(() =>
   hasImage.value ? `${ratioLabel.value} · ${lookSummary.value}` : 'pick an image first',
+)
+
+// With no timer (Free Mode) the section is music-only, so its summary follows the track.
+const settingsSummary = computed(() =>
+  props.showDrawSeconds ? timerSummary.value : (musicTrack.value ? trackLabel(musicTrack.value) : 'no music'),
 )
 
 // Flow-ordered steps for the "Next step" buttons — advance to the next *enabled* step. The
@@ -167,6 +176,7 @@ function scheduleReprocess() {
 }
 
 watch([scale, colorCount, ratio, background, crop, pixelationStyle], scheduleReprocess)
+watch(musicTrack, t => emit('music', t))
 
 // Adopt a newly-chosen image: preselect the ratio closest to its own framing and reset the crop
 // to the whole frame, so any crop is a deliberate second choice. Costs one extra decode.
@@ -321,11 +331,12 @@ onBeforeUnmount(() => {
           </div>
         </AccordionItem>
 
-        <AccordionItem v-if="showDrawSeconds" id="settings" title="Game settings" :disabled="!hasImage">
+        <AccordionItem id="settings" title="Game settings" :disabled="!hasImage">
           <template #summary>
-            {{ timerSummary }}
+            {{ settingsSummary }}
           </template>
-          <TimerControl v-model="drawSecs" />
+          <TimerControl v-if="showDrawSeconds" v-model="drawSecs" />
+          <MusicControl v-model="musicTrack" />
         </AccordionItem>
       </Accordion>
     </div>

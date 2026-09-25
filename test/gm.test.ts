@@ -26,6 +26,7 @@ const config = {
   palette: ['#000000', '#ffffff'],
   targetGrid: [0, 1, 1, 0],
   drawSeconds: 60,
+  musicTrack: null,
 } satisfies GmConfigureMsg
 
 const ALL_PHASES: Phase[] = ['LOBBY', 'DRAWING', 'VOTING', 'RESULTS']
@@ -41,6 +42,13 @@ describe('handleConfigure', () => {
     handleConfigure(h.ctx, h.conn('conn-gm'), config)
     expect(h.state.config).toEqual(config)
     expect(h.stateBroadcasts()).toBe(1)
+  })
+
+  it('carries the chosen music track into the broadcast config', () => {
+    const h = harness()
+    handleConfigure(h.ctx, h.conn('conn-gm'), { ...config, musicTrack: 'blue-ska' })
+    const state = h.broadcasts.find(m => m.type === 'state')
+    expect(state?.type === 'state' ? state.config?.musicTrack : null).toBe('blue-ska')
   })
 
   it('broadcasts the target grid before the state that references it', () => {

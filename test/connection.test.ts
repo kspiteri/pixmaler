@@ -18,6 +18,7 @@ const config = {
   palette: ['#000000', '#ffffff'],
   targetGrid: [0, 1, 1, 0],
   drawSeconds: 60,
+  musicTrack: null,
 } satisfies GmConfigureMsg
 
 // `shape` is widened to string on purpose: `parseClientMsg` already normalises it,

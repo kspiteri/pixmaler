@@ -1,0 +1,55 @@
+@use 'tokens' as *;
+@use 'chrome' as *;
+
+// InfoModal.vue — the global info dialog (Credits + privacy notice). A chrome surface on the
+// scrim, sized for short copy; links use the lime ink.
+.info-modal {
+  @include chrome($rung: $radius-lg);
+  max-width: min(30rem, calc(100vw - #{$gap-6}));
+  padding: $gap-5;
+  color: $fg;
+  box-shadow: $shadow-2;
+
+  &::backdrop {
+    background: $scrim;
+  }
+
+  &__title {
+    margin: 0 0 $gap-3;
+    font-size: $fs-xl;
+  }
+
+  &__heading {
+    margin: 0 0 $gap-2;
+    color: $fg-50;
+    font-size: $fs-xs;
+    font-weight: $fw-semibold;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+
+  &__section {
+    margin-bottom: $gap-4;
+    color: $muted;
+    font-size: $fs-sm;
+    line-height: $lh-normal;
+    padding: $gap-3 $gap-4;
+    @include chrome($rung: $radius);
+
+    > * {
+      margin: 0;
+    }
+    > * + * {
+      margin-top: $gap-2;
+    }
+    ul {
+      padding-left: 1.1rem;
+    }
+    li + li {
+      margin-top: $gap-1;
+    }
+    a {
+      color: $accent-ink;
+    }
+  }
+}

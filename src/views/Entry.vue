@@ -1,30 +1,55 @@
 <script setup lang="ts">
 // Entry screen — pre-room landing. Create / join / open the paint sandbox.
 
-import { Play } from '@lucide/vue'
+import { ArrowRight, CircleCheck, Palette, Play } from '@lucide/vue'
 import { ref } from 'vue'
 import Button from '@/components/elements/Button.vue'
-import Disclosure from '@/components/elements/Disclosure.vue'
 import Logo from '@/components/elements/Logo.vue'
 import NameField from '@/components/elements/NameField.vue'
 import Tagline from '@/components/elements/Tagline.vue'
 import SettingsMenu from '@/components/layout/SettingsMenu.vue'
 import { appHref, getName, roomHref, sanitiseName, setName, wordPair } from '@/lib'
 
+type Action = 'create' | 'join' | 'free'
+
 const name = ref(getName() ?? '')
 const code = ref('')
+// Which action is mid-confirm, or null. Drives the button's label → icon morph.
+const confirming = ref<Action | null>(null)
 
 const sandboxHref = appHref('paint')
 
-// Belt-and-braces: both buttons are `:disabled` until their fields are filled. A create
-// carries `&create=1` so the room route opens the room; a join omits it and 404s if the
-// code isn't a live room (#66).
+// The confirm morph (label → icon) plays for this long before the full-page navigation unloads
+// the page; on create it also covers the press ding. Independent of audio, so it holds when muted.
+const CONFIRM_MS = 420
+
+// Every entry action ends in a full-page navigation: confirm with the morph, then go.
+function confirmNavigate(action: Action, href: string) {
+  if (confirming.value)
+    return
+  confirming.value = action
+  setTimeout(() => {
+    location.href = href
+  }, CONFIRM_MS)
+}
+
+// Both buttons are `:disabled` until their fields are filled. A create carries `&create=1` so the
+// room route opens the room; a join omits it and 404s if the code isn't a live room (#66).
 function enterRoom(room: string, create = false) {
   const trimmed = sanitiseName(name.value)
   if (!trimmed || !room)
     return
   setName(trimmed)
-  location.href = roomHref(room, { create })
+  confirmNavigate(create ? 'create' : 'join', roomHref(room, { create }))
+}
+
+// Free mode is a real route (an <a>), so honour modified clicks (open in a new tab); a plain
+// click gets the confirm morph before navigating.
+function enterSandbox(e: MouseEvent) {
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0)
+    return
+  e.preventDefault()
+  confirmNavigate('free', sandboxHref)
 }
 </script>
 
@@ -36,34 +61,6 @@ function enterRoom(room: string, create = false) {
       <header class="entry__hero">
         <Logo size="lg" />
         <Tagline class="entry__sub" />
-
-        <Disclosure label="your privacy and what is stored" class="entry__privacy">
-          <div class="entry__privacy-body">
-            <p>
-              Pixmaler keeps a nickname you choose, a randomly generated id, your settings,
-              and (in Free mode) your picture and drawing. All stored in your own browser.
-            </p>
-            <ul>
-              <li>
-                Your nickname, random id and avatar are sent to the game server and held in memory only
-                while a room is live; they're wiped when it goes idle or the session is closed by the GM.
-              </li>
-              <li>
-                Settings include your dark/light theme preference, text size, your palette preferences and
-                whether you have canvas shortcuts enabled.
-              </li>
-              <li>
-                In Free mode, the pixelated picture you chose and your drawing are stored in this browser,
-                so your work is waiting when you return; it never leaves your device.
-              </li>
-              <li>Nothing is stored in a database, no cookies, no analytics and no third parties.</li>
-            </ul>
-            <p>
-              A nickname is all the game needs. You can clear everything from the settings menu,
-              top right, at any time.
-            </p>
-          </div>
-        </Disclosure>
       </header>
 
       <div class="entry__panel">
@@ -74,12 +71,16 @@ function enterRoom(room: string, create = false) {
             variant="primary"
             size="large"
             :disabled="!name.trim()"
+            :aria-label="confirming === 'create' ? 'Creating room' : undefined"
             @click="enterRoom(wordPair(), true)"
           >
-            <template #icon>
+            <template v-if="confirming !== 'create'" #icon>
               <Play :size="20" aria-hidden="true" />
             </template>
-            Create room (GM)
+            <span class="entry__morph" :class="{ 'entry__morph--active': confirming === 'create' }">
+              <span class="entry__morph-text">Create room (GM)</span>
+              <CircleCheck class="entry__morph-icon" :size="22" aria-hidden="true" />
+            </span>
           </Button>
 
           <div class="entry__divider">
@@ -103,9 +104,13 @@ function enterRoom(room: string, create = false) {
               variant="secondary"
               class="entry__join-btn"
               :disabled="!name.trim() || !code.trim()"
+              :aria-label="confirming === 'join' ? 'Joining room' : undefined"
               @click="enterRoom(code.trim().toLowerCase())"
             >
-              Join room
+              <span class="entry__morph" :class="{ 'entry__morph--active': confirming === 'join' }">
+                <span class="entry__morph-text">Join room</span>
+                <ArrowRight class="entry__morph-icon" :size="18" aria-hidden="true" />
+              </span>
             </Button>
           </div>
 
@@ -115,8 +120,17 @@ function enterRoom(room: string, create = false) {
             <span class="entry__rule" />
           </div>
 
-          <Button variant="secondary" class="entry__sandbox" :href="sandboxHref">
-            Free mode
+          <Button
+            variant="secondary"
+            class="entry__sandbox"
+            :href="sandboxHref"
+            :aria-label="confirming === 'free' ? 'Opening free mode' : undefined"
+            @click="enterSandbox"
+          >
+            <span class="entry__morph" :class="{ 'entry__morph--active': confirming === 'free' }">
+              <span class="entry__morph-text">Free mode</span>
+              <Palette class="entry__morph-icon" :size="18" aria-hidden="true" />
+            </span>
           </Button>
         </div>
       </div>

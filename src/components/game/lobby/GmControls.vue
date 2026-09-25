@@ -34,6 +34,7 @@ function onResult(result: PipelineResult) {
     palette: result.palette,
     targetGrid: result.targetGrid,
     drawSeconds: pickerRef.value?.getDrawSeconds() ?? 120,
+    musicTrack: pickerRef.value?.getMusicTrack() ?? null,
   }
   socket.send(JSON.stringify(lastConfig))
   imageReady.value = true
@@ -71,6 +72,7 @@ function startGame() {
     const finalConfig: GmConfigureMsg = {
       ...lastConfig,
       drawSeconds: pickerRef.value?.getDrawSeconds() ?? 120,
+      musicTrack: pickerRef.value?.getMusicTrack() ?? null,
     }
     socket.send(JSON.stringify(finalConfig))
   }

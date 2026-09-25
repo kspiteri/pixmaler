@@ -40,6 +40,19 @@
     letter-spacing: 0.15em;
   }
 
+  // Collapsed accordion summary — the section's current values as small icons (plus a small
+  // numeric readout for the text scale), inheriting the muted summary ink.
+  &__summary {
+    display: inline-flex;
+    align-items: center;
+    gap: $gap-2;
+  }
+
+  &__summary-text {
+    font-size: $fs-2xs;
+    font-variant-numeric: tabular-nums;
+  }
+
   &__stepper {
     display: flex;
     align-items: center;
@@ -59,6 +72,11 @@
     border: none;
     border-top: 1px solid $border-soft;
     margin: 0;
+  }
+
+  &__flex {
+    display: flex;
+    justify-content: space-between;
   }
 
   // Build version at the foot of the drawer — quiet metadata, not a control.

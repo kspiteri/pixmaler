@@ -44,11 +44,6 @@ $panel-w: 24rem;
       .wordmark {
         justify-content: center;
       }
-
-      // Centre the trigger too (the body stays left for readability).
-      .entry__privacy .disclosure__trigger {
-        align-self: center;
-      }
     }
   }
 }
@@ -94,6 +89,41 @@ $panel-w: 24rem;
   display: flex;
   flex-direction: column;
   gap: $gap-4;
+}
+
+// The entry actions confirm with a label → icon morph before their full-page navigation: a tick
+// on create, a forward arrow on the secondary actions. The label and icon are grid-stacked (same
+// cell) so the button keeps the label's width and never reflows as they cross-fade.
+.entry__morph {
+  display: inline-grid;
+  place-items: center;
+}
+.entry__morph-text,
+.entry__morph-icon {
+  grid-area: 1 / 1;
+  transition:
+    opacity 0.18s ease,
+    scale 0.18s ease;
+}
+.entry__morph-icon {
+  opacity: 0;
+  scale: 0.6;
+}
+.entry__morph--active {
+  .entry__morph-text {
+    opacity: 0;
+    scale: 0.6;
+  }
+  .entry__morph-icon {
+    opacity: 1;
+    scale: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .entry__morph-text,
+  .entry__morph-icon {
+    transition: none;
+  }
 }
 
 .entry__divider {
@@ -142,25 +172,4 @@ $panel-w: 24rem;
 // Privacy notice — a quiet, collapsible footnote under the hero. Closed by default.
 .entry__privacy {
   margin-top: $gap-5;
-}
-// The revealed content sits on a solid surface, not the textured backdrop, so the small
-// print stays readable. `$muted` is the quiet-copy rung.
-.entry__privacy-body {
-  font-size: $fs-xs;
-  padding: $gap-3 $gap-4;
-  @include chrome($rung: $radius);
-  color: $muted;
-
-  > * {
-    margin: 0;
-  }
-  > * + * {
-    margin-top: $gap-2;
-  }
-  ul {
-    padding-left: 1.1rem;
-  }
-  li + li {
-    margin-top: $gap-1;
-  }
 }

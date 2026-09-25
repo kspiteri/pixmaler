@@ -21,6 +21,7 @@ export const testConfig: GmConfigureMsg = {
   palette: ['#000000', '#ffffff'],
   targetGrid: [0, 1, 1, 0],
   drawSeconds: 60,
+  musicTrack: null,
 }
 
 // A painted grid (counts for the gallery) and a wiped one (in the gallery, but un-votable).

@@ -5,8 +5,9 @@
 import { defineAsyncComponent } from 'vue'
 import AlertDialog from '@/components/elements/AlertDialog.vue'
 import AlertNotice from '@/components/elements/AlertNotice.vue'
+import InfoModal from '@/components/elements/InfoModal.vue'
 import PhaseBoundary from '@/components/layout/PhaseBoundary.vue'
-import { assertiveMessage, currentDialog, politeMessage, settleDialog, useRoom } from '@/lib'
+import { activeInfo, assertiveMessage, currentDialog, politeMessage, settleDialog, useMusic, useRoom } from '@/lib'
 import Entry from '@/views/Entry.vue'
 import Paint from '@/views/Paint.vue'
 import Drawing from '@/views/phases/Drawing.vue'
@@ -69,6 +70,10 @@ const {
   spectating,
   submitName,
 } = useRoom(route === 'room' ? roomCode : null, createIntent)
+
+// Background music (#2): fades in on DRAWING, out on LOBBY. Reads the GM's config.musicTrack;
+// no-op off the room route (state stays null).
+useMusic(state)
 </script>
 
 <template>
@@ -166,4 +171,8 @@ const {
     @confirm="settleDialog(true)"
     @cancel="settleDialog(false)"
   />
+
+  <!-- Global info modal (lib/infoModal.ts): credits + privacy notice, opened from the settings
+       menu (and Entry's privacy link). v-if mounts a fresh <dialog>; outside the phase chain. -->
+  <InfoModal v-if="activeInfo" />
 </template>
