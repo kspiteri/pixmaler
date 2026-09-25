@@ -4,7 +4,7 @@
 // (Game mode → Image → Adjust Target → Game settings). The step controls and the preview are
 // under ./picker; this file wires them and runs `processImage` on any change.
 
-import type { CropSelection, PickerMeta, PipelineResult, PixelationStyle, RoundConfig, TargetRatioId } from '@/lib'
+import type { CropSelection, MusicTrackId, PickerMeta, PipelineResult, PixelationStyle, RoundConfig, TargetRatioId } from '@/lib'
 import { ChevronDown, Trash2 } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Accordion from '@/components/elements/accordion/Accordion.vue'
@@ -15,6 +15,7 @@ import AlphaControl from './picker/AlphaControl.vue'
 import ColourControl from './picker/ColourControl.vue'
 import CropWidget from './picker/CropWidget.vue'
 import DetailControl from './picker/DetailControl.vue'
+import MusicControl from './picker/MusicControl.vue'
 import PixelationStyleControl from './picker/PixelationStyleControl.vue'
 import SourcePicker from './picker/SourcePicker.vue'
 import { detailLabel, DURATION_STOPS } from './picker/stops'
@@ -56,6 +57,7 @@ const hasAlpha = ref(false)
 const naturalDims = ref<{ w: number, h: number } | null>(null)
 const sourceUrl = ref('')
 const drawSecs = ref(DEFAULT_DRAW_SECONDS)
+const musicTrack = ref<MusicTrackId | null>(null)
 const status = ref('')
 const busy = ref(false)
 // Scale-independent source dims from the last result, so the grid readout recomputes live as
@@ -73,7 +75,7 @@ const samples: { name: SampleName, label: string }[] = [
   { name: 'pearls', label: 'Pearl Earring' },
 ]
 
-defineExpose({ getDrawSeconds: () => drawSecs.value, reset })
+defineExpose({ getDrawSeconds: () => drawSecs.value, getMusicTrack: () => musicTrack.value, reset })
 
 let cachedFile: File | null = null
 let runId = 0
@@ -326,6 +328,7 @@ onBeforeUnmount(() => {
             {{ timerSummary }}
           </template>
           <TimerControl v-model="drawSecs" />
+          <MusicControl v-model="musicTrack" />
         </AccordionItem>
       </Accordion>
     </div>
