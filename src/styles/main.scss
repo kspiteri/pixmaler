@@ -16,6 +16,7 @@
 @use 'slider'; // Slider.vue — the range primitive (continuous + stepped)
 @use 'accordion'; // Accordion.vue / AccordionItem.vue — single-open collapsible steps
 @use 'disclosure'; // Disclosure.vue — the shared tap-to-reveal toggle (shortcuts, style help)
+@use 'info-modal'; // InfoModal.vue — the global info dialog (credits + privacy)
 @use 'logo';
 @use 'tagline'; // before the page partials — see the file header
 @use 'phase';

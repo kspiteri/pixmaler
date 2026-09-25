@@ -4,7 +4,6 @@
 import { ArrowRight, CircleCheck, Palette, Play } from '@lucide/vue'
 import { ref } from 'vue'
 import Button from '@/components/elements/Button.vue'
-import Disclosure from '@/components/elements/Disclosure.vue'
 import Logo from '@/components/elements/Logo.vue'
 import NameField from '@/components/elements/NameField.vue'
 import Tagline from '@/components/elements/Tagline.vue'
@@ -62,34 +61,6 @@ function enterSandbox(e: MouseEvent) {
       <header class="entry__hero">
         <Logo size="lg" />
         <Tagline class="entry__sub" />
-
-        <Disclosure label="your privacy and what is stored" class="entry__privacy">
-          <div class="entry__privacy-body">
-            <p>
-              Pixmaler keeps a nickname you choose, a randomly generated id, your settings,
-              and (in Free mode) your picture and drawing. All stored in your own browser.
-            </p>
-            <ul>
-              <li>
-                Your nickname, random id and avatar are sent to the game server and held in memory only
-                while a room is live; they're wiped when it goes idle or the session is closed by the GM.
-              </li>
-              <li>
-                Settings include your dark/light theme preference, text size, your palette preferences and
-                whether you have canvas shortcuts enabled.
-              </li>
-              <li>
-                In Free mode, the pixelated picture you chose and your drawing are stored in this browser,
-                so your work is waiting when you return; it never leaves your device.
-              </li>
-              <li>Nothing is stored in a database, no cookies, no analytics and no third parties.</li>
-            </ul>
-            <p>
-              A nickname is all the game needs. You can clear everything from the settings menu,
-              top right, at any time.
-            </p>
-          </div>
-        </Disclosure>
       </header>
 
       <div class="entry__panel">

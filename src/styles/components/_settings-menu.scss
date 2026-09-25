@@ -74,6 +74,11 @@
     margin: 0;
   }
 
+  &__flex {
+    display: flex;
+    justify-content: space-between;
+  }
+
   // Build version at the foot of the drawer — quiet metadata, not a control.
   &__version {
     margin: 0;

@@ -44,11 +44,6 @@ $panel-w: 24rem;
       .wordmark {
         justify-content: center;
       }
-
-      // Centre the trigger too (the body stays left for readability).
-      .entry__privacy .disclosure__trigger {
-        align-self: center;
-      }
     }
   }
 }
@@ -177,25 +172,4 @@ $panel-w: 24rem;
 // Privacy notice — a quiet, collapsible footnote under the hero. Closed by default.
 .entry__privacy {
   margin-top: $gap-5;
-}
-// The revealed content sits on a solid surface, not the textured backdrop, so the small
-// print stays readable. `$muted` is the quiet-copy rung.
-.entry__privacy-body {
-  font-size: $fs-xs;
-  padding: $gap-3 $gap-4;
-  @include chrome($rung: $radius);
-  color: $muted;
-
-  > * {
-    margin: 0;
-  }
-  > * + * {
-    margin-top: $gap-2;
-  }
-  ul {
-    padding-left: 1.1rem;
-  }
-  li + li {
-    margin-top: $gap-1;
-  }
 }

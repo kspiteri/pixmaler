@@ -4,14 +4,28 @@
 // countdown) sections. A disclosure, not a `role="menu"`: it closes on an outside pointer or
 // Escape; Escape returns focus to the trigger.
 
-import { Bell, BellOff, Hand, Keyboard, KeyboardOff, Mouse, Music, Settings, Timer, TimerOff, VolumeX } from '@lucide/vue'
+import {
+  Bell,
+  BellOff,
+  CircleX,
+  Cookie,
+  Hand,
+  Keyboard,
+  KeyboardOff,
+  Mouse,
+  Music,
+  Settings,
+  Timer,
+  TimerOff,
+  VolumeX,
+} from '@lucide/vue'
 import { onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 import Accordion from '@/components/elements/accordion/Accordion.vue'
 import AccordionItem from '@/components/elements/accordion/Item.vue'
 import Button from '@/components/elements/Button.vue'
 import ThemeToggle from '@/components/elements/ThemeToggle.vue'
 import ToggleSwitch from '@/components/elements/ToggleSwitch.vue'
-import { askConfirm, clearAllData, isTouch, music, SCALE_STEPS, sfx, shortcutsEnabled, stepScale, textScale, ticktock, toggleMusic, toggleSfx, toggleShortcuts, toggleTicktock, toggleTouch } from '@/lib'
+import { askConfirm, clearAllData, isTouch, music, openCredits, openPrivacy, SCALE_STEPS, sfx, shortcutsEnabled, stepScale, textScale, ticktock, toggleMusic, toggleSfx, toggleShortcuts, toggleTicktock, toggleTouch } from '@/lib'
 
 const min = SCALE_STEPS[0]
 const max = SCALE_STEPS[SCALE_STEPS.length - 1]
@@ -222,12 +236,29 @@ async function clearData() {
             </ToggleSwitch>
           </div>
         </AccordionItem>
+        <AccordionItem id="privacy" title="Your privacy and what is stored">
+          <div class="settings-menu__flex">
+            <Button variant="subtle" size="small" @click="openPrivacy">
+              <template #icon>
+                <Cookie :size="18" aria-hidden="true" />
+              </template>
+              Privacy
+            </Button>
+            <Button variant="subtle" size="small" @click="clearData">
+              <template #icon>
+                <CircleX :size="18" aria-hidden="true" />
+              </template>
+              Clear
+            </Button>
+          </div>
+        </AccordionItem>
       </Accordion>
 
       <hr class="settings-menu__sep">
-      <Button variant="subtle" size="small" block @click="clearData">
-        Clear my data
+      <Button variant="subtle" size="small" block @click="openCredits">
+        Credits
       </Button>
+
       <p v-if="version" class="settings-menu__version">
         pixmaler v{{ version }}
       </p>
