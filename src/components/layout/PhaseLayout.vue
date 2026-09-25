@@ -22,6 +22,14 @@ withDefaults(defineProps<{
     <h1 class="sr-only">
       {{ heading }}
     </h1>
+    <header class="phase__bar">
+      <a v-if="home" class="phase__home" :href="home"><Logo size="sm" /></a>
+      <Logo v-else size="sm" />
+      <div class="phase__status">
+        <slot name="status" />
+        <SettingsMenu />
+      </div>
+    </header>
     <div
       v-if="progress !== null"
       class="phase__progress"
@@ -32,15 +40,6 @@ withDefaults(defineProps<{
         :style="{ width: `${progress}%`, background: progressColour }"
       />
     </div>
-
-    <header class="phase__bar">
-      <a v-if="home" class="phase__home" :href="home"><Logo size="sm" /></a>
-      <Logo v-else size="sm" />
-      <div class="phase__status">
-        <slot name="status" />
-        <SettingsMenu />
-      </div>
-    </header>
 
     <main class="phase__body">
       <slot />
