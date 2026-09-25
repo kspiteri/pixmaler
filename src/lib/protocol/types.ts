@@ -79,6 +79,18 @@ export interface RenameMsg {
   name: string
 }
 
+// Background-music track ids (#2). A runtime array like AVATAR_SHAPES: the server validates
+// `config.musicTrack` against it, and the client keys its asset manifest off it. The id →
+// file/label manifest lives client-side in `lib/content/music`, keyed by these ids.
+export const MUSIC_TRACK_IDS = ['blue-ska', 'cheery-monday', 'rocket-power', 'the-builder', 'the-show-must-be-go'] as const
+export type MusicTrackId = typeof MUSIC_TRACK_IDS[number]
+
+// The single music-track validator; both sides import it. Clamps an unknown or unlisted value
+// (including `null`) to `null` = no music (the opt-in default).
+export function normaliseMusicTrack(track: unknown): MusicTrackId | null {
+  return MUSIC_TRACK_IDS.includes(track as MusicTrackId) ? track as MusicTrackId : null
+}
+
 // The round's settings, small enough to ride on every `state`. The target grid is not
 // here: it never changes mid-round and dominates the payload, so it travels once in its
 // own `TargetMsg` instead of being re-sent on every vote and join.
@@ -87,6 +99,8 @@ export interface RoundConfig {
   gridH: number
   palette: string[] // hex colours
   drawSeconds: number
+  // Background music the GM picks in the Game settings step; `null` = no music (opt-in). (#2)
+  musicTrack: MusicTrackId | null
 }
 
 export interface GmConfigureMsg extends RoundConfig {
