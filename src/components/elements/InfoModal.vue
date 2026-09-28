@@ -3,7 +3,7 @@
 // surfaces. Opened from the settings menu; `activeInfo` in
 // `lib/infoModal.ts` picks which content shows. App mounts this once via `v-if`, so `showModal`
 // on mount is the whole gate. CC-BY needs a visible, findable credit (incompetech's FAQ); the
-// privacy notice is a data-minimisation nudge (#44).
+// privacy notice is a data-minimisation nudge.
 
 import { onMounted, useTemplateRef } from 'vue'
 import { activeInfo, closeInfo, MUSIC_TRACKS } from '@/lib'
@@ -13,6 +13,14 @@ const dialogEl = useTemplateRef<HTMLDialogElement>('dialogEl')
 const musicTitles = MUSIC_TRACKS.map(t => `"${t.label}"`).join(', ')
 
 onMounted(() => dialogEl.value?.showModal())
+
+// A click on the dialog's own padding still targets the dialog, so compare coordinates: close
+// only when the click lands outside the box (the backdrop), not on the padding.
+function onBackdrop(e: MouseEvent) {
+  const r = dialogEl.value?.getBoundingClientRect()
+  if (r && (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom))
+    closeInfo()
+}
 </script>
 
 <template>
@@ -21,7 +29,7 @@ onMounted(() => dialogEl.value?.showModal())
     class="info-modal"
     :aria-label="activeInfo === 'privacy' ? 'Your privacy' : 'Credits'"
     @cancel.prevent="closeInfo"
-    @click.self="closeInfo"
+    @click="onBackdrop"
   >
     <template v-if="activeInfo === 'privacy'">
       <h2 class="info-modal__title">
