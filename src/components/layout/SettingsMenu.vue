@@ -79,6 +79,12 @@ async function clearData() {
   clearAllData()
   location.href = import.meta.env.BASE_URL
 }
+
+// Close the menu before the modal opens, so it owns focus and Escape can't return to an inert trigger.
+function showInfo(show: () => void) {
+  open.value = false
+  show()
+}
 </script>
 
 <template>
@@ -238,7 +244,7 @@ async function clearData() {
         </AccordionItem>
         <AccordionItem id="privacy" title="Your privacy and what is stored">
           <div class="settings-menu__flex">
-            <Button variant="subtle" size="small" @click="openPrivacy">
+            <Button variant="subtle" size="small" @click="showInfo(openPrivacy)">
               <template #icon>
                 <Cookie :size="18" aria-hidden="true" />
               </template>
@@ -255,7 +261,7 @@ async function clearData() {
       </Accordion>
 
       <hr class="settings-menu__sep">
-      <Button variant="subtle" size="small" block @click="openCredits">
+      <Button variant="subtle" size="small" block @click="showInfo(openCredits)">
         Credits
       </Button>
 
