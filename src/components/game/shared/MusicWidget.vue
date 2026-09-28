@@ -6,12 +6,13 @@
 // enable). Reads and drives the audio module's reactive music state.
 
 import { Music, Pause, Play, Volume2 } from '@lucide/vue'
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import Slider from '@/components/elements/Slider.vue'
 import { currentTrack, musicPaused, musicVolume, pauseMusic, resumeMusic, setMusicVolume, trackLabel } from '@/lib'
 
 const expanded = ref(false)
+const bodyId = useId()
 const label = computed(() => (currentTrack.value ? trackLabel(currentTrack.value) : ''))
 
 function toggle() {
@@ -31,13 +32,14 @@ function toggle() {
       class="music-widget__handle"
       :aria-label="expanded ? 'Hide music controls' : 'Show music controls'"
       :aria-expanded="expanded"
+      :aria-controls="bodyId"
       @click="expanded = !expanded"
     >
       <template #icon>
         <Music :size="18" aria-hidden="true" />
       </template>
     </Button>
-    <div class="music-widget__body">
+    <div :id="bodyId" class="music-widget__body">
       <Button
         icon
         variant="secondary"
