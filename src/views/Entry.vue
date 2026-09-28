@@ -2,7 +2,7 @@
 // Entry screen — pre-room landing. Create / join / open the paint sandbox.
 
 import { ArrowRight, CircleCheck, Palette, Play } from '@lucide/vue'
-import { ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import Logo from '@/components/elements/Logo.vue'
 import NameField from '@/components/elements/NameField.vue'
@@ -51,6 +51,15 @@ function enterSandbox(e: MouseEvent) {
   e.preventDefault()
   confirmNavigate('free', sandboxHref)
 }
+
+// A back/forward-cache restore brings the page back with `confirming` still set, which freezes
+// the buttons; clear it so they work again.
+function onPageShow(e: PageTransitionEvent) {
+  if (e.persisted)
+    confirming.value = null
+}
+onMounted(() => window.addEventListener('pageshow', onPageShow))
+onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
 </script>
 
 <template>
