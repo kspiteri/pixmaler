@@ -109,6 +109,7 @@ export function playMusic(track: MusicTrackId, { fadeMs = MUSIC_FADE_MS } = {}):
 /** Fade out and unload the current track, if any. */
 export function stopMusic({ fadeMs = MUSIC_FADE_MS } = {}): void {
   const howl = musicHowl
+  const id = musicId
   if (!howl)
     return
   musicHowl = null
@@ -116,8 +117,10 @@ export function stopMusic({ fadeMs = MUSIC_FADE_MS } = {}): void {
   currentTrack.value = null
   musicPaused.value = false
   if (fadeMs > 0) {
-    howl.once('fade', () => howl.unload())
-    howl.fade(howl.volume(), 0, fadeMs)
+    // Fade from the stored volume — howl.volume() reads 0 here — then unload on a timer, since a
+    // fade that changes nothing (iOS, already silent) never fires 'fade' and would leak the track.
+    howl.fade(musicVolume.value, 0, fadeMs, id)
+    setTimeout(() => howl.unload(), fadeMs)
   }
   else {
     howl.unload()
