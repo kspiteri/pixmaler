@@ -4,7 +4,6 @@
 
 export { default as DrawBoard } from './canvas/DrawBoard.vue'
 export { default as ImagePicker } from './image/ImagePicker.vue'
-export { default as MusicControl } from './image/picker/MusicControl.vue'
 export { default as GmControls } from './lobby/GmControls.vue'
 export { default as PlayerList } from './lobby/PlayerList.vue'
 export { default as MusicWidget } from './shared/MusicWidget.vue'

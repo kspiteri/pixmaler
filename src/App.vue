@@ -71,7 +71,7 @@ const {
   submitName,
 } = useRoom(route === 'room' ? roomCode : null, createIntent)
 
-// Background music (#2): fades in on DRAWING, out on LOBBY. Reads the GM's config.musicTrack;
+// Background music: fades in on DRAWING, out on LOBBY. Reads the GM's config.musicTrack;
 // no-op off the room route (state stays null).
 useMusic(state, sessionClosed)
 </script>
