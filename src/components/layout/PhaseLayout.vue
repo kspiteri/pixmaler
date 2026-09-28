@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// Shared shell for the in-room phases: a status bar (logo + left/right slots) above the
-// body, and an optional thin progress bar across the top via `progress`/`progressColour`.
+// Shared shell for the in-room phases: a status bar (logo + left/right slots), then an optional
+// thin progress bar beneath it, above the body — via `progress`/`progressColour`.
 
 import Logo from '@/components/elements/Logo.vue'
 import { MusicWidget } from '@/components/game'

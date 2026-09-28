@@ -4,7 +4,7 @@ import { ref } from 'vue'
 // instance, opened from the settings menu. Credits and the privacy
 // notice are the app's two info surfaces; a modal keeps both reachable everywhere, including
 // mid-game for a joiner who never sees Entry. CC-BY needs a visible, findable credit (incompetech
-// FAQ), and the privacy notice is a data-minimisation nudge (#44).
+// FAQ), and the privacy notice is a data-minimisation nudge.
 
 export type InfoModalKind = 'credits' | 'privacy'
 

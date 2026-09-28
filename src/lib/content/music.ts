@@ -2,9 +2,9 @@ import type { MusicTrackId } from '../protocol/types'
 import { asset } from '../assets'
 import { MUSIC_TRACK_IDS } from '../protocol/types'
 
-// Background-music manifest (#2): the id → label + asset for each track, keyed off the DOM-free
+// Background-music manifest: the id → label + asset for each track, keyed off the DOM-free
 // MUSIC_TRACK_IDS the server validates against, so the two can't drift. Files are self-hosted
-// webm/Opus under public/assets/audio/music (no CDN, #44). Credit is in LICENSE.md and the
+// webm/Opus under public/assets/audio/music (no CDN). Credit is in LICENSE.md and the
 // in-app Credits page — CC-BY requires a visible credit.
 
 export interface MusicTrack {

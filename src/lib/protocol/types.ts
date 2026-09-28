@@ -79,7 +79,7 @@ export interface RenameMsg {
   name: string
 }
 
-// Background-music track ids (#2). A runtime array like AVATAR_SHAPES: the server validates
+// Background-music track ids. A runtime array like AVATAR_SHAPES: the server validates
 // `config.musicTrack` against it, and the client keys its asset manifest off it. The id →
 // file/label manifest lives client-side in `lib/content/music`, keyed by these ids.
 export const MUSIC_TRACK_IDS = ['blue-ska', 'cheery-monday', 'rocket-power', 'the-builder', 'the-show-must-be-go'] as const
@@ -99,7 +99,7 @@ export interface RoundConfig {
   gridH: number
   palette: string[] // hex colours
   drawSeconds: number
-  // Background music the GM picks in the Game settings step; `null` = no music (opt-in). (#2)
+  // Background music the GM picks in the Game settings step; `null` = no music (opt-in).
   musicTrack: MusicTrackId | null
 }
 

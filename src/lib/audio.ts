@@ -51,8 +51,8 @@ function currentPrefs(): AudioPrefs {
 
 // -- sfx channel ------------------------------------------------------------------------------
 
-// Sprite offsets [startMs, durationMs]. Only `ding` has a placeholder asset today (#94); the
-// recorded sprite (#95) swaps the src files and fills the rest of the shot list here — a data
+// Sprite offsets [startMs, durationMs]. Only `ding` has a placeholder asset today; the
+// recorded sprite swaps the src files and fills the rest of the shot list here — a data
 // change, not a code one.
 const SPRITE: { [K in string]: [number, number] } = {
   ding: [0, 400],
@@ -69,7 +69,7 @@ const lastPlayed = new Map<SfxKey, number>()
 
 /** Sound an sfx key, if its clip exists yet, subject to its channel toggle and the repeat throttle. */
 export function playSfx(key: SfxKey): void {
-  // A typed key with no clip yet (awaiting the recorded sprite, #95) is a silent no-op, not a warn.
+  // A typed key with no clip yet (awaiting the recorded sprite) is a silent no-op, not a warn.
   if (!(key in SPRITE))
     return
   const now = Date.now()
@@ -79,7 +79,7 @@ export function playSfx(key: SfxKey): void {
   sfxHowl.play(key)
 }
 
-// -- music channel (#2) -----------------------------------------------------------------------
+// -- music channel ----------------------------------------------------------------------------
 
 const MUSIC_VOLUME = 0.4
 const MUSIC_FADE_MS = 2000
