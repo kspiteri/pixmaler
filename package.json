@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@lucide/vue": "catalog:prod",
+    "howler": "catalog:prod",
     "partyserver": "catalog:prod",
     "partysocket": "catalog:prod",
     "unique-names-generator": "catalog:prod",
@@ -27,6 +28,7 @@
   "devDependencies": {
     "@antfu/eslint-config": "catalog:dev",
     "@cloudflare/workers-types": "catalog:dev",
+    "@types/howler": "catalog:dev",
     "@vitejs/plugin-vue": "catalog:dev",
     "eslint": "catalog:dev",
     "eslint-plugin-format": "catalog:dev",

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-// Shared shell for the in-room phases: a status bar (logo + left/right slots) above the
-// body, and an optional thin progress bar across the top via `progress`/`progressColour`.
+// Shared shell for the in-room phases: a status bar (logo + left/right slots), then an optional
+// thin progress bar beneath it, above the body — via `progress`/`progressColour`.
 
 import Logo from '@/components/elements/Logo.vue'
+import { MusicWidget } from '@/components/game'
 import SettingsMenu from './SettingsMenu.vue'
 
 withDefaults(defineProps<{
@@ -22,6 +23,15 @@ withDefaults(defineProps<{
     <h1 class="sr-only">
       {{ heading }}
     </h1>
+    <header class="phase__bar">
+      <a v-if="home" class="phase__home" :href="home"><Logo size="sm" /></a>
+      <Logo v-else size="sm" />
+      <div class="phase__status">
+        <slot name="status" />
+        <MusicWidget class="phase__music" />
+        <SettingsMenu />
+      </div>
+    </header>
     <div
       v-if="progress !== null"
       class="phase__progress"
@@ -32,15 +42,6 @@ withDefaults(defineProps<{
         :style="{ width: `${progress}%`, background: progressColour }"
       />
     </div>
-
-    <header class="phase__bar">
-      <a v-if="home" class="phase__home" :href="home"><Logo size="sm" /></a>
-      <Logo v-else size="sm" />
-      <div class="phase__status">
-        <slot name="status" />
-        <SettingsMenu />
-      </div>
-    </header>
 
     <main class="phase__body">
       <slot />

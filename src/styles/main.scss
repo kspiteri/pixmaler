@@ -16,6 +16,7 @@
 @use 'slider'; // Slider.vue — the range primitive (continuous + stepped)
 @use 'accordion'; // Accordion.vue / AccordionItem.vue — single-open collapsible steps
 @use 'disclosure'; // Disclosure.vue — the shared tap-to-reveal toggle (shortcuts, style help)
+@use 'info-modal'; // InfoModal.vue — the global info dialog (credits + privacy)
 @use 'logo';
 @use 'tagline'; // before the page partials — see the file header
 @use 'phase';
@@ -37,6 +38,7 @@
 @use 'player-tag'; // PlayerTag.vue — the seat chip + name pairing
 @use 'toggle-switch'; // ToggleSwitch.vue — the generic sliding switch (theme switch, …)
 @use 'settings-menu'; // SettingsMenu.vue — the header dropdown that now hosts the theme switch
+@use 'music-widget'; // MusicWidget.vue — the play/pause + volume transport, wherever music plays
 
 // ── CSS custom properties ──────────────────────────────────────────────────
 

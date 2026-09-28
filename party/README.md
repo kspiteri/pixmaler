@@ -39,6 +39,8 @@ Lives in **`src/lib/protocol/`**, not here, because both deploy targets need it:
 
 `parseClientMsg` is the trust boundary: it never throws, and it **constructs** its result rather than narrowing the input, so unknown properties can't ride into room state. Contextual checks that need the live room (grid length against the round's config, palette range) happen a second time in the handlers — the two deploy targets can be out of step, so neither side trusts the other's vintage.
 
+**Background music (#2) rides the existing config plumbing** — no new message or handler. `musicTrack` is a field on `RoundConfig` (carried by `gm:configure`), validated in `parseClientMsg` by `normaliseMusicTrack` against the DOM-free `MUSIC_TRACK_IDS`, then stored and broadcast through `handleConfigure` → `roundConfig()` like `drawSeconds`. Playback is entirely client-side (`useMusic`); the server only stores and echoes the chosen id. It is still a protocol change, so it ships on the next **Worker deploy**.
+
 ## Phases, deadlines and the one alarm
 
 `LOBBY → DRAWING → VOTING → RESULTS`, timer transitions deadline-driven: the server broadcasts a deadline timestamp, clients tick locally, and a **single DO alarm** (never `setTimeout`) wakes for whichever deadline is nearest — draw deadline, VOTING backstop, empty-room grace or idle wipe. `onMessage` re-arms it after every message, which is also what lets the GM's "+15s" (`gm:extendTime`, capped at `MAX_EXTENSIONS`) simply bump `state.deadline` and work. See [`docs/.plans/archive/10-room-lifecycle.md`](../docs/.plans/archive/10-room-lifecycle.md).

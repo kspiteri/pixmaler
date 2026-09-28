@@ -21,6 +21,7 @@ const config = {
   palette: ['#000000', '#ffffff'],
   targetGrid: [0, 1, 1, 0],
   drawSeconds: 60,
+  musicTrack: null,
 } satisfies GmConfigureMsg
 
 // A GM plus two other players, which is what the start gate requires.

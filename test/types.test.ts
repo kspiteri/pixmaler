@@ -212,7 +212,14 @@ describe('parseClientMsg — gm:configure', () => {
       palette: ['#000000', '#ffffff'],
       targetGrid: [0, 1, 1, 0],
       drawSeconds: 120,
+      musicTrack: null,
     })
+  })
+
+  it('normalises the music track, clamping an unknown id to null', () => {
+    expect(parse(configure({ musicTrack: 'blue-ska' }))).toMatchObject({ musicTrack: 'blue-ska' })
+    expect(parse(configure({ musicTrack: 'nope' }))).toMatchObject({ musicTrack: null })
+    expect(parse(configure())).toMatchObject({ musicTrack: null })
   })
 
   it('rejects grid sides outside 1..GRID_MAX_SIDE', () => {

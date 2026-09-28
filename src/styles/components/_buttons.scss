@@ -126,7 +126,7 @@
 // Surface button — a filled but quiet neutral (dialog cancel, palette Undo, the dice).
 .btn--tertiary {
   background: $surface;
-  border: 1px solid $border;
+  border: 2px solid $border;
   color: $fg-60;
 
   &:not(:disabled):hover {

@@ -76,7 +76,7 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 
 **Types** — `strict` is on. `pnpm build` runs `vue-tsc --noEmit` first, so a type error fails the build; `pnpm typecheck` also covers `party/` against Workers globals via `tsconfig.worker.json`. Keep the tree green.
 
-**Tests** — `pnpm test` runs Vitest over `test/`: 17 files, 409 tests, and [`ci.yml`](./.github/workflows/ci.yml) runs them on every push and PR. Coverage is deliberately narrow *and* deliberately DOM-free: pure, load-bearing logic that a plausible refactor could silently break, reachable without a browser. That constraint shaped the code as much as it shaped the tests — `src/lib/canvas/palette.ts` and `party/tally.ts` both exist because the logic in them was worth testing and was trapped inside something that needed a canvas or a Durable Object, and `party/ctx.ts` is the seam that lets every room handler run against a fake `RoomCtx` (`test/support/room.ts`) instead of a live one.
+**Tests** — `pnpm test` runs Vitest over `test/`: 20 files, 438 tests, and [`ci.yml`](./.github/workflows/ci.yml) runs them on every push and PR. Coverage is deliberately narrow *and* deliberately DOM-free: pure, load-bearing logic that a plausible refactor could silently break, reachable without a browser. That constraint shaped the code as much as it shaped the tests — `src/lib/canvas/palette.ts` and `party/tally.ts` both exist because the logic in them was worth testing and was trapped inside something that needed a canvas or a Durable Object, and `party/ctx.ts` is the seam that lets every room handler run against a fake `RoomCtx` (`test/support/room.ts`) instead of a live one.
 
 | Suite | Guards |
 |---|---|
@@ -92,11 +92,13 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 | `rateLimit.test.ts` | The message hot path's token bucket (#75) — burst, refill and throttling as pure arithmetic over an injected clock, no socket or Durable Object required. |
 | `smoke.test.ts` | The full loop — LOBBY → DRAWING → VOTING → RESULTS → LOBBY — walked through the real handlers by `test/support/round.ts` (#67). Catches a change to the *shape* of the path that a per-slice unit test would miss. |
 | `palette.test.ts` | Median cut, near-duplicate merging, swatch ordering, and the swatch the pipeline actually hands the picker. `medianCut` takes a **count, not a depth** (#28), so a request for 24 yields 24 where a power-of-two depth could only give 32; `withClassics` caps the swatch at the requested count and fills a short one from the classics ramp. `paletteSortOrder` must return a permutation — the caller remaps `targetGrid` through it, so a lost index repaints cells the wrong colour. |
+| `quantisers.test.ts` | The alternative palette quantisers (Wu, seeded k-means) and their metrics behind the DEV `/quantise` comparison — determinism and colour-count correctness, so a swap can't silently shift every target (#107). |
 | `pipeline.test.ts` | Grid geometry, and the rule that grid cell `(x, y)` reads source pixel `(x, y)` — the invariant whose absence caused #4, where the right column and bottom row of every image were discarded. Also `unsupportedImage`, which refuses a vector or non-image pick before `createImageBitmap` gets the chance to throw a DOM exception at the player. |
 | `grid.test.ts` | Cell geometry lifted out of `PixelCanvas`: even brushes are asymmetric, footprints clip rather than clamp, and `cellAt` is *allowed* to return cells outside the grid, because the input path uses that to notice the pen leaving the canvas. |
 | `aspect.test.ts` | Brush sizing, `--art-ratio`, the row/column choice, and the three target shapes with their crop math. |
 | `seats.test.ts` | Seat colour, initial and lean. The initial is taken by code point, not `charAt(0)` — see the file header for the emoji collapse that caused. |
 | `words.test.ts` | `isRoomCode` and the word lists behind room codes (#66). A word the code-shape regex rejects would make ~1-in-60 generated codes unopenable with no other symptom, so the generator and the validator are pinned to each other. |
+| `audio.gate.test.ts` | The sound engine's pure trigger discipline — which toggle gates which key (`sfx` vs the separate `ticktock`) and the repeat throttle — so `playSfx` stays correct with Howler kept out of the test path. |
 
 When you add a test, make it fail first: revert the fix it guards and check it goes red. Several of these were written that way, and two of them caught mutations that a green-only run would have missed. What the suite cannot reach is anything needing a real `getContext('2d')` — canvas rendering, the decode → crop → flatten → sample half of `processImage`, `hasTransparency` — or component behaviour. Verify those by driving the app in a browser.
 
@@ -109,6 +111,7 @@ When you add a test, make it fail first: revert the fix it guards and check it g
 - **Inject infrastructure, prop data.** `socket` and `clientId` are `provide`/`inject`ed once at connection; reactive game state flows down as props. No Pinia.
 - **Import `lib/` through the barrel.** Consumers do `import { … } from '../lib'`; `lib/index.ts` re-exports every module, so moving a file between folders never touches a call site. Inter-lib imports stay **direct** (relative paths), never the barrel, to avoid cycles. The Worker imports the DOM-free **`protocol/` barrel** (`'../src/lib/protocol'`) plus specific modules like `content/words` — never the client barrel, which re-exports DOM-dependent modules (`prefs/theme`, `prefs/textScale` read `localStorage` on load) that break the Workers and Vitest builds.
 - **`PixelCanvas` is imperative** — it owns its `<canvas>` and is instantiated in `onMounted`/watchers, not driven by reactivity.
+- **Audio is module-level, like the theme.** `lib/audio.ts` owns Howler — one preloaded SFX sprite plus a streamed music channel — and three per-device toggles (`music` · `sfx` · `ticktock`, stored as `pixmaler:audio`); the pure `lib/audio.gate.ts` decides what may sound (channel gate + repeat throttle) so it tests without Howler. Sound a key with `playSfx(key)`; `Button` dings on a primary click and takes `sfx`/`silent` to override or mute one instance. Background music is a **round setting** (`musicTrack` on `RoundConfig`, chosen in the picker's Game-settings step, validated by `normaliseMusicTrack`, played phase-driven by `useMusic`). `lib/infoModal.ts` + `InfoModal.vue` are the single global Credits/Privacy modal, opened from the settings menu.
 - **The server is authoritative** for phase, timer, submissions, and votes. Client state is a view of the server's truth — derive from the latest `state` message rather than holding local state that can drift.
 - **Broadcast the payload before the phase flip.** `endDrawing` sends `gallery` then `phase`; `endVoting` sends `results` then `phase`. That order is deliberate — flipping the phase first mounts the incoming screen against whatever payload the client still holds, which is the *previous* round's, and that was the root of the blank-winner bug (`13` item 48). A new phase that carries data follows the same order.
 - **Clear per-round client state when a round starts.** `App.vue`'s `phase === 'DRAWING'` branch nulls `drawState`, `results`, `gallery` and `voteState`. Nothing else clears them, and a payload outliving its round is a whole family of bugs — a stale ranking flashing last round's winner, round 1's votes pre-filling round 2's vote UI. Anything new you cache from a server message belongs in that reset.
@@ -117,7 +120,7 @@ When you add a test, make it fail first: revert the fix it guards and check it g
 ## Structure
 
 ```
-src/lib/        # domain folders behind the index.ts barrel: protocol/ · canvas/ · composables/ · prefs/ · player/ · content/ (+ keys, dialog, appLayout, assets)
+src/lib/        # domain folders behind the index.ts barrel: protocol/ · canvas/ · composables/ · prefs/ · player/ · content/ (+ keys, dialog, audio, audio.gate, infoModal, appLayout, assets)
 src/components/ # by role: elements/ (primitives) · layout/ (app shell, header, room-screen shell) · game/ (drawing + gameplay, sub-grouped image/canvas/lobby/shared behind a public @/components/game barrel)
 src/views/      # Entry, Paint, Taglines, phases/ (the four game screens), rooms/ (name gate + 4 refusal screens, via RoomInterstitial)
 src/styles/     # role folders (foundation · mixins · base · components · screens) + main.scss; partials @use by bare name, resolved via sass loadPaths (vite.config.ts)
@@ -128,6 +131,16 @@ test/           # Vitest suites, with the shared fake RoomCtx in test/support/
 > **Import alias:** `@` resolves to `src/` (Vite `resolve.alias` + tsconfig `paths`), so cross-tree imports are depth-independent — `@/lib`, `@/components/<role>/X.vue`, `@/views/…`. Same-directory siblings stay relative (`./Sibling.vue`).
 
 > **IDE note:** partials `@use` each other by **bare name** (`@use 'tokens'`), resolved via a sass `loadPaths` in `vite.config.ts`. An editor that doesn't read Vite's config (WebStorm, say) may flag these as *unresolved* — the build and CI resolve them fine. To teach the IDE the same paths, mark each `src/styles/` role folder (`foundation`, `mixins`, `base`, `components`, `screens`) as a **Resource Root** (WebStorm: right-click → *Mark Directory as → Resource Root*), or use your editor's equivalent load-path setting.
+
+## Third-party assets & licences
+
+Bundled assets and their obligations live in [`LICENSE.md`](./LICENSE.md):
+
+- **Music** — Kevin MacLeod, **CC-BY 4.0**. The one that needs a *visible* credit, so it's shown in-app under **Credits** in the settings menu (per incompetech's FAQ, a game's credits screen satisfies it). Tracks are self-hosted webm/Opus under `public/assets/audio/music/`, transcoded from source with `ffmpeg` (gapless + small); no CDN (#44).
+- **Fonts** — Fredoka, Space Grotesk, Plus Jakarta Sans under **SIL OFL 1.1**: ship the licence with the fonts, no in-app credit required.
+- **Dependencies + Lucide icons** — MIT/ISC: retain the notices (kept in `LICENSE.md`).
+
+Adding an asset with an attribution or notice obligation? Record it in `LICENSE.md`; only if its licence needs a *visible* credit (CC-BY does; OFL/MIT/ISC don't) also add it to the Credits modal (`InfoModal.vue`).
 
 ## Submitting changes
 

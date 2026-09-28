@@ -1,7 +1,7 @@
 @use 'screen' as *;
 @use 'tokens' as *;
 
-// Shared in-room phase shell — top progress bar + status bar + body — plus the
+// Shared in-room phase shell — status bar, then the progress bar, then the body — plus the
 // fallback that replaces a phase view when one throws.
 
 .phase {

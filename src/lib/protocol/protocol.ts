@@ -4,7 +4,7 @@
 // ride into room state and back out over a broadcast.
 
 import type { ClientMsg, VoteCategory } from './types'
-import { clampDrawSeconds, normaliseShape, VOTE_CATEGORIES } from './types'
+import { clampDrawSeconds, normaliseMusicTrack, normaliseShape, VOTE_CATEGORIES } from './types'
 
 // Bounds for anything a client can put on the wire, derived from what the UI can actually
 // produce: the largest legitimate grid side is round(768 * 50 * 0.01) = 384.
@@ -74,7 +74,7 @@ export function parseClientMsg(raw: string): ClientMsg | null {
       // The target is a fully quantised image: no `-1` holes, length exact, indices in range.
       if (!isTargetGrid(targetGrid, gridW * gridH, palette.length))
         return null
-      return { type: 'gm:configure', gridW, gridH, palette, targetGrid, drawSeconds: clampDrawSeconds(drawSeconds) }
+      return { type: 'gm:configure', gridW, gridH, palette, targetGrid, drawSeconds: clampDrawSeconds(drawSeconds), musicTrack: normaliseMusicTrack(m.musicTrack) }
     }
 
     case 'draw:submit':

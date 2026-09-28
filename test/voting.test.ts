@@ -31,6 +31,7 @@ const config = {
   palette: ['#000000', '#ffffff', '#ff0000', '#00ff00'],
   targetGrid: [0, 1, 2],
   drawSeconds: 60,
+  musicTrack: null,
 } satisfies GmConfigureMsg
 
 const drawing: Submission = { submissionId: 'artist', grid: [1, 2, 3] }
