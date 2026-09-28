@@ -1,4 +1,4 @@
-import type { ShallowRef } from 'vue'
+import type { Ref, ShallowRef } from 'vue'
 import type { StateMsg } from '../protocol/types'
 import { watch } from 'vue'
 import { playMusic, stopMusic } from '../audio'
@@ -7,7 +7,7 @@ import { playMusic, stopMusic } from '../audio'
 // RESULTS, fades out on return to LOBBY (or Play again). The track is the GM's
 // `config.musicTrack` (null = none). Gating on the `music` toggle lives in the audio module.
 // App calls this once on the room route.
-export function useMusic(state: ShallowRef<StateMsg | null>): void {
+export function useMusic(state: ShallowRef<StateMsg | null>, closed: Ref<boolean>): void {
   watch(() => state.value?.phase ?? null, (phase, prev) => {
     if (phase === prev)
       return
@@ -19,5 +19,10 @@ export function useMusic(state: ShallowRef<StateMsg | null>): void {
     else if (phase === 'LOBBY') {
       stopMusic()
     }
+  })
+  // A session can end in RESULTS, on a screen with no widget or menu to mute it — so stop here.
+  watch(closed, (isClosed) => {
+    if (isClosed)
+      stopMusic()
   })
 }

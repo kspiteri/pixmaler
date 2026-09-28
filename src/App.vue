@@ -73,7 +73,7 @@ const {
 
 // Background music (#2): fades in on DRAWING, out on LOBBY. Reads the GM's config.musicTrack;
 // no-op off the room route (state stays null).
-useMusic(state)
+useMusic(state, sessionClosed)
 </script>
 
 <template>
