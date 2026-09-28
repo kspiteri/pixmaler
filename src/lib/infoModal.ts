@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 
 // The info modal's active content, or null. Module-level like `lib/dialog.ts` — one global
-// instance, opened from the settings menu (and Entry's privacy link). Credits and the privacy
+// instance, opened from the settings menu. Credits and the privacy
 // notice are the app's two info surfaces; a modal keeps both reachable everywhere, including
 // mid-game for a joiner who never sees Entry. CC-BY needs a visible, findable credit (incompetech
 // FAQ), and the privacy notice is a data-minimisation nudge (#44).

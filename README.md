@@ -19,7 +19,7 @@ A game master uploads any image. It's quantised in the browser into chunky, limi
 - **Cross-canvas hover marker** — hovering your canvas lights up a marker on the reference and highlights the matching swatch, so you don't have to squint at six near-identical browns.
 - **A palette that stays out of the way** — the reference image tucks into the palette panel and collapses when you don't need it; the panel docks to the side or floats over the canvas, sizes S / M / L, and remembers how you left it.
 - **Exact palettes, any raster upload** — the colour count is the whole swatch, not a request: ask for 24 and the room paints with 24, topped up from a ramp of classic colours when the image itself can't supply that many. An upload carrying transparency is flattened onto a background you choose first, so a logo's empty page stops merging into its own dark ink. A vector or a non-image is refused up front, in words, instead of failing behind a preview that looked fine.
-- **Music and sound** — the GM picks a per-round soundtrack (royalty-free chiptune that fades in when drawing starts and carries through the reveal), and the UI has subtle sound effects. Music, effects and the countdown tick are three independent per-device toggles, all off-friendly.
+- **Music and sound** — the GM picks a per-round soundtrack (royalty-free music that fades in when drawing starts and carries through the reveal). Music, effects and the countdown tick are independent per-device toggles.
 - **Solo paint sandbox** — the [`/paint`](#paint-sandbox) route opens a single-player canvas with the same pipeline; useful for testing brushes and palettes, or just goofing around.
 
 ## Stack

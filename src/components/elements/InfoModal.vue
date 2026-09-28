@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // The global info modal — the Credits attribution and the privacy notice, the app's two info
-// surfaces. Opened from the settings menu (and Entry's privacy link); `activeInfo` in
+// surfaces. Opened from the settings menu; `activeInfo` in
 // `lib/infoModal.ts` picks which content shows. App mounts this once via `v-if`, so `showModal`
 // on mount is the whole gate. CC-BY needs a visible, findable credit (incompetech's FAQ); the
 // privacy notice is a data-minimisation nudge (#44).
@@ -38,8 +38,8 @@ onMounted(() => dialogEl.value?.showModal())
             while a room is live; they're wiped when it goes idle or the session is closed by the GM.
           </li>
           <li>
-            Settings include your dark/light theme preference, text size, your palette preferences
-            and whether you have canvas shortcuts enabled.
+            Settings include your theme, text size, touch mode, sound preferences, palette
+            preferences and whether canvas shortcuts are on.
           </li>
           <li>
             In Free mode, the pixelated picture you chose and your drawing are stored in this

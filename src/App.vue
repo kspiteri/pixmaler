@@ -173,6 +173,6 @@ useMusic(state)
   />
 
   <!-- Global info modal (lib/infoModal.ts): credits + privacy notice, opened from the settings
-       menu (and Entry's privacy link). v-if mounts a fresh <dialog>; outside the phase chain. -->
+       menu. v-if mounts a fresh <dialog>; outside the phase chain. -->
   <InfoModal v-if="activeInfo" />
 </template>
