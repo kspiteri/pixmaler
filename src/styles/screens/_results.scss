@@ -170,6 +170,12 @@
     flex-wrap: wrap;
   }
 
+  &__actions {
+    display: flex;
+    justify-content: center;
+    margin-top: $gap-6;
+  }
+
   &__hint {
     color: $fg-35;
     font-size: $fs-sm;

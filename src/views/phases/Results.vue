@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // RESULTS phase — overall reveal. Winner(s) (most total votes, joint on a tie) take the
 // hero card; everyone else falls into a gallery ordered by points, each drawing once.
-// The GM gets a "Play again" button that returns the room to LOBBY.
+// The GM gets "Play again" in the status bar and repeated, full size, under the reveal.
 
 import type { Player, RankedResult, ServerMsg } from '@/lib'
 import { Power, RotateCcw } from '@lucide/vue'
@@ -275,6 +275,15 @@ const { setSlot } = useReadonlyCanvases(
             seems to have lost their paint brush
           </li>
         </ul>
+
+        <div v-if="isGm" class="results__actions">
+          <Button variant="primary" size="large" @click="playAgain">
+            <template #icon>
+              <RotateCcw :size="20" aria-hidden="true" />
+            </template>
+            Play again
+          </Button>
+        </div>
       </template>
     </div>
 
