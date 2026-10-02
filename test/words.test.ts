@@ -4,7 +4,7 @@
 // word lists (not just shape), so an off-list `{word}-{word}` can't mint a room. These pin both.
 
 import { describe, expect, it } from 'vitest'
-import { adjectives, isRoomCode, nouns, wordPair } from '../src/lib/content/words'
+import { adjectives, formatRoomInput, isRoomCode, nouns, wordPair } from '../src/lib/content/words'
 
 describe('isRoomCode', () => {
   it('accepts a well-formed {word}-{word} code, including every code wordPair emits', () => {
@@ -27,5 +27,23 @@ describe('isRoomCode', () => {
   it('is kept honest by the word lists: every entry is lowercase letters only', () => {
     for (const w of [...adjectives, ...nouns])
       expect(w).toMatch(/^[a-z]+$/)
+  })
+})
+
+describe('formatRoomInput', () => {
+  it('turns a code read aloud or off a screen into the canonical form', () => {
+    expect(formatRoomInput('Feral Crayon')).toBe('feral-crayon')
+    expect(formatRoomInput('  feral__crayon!')).toBe('feral-crayon')
+    expect(formatRoomInput('feral -- crayon')).toBe('feral-crayon')
+  })
+
+  it('keeps a trailing hyphen so the second word can still be typed', () => {
+    expect(formatRoomInput('feral ')).toBe('feral-')
+    expect(formatRoomInput(`${formatRoomInput('feral ')}crayon`)).toBe('feral-crayon')
+  })
+
+  it('pulls the code out of a pasted room link, dropping every other param', () => {
+    expect(formatRoomInput('https://kspiteri.github.io/pixmaler/?room=feral-crayon')).toBe('feral-crayon')
+    expect(formatRoomInput('https://kspiteri.github.io/pixmaler/?create=1&room=Feral-Crayon#x')).toBe('feral-crayon')
   })
 })
