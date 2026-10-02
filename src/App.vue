@@ -26,15 +26,9 @@ import Taglines from '@/views/Taglines.vue'
 
 const params = new URLSearchParams(location.search)
 const roomCode = params.get('room')
-// Create intent rides in on the URL so it survives Entry's full-page navigation, then is
-// stripped at once (#66): a shared or reloaded create-URL degrades to a plain join (a reload
-// is a reconnect anyway, always allowed). Rewrite through URLSearchParams so the room code
-// and any other params are preserved and correctly escaped.
+// Create intent rides in on the URL so it survives Entry's full-page navigation; `useRoom`
+// strips it on connect, so a reload on the name gate still creates the room.
 const createIntent = params.get('create') === '1'
-if (roomCode && createIntent) {
-  params.delete('create')
-  history.replaceState(null, '', `${location.pathname}?${params}`)
-}
 const path = location.pathname.replace(/\/+$/, '')
 const isPaintRoute = path.endsWith('/paint')
 // Hidden debug page — read all taglines in bulk.
@@ -97,7 +91,7 @@ useMusic(state, sessionClosed)
     <DuplicateTab v-else-if="duplicateTab" />
 
     <!-- Name gate: shown before connecting when the player has no stored name -->
-    <NameGate v-else-if="showNameGate" @submit="submitName" />
+    <NameGate v-else-if="showNameGate" :creating="createIntent" @submit="submitName" />
 
     <div v-else-if="!state" class="page">
       <p>{{ connectionStatus === "reconnecting" ? "Reconnecting…" : `Connecting to ${roomCode}…` }}</p>
