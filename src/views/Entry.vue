@@ -25,8 +25,7 @@ const confirming = ref<Action | null>(null)
 
 const sandboxHref = appHref('paint')
 
-// The confirm morph (label → icon) plays for this long before the full-page navigation unloads
-// the page; on create it also covers the press ding. Independent of audio, so it holds when muted.
+// The confirm morph (label → icon) plays for this long before the full-page navigation unloads the page.
 const CONFIRM_MS = 420
 
 // Claims the navigation for `action` and leaves once the morph has had CONFIRM_MS since `since`.

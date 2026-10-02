@@ -2,8 +2,8 @@
 // The one button. `variant` picks the fill/ink recipe, `size` the scale; `icon` makes it a
 // square icon-only control, `block` full-width, `collapse` drops the label to its icon under
 // $bp-mobile, `tone="danger"` a warn hover. Renders <a> when `href` is set. This owns the
-// button identity (fill, border, press, hover, focus, disabled); a caller keeps only layout
-// (position, flex, width) as a class, which merges in via $attrs.
+// button identity (fill, border, press, hover, focus, disabled; `aria-busy` with `disabled` stays
+// unfaded); a caller keeps only layout (position, flex, width) as a class, which merges in via $attrs.
 // Click plays a press sound: a primary's `ding` by default. `sfx` overrides the key (any
 // variant), `silent` suppresses it for this instance; the global mute still applies.
 

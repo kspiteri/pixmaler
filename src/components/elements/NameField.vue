@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// The display-name field, used everywhere a player names themselves (Entry, the name gate,
-// the lobby rename). One reusable unit so the placeholder and the "randomise" dice — a
+// The display-name field, used everywhere a player names themselves (the name gate, the lobby
+// rename). One reusable unit so the placeholder and the "randomise" dice — a
 // data-minimisation nudge — are identical at every site. `inheritAttrs: false` +
 // `v-bind="$attrs"` on the <input> routes native bits (autofocus, @blur, @keydown) to it.
 
