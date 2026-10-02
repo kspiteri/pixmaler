@@ -76,7 +76,7 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 
 **Types** — `strict` is on. `pnpm build` runs `vue-tsc --noEmit` first, so a type error fails the build; `pnpm typecheck` also covers `party/` against Workers globals via `tsconfig.worker.json`. Keep the tree green.
 
-**Tests** — `pnpm test` runs Vitest over `test/`: 20 files, 438 tests, and [`ci.yml`](./.github/workflows/ci.yml) runs them on every push and PR. Coverage is deliberately narrow *and* deliberately DOM-free: pure, load-bearing logic that a plausible refactor could silently break, reachable without a browser. That constraint shaped the code as much as it shaped the tests — `src/lib/canvas/palette.ts` and `party/tally.ts` both exist because the logic in them was worth testing and was trapped inside something that needed a canvas or a Durable Object, and `party/ctx.ts` is the seam that lets every room handler run against a fake `RoomCtx` (`test/support/room.ts`) instead of a live one.
+**Tests** — `pnpm test` runs Vitest over `test/`: 20 files, 441 tests, and [`ci.yml`](./.github/workflows/ci.yml) runs them on every push and PR. Coverage is deliberately narrow *and* deliberately DOM-free: pure, load-bearing logic that a plausible refactor could silently break, reachable without a browser. That constraint shaped the code as much as it shaped the tests — `src/lib/canvas/palette.ts` and `party/tally.ts` both exist because the logic in them was worth testing and was trapped inside something that needed a canvas or a Durable Object, and `party/ctx.ts` is the seam that lets every room handler run against a fake `RoomCtx` (`test/support/room.ts`) instead of a live one.
 
 | Suite | Guards |
 |---|---|
@@ -97,7 +97,7 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 | `grid.test.ts` | Cell geometry lifted out of `PixelCanvas`: even brushes are asymmetric, footprints clip rather than clamp, and `cellAt` is *allowed* to return cells outside the grid, because the input path uses that to notice the pen leaving the canvas. |
 | `aspect.test.ts` | Brush sizing, `--art-ratio`, the row/column choice, and the three target shapes with their crop math. |
 | `seats.test.ts` | Seat colour, initial and lean. The initial is taken by code point, not `charAt(0)` — see the file header for the emoji collapse that caused. |
-| `words.test.ts` | `isRoomCode` and the word lists behind room codes (#66). A word the code-shape regex rejects would make ~1-in-60 generated codes unopenable with no other symptom, so the generator and the validator are pinned to each other. |
+| `words.test.ts` | `isRoomCode` and the word lists behind room codes (#66). A word the code-shape regex rejects would make ~1-in-60 generated codes unopenable with no other symptom, so the generator and the validator are pinned to each other. Also `formatRoomInput`, Entry's code-field normaliser: a trailing hyphen must survive mid-typing, and a pasted room link must yield only its `room` param. |
 | `audio.gate.test.ts` | The sound engine's pure trigger discipline — which toggle gates which key (`sfx` vs the separate `ticktock`) and the repeat throttle — so `playSfx` stays correct with Howler kept out of the test path. |
 
 When you add a test, make it fail first: revert the fix it guards and check it goes red. Several of these were written that way, and two of them caught mutations that a green-only run would have missed. What the suite cannot reach is anything needing a real `getContext('2d')` — canvas rendering, the decode → crop → flatten → sample half of `processImage`, `hasTransparency` — or component behaviour. Verify those by driving the app in a browser.
@@ -122,7 +122,7 @@ When you add a test, make it fail first: revert the fix it guards and check it g
 ```
 src/lib/        # domain folders behind the index.ts barrel: protocol/ · canvas/ · composables/ · prefs/ · player/ · content/ (+ keys, dialog, audio, audio.gate, infoModal, appLayout, assets)
 src/components/ # by role: elements/ (primitives) · layout/ (app shell, header, room-screen shell) · game/ (drawing + gameplay, sub-grouped image/canvas/lobby/shared behind a public @/components/game barrel)
-src/views/      # Entry, Paint, Taglines, phases/ (the four game screens), rooms/ (name gate + 4 refusal screens, via RoomInterstitial)
+src/views/      # Entry (+ entry/: its Door and JoinForm parts), Paint, Taglines, phases/ (the four game screens), rooms/ (name gate + 4 refusal screens, via RoomInterstitial)
 src/styles/     # role folders (foundation · mixins · base · components · screens) + main.scss; partials @use by bare name, resolved via sass loadPaths (vite.config.ts)
 party/          # PartyServer Durable Object — server.ts plus the per-concern handler modules; config in wrangler.jsonc; guide in party/README.md
 test/           # Vitest suites, with the shared fake RoomCtx in test/support/
