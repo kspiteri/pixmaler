@@ -178,7 +178,7 @@ watch(() => props.deadline, readClock)
       <span class="sr-only" role="status">{{ countdownAnnounce }}</span>
       <Button
         v-if="isGm && gallery"
-        variant="primary"
+        :variant="allVoted ? 'primary' : 'secondary'"
         size="small"
         @click="stopVoting(allVoted)"
       >
