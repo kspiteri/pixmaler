@@ -63,11 +63,13 @@ $panel-w: 24rem;
 }
 
 // The action panel — a framed "piece" on the wall, tilted by wonk(), straightening on focus.
+// A fixed width (the column, capped at $panel-w, frame included) so swapping steps or showing an
+// error never resizes it; on a phone the column is narrower than the cap, so it fills it.
 .entry__panel {
   @include chrome;
+  box-sizing: border-box;
+  width: 100%;
   max-width: $panel-w;
-  // Centre it: a no-op in the desktop track (track == panel width) but it centres the
-  // capped panel when the stage is single-column.
   justify-self: center;
   // Re-dress the chrome border as the frame bevel (`--frame-*`, $frame-w) — Entry wears the
   // gallery's frame vocabulary rather than `.art-frame` itself: a deliberate flourish, not the
