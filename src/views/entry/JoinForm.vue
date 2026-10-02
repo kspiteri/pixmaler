@@ -2,10 +2,10 @@
 // Entry's "I have a code" step: the room-code field, formatted as typed, checked for shape and
 // then against the server before `join` fires, with any miss shown under the field.
 
-import { ArrowLeft, ArrowRight } from '@lucide/vue'
-import { onMounted, ref, useTemplateRef } from 'vue'
+import { ArrowLeft, ArrowRight, LoaderCircle } from '@lucide/vue'
+import { nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import Button from '@/components/elements/Button.vue'
-import { formatRoomInput, isRoomCode, roomExists } from '@/lib'
+import { announce, formatRoomInput, isRoomCode, roomExists } from '@/lib'
 
 const props = defineProps<{
   // Entry has claimed the navigation for this join.
@@ -22,26 +22,43 @@ const code = defineModel<string>('code', { required: true })
 
 const input = useTemplateRef<HTMLInputElement>('input')
 const error = ref<string | null>(null)
+// The existence probe is in flight; the field and Join are disabled until it settles.
 const checking = ref(false)
 
 onMounted(() => input.value?.focus())
 
-// Lowercasing and space → hyphen keep the length, so the caret stays put; a pasted link
-// changes it, and the caret then sits at the end anyway.
-function onInput(e: Event) {
-  const el = e.target as HTMLInputElement
-  const caret = el.selectionStart
+// The caret maps through the formatter by formatting the text before it, so a character
+// dropped mid-code doesn't throw the caret to the end.
+function format(el: HTMLInputElement) {
+  const caret = el.selectionStart ?? el.value.length
   const formatted = formatRoomInput(el.value)
-  const keepCaret = formatted.length === el.value.length
-  el.value = formatted
   code.value = formatted
   error.value = null
-  if (keepCaret && caret !== null)
-    el.setSelectionRange(caret, caret)
+  if (el.value === formatted)
+    return
+  const at = Math.min(formatRoomInput(el.value.slice(0, caret)).length, formatted.length)
+  el.value = formatted
+  el.setSelectionRange(at, at)
 }
 
-function fail(message: string) {
+// Rewriting the value mid-composition garbles input on Android keyboards (they compose Latin
+// text too) and CJK IMEs, so formatting waits for `compositionend`.
+function onInput(e: Event) {
+  if (!(e as InputEvent).isComposing)
+    format(e.target as HTMLInputElement)
+}
+
+// An a11y invariant: the error is spoken exactly once. Focus moving to the field reads it via
+// aria-describedby; when focus is already there, nothing moves, so it's announced instead.
+async function fail(message: string) {
+  const focused = document.activeElement === input.value
   error.value = message
+  if (focused) {
+    announce(message, 'assertive')
+    return
+  }
+  // The field re-enables and links the message on the next render; a disabled field refuses focus.
+  await nextTick()
   input.value?.focus()
 }
 
@@ -90,6 +107,7 @@ function back() {
         class="input entry__code"
         type="text"
         :value="code"
+        :disabled="checking || busy"
         placeholder="feral-crayon, or paste the link"
         autocomplete="off"
         autocapitalize="none"
@@ -98,8 +116,9 @@ function back() {
         :aria-invalid="error ? 'true' : undefined"
         :aria-describedby="error ? 'entry-code-error' : undefined"
         @input="onInput"
+        @compositionend="format($event.target as HTMLInputElement)"
       >
-      <p v-if="error" id="entry-code-error" class="entry__error" role="alert">
+      <p v-if="error" id="entry-code-error" class="entry__error">
         {{ error }}
       </p>
     </div>
@@ -109,12 +128,14 @@ function back() {
       size="large"
       block
       type="submit"
-      :disabled="!code"
-      :aria-label="checking || busy ? 'Joining room' : undefined"
+      :disabled="!code || checking || busy"
+      :aria-busy="checking || undefined"
+      :aria-label="checking ? 'Checking room code' : busy ? 'Joining room' : undefined"
     >
       <span class="entry__morph" :class="{ 'entry__morph--active': checking || busy }">
         <span class="entry__morph-text">Join room</span>
-        <ArrowRight class="entry__morph-icon" :size="20" aria-hidden="true" />
+        <LoaderCircle v-if="checking" class="entry__morph-icon entry__spinner" :size="20" aria-hidden="true" />
+        <ArrowRight v-else class="entry__morph-icon" :size="20" aria-hidden="true" />
       </span>
     </Button>
   </form>
