@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.12.0](https://github.com/kspiteri/pixmaler/compare/0.11.0...0.12.0) (2026-10-02)
+
+
+### New
+
+* add `howler` for audio support and its TypeScript definitions ([9378e41](https://github.com/kspiteri/pixmaler/commit/9378e41be5b9d6656eee312415709404e3f959a5))
+* add a11y support to `MusicWidget` ([6bd1b70](https://github.com/kspiteri/pixmaler/commit/6bd1b70dc43c709607e821a300ad67220649bd13))
+* add audio foundation + background music ([f7eadc1](https://github.com/kspiteri/pixmaler/commit/f7eadc15f37372c3657e020a62228bf30cf280af)), closes [#117](https://github.com/kspiteri/pixmaler/issues/117)
+* add MusicWidget for track transport and playback controls ([6cd86e0](https://github.com/kspiteri/pixmaler/commit/6cd86e0dff1dd39f03b9458ceccc7bf7ce072ac5))
+* **button:** add sound effect trigger for primary button clicks ([adf95a6](https://github.com/kspiteri/pixmaler/commit/adf95a6bbdfbb9f81fa59254e675a9c835e22f65))
+* enhance music playback ([fe3597e](https://github.com/kspiteri/pixmaler/commit/fe3597e87caa85c92627723051ecda94f9571e2c))
+* **entry:** add label-to-icon confirm morph for entry buttons ([3d88cae](https://github.com/kspiteri/pixmaler/commit/3d88caeed61cc6a376239c4c3377b0c459615442))
+* **image-picker:** add music track selection to round settings ([bc8dd65](https://github.com/kspiteri/pixmaler/commit/bc8dd6589e178cebd7dc52c7fbf07734f5a6d021))
+* implement audio engine ([439a4b0](https://github.com/kspiteri/pixmaler/commit/439a4b07fe6015a9c86a50f8c384845ccb1d0a24))
+* improve music track support and add timer fallback ([2a4073c](https://github.com/kspiteri/pixmaler/commit/2a4073c55376af525f49714be4f32d6677edab82))
+* integrate music playback controls and cleanup on session end ([45eb7aa](https://github.com/kspiteri/pixmaler/commit/45eb7aa358baf8068b96dc4cce11aaad6ba93bcf))
+* **modals:** add global InfoModal for privacy notice and credits ([191ef82](https://github.com/kspiteri/pixmaler/commit/191ef824d9244dd4bd5e79916dd2bde779054aa6))
+* **music:** add background music support with configurable tracks ([c41a078](https://github.com/kspiteri/pixmaler/commit/c41a0781a8e13660b16b751f62649048e25faf02))
+* **settings-menu:** improve control grouping ([5be2668](https://github.com/kspiteri/pixmaler/commit/5be266887f12509b5663184f1b8345bb2eb4bd96))
+* style music track selector ([a69f159](https://github.com/kspiteri/pixmaler/commit/a69f1599ce43471898c34f3fd925e657559fe8a4))
+
+
+### Fixes
+
+* add "Play again" button under reveal for GM ([8ce7049](https://github.com/kspiteri/pixmaler/commit/8ce704979557a0a11d3a73d50082f28a4dcc1029))
+* add session-closing music stop to `useMusic` ([c7e6510](https://github.com/kspiteri/pixmaler/commit/c7e6510cf5005a3eab18fe9b3ee9cf2822524935))
+* close menu before modal to ensure proper focus handling ([b8e3136](https://github.com/kspiteri/pixmaler/commit/b8e3136d18d866192d12045604c0cc907e400414))
+* ensure `stopMusic` fades out properly and unloads reliably ([5f1e841](https://github.com/kspiteri/pixmaler/commit/5f1e8414b6c53dba718855f33b59e0b684306349))
+* improve SFX handling and add configurability ([6775572](https://github.com/kspiteri/pixmaler/commit/6775572e51a07e82c17887d62276ccd958deff0b))
+* prevent music track restart on phase transitions ([77a9527](https://github.com/kspiteri/pixmaler/commit/77a95270dc685ebb2cfcf68a6e8e274d5d1ee21e))
+* refine `InfoModal` backdrop click handling ([56a1a8f](https://github.com/kspiteri/pixmaler/commit/56a1a8fe6e6b28afb85538c6890d64235b7fe9a1))
+* reset buttons on page restore to prevent freezing ([c877326](https://github.com/kspiteri/pixmaler/commit/c877326917750b5ed105032502a35858344e5240))
+* **voting:** adjust GM button variant based on voting completion ([8daa9d9](https://github.com/kspiteri/pixmaler/commit/8daa9d9ce08aa3fe27cc8d205755bbce6c173f78))
+
+
+### Under the hood
+
+* **layout:** reposition progress bar below header in PhaseLayout ([b5b5016](https://github.com/kspiteri/pixmaler/commit/b5b50164bf858da31684843e875462d393d262d6))
+* **paint:** replace settings icon with palette icon ([67a0e81](https://github.com/kspiteri/pixmaler/commit/67a0e81d15eeea1bf823afff23ef4453ffed0d56))
+
 ## [0.11.0](https://github.com/kspiteri/pixmaler/compare/0.10.0...0.11.0) (2026-09-23)
 
 
