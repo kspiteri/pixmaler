@@ -92,8 +92,8 @@ $panel-w: 24rem;
 }
 
 // The entry actions confirm with a label → icon morph before their full-page navigation: a tick
-// on create, a forward arrow on the secondary actions. The label and icon are grid-stacked (same
-// cell) so the button keeps the label's width and never reflows as they cross-fade.
+// on create, a forward arrow on the secondary actions, a spinner while Join checks the code. The
+// label and icon are grid-stacked (same cell) so the button keeps its width as they cross-fade.
 .entry__morph {
   display: inline-grid;
   place-items: center;
@@ -119,10 +119,28 @@ $panel-w: 24rem;
     scale: 1;
   }
 }
+.entry__spinner {
+  animation: entry-spin 0.8s linear infinite;
+}
+@keyframes entry-spin {
+  to {
+    rotate: 1turn;
+  }
+}
+
+// Reduced motion: no cross-fade, and the spinner pulses instead of turning.
 @media (prefers-reduced-motion: reduce) {
   .entry__morph-text,
   .entry__morph-icon {
     transition: none;
+  }
+  .entry__spinner {
+    animation: entry-pulse 1.2s ease-in-out infinite;
+  }
+}
+@keyframes entry-pulse {
+  50% {
+    opacity: 0.3;
   }
 }
 
@@ -132,28 +150,48 @@ $panel-w: 24rem;
   gap: $gap-3;
 }
 
-// The join half is one row: label above the input, Join aligned to the input's foot at the
-// end. It collapses to a stacked column below $bp-mobile, where a word-pair code plus a
-// two-word button no longer share a line.
-.entry__join {
+.entry__step {
   display: flex;
-  align-items: flex-end;
-  gap: $gap-3;
+  flex-direction: column;
+  gap: $gap-4;
+}
 
-  @media (max-width: $bp-mobile) {
-    flex-direction: column;
-    align-items: stretch;
-    gap: $gap-4;
+// A door is a two-line choice: the loud title, then a quiet body-voice line under it.
+.entry__door {
+  justify-content: flex-start;
+  text-align: left;
+
+  .entry__morph-text {
+    justify-self: start;
   }
 }
-.entry__join-field {
-  flex: 1;
-  .input {
-    padding: 1rem;
+.entry__door-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+.entry__door-sub {
+  font-family: $font-body;
+  font-weight: $fw-regular;
+  letter-spacing: normal;
+  font-size: $fs-sm;
+  opacity: 0.8;
+}
+
+.entry__back {
+  align-self: flex-start;
+}
+.entry__code {
+  padding: 1rem;
+
+  &[aria-invalid='true'] {
+    border-color: $danger-ink;
   }
 }
-.entry__join-btn {
-  flex-shrink: 0;
+.entry__error {
+  margin: $gap-2 0 0;
+  color: $danger-ink;
+  font-size: $fs-sm;
 }
 .entry__rule {
   flex: 1;
@@ -165,6 +203,6 @@ $panel-w: 24rem;
   font-size: $fs-xs;
 }
 
-.entry__sandbox {
+.entry__free {
   align-self: center;
 }

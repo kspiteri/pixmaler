@@ -1,20 +1,26 @@
 <script setup lang="ts">
-// Entry screen — pre-room landing. Create / join / open the paint sandbox.
+// Entry screen — pre-room landing: start a game, join one by code, or open the paint sandbox.
+// It asks no name; the room route's NameGate does when none is stored. Owns the one in-flight
+// navigation, so only one action can confirm at a time; its parts live in `entry/`.
 
-import { ArrowRight, CircleCheck, Palette, Play } from '@lucide/vue'
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { ChevronRight, KeyRound, Palette, Play } from '@lucide/vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import Logo from '@/components/elements/Logo.vue'
-import NameField from '@/components/elements/NameField.vue'
 import Tagline from '@/components/elements/Tagline.vue'
 import SettingsMenu from '@/components/layout/SettingsMenu.vue'
-import { appHref, getName, roomHref, sanitiseName, setName, wordPair } from '@/lib'
+import { appHref, roomHref, wordPair } from '@/lib'
+import Door from './entry/Door.vue'
+import JoinForm from './entry/JoinForm.vue'
 
 type Action = 'create' | 'join' | 'free'
 
-const name = ref(getName() ?? '')
+const codeDoor = useTemplateRef<InstanceType<typeof Door>>('codeDoor')
+
+const joining = ref(false)
+// Lives here, not in JoinForm, so a typed code survives Back.
 const code = ref('')
-// Which action is mid-confirm, or null. Drives the button's label → icon morph.
+// Which action is mid-confirm, or null. Drives that control's label → icon morph.
 const confirming = ref<Action | null>(null)
 
 const sandboxHref = appHref('paint')
@@ -23,24 +29,20 @@ const sandboxHref = appHref('paint')
 // the page; on create it also covers the press ding. Independent of audio, so it holds when muted.
 const CONFIRM_MS = 420
 
-// Every entry action ends in a full-page navigation: confirm with the morph, then go.
-function confirmNavigate(action: Action, href: string) {
+// Claims the navigation for `action` and leaves once the morph has had CONFIRM_MS since `since`.
+function confirmNavigate(action: Action, href: string, since = Date.now()) {
   if (confirming.value)
     return
   confirming.value = action
   setTimeout(() => {
     location.href = href
-  }, CONFIRM_MS)
+  }, Math.max(0, CONFIRM_MS - (Date.now() - since)))
 }
 
-// Both buttons are `:disabled` until their fields are filled. A create carries `&create=1` so the
-// room route opens the room; a join omits it and 404s if the code isn't a live room (#66).
-function enterRoom(room: string, create = false) {
-  const trimmed = sanitiseName(name.value)
-  if (!trimmed || !room)
-    return
-  setName(trimmed)
-  confirmNavigate(create ? 'create' : 'join', roomHref(room, { create }))
+async function closeJoin() {
+  joining.value = false
+  await nextTick()
+  codeDoor.value?.focus()
 }
 
 // Free mode is a real route (an <a>), so honour modified clicks (open in a new tab); a plain
@@ -74,54 +76,42 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
 
       <div class="entry__panel">
         <div class="entry__form">
-          <NameField v-model="name" label="Your name" />
-
-          <Button
-            variant="primary"
-            size="large"
-            :disabled="!name.trim()"
-            :aria-label="confirming === 'create' ? 'Creating room' : undefined"
-            @click="enterRoom(wordPair(), true)"
-          >
-            <template v-if="confirming !== 'create'" #icon>
-              <Play :size="20" aria-hidden="true" />
-            </template>
-            <span class="entry__morph" :class="{ 'entry__morph--active': confirming === 'create' }">
-              <span class="entry__morph-text">Create room (GM)</span>
-              <CircleCheck class="entry__morph-icon" :size="22" aria-hidden="true" />
-            </span>
-          </Button>
-
-          <div class="entry__divider">
-            <span class="entry__rule" />
-            <span class="entry__divider-text">or join existing</span>
-            <span class="entry__rule" />
-          </div>
-
-          <div class="entry__join">
-            <div class="field entry__join-field">
-              <label class="label" for="entry-room-code">Room code</label>
-              <input
-                id="entry-room-code"
-                v-model="code"
-                class="input"
-                type="text"
-                placeholder="e.g. feral-crayon"
-              >
-            </div>
-            <Button
-              variant="secondary"
-              class="entry__join-btn"
-              :disabled="!name.trim() || !code.trim()"
-              :aria-label="confirming === 'join' ? 'Joining room' : undefined"
-              @click="enterRoom(code.trim().toLowerCase())"
+          <div v-if="!joining" class="entry__step">
+            <!-- `create=1` lets the room route open a room that doesn't exist yet. -->
+            <Door
+              title="Start a new game"
+              sub="you're the GM, friends join with your code"
+              :busy="confirming === 'create'"
+              :aria-label="confirming === 'create' ? 'Creating room' : undefined"
+              @click="confirmNavigate('create', roomHref(wordPair(), { create: true }))"
             >
-              <span class="entry__morph" :class="{ 'entry__morph--active': confirming === 'join' }">
-                <span class="entry__morph-text">Join room</span>
-                <ArrowRight class="entry__morph-icon" :size="18" aria-hidden="true" />
-              </span>
-            </Button>
+              <template #icon>
+                <Play :size="22" aria-hidden="true" />
+              </template>
+            </Door>
+
+            <Door
+              ref="codeDoor"
+              title="I have a code"
+              sub="join a game someone else started"
+              @click="joining = true"
+            >
+              <template #icon>
+                <KeyRound :size="22" aria-hidden="true" />
+              </template>
+              <template #trailing>
+                <ChevronRight :size="20" aria-hidden="true" />
+              </template>
+            </Door>
           </div>
+
+          <JoinForm
+            v-else
+            v-model:code="code"
+            :busy="confirming === 'join'"
+            @back="closeJoin"
+            @join="(room, since) => confirmNavigate('join', roomHref(room), since)"
+          />
 
           <div class="entry__divider">
             <span class="entry__rule" />
@@ -130,15 +120,16 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
           </div>
 
           <Button
-            variant="secondary"
-            class="entry__sandbox"
+            variant="subtle"
+            size="small"
+            class="entry__free"
             :href="sandboxHref"
             :aria-label="confirming === 'free' ? 'Opening free mode' : undefined"
             @click="enterSandbox"
           >
             <span class="entry__morph" :class="{ 'entry__morph--active': confirming === 'free' }">
               <span class="entry__morph-text">Free mode</span>
-              <Palette class="entry__morph-icon" :size="18" aria-hidden="true" />
+              <Palette class="entry__morph-icon" :size="16" aria-hidden="true" />
             </span>
           </Button>
         </div>
