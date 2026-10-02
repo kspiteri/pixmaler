@@ -30,6 +30,15 @@
     box-shadow: none;
     transform: none;
   }
+
+  // Busy is disabled against repeat presses, but reads as working rather than unavailable.
+  &[aria-busy='true'] {
+    cursor: progress;
+
+    &:disabled {
+      opacity: 1;
+    }
+  }
 }
 
 // ── Sizes ──────────────────────────────────────────────────────────────────
