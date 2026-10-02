@@ -12,13 +12,10 @@ import PartySocket from 'partysocket'
 import { computed, onMounted, provide, ref, shallowRef } from 'vue'
 import { clientIdKey, socketKey } from '../../keys'
 import { getClientId, getName, getSecret, getShape, setName, setSecret } from '../../player/identity'
-import { acquireRoomTab, roomExists } from './gate'
+import { acquireRoomTab, PARTY_NAME, PARTYKIT_HOST, roomExists } from './gate'
 import { applyServerMessage } from './messages'
 
-const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST ?? '127.0.0.1:1999'
-// The kebab-cased Durable Object binding name (PixmalerServer → "pixmaler-server"); the socket
-// and the existence probe both address the room through it.
-const PARTY_NAME = 'pixmaler-server'
+export { roomExists } from './gate'
 
 // `roomCode` is null off the room route (App resolves /paint and /taglines first), which is
 // why the connect/provide side-effects are guarded on it.
@@ -85,6 +82,12 @@ export function useRoom(roomCode: string | null, createIntent = false) {
   )
 
   function connect(name: string) {
+    // Strip `create=1` only on connect, so a reload on the name gate still creates the room.
+    if (createIntent) {
+      const params = new URLSearchParams(location.search)
+      params.delete('create')
+      history.replaceState(null, '', `${location.pathname}?${params}`)
+    }
     const socket = new PartySocket({ host: PARTYKIT_HOST, party: PARTY_NAME, room: roomCode! })
     socketRef.value = socket
 
@@ -145,7 +148,7 @@ export function useRoom(roomCode: string | null, createIntent = false) {
       startGate()
     }
     else {
-      roomExists(PARTYKIT_HOST, PARTY_NAME, code).then((exists) => {
+      roomExists(code).then((exists) => {
         if (exists)
           startGate()
         else

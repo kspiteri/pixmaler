@@ -147,12 +147,24 @@ export function wordPair(): string {
   })
 }
 
-// A room code the server will *create*: an adjective-noun pair drawn from the word lists,
-// exactly what `wordPair()` emits (#66, #74). A shape-only check (`{word}-{word}`) let any
-// string that looked like a code mint a Durable Object, so an off-list pair, a typo or a
-// guess is now refused rather than spawning a room. A live room is still *joined* on
-// existence, not on shape, so this gates creation only.
+// A well-formed room code: an adjective-noun pair from the word lists, exactly what `wordPair()`
+// emits. Checked against the lists, not just the `{word}-{word}` shape, so a typo or guess can't
+// mint a room. The server creates only on it; Entry uses it to refuse a code that can't be live
+// before probing. A shared room link still joins on existence alone.
 export function isRoomCode(code: string): boolean {
   const parts = code.split('-')
   return parts.length === 2 && adjectives.includes(parts[0]) && nouns.includes(parts[1])
+}
+
+// Tidies a typed or pasted room code: a pasted room link yields its `room` param, then lowercase,
+// whitespace/underscores to hyphens, anything else dropped. A trailing hyphen survives so typing
+// "feral " can still reach "feral-crayon".
+export function formatRoomInput(raw: string): string {
+  const fromLink = raw.includes('?') ? new URLSearchParams(raw.slice(raw.indexOf('?') + 1).split('#')[0]).get('room') : null
+  return (fromLink ?? raw)
+    .toLowerCase()
+    .replace(/[\s_]+/g, '-')
+    .replace(/[^a-z-]/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-/, '')
 }

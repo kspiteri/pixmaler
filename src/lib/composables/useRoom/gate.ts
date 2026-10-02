@@ -1,16 +1,21 @@
-// Pre-connect gate helpers for the room route, kept Vue-free so they're independently testable
-// and can't drift from the socket that uses the same host/party.
+// Pre-connect helpers for the room route and Entry's code field, kept Vue-free so they're
+// independently testable and can't drift from the socket that uses the same host/party.
 
 import PartySocket from 'partysocket'
 
-// Pre-flight the DO's existence probe before a *join*, so a dead code lands on the 404 screen
-// without opening a socket (#66). Fails open — a probe error or timeout lets the socket try,
-// with the server's `no-such-room` as the backstop — and reuses PartySocket's own URL/protocol
-// resolution so the probe can't drift from the socket.
-export async function roomExists(host: string, party: string, room: string): Promise<boolean> {
+export const PARTYKIT_HOST = import.meta.env.VITE_PARTYKIT_HOST ?? '127.0.0.1:1999'
+// The kebab-cased Durable Object binding name (PixmalerServer → "pixmaler-server"); the socket
+// and the existence probe both address the room through it.
+export const PARTY_NAME = 'pixmaler-server'
+
+// Asks the room whether anyone is in it, without opening a socket: Entry's code field checks
+// before navigating, and the room route before a *join*, so a dead code never reaches the server
+// as a join. Fails open (a probe error or timeout lets the socket try, with the server's
+// `no-such-room` as the backstop) and uses PartySocket's own URL resolution so it can't drift.
+export async function roomExists(room: string): Promise<boolean> {
   try {
     const res = await PartySocket.fetch(
-      { host, party, room },
+      { host: PARTYKIT_HOST, party: PARTY_NAME, room },
       { signal: AbortSignal.timeout(3000) },
     )
     if (!res.ok)
