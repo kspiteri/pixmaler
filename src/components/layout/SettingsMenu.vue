@@ -9,7 +9,7 @@ import { onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import ThemeToggle from '@/components/elements/ThemeToggle.vue'
 import ToggleSwitch from '@/components/elements/ToggleSwitch.vue'
-import { askConfirm, clearAllData, isTouch, music, openCredits, openPrivacy, SCALE_STEPS, sfx, shortcutsEnabled, stepScale, textScale, ticktock, toggleMusic, toggleSfx, toggleShortcuts, toggleTicktock, toggleTouch } from '@/lib'
+import { askConfirm, clearAllData, isTouch, music, openCredits, openPrivacy, SCALE_STEPS, sfx, shortcutsEnabled, stepScale, textScale, toggleMusic, toggleSfx, toggleShortcuts, toggleTouch } from '@/lib'
 
 const min = SCALE_STEPS[0]
 const max = SCALE_STEPS[SCALE_STEPS.length - 1]
@@ -164,6 +164,7 @@ function showInfo(show: () => void) {
           <ToggleSwitch :model-value="sfx" label="Sound effects" @update:model-value="toggleSfx" />
         </div>
 
+        <!-- todo: enable when ticktock available
         <div class="settings-menu__row">
           <span class="settings-menu__label">
             Countdown ticks
@@ -176,6 +177,7 @@ function showInfo(show: () => void) {
             @update:model-value="toggleTicktock"
           />
         </div>
+      -->
       </section>
 
       <footer class="settings-menu__foot">
