@@ -33,6 +33,13 @@ const index = computed(() =>
   stepped.value ? Math.max(0, props.stops!.findIndex(s => s.value === props.modelValue)) : props.modelValue,
 )
 const currentLabel = computed(() => (stepped.value ? props.stops![index.value]?.label : undefined))
+// 0–1 position of the thumb, for the track fill (see _slider.scss).
+const fill = computed(() => {
+  const [lo, hi] = stepped.value ? [0, props.stops!.length - 1] : [props.min, props.max]
+  return hi > lo ? (index.value - lo) / (hi - lo) : 0
+})
+// Notch gaps between stops; none for a single stop, where the tick period would divide by zero.
+const ticks = computed(() => (stepped.value && props.stops!.length > 1 ? props.stops!.length - 1 : undefined))
 
 function onInput(e: Event) {
   const raw = Number((e.target as HTMLInputElement).value)
@@ -43,6 +50,8 @@ function onInput(e: Event) {
 <template>
   <input
     class="slider"
+    :class="{ 'slider--stepped': ticks }"
+    :style="{ '--fill': fill, '--ticks': ticks }"
     v-bind="$attrs"
     type="range"
     :min="stepped ? 0 : min"

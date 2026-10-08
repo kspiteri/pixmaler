@@ -18,18 +18,18 @@ const detailReadout = computed(() => detailStops.find(s => s.value === detail.va
 <template>
   <div>
     <section class="demo__section">
-      <h4 class="demo__heading">
+      <h3 class="demo__heading">
         continuous — {{ level }}
-      </h4>
+      </h3>
       <div class="demo__stack">
         <Slider v-model="level" :min="0" :max="100" label="Demo level" />
       </div>
     </section>
 
     <section class="demo__section">
-      <h4 class="demo__heading">
+      <h3 class="demo__heading">
         stepped — {{ detailReadout }}
-      </h4>
+      </h3>
       <div class="demo__stack">
         <Slider v-model="detail" :stops="detailStops" label="Detail" />
       </div>

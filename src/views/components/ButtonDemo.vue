@@ -14,9 +14,9 @@ const backHref = appHref()
 <template>
   <div>
     <section class="demo__section">
-      <h4 class="demo__heading">
+      <h3 class="demo__heading">
         variant × size
-      </h4>
+      </h3>
       <div class="demo__matrix">
         <div v-for="v in variants" :key="v" class="demo__row">
           <Button v-for="s in sizes" :key="`${v}-${s}`" :variant="v" :size="s">
@@ -27,9 +27,9 @@ const backHref = appHref()
     </section>
 
     <section class="demo__section">
-      <h4 class="demo__heading">
+      <h3 class="demo__heading">
         states
-      </h4>
+      </h3>
       <div class="demo__row">
         <template v-for="v in variants" :key="v">
           <Button :variant="v">
@@ -43,9 +43,9 @@ const backHref = appHref()
     </section>
 
     <section class="demo__section">
-      <h4 class="demo__heading">
+      <h3 class="demo__heading">
         leading icon
-      </h4>
+      </h3>
       <div class="demo__row">
         <Button v-for="v in variants" :key="v" :variant="v">
           <template #icon>
@@ -57,9 +57,9 @@ const backHref = appHref()
     </section>
 
     <section class="demo__section">
-      <h4 class="demo__heading">
+      <h3 class="demo__heading">
         icon only (square)
-      </h4>
+      </h3>
       <div class="demo__row">
         <Button v-for="s in sizes" :key="s" variant="subtle" icon :size="s" aria-label="Settings">
           <template #icon>
@@ -77,9 +77,9 @@ const backHref = appHref()
     </section>
 
     <section class="demo__section">
-      <h4 class="demo__heading">
+      <h3 class="demo__heading">
         danger tone
-      </h4>
+      </h3>
       <div class="demo__row">
         <Button variant="subtle" size="x-small" tone="danger">
           Remove
@@ -94,9 +94,9 @@ const backHref = appHref()
     </section>
 
     <section class="demo__section">
-      <h4 class="demo__heading">
+      <h3 class="demo__heading">
         block + disclosure
-      </h4>
+      </h3>
       <div class="demo__stack">
         <Button variant="primary" block>
           <template #icon>
@@ -117,9 +117,9 @@ const backHref = appHref()
     </section>
 
     <section class="demo__section">
-      <h4 class="demo__heading">
+      <h3 class="demo__heading">
         link (renders &lt;a&gt;)
-      </h4>
+      </h3>
       <div class="demo__row">
         <Button variant="secondary" :href="backHref">
           <template #icon>
@@ -131,9 +131,9 @@ const backHref = appHref()
     </section>
 
     <section class="demo__section">
-      <h4 class="demo__heading">
+      <h3 class="demo__heading">
         collapse (mobile only)
-      </h4>
+      </h3>
       <p class="demo__note">
         Narrow the viewport below the mobile breakpoint — the label drops and the icon remains.
       </p>
@@ -148,9 +148,9 @@ const backHref = appHref()
     </section>
 
     <section class="demo__section">
-      <h4 class="demo__heading">
+      <h3 class="demo__heading">
         click sound (sfx / silent)
-      </h4>
+      </h3>
       <p class="demo__note">
         Enable Sound in settings and unmute your device. The sfx prop overrides the click sound on
         any variant; silent mutes an instance. submit has no clip until the recorded sprite lands,

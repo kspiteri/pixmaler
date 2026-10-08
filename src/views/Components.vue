@@ -1,13 +1,12 @@
 <script setup lang="ts">
-// Dev-only component gallery (/components) — one accordion section per high-variability
-// component, each a demo under ./components. Header carries the Logo (home) + SettingsMenu so
-// the theme and text-size can be flipped while inspecting. Gated to import.meta.env.DEV in
-// App.vue's router and linked from nowhere, so the whole tree tree-shakes out of production.
+// Dev-only component gallery (/components) — one section per high-variability component, each a
+// demo under ./components, all open at once so primitives can be compared. "Both themes" renders
+// every demo twice, in a dark and a light pane. Gated to import.meta.env.DEV in App.vue's router
+// and linked from nowhere, so the whole tree tree-shakes out of production.
 
 import { ref } from 'vue'
-import Accordion from '@/components/elements/accordion/Accordion.vue'
-import AccordionItem from '@/components/elements/accordion/Item.vue'
 import Logo from '@/components/elements/Logo.vue'
+import ToggleSwitch from '@/components/elements/ToggleSwitch.vue'
 import SettingsMenu from '@/components/layout/SettingsMenu.vue'
 import { appHref } from '@/lib'
 import AlertDialogDemo from './components/AlertDialogDemo.vue'
@@ -19,7 +18,18 @@ import SliderDemo from './components/SliderDemo.vue'
 import ToggleSwitchDemo from './components/ToggleSwitchDemo.vue'
 
 const homeHref = appHref()
-const open = ref<string | null>('button')
+const split = ref(false)
+
+const sections = [
+  { id: 'button', title: 'Button', summary: 'variant × size · icon · block · tone · link', demo: ButtonDemo },
+  { id: 'player-tag', title: 'PlayerTag', summary: '6 shapes · row / inline · truncate', demo: PlayerTagDemo },
+  { id: 'slider', title: 'Slider', summary: 'continuous · stepped', demo: SliderDemo },
+  { id: 'toggle', title: 'ToggleSwitch', summary: 'two-state · v-model', demo: ToggleSwitchDemo },
+  { id: 'name-field', title: 'NameField', summary: 'input + dice randomise', demo: NameFieldDemo },
+  { id: 'notice', title: 'AlertNotice', summary: 'info · warn · error · non-dismissable', demo: AlertNoticeDemo },
+  { id: 'dialog', title: 'AlertDialog', summary: 'modal queue: alert · confirm', demo: AlertDialogDemo },
+]
+const themes = ['dark', 'light'] as const
 </script>
 
 <template>
@@ -35,65 +45,38 @@ const open = ref<string | null>('button')
       Components
     </h1>
     <p class="components__intro">
-      Dev-only gallery, linked from nowhere. One section per high-variability component — hover,
-      press, toggles and the modal queue are all live, so drift shows up against the real page.
+      Dev-only gallery, linked from nowhere. Hover, press, toggles and the modal queue are all live,
+      so drift shows up against the real page.
     </p>
 
-    <Accordion v-model="open">
-      <AccordionItem id="button" title="Button">
-        <template #summary>
-          variant × size · icon · block · tone · link
-        </template>
-        <ButtonDemo />
-      </AccordionItem>
+    <div class="components__bar">
+      <nav class="components__nav" aria-label="Components">
+        <a v-for="s in sections" :key="s.id" :href="`#${s.id}`">{{ s.title }}</a>
+      </nav>
+      <div class="components__split">
+        <span aria-hidden="true">Both themes</span>
+        <ToggleSwitch v-model="split" label="Show both themes side by side" />
+      </div>
+    </div>
 
-      <AccordionItem id="player-tag" title="PlayerTag">
-        <template #summary>
-          6 shapes · row / inline · truncate
-        </template>
-        <PlayerTagDemo />
-      </AccordionItem>
-
-      <AccordionItem id="slider" title="Slider">
-        <template #summary>
-          continuous · stepped
-        </template>
-        <SliderDemo />
-      </AccordionItem>
-
-      <AccordionItem id="toggle" title="ToggleSwitch">
-        <template #summary>
-          two-state · v-model
-        </template>
-        <ToggleSwitchDemo />
-      </AccordionItem>
-
-      <AccordionItem id="name-field" title="NameField">
-        <template #summary>
-          input + dice randomise
-        </template>
-        <NameFieldDemo />
-      </AccordionItem>
-
-      <AccordionItem id="notice" title="AlertNotice">
-        <template #summary>
-          info · warn · error · non-dismissable
-        </template>
-        <AlertNoticeDemo />
-      </AccordionItem>
-
-      <AccordionItem id="dialog" title="AlertDialog">
-        <template #summary>
-          modal queue — alert · confirm
-        </template>
-        <AlertDialogDemo />
-      </AccordionItem>
-    </Accordion>
+    <section v-for="s in sections" :id="s.id" :key="s.id" class="components__section">
+      <h2 class="components__heading">
+        {{ s.title }}
+        <span class="components__summary">{{ s.summary }}</span>
+      </h2>
+      <div v-if="split" class="components__panes">
+        <div v-for="t in themes" :key="t" class="components__pane" :data-theme="t">
+          <component :is="s.demo" />
+        </div>
+      </div>
+      <component :is="s.demo" v-else />
+    </section>
   </div>
 </template>
 
 <style scoped lang="scss">
 @use 'tokens' as *;
+@use 'chrome' as *;
 
 // Dev-only gallery chrome — scoped here (not a screens/ partial) so it tree-shakes out of
 // production with the lazily-imported view. The demo sections mount as child components, so
@@ -114,35 +97,111 @@ const open = ref<string | null>('button')
   &__title {
     margin: 0 0 $gap-2;
     font-family: $font-display;
-    font-weight: 700;
+    font-weight: $fw-bold;
     font-size: $fs-2xl;
   }
 
   &__intro {
-    margin: 0 0 $gap-6;
-    color: $fg-50;
+    margin: 0 0 $gap-5;
+    color: $muted;
     font-size: $fs-sm;
     line-height: 1.5;
     max-width: 40rem;
   }
 
+  // Sticky so any section is one click away while scrolled deep into another.
+  &__bar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: $gap-3;
+    margin-bottom: $gap-5;
+    padding: $gap-2 $gap-3;
+    @include chrome($rung: $radius);
+  }
+
+  &__nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $gap-1 $gap-4;
+    font-size: $fs-sm;
+
+    a {
+      color: $muted;
+      text-decoration: none;
+
+      &:hover {
+        color: $fg;
+      }
+    }
+  }
+
+  &__split {
+    display: flex;
+    align-items: center;
+    gap: $gap-2;
+    color: $muted;
+    font-size: $fs-sm;
+  }
+
+  &__section {
+    margin-bottom: $gap-5;
+    padding: $gap-4;
+    scroll-margin-top: 4rem;
+    @include chrome;
+  }
+
+  &__heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: $gap-1 $gap-3;
+    margin: 0 0 $gap-4;
+    font-family: $font-display;
+    font-weight: $fw-semibold;
+    font-size: $fs-lg;
+  }
+
+  &__summary {
+    color: $muted;
+    font-family: $font-body;
+    font-weight: $fw-regular;
+    font-size: $fs-xs;
+  }
+
+  &__panes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
+    gap: $gap-3;
+  }
+
+  // `data-theme` re-points every token inside, so the pane only has to paint its own page.
+  &__pane {
+    padding: $gap-4;
+    border: 1px solid $border;
+    border-radius: $radius;
+    background: $bg;
+    color: $fg;
+  }
+
   // ── Demo layout, rendered by the ./components/*Demo children ──
   :deep(.demo__section) {
-    margin-bottom: $gap-6;
+    margin-bottom: $gap-5;
   }
   :deep(.demo__section:last-child) {
     margin-bottom: 0;
   }
 
-  // Lowercase eyebrow, matching the app's section-label style.
   :deep(.demo__heading) {
-    margin: 0 0 $gap-3;
-    color: $fg-35;
+    margin: 0 0 $gap-2;
+    color: $fg-80;
     font-family: $font-body;
     font-weight: $fw-semibold;
-    font-size: $fs-xs;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
+    font-size: $fs-sm;
   }
 
   // Wrapping row of controls; `align-items: center` so mixed sizes line up on their centres.
@@ -177,7 +236,8 @@ const open = ref<string | null>('button')
 
   :deep(.demo__note) {
     margin: 0 0 $gap-3;
-    color: $fg-50;
+    max-width: 65ch;
+    color: $muted;
     font-size: $fs-sm;
   }
 }

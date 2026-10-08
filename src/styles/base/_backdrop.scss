@@ -1,16 +1,14 @@
 @use 'tokens' as *;
 
-// The app-wide backdrop — `html`'s base colour plus a pixel grid and vignette,
-// painted as a `body::before` pseudo-element so no route has to carry markup.
+// The app-wide backdrop — `html`'s base colour plus a corner vignette, painted as a
+// `body::before` pseudo-element so no route has to carry markup.
 
 // **`html` carries the background, `body` stays transparent.** Don't split the
-// pair: the texture sits at `z-index: -1`, so a background on `body` buries it.
+// pair: the vignette sits at `z-index: -1`, so a background on `body` buries it.
 
 // **`position: fixed`, not `background-attachment: fixed`** — the attachment
 // property is long-broken on iOS Safari, and this is a game played on phones.
 
-$backdrop-pitch: 32px; // grid cell — the pixel motif, matched to the old Entry grid
-$backdrop-line: var(--backdrop-line); // alpha baked in, so no compositing layer
 $backdrop-vignette: var(--backdrop-vignette); // corner shade; centre stays untouched
 $backdrop-vignette-clear: 42%; // how far out the centre reads as unvignetted
 
@@ -27,13 +25,5 @@ body::before {
   z-index: -1;
   pointer-events: none;
 
-  // Layer order is paint order, topmost first: the vignette sits *over* the grid,
-  // so the pixel field dissolves into the dark instead of ending sharply.
-  background-image:
-    radial-gradient(ellipse at center, transparent $backdrop-vignette-clear, $backdrop-vignette 100%),
-    linear-gradient($backdrop-line 1px, transparent 1px), linear-gradient(90deg, $backdrop-line 1px, transparent 1px);
-  background-size:
-    100% 100%,
-    $backdrop-pitch $backdrop-pitch,
-    $backdrop-pitch $backdrop-pitch;
+  background-image: radial-gradient(ellipse at center, transparent $backdrop-vignette-clear, $backdrop-vignette 100%);
 }

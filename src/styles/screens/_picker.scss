@@ -181,8 +181,8 @@
     }
   }
 
-  // Background choices, same swatch language as the paint palette — circular, ringed, the
-  // selected one ringed white and nudged up.
+  // Background choices, same swatch language as the paint palette — square, edged, the
+  // selected one ringed in lime ink.
   &__bg-list {
     display: flex;
     gap: $gap-2;
@@ -193,13 +193,14 @@
     height: 1.25rem;
     padding: 0;
     border: 2px solid color-mix(in oklab, $paper, transparent 85%);
-    border-radius: 50%;
+    border-radius: $radius-sm;
     cursor: pointer;
-    transition: transform 80ms;
+    transition: box-shadow 80ms;
 
     &.is-active {
-      border-color: $paper;
-      transform: scale(1.15);
+      box-shadow:
+        0 0 0 2px $surface,
+        0 0 0 4px $accent-ink;
     }
   }
 

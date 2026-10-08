@@ -5,25 +5,26 @@
 // in the browser's top layer, answered by the user). A notice owns only its *look*; the host
 // positions it, because the host knows its own layout budget (`.phase--fixed` has none to
 // spare). The connection banner is a non-dismissable notice pinned top-centre via `.conn-banner`.
-// All three share the alert voice: `$font-alert`, `$fw-semibold`, `$ls-alert`.
+// The notice and dialog share the alert voice (`$font-alert`, `$ls-alert`); a notice's message
+// is body-weight and left-aligned so a wrapped line reads as a sentence, not a toast.
 
 // ── NOTICE ───────────────────────────────────────────────────────────────────
 
-// Ink is `--notice-ink`, set by the severity variant, and carried by both the border and the
-// icon (`.notice__icon` wraps the slot, so any icon inherits the variant colour). A border
-// rather than a filled background: a filled ink would compete with the timer, already showing
-// danger ink here.
+// Ink is `--notice-ink`, set by the severity variant, and carried by the icon (`.notice__icon`
+// wraps the slot, so any icon inherits the variant colour); the border takes it only for warn
+// and error. Bordered rather than filled: a filled ink would compete with the timer.
 .notice {
   --notice-ink: #{$warn-ink}; // default; the severity variant overrides
+  --notice-edge: var(--notice-ink);
   display: flex;
   align-items: center;
   gap: $gap-2;
   margin: 0;
   padding: $gap-2 $gap-3;
-  border: 1px solid var(--notice-ink);
-  border-radius: $radius-lg;
+  border: 1px solid var(--notice-edge);
+  border-radius: $radius;
   background: $surface;
-  box-shadow: $shadow-2;
+  box-shadow: 0 2px 0 $shadow-press;
   color: $fg;
   font-family: $font-alert;
   font-weight: $fw-semibold;
@@ -39,8 +40,10 @@
     cursor: default;
   }
 
+  // Neutral status — lime stays the CTA and selection colour, so info takes a plain edge.
   &--info {
-    --notice-ink: #{$accent-ink};
+    --notice-ink: #{$fg-60};
+    --notice-edge: #{$border};
   }
   &--warn {
     --notice-ink: #{$warn-ink};
@@ -56,12 +59,12 @@
     color: var(--notice-ink);
   }
 
-  // Takes the free space so the ✕ is pushed to the trailing edge and the text stays
-  // optically centred between the two icons.
   &__msg {
     flex: 1;
-    text-align: center;
-    text-wrap: balance;
+    font-family: $font-body;
+    font-weight: $fw-medium;
+    letter-spacing: normal;
+    text-wrap: pretty;
   }
 
   &__dismiss {
@@ -99,7 +102,7 @@
   max-width: min(24rem, calc(100vw - #{$gap-6}));
   padding: $gap-5;
   border: 2px solid $warn-ink;
-  border-radius: $radius-lg;
+  border-radius: $radius;
   background: $surface;
   color: $fg;
 

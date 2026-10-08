@@ -102,6 +102,8 @@
 .btn--primary {
   --press: 4px;
   --press-colour: #{$accent-deep};
+  --bevel: #{$bevel-fill};
+  --bevel-pressed: #{$bevel-fill-pressed};
   background: $accent;
   color: $accent-fg;
 
@@ -114,7 +116,9 @@
   // the page and the key reads as having left it.
   &:not(:disabled):hover {
     transform: translateY(-2px);
-    box-shadow: 0 calc(var(--press) + 2px) 0 var(--press-colour);
+    box-shadow:
+      var(--bevel),
+      0 calc(var(--press) + 2px) 0 var(--press-colour);
   }
 }
 
@@ -127,16 +131,22 @@
   color: $primary-ink;
 
   &:not(:disabled):hover {
+    --bevel: #{$bevel-fill};
+    --bevel-pressed: #{$bevel-fill-pressed};
     background: $primary;
     color: $fg;
   }
 }
 
-// Surface button — a filled but quiet neutral (dialog cancel, palette Undo, the dice).
+// The quiet filled key — primary's typography on a neutral fill, so a vote button can swap
+// between the two without its label reflowing (dialog cancel, palette Undo, the dice). The
+// bevel is what tells it apart from `--subtle` at small sizes.
 .btn--tertiary {
+  --bevel: inset 0 2px 0 color-mix(in srgb, #{$fg} 9%, transparent), inset 0 -2px 0 #{$shadow-press};
+  --bevel-pressed: inset 0 2px 0 #{$shadow-press};
   background: $surface;
-  border: 2px solid $border;
-  color: $fg-60;
+  border: 1px solid $border;
+  color: $fg-80;
 
   &:not(:disabled):hover {
     color: $fg;
@@ -144,7 +154,7 @@
   }
 }
 
-// The quiet bordered control — transparent, body voice. The small chrome buttons (settings,
+// The ghost control — transparent, body voice, no bevel. The small chrome buttons (settings,
 // make-GM, dock, disclosures) all share this recipe.
 .btn--subtle {
   background: transparent;
@@ -184,14 +194,19 @@
 }
 
 // One press for every control in the app: it rests on a hard offset shadow and travels down
-// onto the page by that distance. `--press` / `--press-colour` are a variant's only knobs.
+// onto the page by that distance. `--press` / `--press-colour` set the travel; a filled
+// variant adds `--bevel` (and `--bevel-pressed`, the edge it shows while held down).
 .btn,
 .pressable {
-  box-shadow: 0 var(--press, 2px) 0 var(--press-colour, #{$shadow-press});
+  box-shadow:
+    var(--bevel, 0 0 transparent),
+    0 var(--press, 2px) 0 var(--press-colour, #{$shadow-press});
 
   &:not(:disabled):active {
     transform: translateY(var(--press, 2px));
-    box-shadow: 0 0 0 var(--press-colour, #{$shadow-press});
+    box-shadow:
+      var(--bevel-pressed, var(--bevel, 0 0 transparent)),
+      0 0 0 var(--press-colour, #{$shadow-press});
   }
 
   &.no-shadow {

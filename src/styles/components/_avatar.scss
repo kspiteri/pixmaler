@@ -1,5 +1,9 @@
 @use 'tokens' as *;
 
+// A silhouette, not a radius rung: it must stay visibly distinct from `--square`, which the
+// near-square radius scale no longer would be.
+$avatar-round: 0.5rem;
+
 // The seat chip — a player's avatar. Two consumers: `_player-tag.scss` (chips
 // beside a name) and `_lobby.scss` (the shape picker, where a chip is a *swatch*,
 // so the lean doesn't reach it). Ink is $bg, never white — 7:1 on all 21 seats.
@@ -19,7 +23,7 @@
   line-height: 1;
   // Fallback silhouette only — templates always emit an explicit `--<shape>`, so
   // this catches a stale `avatar--undefined` from an older server.
-  border-radius: $radius-sm;
+  border-radius: $avatar-round;
 
   // The smaller chip, inside `PlayerTag`. **Size only** — a `border-radius` here
   // would tie with every `--<shape>`, so reordering would silently flatten them.
@@ -32,7 +36,7 @@
   // Shapes — only silhouettes that hold a centred capital at 1.75rem; a diamond or
   // star crushes the letter. `--rounded` is written out so `--sm` can scale it.
   &--rounded {
-    border-radius: $radius-sm;
+    border-radius: $avatar-round;
   }
   &--sm#{&}--rounded {
     border-radius: 0.25rem;

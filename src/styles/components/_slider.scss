@@ -1,18 +1,86 @@
 @use 'tokens' as *;
 
-// The range slider primitive (Slider.vue) — continuous or stepped. Always flexes to fill its
-// row; the caller supplies the label and any value readout around it. Stepped ticks come from
-// the component's <datalist> (native marks in WebKit/Blink; snapping works everywhere).
+// The range slider primitive (Slider.vue, and the palette's brush slider built in
+// lib/canvas/tools.ts) — continuous or stepped. Always flexes to fill its row; the caller
+// supplies the label and any value readout around it. A square grey track filled up to the
+// thumb from `--fill` (0–1, set by the owner), with a square thumb resting on the press shadow.
+// `.slider--stepped` notches the track at each stop from `--ticks` (stop count − 1).
+
+$thumb: 16px;
+$track-h: 6px;
+$fill-ink: $accent-ink;
+$track-bg: $fg-20;
+// Where the thumb's centre sits: it travels from thumb/2 to 100% − thumb/2, not 0 → 100%.
+$fill-stop: calc(#{$thumb} / 2 + (100% - #{$thumb}) * var(--fill, 0));
+$track-fill: linear-gradient(to right, $fill-ink $fill-stop, transparent $fill-stop);
+$ticks: repeating-linear-gradient(to right, $surface 0 2px, transparent 2px calc((100% - 2px) / var(--ticks)));
+
 .slider {
   flex: 1;
   // A range input's default min-width is its intrinsic ~129px, which blows a stacked picker
   // wider than a phone; let it shrink so the row's label keeps its space.
   min-width: 0;
-  accent-color: $primary;
+  height: calc(#{$thumb} + 2px);
+  margin: 0;
+  appearance: none;
+  background: transparent;
   cursor: pointer;
 
   &:disabled {
     cursor: not-allowed;
     opacity: 0.5;
+  }
+
+  // Vendor pseudo-elements can't share a selector list — one unknown one drops the whole rule.
+  &::-webkit-slider-runnable-track {
+    height: $track-h;
+    border-radius: $radius-sm;
+    background: $track-fill, $track-bg;
+  }
+  &::-moz-range-track {
+    height: $track-h;
+    border-radius: $radius-sm;
+    background: $track-fill, $track-bg;
+  }
+
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: $thumb;
+    height: $thumb;
+    margin-top: calc((#{$track-h} - #{$thumb}) / 2);
+    border: none;
+    border-radius: $radius-sm;
+    background: $fg;
+    box-shadow: 0 2px 0 $shadow-press;
+  }
+  &::-moz-range-thumb {
+    width: $thumb;
+    height: $thumb;
+    border: none;
+    border-radius: $radius-sm;
+    background: $fg;
+    box-shadow: 0 2px 0 $shadow-press;
+  }
+
+  // Notches sit under the fill, so they mark only the stops still ahead of the thumb.
+  &--stepped::-webkit-slider-runnable-track {
+    background: $track-fill, $ticks, $track-bg;
+    background-position:
+      0 0,
+      calc(#{$thumb} / 2 - 1px) 0;
+    background-size:
+      100% 100%,
+      calc(100% - #{$thumb} + 2px) 100%;
+    background-repeat: no-repeat;
+  }
+  &--stepped::-moz-range-track {
+    background: $track-fill, $ticks, $track-bg;
+    background-position:
+      0 0,
+      calc(#{$thumb} / 2 - 1px) 0;
+    background-size:
+      100% 100%,
+      calc(100% - #{$thumb} + 2px) 100%;
+    background-repeat: no-repeat;
   }
 }

@@ -45,7 +45,7 @@
   &__pill {
     font-size: $fs-2xs;
     padding: 0.125rem 0.5rem;
-    border-radius: 999px;
+    border-radius: $radius-sm;
     border: 1px solid color-mix(in oklab, $primary, transparent 50%);
     color: $primary-ink;
   }

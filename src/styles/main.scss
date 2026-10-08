@@ -118,13 +118,19 @@ a {
 html {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, $fg 22%, transparent) transparent;
+  caret-color: $accent-ink;
+}
+
+::selection {
+  background: $accent;
+  color: $accent-fg;
 }
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  border-radius: 999px;
+  border-radius: $radius-sm;
   background: color-mix(in srgb, $fg 18%, transparent);
 }
 ::-webkit-scrollbar-thumb:hover {

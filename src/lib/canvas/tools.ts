@@ -164,17 +164,25 @@ export function buildBrushControls(pc: PixelCanvas): BrushHandle {
   const label = document.createElement('span')
   label.className = 'brush__label'
   // The slider already speaks its value, so the visible copy is decoration to AT.
-  label.textContent = `brush: ${pc.getBrushSize()}`
   label.setAttribute('aria-hidden', 'true')
+
+  function render() {
+    const size = pc.getBrushSize()
+    const max = pc.getBrushMax()
+    label.textContent = `brush: ${size}`
+    // 0–1 thumb position for the track fill (see _slider.scss).
+    slider.style.setProperty('--fill', String(max > 1 ? (size - 1) / (max - 1) : 0))
+  }
+  render()
 
   function sync() {
     slider.value = String(pc.getBrushSize())
-    label.textContent = `brush: ${pc.getBrushSize()}`
+    render()
   }
 
   slider.addEventListener('input', () => {
     pc.setBrushSize(Number.parseInt(slider.value, 10))
-    label.textContent = `brush: ${pc.getBrushSize()}`
+    render()
   })
 
   wrap.append(slider, label)

@@ -15,27 +15,27 @@ const shapeSeats = AVATAR_SHAPES.map((shape, i) => {
 <template>
   <div>
     <section class="demo__section">
-      <h4 class="demo__heading">
+      <h3 class="demo__heading">
         shapes (row, 28px)
-      </h4>
+      </h3>
       <div class="demo__row">
         <PlayerTag v-for="s in shapeSeats" :key="s.shape" :seat="s.seat" :name="s.name" size="row" />
       </div>
     </section>
 
     <section class="demo__section">
-      <h4 class="demo__heading">
+      <h3 class="demo__heading">
         inline (20px, in running text)
-      </h4>
+      </h3>
       <p class="demo__note">
         waiting for <PlayerTag :seat="shapeSeats[0].seat" :name="shapeSeats[0].name" /> to finish…
       </p>
     </section>
 
     <section class="demo__section">
-      <h4 class="demo__heading">
+      <h3 class="demo__heading">
         truncate (fixed cell)
-      </h4>
+      </h3>
       <div class="demo__narrow">
         <PlayerTag :seat="shapeSeats[2].seat" name="A very long display name that overflows" truncate />
       </div>

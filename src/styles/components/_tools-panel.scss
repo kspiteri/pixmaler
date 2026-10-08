@@ -370,20 +370,23 @@
     gap: var(--sw-gap);
   }
 
+  // Square cells — they are the pixels the player paints with. Selection is a ring outside the
+  // cell (a `$surface` gap, then lime ink) rather than a scale, so the grid never shifts.
   .swatch__cell {
     position: relative;
     width: var(--sw);
     aspect-ratio: 1;
     padding: 0;
     border: 2px solid color-mix(in oklab, $paper, transparent 85%);
-    border-radius: 50%;
+    border-radius: $radius-sm;
     cursor: pointer;
-    transition: transform 80ms;
+    transition: box-shadow 80ms;
   }
 
   .swatch__cell--selected {
-    border-color: $accent-ink;
-    transform: scale(1.12);
+    box-shadow:
+      0 0 0 2px $surface,
+      0 0 0 4px $accent-ink;
   }
 
   .swatch__cell--highlighted {
@@ -398,7 +401,7 @@
     display: none;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
+    border-radius: $radius-sm;
     background: $scrim;
     color: $paper;
     font-family: $font-body;
