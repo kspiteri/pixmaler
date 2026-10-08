@@ -33,11 +33,7 @@
   transition: border-color 0.15s;
 
   &::placeholder {
-    color: $fg-20;
-  }
-  &:focus {
-    outline: none;
-    border-color: $primary;
+    color: $fg-50;
   }
 }
 

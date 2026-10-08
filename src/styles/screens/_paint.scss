@@ -75,14 +75,10 @@
       border-color: $fg-25;
     }
 
-    // Open state wears the lime accent — "this panel is the thing you're editing".
+    // Open state reads as pressed-in and bright, not lime — lime means a choice, not a panel.
     &[aria-expanded='true'] {
-      color: $accent-ink;
-      border-color: color-mix(in srgb, $accent-ink 40%, transparent);
-
-      .paint__chevron {
-        color: $accent-ink;
-      }
+      color: $fg;
+      border-color: $fg-35;
     }
   }
   &__toggle-label {

@@ -49,7 +49,9 @@
       margin-top: $gap-1;
     }
     a {
-      color: $accent-ink;
+      color: $fg;
+      text-decoration-color: $fg-35;
+      text-underline-offset: 0.2em;
     }
   }
 }

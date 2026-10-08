@@ -107,11 +107,6 @@
   background: $accent;
   color: $accent-fg;
 
-  // The global lime ring reads as a detached halo on a lime fill — go white.
-  &:focus-visible {
-    outline-color: $fg;
-  }
-
   // The offset grows by exactly what the button rises, so its bottom edge stays pinned to
   // the page and the key reads as having left it.
   &:not(:disabled):hover {

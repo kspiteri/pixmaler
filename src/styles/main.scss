@@ -107,9 +107,10 @@ a {
 }
 
 // One keyboard-focus ring for the whole app — per-control rules silently missed
-// controls. `.btn--primary` (white) and `.segmented__item` (inset) override locally.
+// controls. Page ink, not lime: lime means "chosen", and a focused control isn't chosen yet.
+// `.segmented__item` insets it locally.
 :focus-visible {
-  outline: 2px solid $accent-ink;
+  outline: 2px solid $fg;
   outline-offset: 2px;
 }
 
@@ -118,7 +119,7 @@ a {
 html {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, $fg 22%, transparent) transparent;
-  caret-color: $accent-ink;
+  caret-color: $fg;
 }
 
 ::selection {

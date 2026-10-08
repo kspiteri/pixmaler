@@ -144,7 +144,7 @@ onBeforeUnmount(() => {
         @click="copyLink"
       >
         <span class="lobby__room-label">Room:</span>
-        <span class="lobby__code">{{ roomCode }}</span>
+        <span>{{ roomCode }}</span>
         <component :is="copied ? Check : Copy" class="lobby__copy-icon" :size="15" aria-hidden="true" />
       </button>
       <Button

@@ -40,7 +40,7 @@
   &__title {
     max-width: 8rem;
     overflow: hidden;
-    color: $accent-ink;
+    color: $fg-80;
     font-size: $fs-2xs;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -63,17 +63,18 @@
   }
 }
 
-// A lit border pulse while a track is actually playing (paused → no pulse).
+// A border pulse while a track is actually playing (paused → no pulse). Neutral ink: playing is
+// status, not a choice, so it doesn't borrow lime.
 .music-widget--playing {
   animation: music-pulse 1.6s ease-in-out infinite;
 }
 @keyframes music-pulse {
   0%,
   100% {
-    border-color: color-mix(in srgb, $accent-ink 30%, transparent);
+    border-color: $border;
   }
   50% {
-    border-color: $accent-ink;
+    border-color: $fg-50;
   }
 }
 

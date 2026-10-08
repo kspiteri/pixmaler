@@ -141,7 +141,7 @@
     white-space: nowrap;
   }
   &__spinner {
-    color: $accent-ink;
+    color: $muted;
     flex-shrink: 0;
     opacity: 0; // space stays reserved; only `is-on` shows it
     transition: opacity 0.15s;
@@ -174,11 +174,6 @@
     font-size: $fs-sm;
     width: 5rem;
     text-align: center;
-
-    &:focus {
-      outline: none;
-      border-color: $primary;
-    }
   }
 
   // Background choices, same swatch language as the paint palette — square, edged, the
@@ -331,10 +326,6 @@
     // Nothing to reframe (the crop already fills the source on both axes).
     &.is-static {
       cursor: default;
-    }
-    &:focus-visible {
-      outline: 2px solid $accent-ink;
-      outline-offset: 2px;
     }
   }
   &__crop-img {
