@@ -5,7 +5,8 @@
 
 import type { MusicTrackId } from '@/lib'
 import { ChevronDown } from '@lucide/vue'
-import { MUSIC_TRACKS } from '@/lib'
+import { computed } from 'vue'
+import { MUSIC_CATEGORIES, MUSIC_TRACKS } from '@/lib'
 
 defineProps<{ modelValue: MusicTrackId | null }>()
 const emit = defineEmits<{ 'update:modelValue': [value: MusicTrackId | null] }>()
@@ -14,6 +15,13 @@ function onChange(e: Event) {
   const v = (e.target as HTMLSelectElement).value
   emit('update:modelValue', v === '' ? null : (v as MusicTrackId))
 }
+
+// Tracks grouped by category in MUSIC_CATEGORIES order; a group with no tracks is dropped.
+const groups = computed(() =>
+  MUSIC_CATEGORIES
+    .map(category => ({ category, tracks: MUSIC_TRACKS.filter(t => t.category === category) }))
+    .filter(g => g.tracks.length > 0),
+)
 </script>
 
 <template>
@@ -24,9 +32,11 @@ function onChange(e: Event) {
         <option value="">
           None
         </option>
-        <option v-for="t in MUSIC_TRACKS" :key="t.id" :value="t.id">
-          {{ t.label }}
-        </option>
+        <optgroup v-for="g in groups" :key="g.category" :label="g.category">
+          <option v-for="t in g.tracks" :key="t.id" :value="t.id">
+            {{ t.label }}
+          </option>
+        </optgroup>
       </select>
       <ChevronDown class="picker__select-chevron" :size="16" aria-hidden="true" />
     </div>
