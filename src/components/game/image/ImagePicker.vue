@@ -2,9 +2,10 @@
 // Image picker orchestrator — owns the source file, the pipeline and all tuning state, and lays
 // the flow out as a persistent target preview plus a single-open accordion of steps
 // (Game mode → Image → Adjust Target → Game settings). The step controls and the preview are
-// under ./picker; this file wires them and runs `processImage` on any change.
+// under ./picker; this file wires them and runs `processImage` on any change that differs from
+// the committed inputs (the ones behind the last accepted result).
 
-import type { CropSelection, MusicTrackId, PickerMeta, PipelineResult, PixelationStyle, RoundConfig, TargetRatioId } from '@/lib'
+import type { CropSelection, MusicTrackId, PickerMeta, PickerSettings, PipelineResult, PixelationStyle, RoundConfig, TargetRatioId } from '@/lib'
 import { ChevronDown, Trash2 } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import Accordion from '@/components/elements/accordion/Accordion.vue'
@@ -34,6 +35,11 @@ interface Props {
   roomTarget?: number[] | null
   // Autoload a sample on first render, for the sandbox where an image is required.
   autoLoadSample?: SampleName
+  // A previous result to rebuild the picker around instead of autoloading. Only a sample can be
+  // re-fetched; an upload keeps its settings but needs uploading again to adjust.
+  restore?: { result: PipelineResult, meta: PickerMeta } | null
+  // Asked before a new result is emitted; false reverts the picker to the committed inputs.
+  confirmResult?: (result: PipelineResult) => boolean | Promise<boolean>
 }
 const props = defineProps<Props>()
 
@@ -70,6 +76,8 @@ const selected = ref<string | null>(null)
 const sourceLabel = ref('')
 // Which accordion step is open; auto-advances to Adjust once an image is adopted.
 const openStep = ref<string | null>('source')
+// Restored settings with no image behind them (an upload, or a sample that failed to load).
+const restoredOnly = ref(false)
 
 const samples: { name: SampleName, label: string }[] = [
   { name: 'monalisa', label: 'Mona Lisa' },
@@ -82,6 +90,31 @@ defineExpose({ getDrawSeconds: () => drawSecs.value, getMusicTrack: () => musicT
 let cachedFile: File | null = null
 let runId = 0
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+interface Committed {
+  file: File | null
+  sample: string | null
+  label: string
+  naturalDims: { w: number, h: number } | null
+  hasAlpha: boolean
+  settings: PickerSettings
+}
+let committed: Committed | null = null
+
+function applySettings(s: PickerSettings) {
+  scale.value = s.scale
+  colorCount.value = s.colorCount
+  pixelationStyle.value = s.pixelationStyle
+  ratio.value = s.ratio
+  crop.value = { ...s.crop }
+  background.value = s.background
+}
+
+function sameSettings(a: PickerSettings, b: PickerSettings): boolean {
+  return a.scale === b.scale && a.colorCount === b.colorCount && a.pixelationStyle === b.pixelationStyle
+    && a.ratio === b.ratio && a.background === b.background
+    && a.crop.cx === b.crop.cx && a.crop.cy === b.crop.cy && a.crop.zoom === b.crop.zoom
+}
 
 const hasImage = computed(() => !!sourceUrl.value && !!naturalDims.value)
 const gridPreview = computed(() => {
@@ -115,7 +148,7 @@ const timerSummary = computed(() =>
 )
 
 const adjustSummary = computed(() =>
-  hasImage.value ? `${ratioLabel.value} · ${lookSummary.value}` : 'pick an image first',
+  hasImage.value || restoredOnly.value ? `${ratioLabel.value} · ${lookSummary.value}` : 'pick an image first',
 )
 
 // With no timer (Free Mode) the section is music-only, so its summary follows the track.
@@ -128,7 +161,7 @@ const settingsSummary = computed(() =>
 const flowSteps = computed(() => [
   { id: 'source', enabled: true },
   { id: 'adjust', enabled: hasImage.value },
-  ...(props.showDrawSeconds ? [{ id: 'settings', enabled: hasImage.value }] : []),
+  ...(props.showDrawSeconds ? [{ id: 'settings', enabled: hasImage.value || restoredOnly.value }] : []),
 ])
 function stepAfter(id: string): string | null {
   const list = flowSteps.value
@@ -137,22 +170,38 @@ function stepAfter(id: string): string | null {
 }
 
 async function reprocess() {
-  if (!cachedFile)
+  const file = cachedFile
+  if (!file)
     return
+  const inputs: PickerSettings = { scale: scale.value, colorCount: colorCount.value, pixelationStyle: pixelationStyle.value, ratio: ratio.value, crop: { ...crop.value }, background: background.value }
+  // Back on the committed inputs with nothing in flight: the last result still stands.
+  if (!busy.value && committed?.file === file && sameSettings(inputs, committed.settings)) {
+    committed.naturalDims = naturalDims.value
+    committed.hasAlpha = hasAlpha.value
+    return
+  }
   const myRun = ++runId
   busy.value = true
   status.value = ''
   emit('processing')
 
   try {
-    const result = await processImage(cachedFile, scale.value, colorCount.value, ratio.value, crop.value, background.value, quantiserFor(pixelationStyle.value))
-    if (myRun !== runId)
+    const result = await processImage(file, inputs.scale, inputs.colorCount, inputs.ratio, inputs.crop, inputs.background, quantiserFor(inputs.pixelationStyle))
+    if (myRun !== runId || file !== cachedFile)
       return // stale
 
     busy.value = false
+    if (props.confirmResult && !await props.confirmResult(result)) {
+      if (myRun === runId)
+        revert()
+      return
+    }
+    if (myRun !== runId)
+      return
+    committed = { file, sample: selected.value, label: sourceLabel.value, naturalDims: naturalDims.value, hasAlpha: hasAlpha.value, settings: inputs }
     sourceDims.value = { w: result.sourceW, h: result.sourceH }
     lastResult.value = result
-    emit('result', result, { source: sourceLabel.value })
+    emit('result', result, { source: sourceLabel.value, sample: selected.value, settings: inputs })
   }
   catch (err) {
     if (myRun !== runId)
@@ -183,6 +232,7 @@ watch(musicTrack, t => emit('music', t))
 async function adoptFile(file: File, label: string) {
   cachedFile = file
   sourceLabel.value = label
+  restoredOnly.value = false
   crop.value = { ...FULL_CROP }
   if (sourceUrl.value)
     URL.revokeObjectURL(sourceUrl.value)
@@ -219,25 +269,93 @@ function onFile(file: File) {
   adoptFile(file, file.name)
 }
 
+async function fetchSample(name: string): Promise<File> {
+  const res = await fetch(asset(`assets/${name}.png`))
+  if (!res.ok)
+    throw new Error(`${res.status} ${res.statusText}`)
+  const blob = await res.blob()
+  return new File([blob], `${name}.png`, { type: blob.type || 'image/png' })
+}
+
 async function loadSample(name: string) {
+  // Re-choosing the loaded sample keeps its crop and settings rather than starting over.
+  if (name === selected.value && cachedFile) {
+    openStep.value = 'adjust'
+    return
+  }
   try {
-    const res = await fetch(asset(`assets/${name}.png`))
-    if (!res.ok)
-      throw new Error(`${res.status} ${res.statusText}`)
-    const blob = await res.blob()
+    const file = await fetchSample(name)
     selected.value = name
-    await adoptFile(
-      new File([blob], `${name}.png`, { type: blob.type || 'image/png' }),
-      samples.find(s => s.name === name)?.label ?? name,
-    )
+    await adoptFile(file, samples.find(s => s.name === name)?.label ?? name)
   }
   catch (err) {
     status.value = `Could not load sample "${name}": ${err}`
   }
 }
 
-// A reload is treated as a mistake, not state to rehydrate: this drops the local pick back to a
-// blank picker. Exposed for the host's "clear image", and used by `clearImage` below.
+// Put the source and settings back to the committed inputs, so the picker matches what the
+// host kept. With nothing committed there is nothing to match, so the picker blanks.
+function revert() {
+  const c = committed
+  if (!c) {
+    reset()
+    return
+  }
+  if (cachedFile !== c.file) {
+    cachedFile = c.file
+    if (sourceUrl.value)
+      URL.revokeObjectURL(sourceUrl.value)
+    sourceUrl.value = c.file ? URL.createObjectURL(c.file) : ''
+  }
+  naturalDims.value = c.naturalDims
+  hasAlpha.value = c.hasAlpha
+  selected.value = c.sample
+  sourceLabel.value = c.label
+  restoredOnly.value = !c.file
+  applySettings(c.settings)
+}
+
+// Rebuild the picker around a restored result without emitting: settings and preview first,
+// then the sample's image so Adjust works. An upload can't be re-read, so it stays restored-only.
+async function hydrate({ result, meta }: NonNullable<Props['restore']>) {
+  const settings = meta.settings
+  if (!settings)
+    return
+  committed = { file: null, sample: null, label: meta.source, naturalDims: null, hasAlpha: false, settings }
+  applySettings(settings)
+  sourceLabel.value = meta.source
+  sourceDims.value = { w: result.sourceW, h: result.sourceH }
+  lastResult.value = result
+  const sample = samples.find(s => s.name === meta.sample)
+  if (!sample) {
+    restoredOnly.value = true
+    return
+  }
+  try {
+    const file = await fetchSample(sample.name)
+    const bitmap = await decodeImage(file)
+    const dims = { w: bitmap.width, h: bitmap.height }
+    const alpha = hasTransparency(bitmap)
+    bitmap.close()
+    // The player picked or cleared something while this loaded; theirs wins.
+    if (cachedFile || committed?.settings !== settings)
+      return
+    cachedFile = file
+    committed = { ...committed, file, sample: sample.name, naturalDims: dims, hasAlpha: alpha }
+    selected.value = sample.name
+    sourceUrl.value = URL.createObjectURL(file)
+    naturalDims.value = dims
+    hasAlpha.value = alpha
+    openStep.value = 'adjust'
+  }
+  catch {
+    if (!cachedFile)
+      restoredOnly.value = true
+  }
+}
+
+// Drops the local pick back to a blank picker. Exposed for the host's "clear image", and used
+// by `clearImage` and `revert`.
 function reset() {
   if (debounceTimer) {
     clearTimeout(debounceTimer)
@@ -246,6 +364,8 @@ function reset() {
   if (sourceUrl.value)
     URL.revokeObjectURL(sourceUrl.value)
   cachedFile = null
+  committed = null
+  restoredOnly.value = false
   runId++ // invalidate any in-flight reprocess
   sourceUrl.value = ''
   naturalDims.value = null
@@ -272,7 +392,9 @@ function clearImage() {
 }
 
 onMounted(() => {
-  if (props.autoLoadSample)
+  if (props.restore?.meta.settings)
+    hydrate(props.restore)
+  else if (props.autoLoadSample)
     loadSample(props.autoLoadSample)
 })
 
@@ -303,6 +425,9 @@ onBeforeUnmount(() => {
             {{ sourceSummary }}
           </template>
           <SourcePicker :samples="samples" :selected="selected" @file="onFile" @sample="loadSample" />
+          <p v-if="restoredOnly" class="picker__source-hint">
+            Choose {{ sourceLabel }} again to adjust it.
+          </p>
         </AccordionItem>
 
         <AccordionItem id="adjust" title="Adjust Target" :disabled="!hasImage">
@@ -331,7 +456,7 @@ onBeforeUnmount(() => {
           </div>
         </AccordionItem>
 
-        <AccordionItem id="settings" title="Game settings" :disabled="!hasImage">
+        <AccordionItem id="settings" title="Game settings" :disabled="!hasImage && !restoredOnly">
           <template #summary>
             {{ settingsSummary }}
           </template>

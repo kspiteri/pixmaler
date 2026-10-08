@@ -5,7 +5,7 @@
 
 import type { CropSelection, TargetRatioId } from './aspect'
 import type { Rgb } from './palette'
-import type { Quantiser } from './quantisers'
+import type { PixelationStyle, Quantiser } from './quantisers'
 import { cropRect, FULL_CROP, ratioBox } from './aspect'
 import { nearestIndex, paletteSortOrder, rgbToHex, withClassics } from './palette'
 import { DEFAULT_PIXELATION_STYLE, quantiserFor } from './quantisers'
@@ -22,12 +22,26 @@ export interface PipelineResult {
   sourceH: number
 }
 
+// The picker inputs that produced a result — enough to rebuild the picker around it.
+export interface PickerSettings {
+  scale: number
+  colorCount: number
+  pixelationStyle: PixelationStyle
+  ratio: TargetRatioId
+  crop: CropSelection
+  background: string
+}
+
 // What the picker was pointed at, emitted alongside the result. Lets a caller caption
-// the current selection (see Paint's collapsed settings summary). The colour count is
-// deliberately absent: `PipelineResult.palette` is the truth, and the request is not.
+// the current selection (see Paint's collapsed settings summary) and restore the picker
+// later. The colour count shown is `PipelineResult.palette`'s, not `settings.colorCount`:
+// a flat image cannot always fill the count asked for.
 export interface PickerMeta {
   /** Human-readable source: a sample's label, or the uploaded file's name. */
   source: string
+  /** The bundled sample's name, or null for an upload. Absent in sessions saved before it existed. */
+  sample?: string | null
+  settings?: PickerSettings
 }
 
 export const DEFAULT_COLOR_COUNT = 16

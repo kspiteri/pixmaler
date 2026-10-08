@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // Paint sandbox — solo canvas, no lobby/socket/timer. Picker left, canvas pair right;
 // the pair re-mounts on each new picker result so PixelCanvas instances tear down cleanly.
-// The chosen image, its settings and the canvas progress persist across reloads (lib/paintSession).
+// The chosen image, its settings and the canvas progress persist across reloads (lib/paintSession);
+// a result that would clear a drawing is confirmed first.
 
 import type { MusicTrackId, PickerMeta, PipelineResult } from '@/lib'
 import { ChevronDown, ChevronUp, Eraser, Palette } from '@lucide/vue'
@@ -10,7 +11,7 @@ import Button from '@/components/elements/Button.vue'
 import Tagline from '@/components/elements/Tagline.vue'
 import { DrawBoard, ImagePicker } from '@/components/game'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
-import { appHref, loadPaintSession, playMusic, savePaintSession, stopMusic, useOrientation } from '@/lib'
+import { appHref, askConfirm, keepsDrawing, loadPaintSession, playMusic, savePaintSession, stopMusic, useOrientation } from '@/lib'
 
 const result = ref<PipelineResult | null>(null)
 const meta = ref<PickerMeta | null>(null)
@@ -25,13 +26,16 @@ function onMusic(track: MusicTrackId | null) {
     stopMusic()
 }
 
-// Restore a previous session up front. `restoredGrid` seeds the canvas once (mount only);
-// `currentGrid` tracks the live drawing for the header's Clear control and the debounced save.
+// Restore a previous session up front. `seedGrid` is what the canvas pair mounts with, refreshed
+// before every remount; `currentGrid` tracks the live drawing for Clear, the guard and the save.
 const saved = loadPaintSession()
-const restoredGrid = ref<number[] | null>(saved?.grid ?? null)
+const seedGrid = ref<number[] | null>(saved?.grid ?? null)
 const currentGrid = ref<number[]>(saved?.grid ?? [])
+// Bumped per accepted result, so the pair remounts even when the canvas shape is unchanged.
+const boardRev = ref(0)
 // Skip the ImagePicker's default sample when we've restored an image, or it would overwrite it.
 const autoLoadSample = saved ? undefined : 'monalisa'
+const restore = saved ? { result: saved.result, meta: saved.meta } : null
 
 // Settings start open, collapsing once the first image loads; a restored session opens collapsed.
 const settingsOpen = ref(!saved)
@@ -49,22 +53,45 @@ const orientation = useOrientation(() => result.value?.gridW, () => result.value
 
 const hasDrawing = computed(() => currentGrid.value.some(cell => cell !== -1))
 
+// Persist the drawing off the hot path — a stroke fires this often, so coalesce the writes.
+let saveTimer: ReturnType<typeof setTimeout> | null = null
+
+// The picker asks before emitting; declining makes it revert to the settings behind this canvas.
+async function confirmResult(next: PipelineResult) {
+  if (!result.value || !hasDrawing.value || keepsDrawing(result.value, next))
+    return true
+  return askConfirm('Start a new canvas with these settings? Your drawing will be cleared.')
+}
+
 function onResult(next: PipelineResult, nextMeta: PickerMeta) {
+  // Same grid and palette keep the drawing; anything else starts on a blank canvas.
+  const grid = result.value && keepsDrawing(result.value, next)
+    ? currentGrid.value
+    : Array.from<number>({ length: next.gridW * next.gridH }).fill(-1)
   result.value = next
   meta.value = nextMeta
-  // A new image starts on a blank canvas: drop the restored seed and persist the fresh state.
-  const blank = Array.from<number>({ length: next.gridW * next.gridH }).fill(-1)
-  restoredGrid.value = null
-  currentGrid.value = blank
-  savePaintSession(next, nextMeta, blank)
+  seedGrid.value = grid
+  currentGrid.value = grid
+  boardRev.value++
+  // A pending save still holds the previous result; this one supersedes it.
+  if (saveTimer) {
+    clearTimeout(saveTimer)
+    saveTimer = null
+  }
+  savePaintSession(next, nextMeta, grid)
   if (!collapsedOnce) {
     collapsedOnce = true
     settingsOpen.value = false
   }
 }
 
-// Persist the drawing off the hot path — a stroke fires this often, so coalesce the writes.
-let saveTimer: ReturnType<typeof setTimeout> | null = null
+function toggleSettings() {
+  // Opening unmounts the pair; it remounts from this snapshot when the panel closes.
+  if (!settingsOpen.value)
+    seedGrid.value = currentGrid.value
+  settingsOpen.value = !settingsOpen.value
+}
+
 function onDrawUpdate(grid: number[]) {
   currentGrid.value = grid
   const r = result.value
@@ -106,7 +133,7 @@ const summary = computed(() => {
 
 <template>
   <PhaseLayout
-    heading="Practice"
+    heading="Free mode"
     :home="backHref"
     class="phase--fixed paint"
     :class="{ 'paint--settings-open': settingsOpen }"
@@ -136,7 +163,7 @@ const summary = computed(() => {
           class="paint__toggle pressable"
           type="button"
           :aria-expanded="settingsOpen"
-          @click="settingsOpen = !settingsOpen"
+          @click="toggleSettings"
         >
           <span class="paint__toggle-label">
             <Palette :size="16" />
@@ -154,6 +181,8 @@ const summary = computed(() => {
           <ImagePicker
             show-preview
             :auto-load-sample="autoLoadSample"
+            :restore="restore"
+            :confirm-result="confirmResult"
             @result="onResult"
             @music="onMusic"
           />
@@ -166,12 +195,12 @@ const summary = computed(() => {
         <DrawBoard
           v-if="result"
           ref="pairRef"
-          :key="`${result.gridW}x${result.gridH}-${result.palette.join(',')}`"
+          :key="boardRev"
           :grid-w="result.gridW"
           :grid-h="result.gridH"
           :palette="result.palette"
           :target-grid="result.targetGrid"
-          :initial-grid="restoredGrid"
+          :initial-grid="seedGrid"
           variant="paint"
           :orientation="orientation"
           @update="onDrawUpdate"

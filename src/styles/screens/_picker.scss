@@ -308,7 +308,8 @@
     flex-wrap: wrap;
     gap: $gap-2;
   }
-  &__crop-hint {
+  &__crop-hint,
+  &__source-hint {
     margin: 0;
     color: $fg-60;
     font-size: $fs-xs;
