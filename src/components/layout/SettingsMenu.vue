@@ -1,27 +1,11 @@
 <script setup lang="ts">
 // The settings menu — one gear trigger in every header, opening a dropdown: the theme switch,
-// then single-open Accessibility (text size, touch mode, shortcuts) and Sound (music, effects,
-// countdown) sections. A disclosure, not a `role="menu"`: it closes on an outside pointer or
-// Escape; Escape returns focus to the trigger.
+// then two flat groups, Accessibility (text size, touch mode, shortcuts) and Sound (music,
+// effects, countdown ticks), and a footer of Privacy / Credits / Clear. A disclosure, not a
+// `role="menu"`: it closes on an outside pointer or Escape; Escape returns focus to the trigger.
 
-import {
-  Bell,
-  BellOff,
-  CircleX,
-  Cookie,
-  Hand,
-  Keyboard,
-  KeyboardOff,
-  Mouse,
-  Music,
-  Settings,
-  Timer,
-  TimerOff,
-  VolumeX,
-} from '@lucide/vue'
+import { Settings } from '@lucide/vue'
 import { onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
-import Accordion from '@/components/elements/accordion/Accordion.vue'
-import AccordionItem from '@/components/elements/accordion/Item.vue'
 import Button from '@/components/elements/Button.vue'
 import ThemeToggle from '@/components/elements/ThemeToggle.vue'
 import ToggleSwitch from '@/components/elements/ToggleSwitch.vue'
@@ -110,164 +94,106 @@ function showInfo(show: () => void) {
         <ThemeToggle />
       </div>
 
-      <Accordion>
-        <AccordionItem id="accessibility" title="Accessibility">
-          <template #summary>
-            <span class="settings-menu__summary">
-              <span class="settings-menu__summary-text">{{ textScale }}%</span>
-              <Hand v-if="isTouch" :size="14" aria-hidden="true" />
-              <Mouse v-else :size="14" aria-hidden="true" />
-              <template v-if="!isTouch">
-                <Keyboard v-if="shortcutsEnabled" :size="14" aria-hidden="true" />
-                <KeyboardOff v-else :size="14" aria-hidden="true" />
-              </template>
-            </span>
-          </template>
-          <div class="settings-menu__row">
-            <span id="settings-menu-text" class="settings-menu__label">Text</span>
-            <div class="settings-menu__stepper" role="group" aria-labelledby="settings-menu-text">
-              <Button
-                variant="subtle"
-                icon
-                size="small"
-                :disabled="textScale <= min"
-                aria-label="Smaller text"
-                @click="stepScale(-1)"
-              >
-                A&minus;
-              </Button>
-              <span class="settings-menu__scale" aria-live="polite">{{ textScale }}%</span>
-              <Button
-                variant="subtle"
-                icon
-                size="small"
-                :disabled="textScale >= max"
-                aria-label="Larger text"
-                @click="stepScale(1)"
-              >
-                A+
-              </Button>
-            </div>
-          </div>
+      <section class="settings-menu__group" aria-labelledby="settings-menu-a11y">
+        <h2 id="settings-menu-a11y" class="settings-menu__heading">
+          Accessibility
+        </h2>
 
-          <div class="settings-menu__row">
-            <span class="settings-menu__label">Touch mode</span>
-            <ToggleSwitch
-              :model-value="isTouch"
-              label="Touch mode"
-              @update:model-value="toggleTouch"
+        <div class="settings-menu__row">
+          <span id="settings-menu-text" class="settings-menu__label">Text size</span>
+          <div class="settings-menu__stepper" role="group" aria-labelledby="settings-menu-text">
+            <Button
+              variant="subtle"
+              icon
+              size="x-small"
+              :disabled="textScale <= min"
+              aria-label="Smaller text"
+              @click="stepScale(-1)"
             >
-              <template #off>
-                <Mouse :size="16" aria-hidden="true" />
-              </template>
-              <template #on>
-                <Hand :size="16" aria-hidden="true" />
-              </template>
-            </ToggleSwitch>
-          </div>
-
-          <div v-if="!isTouch" class="settings-menu__row">
-            <span class="settings-menu__label">Shortcuts</span>
-            <ToggleSwitch
-              :model-value="shortcutsEnabled"
-              label="Keyboard shortcuts"
-              @update:model-value="toggleShortcuts"
-            >
-              <template #off>
-                <KeyboardOff :size="16" aria-hidden="true" />
-              </template>
-              <template #on>
-                <Keyboard :size="16" aria-hidden="true" />
-              </template>
-            </ToggleSwitch>
-          </div>
-        </AccordionItem>
-
-        <AccordionItem id="sound" title="Sound">
-          <template #summary>
-            <span class="settings-menu__summary">
-              <Music v-if="music" :size="14" aria-hidden="true" />
-              <VolumeX v-else :size="14" aria-hidden="true" />
-              <Bell v-if="sfx" :size="14" aria-hidden="true" />
-              <BellOff v-else :size="14" aria-hidden="true" />
-              <Timer v-if="ticktock" :size="14" aria-hidden="true" />
-              <TimerOff v-else :size="14" aria-hidden="true" />
-            </span>
-          </template>
-          <div class="settings-menu__row">
-            <span class="settings-menu__label">Music</span>
-            <ToggleSwitch
-              :model-value="music"
-              label="Music"
-              @update:model-value="toggleMusic"
-            >
-              <template #off>
-                <VolumeX :size="16" aria-hidden="true" />
-              </template>
-              <template #on>
-                <Music :size="16" aria-hidden="true" />
-              </template>
-            </ToggleSwitch>
-          </div>
-
-          <div class="settings-menu__row">
-            <span class="settings-menu__label">Effects</span>
-            <ToggleSwitch
-              :model-value="sfx"
-              label="Sound effects"
-              @update:model-value="toggleSfx"
-            >
-              <template #off>
-                <BellOff :size="16" aria-hidden="true" />
-              </template>
-              <template #on>
-                <Bell :size="16" aria-hidden="true" />
-              </template>
-            </ToggleSwitch>
-          </div>
-
-          <div class="settings-menu__row">
-            <span class="settings-menu__label">Countdown</span>
-            <ToggleSwitch
-              :model-value="ticktock"
-              label="Countdown ticks"
-              @update:model-value="toggleTicktock"
-            >
-              <template #off>
-                <TimerOff :size="16" aria-hidden="true" />
-              </template>
-              <template #on>
-                <Timer :size="16" aria-hidden="true" />
-              </template>
-            </ToggleSwitch>
-          </div>
-        </AccordionItem>
-        <AccordionItem id="privacy" title="Your privacy and what is stored">
-          <div class="settings-menu__flex">
-            <Button variant="subtle" size="small" @click="showInfo(openPrivacy)">
-              <template #icon>
-                <Cookie :size="18" aria-hidden="true" />
-              </template>
-              Privacy
+              A&minus;
             </Button>
-            <Button variant="subtle" size="small" @click="clearData">
-              <template #icon>
-                <CircleX :size="18" aria-hidden="true" />
-              </template>
-              Clear
+            <span class="settings-menu__scale" aria-live="polite">{{ textScale }}%</span>
+            <Button
+              variant="subtle"
+              icon
+              size="x-small"
+              :disabled="textScale >= max"
+              aria-label="Larger text"
+              @click="stepScale(1)"
+            >
+              A+
             </Button>
           </div>
-        </AccordionItem>
-      </Accordion>
+        </div>
 
-      <hr class="settings-menu__sep">
-      <Button variant="subtle" size="small" block @click="showInfo(openCredits)">
-        Credits
-      </Button>
+        <div class="settings-menu__row">
+          <span class="settings-menu__label">
+            Touch mode
+            <span id="settings-menu-touch-hint" class="settings-menu__hint">Larger controls, no dragging</span>
+          </span>
+          <ToggleSwitch
+            :model-value="isTouch"
+            label="Touch mode"
+            describedby="settings-menu-touch-hint"
+            @update:model-value="toggleTouch"
+          />
+        </div>
 
-      <p v-if="version" class="settings-menu__version">
-        pixmaler v{{ version }}
-      </p>
+        <div v-if="!isTouch" class="settings-menu__row">
+          <span class="settings-menu__label">Keyboard shortcuts</span>
+          <ToggleSwitch
+            :model-value="shortcutsEnabled"
+            label="Keyboard shortcuts"
+            @update:model-value="toggleShortcuts"
+          />
+        </div>
+      </section>
+
+      <section class="settings-menu__group" aria-labelledby="settings-menu-sound">
+        <h2 id="settings-menu-sound" class="settings-menu__heading">
+          Sound
+        </h2>
+
+        <div class="settings-menu__row">
+          <span class="settings-menu__label">Music</span>
+          <ToggleSwitch :model-value="music" label="Music" @update:model-value="toggleMusic" />
+        </div>
+
+        <div class="settings-menu__row">
+          <span class="settings-menu__label">Sound effects</span>
+          <ToggleSwitch :model-value="sfx" label="Sound effects" @update:model-value="toggleSfx" />
+        </div>
+
+        <div class="settings-menu__row">
+          <span class="settings-menu__label">
+            Countdown ticks
+            <span id="settings-menu-tick-hint" class="settings-menu__hint">The ticking clock while you draw</span>
+          </span>
+          <ToggleSwitch
+            :model-value="ticktock"
+            label="Countdown ticks"
+            describedby="settings-menu-tick-hint"
+            @update:model-value="toggleTicktock"
+          />
+        </div>
+      </section>
+
+      <footer class="settings-menu__foot">
+        <div class="settings-menu__links">
+          <button type="button" class="settings-menu__link" @click="showInfo(openPrivacy)">
+            Privacy
+          </button>
+          <button type="button" class="settings-menu__link" @click="showInfo(openCredits)">
+            Credits
+          </button>
+          <button type="button" class="settings-menu__link settings-menu__link--danger" @click="clearData">
+            Clear my data
+          </button>
+        </div>
+        <p v-if="version" class="settings-menu__version">
+          pixmaler v{{ version }}
+        </p>
+      </footer>
     </div>
   </div>
 </template>
