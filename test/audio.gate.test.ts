@@ -10,7 +10,7 @@ describe('channelForKey', () => {
   })
 
   it('routes every other key to the sfx toggle', () => {
-    expect(channelForKey('ding')).toBe('sfx')
+    expect(channelForKey('click')).toBe('sfx')
     expect(channelForKey('vote')).toBe('sfx')
     expect(channelForKey('winner')).toBe('sfx')
   })
@@ -18,8 +18,8 @@ describe('channelForKey', () => {
 
 describe('shouldPlay gating', () => {
   it('sounds an sfx key only when sfx is on', () => {
-    expect(shouldPlay('ding', ALL_ON, 1000, null)).toBe(true)
-    expect(shouldPlay('ding', { ...ALL_ON, sfx: false }, 1000, null)).toBe(false)
+    expect(shouldPlay('click', ALL_ON, 1000, null)).toBe(true)
+    expect(shouldPlay('click', { ...ALL_ON, sfx: false }, 1000, null)).toBe(false)
   })
 
   it('gates tick/tock on ticktock, independent of the sfx toggle', () => {
@@ -32,14 +32,14 @@ describe('shouldPlay gating', () => {
 
 describe('shouldPlay throttle', () => {
   it('sounds on the first trigger, with no prior stamp', () => {
-    expect(shouldPlay('ding', ALL_ON, 0, null)).toBe(true)
+    expect(shouldPlay('click', ALL_ON, 0, null)).toBe(true)
   })
 
   it('suppresses a repeat inside the throttle window', () => {
-    expect(shouldPlay('ding', ALL_ON, DEFAULT_THROTTLE_MS - 1, 0)).toBe(false)
+    expect(shouldPlay('click', ALL_ON, DEFAULT_THROTTLE_MS - 1, 0)).toBe(false)
   })
 
   it('allows a repeat once the window has elapsed', () => {
-    expect(shouldPlay('ding', ALL_ON, DEFAULT_THROTTLE_MS, 0)).toBe(true)
+    expect(shouldPlay('click', ALL_ON, DEFAULT_THROTTLE_MS, 0)).toBe(true)
   })
 })

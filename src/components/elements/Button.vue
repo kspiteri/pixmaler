@@ -4,7 +4,7 @@
 // $bp-mobile, `tone="danger"` a warn hover. Renders <a> when `href` is set. This owns the
 // button identity (fill, border, press, hover, focus, disabled; `aria-busy` with `disabled` stays
 // unfaded); a caller keeps only layout (position, flex, width) as a class, which merges in via $attrs.
-// Click plays a press sound: a primary's `ding` by default. `sfx` overrides the key (any
+// Click plays a press sound: a primary's `click` by default. `sfx` overrides the key (any
 // variant), `silent` suppresses it for this instance; the global mute still applies.
 
 import type { SfxKey } from '@/lib'
@@ -23,7 +23,7 @@ const props = withDefaults(defineProps<{
   tone?: 'neutral' | 'danger'
   collapse?: boolean
   href?: string
-  // Click sound key; overrides the default (a primary's `ding`) and plays on any variant.
+  // Click sound key; overrides the default (a primary's `click`) and plays on any variant.
   sfx?: SfxKey
   // Suppress this instance's click sound (wins over `sfx` and the default).
   silent?: boolean
@@ -37,12 +37,12 @@ const props = withDefaults(defineProps<{
 const root = useTemplateRef<HTMLElement>('root')
 defineExpose({ focus: () => root.value?.focus() })
 
-// An explicit `sfx` wins; otherwise primary dings and other variants stay silent. `silent`
+// An explicit `sfx` wins; otherwise primary clicks and other variants stay silent. `silent`
 // mutes this instance. `playSfx` still honours the global sfx toggle and skips unrecorded keys.
 function onPress() {
   if (props.silent)
     return
-  const key = props.sfx ?? (props.variant === 'primary' ? 'ding' : null)
+  const key = props.sfx ?? (props.variant === 'primary' ? 'click' : null)
   if (key)
     playSfx(key)
 }

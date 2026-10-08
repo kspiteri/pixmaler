@@ -51,11 +51,10 @@ function currentPrefs(): AudioPrefs {
 
 // -- sfx channel ------------------------------------------------------------------------------
 
-// Sprite offsets [startMs, durationMs]. Only `ding` has a placeholder asset today; the
-// recorded sprite swaps the src files and fills the rest of the shot list here — a data
-// change, not a code one.
+// Sprite offsets [startMs, durationMs]. Only `click` has a clip today; filling the rest of the
+// shot list swaps the src file and adds offsets here — a data change, not a code one.
 const SPRITE: { [K in string]: [number, number] } = {
-  ding: [0, 400],
+  click: [0, 120],
 }
 
 const sfxHowl = new Howl({

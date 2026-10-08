@@ -2,10 +2,10 @@
 // node vitest environment. `audio.ts` owns the Howler I/O and calls `shouldPlay` before every
 // sfx trigger; the tests pin this decision, not the sound.
 
-// The sprite's key set. `ding` is the only one with a placeholder asset today; the rest
-// are the shot list the recorded sprite fills, typed now so consumers compile against it.
+// The sprite's key set. `click` is the only one with a recorded clip today; the rest are the
+// shot list the sprite fills, typed now so consumers compile against it.
 export type SfxKey
-  = | 'ding'
+  = | 'click'
     | 'tick'
     | 'tock'
     | 'submit'
