@@ -7,6 +7,8 @@ defineProps<{
   modelValue: boolean
   // The switch has no visible text label, so it needs its own accessible name.
   label: string
+  // Id of a visible hint that explains the setting, read after the name.
+  describedby?: string
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [boolean] }>()
@@ -21,6 +23,7 @@ const emit = defineEmits<{ 'update:modelValue': [boolean] }>()
       role="switch"
       :aria-checked="modelValue"
       :aria-label="label"
+      :aria-describedby="describedby"
       @click="emit('update:modelValue', !modelValue)"
     >
       <span class="toggle-switch__knob" aria-hidden="true" />
