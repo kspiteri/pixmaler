@@ -269,7 +269,7 @@ function clear() {
             <template #icon>
               <ImageIcon :size="14" />
             </template>
-            reference
+            Reference
             <template #trailing>
               <ChevronUp v-if="referenceOpen" :size="14" />
               <ChevronDown v-else :size="14" />

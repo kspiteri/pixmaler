@@ -2,7 +2,7 @@
 @use 'chrome' as *;
 
 // InfoModal.vue — the global info dialog (Credits + privacy notice). A chrome surface on the
-// scrim, sized for short copy; links use the lime ink.
+// scrim, sized for short copy; the copy sits directly in the dialog, no inner card.
 .info-modal {
   @include chrome($rung: $radius-lg);
   max-width: min(30rem, calc(100vw - #{$gap-6}));
@@ -21,20 +21,18 @@
 
   &__heading {
     margin: 0 0 $gap-2;
-    color: $fg-50;
-    font-size: $fs-xs;
+    color: $fg;
+    font-family: $font-display;
+    font-size: $fs-sm;
     font-weight: $fw-semibold;
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
   }
 
   &__section {
-    margin-bottom: $gap-4;
-    color: $muted;
+    margin-bottom: $gap-5;
+    max-width: 60ch;
+    color: $fg-80;
     font-size: $fs-sm;
     line-height: $lh-normal;
-    padding: $gap-3 $gap-4;
-    @include chrome($rung: $radius);
 
     > * {
       margin: 0;
@@ -53,5 +51,11 @@
       text-decoration-color: $fg-35;
       text-underline-offset: 0.2em;
     }
+  }
+
+  // The dialog's one action, at the trailing edge like AlertDialog's.
+  &__close {
+    display: flex;
+    margin-left: auto;
   }
 }

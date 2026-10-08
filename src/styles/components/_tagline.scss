@@ -1,6 +1,6 @@
 @use 'tokens' as *;
 
-// `Tagline.vue` — the rotating subtitle, plus its View Transition keyframes.
+// `Tagline.vue` — the cosmetic subtitle under a screen's heading.
 
 // **Must be `@use`d before the page partials.** Hosts position the tagline and
 // tie with `.tagline` at one class each, so source order decides who wins.
@@ -12,86 +12,4 @@
   font-size: $fs-sm;
   // Taglines are one sentence and centred, so an even split beats a ragged orphan.
   text-wrap: balance;
-  // Names this element for the View Transitions API so only the tagline animates,
-  // not the whole page. Unique because one <Tagline> mounts per page.
-  view-transition-name: tagline;
-}
-
-// `::view-transition-*` are document-level pseudo-elements and can never be scoped.
-// The variant is picked per rotation via `[data-tagline-vt]` on `<html>`.
-::view-transition-old(tagline),
-::view-transition-new(tagline) {
-  animation-duration: 0.4s;
-  animation-timing-function: ease;
-}
-
-// fade is the API's built-in cross-fade, so it needs no keyframes of its own.
-@keyframes tagline-up-out {
-  to {
-    opacity: 0;
-    transform: translateY(-30%);
-  }
-}
-@keyframes tagline-up-in {
-  from {
-    opacity: 0;
-    transform: translateY(30%);
-  }
-}
-@keyframes tagline-down-out {
-  to {
-    opacity: 0;
-    transform: translateY(30%);
-  }
-}
-@keyframes tagline-down-in {
-  from {
-    opacity: 0;
-    transform: translateY(-30%);
-  }
-}
-@keyframes tagline-blur-out {
-  to {
-    opacity: 0;
-    filter: blur(4px);
-  }
-}
-@keyframes tagline-blur-in {
-  from {
-    opacity: 0;
-    filter: blur(4px);
-  }
-}
-
-[data-tagline-vt='slide-up'] {
-  &::view-transition-old(tagline) {
-    animation-name: tagline-up-out;
-  }
-  &::view-transition-new(tagline) {
-    animation-name: tagline-up-in;
-  }
-}
-[data-tagline-vt='slide-down'] {
-  &::view-transition-old(tagline) {
-    animation-name: tagline-down-out;
-  }
-  &::view-transition-new(tagline) {
-    animation-name: tagline-down-in;
-  }
-}
-[data-tagline-vt='blur'] {
-  &::view-transition-old(tagline) {
-    animation-name: tagline-blur-out;
-  }
-  &::view-transition-new(tagline) {
-    animation-name: tagline-blur-in;
-  }
-}
-
-// Belt-and-braces — script already skips `startViewTransition` under reduced motion.
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-old(tagline),
-  ::view-transition-new(tagline) {
-    animation: none;
-  }
 }

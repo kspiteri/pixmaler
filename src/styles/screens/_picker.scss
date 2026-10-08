@@ -431,12 +431,10 @@
     align-items: flex-start;
     gap: $gap-2;
   }
-  // Lowercase eyebrow naming the swatch strip below the preview.
+  // Names the swatch strip below the preview, in the same voice as the "Target" label above it.
   &__palette-label {
     color: $fg-60;
-    font-size: $fs-2xs;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+    font-size: $fs-xs;
   }
   &__palette {
     display: flex;

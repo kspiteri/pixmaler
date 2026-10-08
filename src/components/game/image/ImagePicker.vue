@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Image picker orchestrator — owns the source file, the pipeline and all tuning state, and lays
 // the flow out as a persistent target preview plus a single-open accordion of steps
-// (Game mode → Image → Adjust Target → Game settings). The step controls and the preview are
+// (Game mode → Image → Adjust target → Game settings, titled Music in Free mode). The step controls and the preview are
 // under ./picker; this file wires them and runs `processImage` on any change that differs from
 // the committed inputs (the ones behind the last accepted result).
 
@@ -430,7 +430,7 @@ onBeforeUnmount(() => {
           </p>
         </AccordionItem>
 
-        <AccordionItem id="adjust" title="Adjust Target" :disabled="!hasImage">
+        <AccordionItem id="adjust" title="Adjust target" :disabled="!hasImage">
           <template #summary>
             {{ adjustSummary }}
           </template>
@@ -456,7 +456,7 @@ onBeforeUnmount(() => {
           </div>
         </AccordionItem>
 
-        <AccordionItem id="settings" title="Game settings" :disabled="!hasImage && !restoredOnly">
+        <AccordionItem id="settings" :title="showDrawSeconds ? 'Game settings' : 'Music'" :disabled="!hasImage && !restoredOnly">
           <template #summary>
             {{ settingsSummary }}
           </template>

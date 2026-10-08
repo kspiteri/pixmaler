@@ -35,7 +35,7 @@ function canTransfer(p: Player): boolean {
 
 // Not undoable by the player who does it: only the new GM can hand it back.
 async function transferGm(p: Player) {
-  if (!await askConfirm(`Transfer GM to ${p.name}?`))
+  if (!await askConfirm(`Transfer GM to ${p.name}?`, { confirm: 'Make GM' }))
     return
   const msg: ClientMsg = { type: 'gm:transfer', toClientId: p.clientId }
   socket.send(JSON.stringify(msg))
@@ -47,7 +47,7 @@ function canRemove(p: Player): boolean {
 
 // Offline-only, and reversible on their side: a removed player can rejoin if there's room.
 async function removePlayer(p: Player) {
-  if (!await askConfirm(`Remove ${p.name}? They can rejoin if there's space.`))
+  if (!await askConfirm(`Remove ${p.name}? They can rejoin if there's space.`, { confirm: 'Remove' }))
     return
   const msg: ClientMsg = { type: 'gm:remove', toClientId: p.clientId }
   socket.send(JSON.stringify(msg))

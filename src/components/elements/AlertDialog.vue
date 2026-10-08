@@ -1,16 +1,18 @@
 <script setup lang="ts">
-// The app's modal surface: `mode` renders acknowledgement (one action) or yes/no (two). Native
-// <dialog> + showModal(), so focus trapping, restore, Esc and the top layer come from the
-// platform. Don't call directly — go through lib/dialog.ts, which owns the single instance.
+// The app's modal surface: `mode` renders acknowledgement (one action) or yes/no (two), with the
+// button copy supplied by the caller. Native <dialog> + showModal(), so focus trapping, restore,
+// Esc and the top layer come from the platform. Don't call directly — go through lib/dialog.ts,
+// which owns the single instance.
 
-import { Check } from '@lucide/vue'
 import { onMounted, useId, useTemplateRef } from 'vue'
 import Button from './Button.vue'
 
 const props = withDefaults(defineProps<{
   message: string
   mode?: 'alert' | 'confirm'
-}>(), { mode: 'alert' })
+  confirmLabel?: string
+  cancelLabel?: string
+}>(), { mode: 'alert', confirmLabel: 'OK', cancelLabel: 'Cancel' })
 
 const emit = defineEmits<{
   confirm: []
@@ -51,17 +53,14 @@ function onEscape() {
         autofocus
         @click="emit('cancel')"
       >
-        Cancel
+        {{ cancelLabel }}
       </Button>
       <Button
         variant="primary"
         :autofocus="mode === 'alert'"
         @click="emit('confirm')"
       >
-        <template #icon>
-          <Check :size="18" aria-hidden="true" />
-        </template>
-        OK
+        {{ confirmLabel }}
       </Button>
     </div>
   </dialog>

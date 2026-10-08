@@ -96,8 +96,9 @@
   --timer-warn: #944f00;
   --timer-danger: #bb0a05;
 
-  // Clamped so the halo reads the same at 16px and 88px.
-  --logo-shadow: 0 clamp(1px, 0.05em, 4px) clamp(3px, 0.11em, 10px) rgba(14, 14, 18, 0.9);
+  // A hard olive drop under the lime, in the same zero-blur language as the press — a soft dark
+  // halo smudged at header size. Clamped so the step reads the same at 16px and 88px.
+  --logo-shadow: 1px clamp(1px, 0.04em, 4px) 4px #485f01;
   --canvas-edge: #a8a8b4;
 
   // Lighter than dark's — a heavy shadow on a pale page reads as dirt.

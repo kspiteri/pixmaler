@@ -13,7 +13,7 @@ async function demoAlert() {
   lastAnswer.value = 'alert dismissed'
 }
 async function demoConfirm() {
-  lastAnswer.value = (await askConfirm('End voting now? This closes the round.')) ? 'confirmed' : 'cancelled'
+  lastAnswer.value = (await askConfirm('End voting now? This closes the round.', { confirm: 'End voting', cancel: 'Keep voting' })) ? 'confirmed' : 'cancelled'
 }
 </script>
 

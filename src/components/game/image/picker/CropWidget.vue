@@ -159,7 +159,7 @@ function onCropKeyDown(e: KeyboardEvent) {
     </label>
 
     <p class="picker__crop-hint">
-      {{ cropMovable ? 'drag or use arrow keys to reframe' : 'this shape uses the whole image' }}
+      {{ cropMovable ? 'Drag, or use the arrow keys, to reframe.' : 'This shape uses the whole image.' }}
     </p>
   </div>
 </template>

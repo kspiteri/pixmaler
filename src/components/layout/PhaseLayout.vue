@@ -39,7 +39,7 @@ withDefaults(defineProps<{
     >
       <div
         class="phase__progress-fill"
-        :style="{ width: `${progress}%`, background: progressColour }"
+        :style="{ scale: `${progress / 100} 1`, background: progressColour }"
       />
     </div>
 

@@ -1,10 +1,17 @@
 // The app's one modal surface, as an awaitable call: `AlertDialog` emits rather than
-// returning, so requests queue here — `if (!await askConfirm('End voting now?')) return`.
+// returning, so requests queue here — `if (!await askConfirm('End voting now?', { confirm: 'End voting' })) return`.
 // Module-level, not a composable: one dialog for the whole app.
 
 import { computed, ref } from 'vue'
 
 export type DialogMode = 'alert' | 'confirm'
+
+// Button copy for a confirm. A confirm names its action ("End voting", not "OK"), so a player
+// can answer from the buttons alone.
+export interface ConfirmLabels {
+  confirm: string
+  cancel?: string
+}
 
 interface DialogRequest {
   // Keys the <AlertDialog> so each request mounts a fresh element — showModal()
@@ -12,6 +19,8 @@ interface DialogRequest {
   id: number
   message: string
   mode: DialogMode
+  confirmLabel: string
+  cancelLabel: string
   resolve: (answer: boolean) => void
 }
 
@@ -23,19 +32,19 @@ const queue = ref<DialogRequest[]>([])
 
 export const currentDialog = computed(() => queue.value[0] ?? null)
 
-function ask(message: string, mode: DialogMode): Promise<boolean> {
+function ask(message: string, mode: DialogMode, confirmLabel: string, cancelLabel = 'Cancel'): Promise<boolean> {
   return new Promise((resolve) => {
-    queue.value = [...queue.value, { id: nextId++, message, mode, resolve }]
+    queue.value = [...queue.value, { id: nextId++, message, mode, confirmLabel, cancelLabel, resolve }]
   })
 }
 
 // One action, so there's no answer to return; it resolves when dismissed.
 export async function askAlert(message: string): Promise<void> {
-  await ask(message, 'alert')
+  await ask(message, 'alert', 'OK')
 }
 
-export function askConfirm(message: string): Promise<boolean> {
-  return ask(message, 'confirm')
+export function askConfirm(message: string, labels: ConfirmLabels): Promise<boolean> {
+  return ask(message, 'confirm', labels.confirm, labels.cancel)
 }
 
 export function settleDialog(answer: boolean): void {

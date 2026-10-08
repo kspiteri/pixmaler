@@ -17,7 +17,7 @@ const result = ref<PipelineResult | null>(null)
 const meta = ref<PickerMeta | null>(null)
 const pairRef = ref<InstanceType<typeof DrawBoard> | null>(null)
 
-// Free Mode picks its background track in the picker's Game settings; playing it lights up the
+// Free Mode picks its background track in the picker's Music step; playing it lights up the
 // header MusicWidget. Not persisted — a reload starts silent.
 function onMusic(track: MusicTrackId | null) {
   if (track)
@@ -60,7 +60,7 @@ let saveTimer: ReturnType<typeof setTimeout> | null = null
 async function confirmResult(next: PipelineResult) {
   if (!result.value || !hasDrawing.value || keepsDrawing(result.value, next))
     return true
-  return askConfirm('Start a new canvas with these settings? Your drawing will be cleared.')
+  return askConfirm('Start a new canvas with these settings? Your drawing will be cleared.', { confirm: 'Start new canvas', cancel: 'Keep drawing' })
 }
 
 function onResult(next: PipelineResult, nextMeta: PickerMeta) {
@@ -167,7 +167,7 @@ const summary = computed(() => {
         >
           <span class="paint__toggle-label">
             <Palette :size="16" />
-            <span>Settings</span>
+            <span>Image &amp; colours</span>
             <span v-if="!settingsOpen && summary" class="paint__toggle-summary">
               · {{ summary }}
             </span>

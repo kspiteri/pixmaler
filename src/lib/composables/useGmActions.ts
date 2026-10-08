@@ -12,13 +12,13 @@ export function useGmActions(socket: PartySocket) {
   }
 
   async function cancelRound() {
-    if (!await askConfirm('Cancel this round? Everyone goes back to the lobby and the drawings are lost.'))
+    if (!await askConfirm('Cancel this round? Everyone goes back to the lobby and the drawings are lost.', { confirm: 'Cancel round', cancel: 'Keep playing' }))
       return
     send({ type: 'gm:cancelRound' })
   }
 
   async function endSession() {
-    if (!await askConfirm('End the session for everyone? The room closes and this code is released.'))
+    if (!await askConfirm('End the session for everyone? The room closes and this code is released.', { confirm: 'End session', cancel: 'Keep the room' }))
       return
     send({ type: 'gm:endSession' })
   }
@@ -28,7 +28,7 @@ export function useGmActions(socket: PartySocket) {
   }
 
   async function stopVoting(everyoneVoted: boolean) {
-    if (!everyoneVoted && !await askConfirm('End voting now? Anyone who hasn\'t finished voting won\'t be counted.'))
+    if (!everyoneVoted && !await askConfirm('End voting now? Anyone who hasn\'t finished voting won\'t be counted.', { confirm: 'End voting', cancel: 'Keep voting' }))
       return
     send({ type: 'gm:stopVoting' })
   }

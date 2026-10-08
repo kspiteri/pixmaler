@@ -25,10 +25,12 @@
     background: $surface;
     flex-shrink: 0;
   }
+  // Full width, scaled from the left: a `scale` tick composites, where a `width` tick re-lays out.
   &__progress-fill {
     height: 100%;
+    transform-origin: left;
     transition:
-      width 1s linear,
+      scale 1s linear,
       background 0.4s;
   }
 

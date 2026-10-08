@@ -58,7 +58,7 @@ async function clearData() {
   const message = inRoom
     ? 'Clear your saved name and preferences, and leave the current game?'
     : 'Clear your saved name and preferences?'
-  if (!await askConfirm(message))
+  if (!await askConfirm(message, { confirm: inRoom ? 'Clear and leave' : 'Clear my data' }))
     return
   clearAllData()
   location.href = import.meta.env.BASE_URL

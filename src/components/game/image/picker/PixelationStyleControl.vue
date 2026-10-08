@@ -34,11 +34,10 @@ const labelId = useId()
       </div>
     </div>
 
-    <Disclosure label="what does 'pixelation styles' do?" aria-label="What the pixelation styles do">
+    <Disclosure label="What do the styles do?" aria-label="What the pixelation styles do">
       <div class="picker__style-help">
         <p class="picker__style-note">
-          Suggestion to switch between styles to see how your image renders,
-          sometimes these algorithms work great with an image and not so much with another.
+          Try each one on your picture: a style that suits one image can flatten another.
         </p>
         <ul>
           <li v-for="opt in PIXELATION_STYLES" :key="opt.id">
@@ -46,7 +45,7 @@ const labelId = useId()
           </li>
         </ul>
         <p class="picker__style-note">
-          Extra colours will be added to fill the palette if a style doesn't reach the number you chose.
+          If a style finds fewer colours than you asked for, extra ones fill the palette.
         </p>
       </div>
     </Disclosure>

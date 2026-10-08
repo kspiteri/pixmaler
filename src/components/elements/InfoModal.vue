@@ -10,7 +10,7 @@ import { activeInfo, closeInfo, MUSIC_TRACKS } from '@/lib'
 import Button from './Button.vue'
 
 const dialogEl = useTemplateRef<HTMLDialogElement>('dialogEl')
-const musicTitles = MUSIC_TRACKS.map(t => `"${t.label}"`).join(', ')
+const musicTitles = MUSIC_TRACKS.map(t => `“${t.label}”`).join(', ')
 
 onMounted(() => dialogEl.value?.showModal())
 
@@ -81,7 +81,7 @@ function onBackdrop(e: MouseEvent) {
       </section>
     </template>
 
-    <Button autofocus variant="secondary" size="small" @click="closeInfo">
+    <Button variant="tertiary" size="small" class="info-modal__close" autofocus @click="closeInfo">
       Close
     </Button>
   </dialog>

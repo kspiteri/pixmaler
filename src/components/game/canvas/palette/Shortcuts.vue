@@ -30,7 +30,7 @@ const SHORTCUTS: Shortcut[] = [
 
 <template>
   <div v-if="!isTouch && shortcutsEnabled" class="tools-panel__shortcuts">
-    <Disclosure label="for the pros" aria-label="Keyboard shortcuts" block @pointerdown.stop>
+    <Disclosure label="Shortcuts" aria-label="Keyboard shortcuts" block @pointerdown.stop>
       <template #icon>
         <Keyboard :size="14" />
       </template>

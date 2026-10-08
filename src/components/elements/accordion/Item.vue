@@ -16,7 +16,7 @@ const open = computed(() => ctx?.openId.value === props.id)
 
 <template>
   <div class="accordion__item" :class="{ 'is-open': open, 'is-disabled': disabled }">
-    <h3 class="accordion__heading">
+    <h2 class="accordion__heading">
       <button
         :id="headId"
         type="button"
@@ -30,7 +30,7 @@ const open = computed(() => ctx?.openId.value === props.id)
         <span class="accordion__summary"><slot v-if="!open" name="summary" /></span>
         <ChevronDown v-if="!disabled" class="accordion__chevron" :size="18" aria-hidden="true" />
       </button>
-    </h3>
+    </h2>
     <div v-show="open" :id="bodyId" class="accordion__body" role="region" :aria-labelledby="headId">
       <slot />
     </div>

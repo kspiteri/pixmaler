@@ -162,6 +162,8 @@ useMusic(state, sessionClosed)
     :key="currentDialog.id"
     :message="currentDialog.message"
     :mode="currentDialog.mode"
+    :confirm-label="currentDialog.confirmLabel"
+    :cancel-label="currentDialog.cancelLabel"
     @confirm="settleDialog(true)"
     @cancel="settleDialog(false)"
   />

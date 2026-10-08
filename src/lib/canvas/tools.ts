@@ -169,7 +169,7 @@ export function buildBrushControls(pc: PixelCanvas): BrushHandle {
   function render() {
     const size = pc.getBrushSize()
     const max = pc.getBrushMax()
-    label.textContent = `brush: ${size}`
+    label.textContent = `Brush ${size}`
     // 0–1 thumb position for the track fill (see _slider.scss).
     slider.style.setProperty('--fill', String(max > 1 ? (size - 1) / (max - 1) : 0))
   }

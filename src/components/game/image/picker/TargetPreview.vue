@@ -57,7 +57,7 @@ onBeforeUnmount(() => { pc?.destroy(); pc = null })
     </p>
 
     <template v-if="result?.palette.length">
-      <span class="picker__palette-label">palette</span>
+      <span class="picker__palette-label">Palette</span>
       <ul class="picker__palette" aria-label="Derived palette">
         <li
           v-for="(hex, i) in result.palette"
