@@ -56,8 +56,10 @@
   }
 }
 
+// Shrinks and wraps before it pushes the chevron out of a narrow item.
 .accordion__title {
-  flex-shrink: 0;
+  min-width: 0;
+  text-align: left;
 }
 
 // Collapsed-state summary — the step's current value, quiet and right-aligned.
