@@ -27,7 +27,7 @@ const open = computed(() => ctx?.openId.value === props.id)
         @click="ctx?.toggle(id)"
       >
         <span class="accordion__title">{{ title }}</span>
-        <span v-if="!open" class="accordion__summary"><slot name="summary" /></span>
+        <span class="accordion__summary"><slot v-if="!open" name="summary" /></span>
         <ChevronDown v-if="!disabled" class="accordion__chevron" :size="18" aria-hidden="true" />
       </button>
     </h3>
