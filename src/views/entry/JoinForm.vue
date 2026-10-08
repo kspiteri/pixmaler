@@ -1,9 +1,10 @@
 <script setup lang="ts">
-// Entry's "I have a code" step: the room-code field, formatted as typed, checked for shape and
-// then against the server before `join` fires, with any miss shown under the field.
+// Entry's join row: the room-code field and its Join button, inline under the primary action.
+// The code is formatted as typed, checked for shape and then against the server before `join`
+// fires, with any miss shown under the field.
 
-import { ArrowLeft, ArrowRight, LoaderCircle } from '@lucide/vue'
-import { nextTick, onMounted, ref, useTemplateRef } from 'vue'
+import { ArrowRight, LoaderCircle } from '@lucide/vue'
+import { nextTick, ref, useTemplateRef } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import { announce, formatRoomInput, isRoomCode, roomExists } from '@/lib'
 
@@ -13,7 +14,6 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  back: []
   // `since` is when the press landed, so Entry can count the probe against the confirm morph.
   join: [room: string, since: number]
 }>()
@@ -24,8 +24,6 @@ const input = useTemplateRef<HTMLInputElement>('input')
 const error = ref<string | null>(null)
 // The existence probe is in flight; the field and Join are disabled until it settles.
 const checking = ref(false)
-
-onMounted(() => input.value?.focus())
 
 // The caret maps through the formatter by formatting the text before it, so a character
 // dropped mid-code doesn't throw the caret to the end.
@@ -78,29 +76,17 @@ async function submit() {
   const exists = await roomExists(room)
   checking.value = false
   if (!exists) {
-    fail(`No room called ${room.replace('-', '\u2011')}. This could be an old url from a previous game.`)
+    fail(`No room called ${room.replace('-', '\u2011')}. Check the code with whoever started the game.`)
     return
   }
   emit('join', room, since)
 }
-
-function back() {
-  if (!checking.value && !props.busy)
-    emit('back')
-}
 </script>
 
 <template>
-  <form class="entry__step" @submit.prevent="submit" @keydown.esc="back">
-    <Button variant="subtle" size="small" class="entry__back" @click="back">
-      <template #icon>
-        <ArrowLeft :size="16" aria-hidden="true" />
-      </template>
-      Back
-    </Button>
-
-    <div class="field">
-      <label class="label" for="entry-room-code">Room code</label>
+  <form class="entry__join" @submit.prevent="submit">
+    <label class="label" for="entry-room-code">Got a room code?</label>
+    <div class="entry__join-row">
       <input
         id="entry-room-code"
         ref="input"
@@ -118,25 +104,23 @@ function back() {
         @input="onInput"
         @compositionend="format($event.target as HTMLInputElement)"
       >
-      <p v-if="error" id="entry-code-error" class="entry__error">
-        {{ error }}
-      </p>
+      <Button
+        variant="secondary"
+        type="submit"
+        class="entry__join-btn"
+        :disabled="!code || checking || busy"
+        :aria-busy="checking || undefined"
+        :aria-label="checking ? 'Checking room code' : busy ? 'Joining room' : undefined"
+      >
+        <span class="entry__morph" :class="{ 'entry__morph--active': checking || busy }">
+          <span class="entry__morph-text">Join</span>
+          <LoaderCircle v-if="checking" class="entry__morph-icon entry__spinner" :size="20" aria-hidden="true" />
+          <ArrowRight v-else class="entry__morph-icon" :size="20" aria-hidden="true" />
+        </span>
+      </Button>
     </div>
-
-    <Button
-      variant="primary"
-      size="large"
-      block
-      type="submit"
-      :disabled="!code || checking || busy"
-      :aria-busy="checking || undefined"
-      :aria-label="checking ? 'Checking room code' : busy ? 'Joining room' : undefined"
-    >
-      <span class="entry__morph" :class="{ 'entry__morph--active': checking || busy }">
-        <span class="entry__morph-text">Join room</span>
-        <LoaderCircle v-if="checking" class="entry__morph-icon entry__spinner" :size="20" aria-hidden="true" />
-        <ArrowRight v-else class="entry__morph-icon" :size="20" aria-hidden="true" />
-      </span>
-    </Button>
+    <p v-if="error" id="entry-code-error" class="entry__error">
+      {{ error }}
+    </p>
   </form>
 </template>

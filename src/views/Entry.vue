@@ -1,29 +1,27 @@
 <script setup lang="ts">
-// Entry screen — pre-room landing: start a game, join one by code, or open the paint sandbox.
-// It asks no name; the room route's NameGate does when none is stored. Owns the one in-flight
-// navigation, so only one action can confirm at a time; its parts live in `entry/`.
+// Entry screen — pre-room landing: a framed Mona Lisa beside a player's attempt at it, then
+// start a game, join one by code, or open the paint sandbox. It asks no name; the room route's
+// NameGate does when none is stored. Owns the one in-flight navigation, so only one action can
+// confirm at a time; its parts live in `entry/`.
 
-import { ChevronRight, KeyRound, Palette, Play } from '@lucide/vue'
-import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
-import Button from '@/components/elements/Button.vue'
+import { ArrowRight, Play } from '@lucide/vue'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
 import Logo from '@/components/elements/Logo.vue'
 import Tagline from '@/components/elements/Tagline.vue'
+import { PixelThumb } from '@/components/game'
 import SettingsMenu from '@/components/layout/SettingsMenu.vue'
-import { appHref, roomHref, wordPair } from '@/lib'
+import { appHref, HERO_ATTEMPT, HERO_ORIGINAL, roomHref, wordPair } from '@/lib'
 import Door from './entry/Door.vue'
 import JoinForm from './entry/JoinForm.vue'
 
 type Action = 'create' | 'join' | 'free'
 
-const codeDoor = useTemplateRef<InstanceType<typeof Door>>('codeDoor')
-
-const joining = ref(false)
-// Lives here, not in JoinForm, so a typed code survives Back.
 const code = ref('')
 // Which action is mid-confirm, or null. Drives that control's label → icon morph.
 const confirming = ref<Action | null>(null)
 
 const sandboxHref = appHref('paint')
+const artRatio = `${HERO_ORIGINAL.gridW} / ${HERO_ORIGINAL.gridH}`
 
 // The confirm morph (label → icon) plays for this long before the full-page navigation unloads the page.
 const CONFIRM_MS = 420
@@ -36,12 +34,6 @@ function confirmNavigate(action: Action, href: string, since = Date.now()) {
   setTimeout(() => {
     location.href = href
   }, Math.max(0, CONFIRM_MS - (Date.now() - since)))
-}
-
-async function closeJoin() {
-  joining.value = false
-  await nextTick()
-  codeDoor.value?.focus()
 }
 
 // Free mode is a real route (an <a>), so honour modified clicks (open in a new tab); a plain
@@ -68,70 +60,65 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
     <SettingsMenu class="settings-menu--corner" />
 
     <div class="entry__stage">
-      <header class="entry__hero">
+      <header class="entry__brand">
         <Logo size="lg" />
         <Tagline class="entry__sub" />
       </header>
 
-      <div class="entry__panel">
-        <div class="entry__form">
-          <div v-if="!joining" class="entry__step">
-            <!-- `create=1` lets the room route open a room that doesn't exist yet. -->
-            <Door
-              title="Start a new game"
-              sub="you're the GM, friends join with your code"
-              :busy="confirming === 'create'"
-              :aria-label="confirming === 'create' ? 'Creating room' : undefined"
-              @click="confirmNavigate('create', roomHref(wordPair(), { create: true }))"
-            >
-              <template #icon>
-                <Play :size="22" aria-hidden="true" />
-              </template>
-            </Door>
-
-            <Door
-              ref="codeDoor"
-              title="I have a code"
-              sub="join a game someone else started"
-              @click="joining = true"
-            >
-              <template #icon>
-                <KeyRound :size="22" aria-hidden="true" />
-              </template>
-              <template #trailing>
-                <ChevronRight :size="20" aria-hidden="true" />
-              </template>
-            </Door>
+      <div
+        class="entry__wall"
+        role="img"
+        aria-label="A pixelated Mona Lisa, labelled leonardo, four years, hung beside a player's clumsy redraw, labelled you, two minutes"
+        :style="{ '--art-ratio': artRatio }"
+      >
+        <figure class="entry__piece entry__piece--original">
+          <div class="art-frame">
+            <PixelThumb class="art-surface" v-bind="HERO_ORIGINAL" />
           </div>
-
-          <JoinForm
-            v-else
-            v-model:code="code"
-            :busy="confirming === 'join'"
-            @back="closeJoin"
-            @join="(room, since) => confirmNavigate('join', roomHref(room), since)"
-          />
-
-          <div class="entry__divider">
-            <span class="entry__rule" />
-            <span class="entry__divider-text">or practice without a timer</span>
-            <span class="entry__rule" />
+          <figcaption class="entry__placard">
+            leonardo, four years
+          </figcaption>
+        </figure>
+        <figure class="entry__piece entry__piece--attempt">
+          <div class="art-frame">
+            <PixelThumb class="art-surface" v-bind="HERO_ATTEMPT" />
           </div>
+          <figcaption class="entry__placard">
+            probably yours, two minutes
+          </figcaption>
+        </figure>
+      </div>
 
-          <Button
-            variant="subtle"
-            size="small"
-            class="entry__free"
-            :href="sandboxHref"
-            :aria-label="confirming === 'free' ? 'Opening free mode' : undefined"
-            @click="enterSandbox"
-          >
-            <span class="entry__morph" :class="{ 'entry__morph--active': confirming === 'free' }">
-              <span class="entry__morph-text">Free mode</span>
-              <Palette class="entry__morph-icon" :size="16" aria-hidden="true" />
-            </span>
-          </Button>
-        </div>
+      <div class="entry__actions">
+        <!-- `create=1` lets the room route open a room that doesn't exist yet. -->
+        <Door
+          title="Start a new game"
+          sub="you're the GM, friends join with your code"
+          :busy="confirming === 'create'"
+          :aria-label="confirming === 'create' ? 'Creating room' : undefined"
+          @click="confirmNavigate('create', roomHref(wordPair(), { create: true }))"
+        >
+          <template #icon>
+            <Play :size="22" aria-hidden="true" />
+          </template>
+        </Door>
+
+        <JoinForm
+          v-model:code="code"
+          :busy="confirming === 'join'"
+          @join="(room, since) => confirmNavigate('join', roomHref(room), since)"
+        />
+
+        <a
+          class="entry__free"
+          :class="{ 'entry__free--busy': confirming === 'free' }"
+          :href="sandboxHref"
+          :aria-label="confirming === 'free' ? 'Opening Free mode' : undefined"
+          @click="enterSandbox"
+        >
+          Practise on your own in Free mode
+          <ArrowRight class="entry__free-arrow" :size="16" aria-hidden="true" />
+        </a>
       </div>
     </div>
   </div>

@@ -1,15 +1,12 @@
-@use 'chrome' as *;
-@use 'screen' as *;
 @use 'tokens' as *;
 @use 'wonk' as *;
 
-// Entry screen — an asymmetric hero/panel split so the first screen reads *placed*, not
-// centre-stacked. The pixel grid + vignette are the app-wide backdrop (`_backdrop.scss`).
-// Buttons, fields and the logo come from the shared partials.
+// Entry screen — the brand and actions on one side, a two-piece art wall on the other: the
+// pixelated original and a player's attempt hung crooked over it, which is the whole game in one
+// look. Stacks brand → wall → actions below `$bp-tablet`. The vignette is the app-wide backdrop.
 
-// The action panel's width — the desktop grid track and its stacked cap in one place, so it
-// stays a contained framed piece rather than stretching when the stage is single-column.
-$panel-w: 24rem;
+// The action column's width — the desktop grid track and its stacked cap in one place.
+$actions-w: 24rem;
 
 .entry {
   position: relative;
@@ -19,26 +16,35 @@ $panel-w: 24rem;
   display: flex;
   align-items: center;
   padding: clamp(1.5rem, 5vw, 4rem);
+
+  // Stacked, the column outgrows a phone and starts at the top, under the corner gear.
+  @media (max-width: $bp-mobile) {
+    padding-top: 4.5rem;
+  }
 }
 
-// The composition: a wide brand hero on the left, the action panel on the right. Centred as a
-// block, off the page centreline. Two-column only above `$bp-tablet` (its own max-width) — below
-// that the hero can't hold the wordmark beside the panel, so it stacks and centres.
 .entry__stage {
   width: 100%;
   max-width: $bp-tablet;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, $panel-w);
-  align-items: center;
-  gap: clamp(2rem, 6vw, 5rem);
+  grid-template-columns: minmax(0, 1fr) minmax(0, $actions-w);
+  grid-template-areas:
+    'wall brand'
+    'wall actions';
+  column-gap: clamp(2rem, 6vw, 5rem);
+  row-gap: $gap-5;
 
-  // Stacked, the asymmetry has no second column to lean against, so it just centres — the
-  // off-centre weighting is a wide-viewport statement, not a narrow-column one.
   @media (max-width: $bp-tablet) {
-    grid-template-columns: 1fr;
-    gap: $gap-6;
-    .entry__hero {
+    grid-template-columns: minmax(0, $actions-w);
+    grid-template-areas:
+      'brand'
+      'wall'
+      'actions';
+    justify-content: center;
+    row-gap: $gap-6;
+
+    .entry__brand {
       text-align: center;
 
       .wordmark {
@@ -48,10 +54,12 @@ $panel-w: 24rem;
   }
 }
 
-.entry__hero {
+.entry__brand {
+  grid-area: brand;
+  align-self: end;
   text-align: left;
 
-  // The lg wordmark centres itself by default; left-align it for the hero.
+  // The lg wordmark centres itself by default; left-align it beside the wall.
   .wordmark {
     justify-content: flex-start;
   }
@@ -62,40 +70,147 @@ $panel-w: 24rem;
   margin: $gap-3 0 0;
 }
 
-// The action panel — a framed "piece" on the wall, tilted by wonk(), straightening on focus.
-// A fixed width (the column, capped at $panel-w, frame included) so swapping steps or showing an
-// error never resizes it; on a phone the column is narrower than the cap, so it fills it.
-.entry__panel {
-  @include chrome;
-  box-sizing: border-box;
-  width: 100%;
-  max-width: $panel-w;
+// ── The art wall ─────────────────────────────────────────────────────────────
+// Both pieces share one grid cell: the original on the left two-thirds, the attempt on the right
+// half, overlapping it and dropped below its foot. Fixed tilts, never random (a re-render would
+// re-roll them); they read as hung by hand rather than as a layout.
+.entry__wall {
+  grid-area: wall;
+  align-self: center;
   justify-self: center;
-  // Re-dress the chrome border as the frame bevel (`--frame-*`, $frame-w) — Entry wears the
-  // gallery's frame vocabulary rather than `.art-frame` itself: a deliberate flourish, not the
-  // artefact role. The frame's own shades are near-white and wash out on the dark page, so the
-  // relief is deepened here toward `$ink-on-colour` (a dark shadow edge, bright lit foot) via
-  // color-mix — theme-aware, no new tokens. Near-square like a real frame; wonk() hangs it crooked.
-  border: $frame-w solid var(--frame-base);
-  border-top-color: color-mix(in oklab, var(--frame-base), $ink-on-colour 30%);
-  border-inline-color: color-mix(in oklab, var(--frame-base), $ink-on-colour 12%);
-  border-bottom-color: var(--frame-hi);
-  border-radius: 2px;
-  box-shadow: $shadow-1;
-  padding: clamp(1.25rem, 3vw, 2rem);
-  @include wonk($art: null);
+  width: min(100%, 26rem);
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  // Room for the attempt's drop and its placard, so it never sits on the actions below.
+  padding-bottom: 3.5rem;
+
+  @media (max-width: $bp-tablet) {
+    width: min(100%, 18rem);
+  }
+  @media (max-width: $bp-mobile) {
+    width: min(100%, 15rem);
+  }
 }
 
-.entry__form {
-  width: 100%;
+.entry__piece {
+  grid-row: 1;
+  margin: 0;
+
+  &--original {
+    grid-column: 1 / 9;
+    rotate: calc(-1 * #{$wonk-art});
+
+    // The attempt covers this piece's right quarter; the placard wraps rather than slide under it.
+    .entry__placard {
+      box-sizing: border-box;
+      max-width: 65%;
+    }
+  }
+
+  &--attempt {
+    z-index: 1;
+    grid-column: 7 / 13;
+    align-self: end;
+    translate: 0 3.5rem;
+    rotate: calc(2 * #{$wonk-art});
+  }
+}
+
+// A gallery placard under each frame — the flavour voice, so lowercase.
+.entry__placard {
+  display: inline-block;
+  margin-top: $gap-2;
+  padding: 0.125rem $gap-2;
+  border-radius: $radius-sm;
+  background: none;
+  color: $muted;
+  font-size: $fs-xs;
+}
+
+// ── Actions ──────────────────────────────────────────────────────────────────
+.entry__actions {
+  grid-area: actions;
+  align-self: start;
   display: flex;
   flex-direction: column;
-  gap: $gap-4;
+  gap: $gap-5;
 }
 
+// The primary choice is two lines: the loud title, then a quiet body-voice line under it.
+.entry__door {
+  justify-content: flex-start;
+  text-align: left;
+
+  .entry__morph-text {
+    justify-self: start;
+  }
+}
+.entry__door-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+.entry__door-sub {
+  font-family: $font-body;
+  font-weight: $fw-medium;
+  letter-spacing: normal;
+  font-size: $fs-sm;
+}
+
+.entry__join-row {
+  display: flex;
+  gap: $gap-2;
+}
+.entry__code {
+  flex: 1;
+  min-width: 0;
+
+  &[aria-invalid='true'] {
+    border-color: $danger-ink;
+  }
+}
+.entry__join-btn {
+  flex-shrink: 0;
+}
+.entry__error {
+  margin: $gap-2 0 0;
+  color: $danger-ink;
+  font-size: $fs-sm;
+}
+
+.entry__free {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: $gap-1;
+  color: $muted;
+  font-size: $fs-sm;
+  text-decoration: underline;
+  text-decoration-color: $border;
+  text-underline-offset: 0.25em;
+  transition: color 0.15s;
+
+  &:hover {
+    color: $fg;
+    text-decoration-color: currentColor;
+  }
+
+  @media (max-width: $bp-tablet) {
+    align-self: center;
+  }
+}
+.entry__free-arrow {
+  transition: translate 0.15s;
+}
+.entry__free:hover .entry__free-arrow,
+.entry__free--busy .entry__free-arrow {
+  translate: 3px 0;
+}
+
+// ── Confirm morph ────────────────────────────────────────────────────────────
 // The entry actions confirm with a label → icon morph before their full-page navigation: a tick
-// on create, a forward arrow on the secondary actions, a spinner while Join checks the code. The
-// label and icon are grid-stacked (same cell) so the button keeps its width as they cross-fade.
+// on create, a forward arrow on Join, a spinner while Join checks the code. The label and icon
+// are grid-stacked (same cell) so the button keeps its width as they cross-fade.
 .entry__morph {
   display: inline-grid;
   place-items: center;
@@ -130,10 +245,11 @@ $panel-w: 24rem;
   }
 }
 
-// Reduced motion: no cross-fade, and the spinner pulses instead of turning.
+// Reduced motion: no cross-fade or nudge, and the spinner pulses instead of turning.
 @media (prefers-reduced-motion: reduce) {
   .entry__morph-text,
-  .entry__morph-icon {
+  .entry__morph-icon,
+  .entry__free-arrow {
     transition: none;
   }
   .entry__spinner {
@@ -144,67 +260,4 @@ $panel-w: 24rem;
   50% {
     opacity: 0.3;
   }
-}
-
-.entry__divider {
-  display: flex;
-  align-items: center;
-  gap: $gap-3;
-}
-
-.entry__step {
-  display: flex;
-  flex-direction: column;
-  gap: $gap-4;
-}
-
-// A door is a two-line choice: the loud title, then a quiet body-voice line under it.
-.entry__door {
-  justify-content: flex-start;
-  text-align: left;
-
-  .entry__morph-text {
-    justify-self: start;
-  }
-}
-.entry__door-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.125rem;
-}
-.entry__door-sub {
-  font-family: $font-body;
-  font-weight: $fw-regular;
-  letter-spacing: normal;
-  font-size: $fs-sm;
-  opacity: 0.8;
-}
-
-.entry__back {
-  align-self: flex-start;
-}
-.entry__code {
-  padding: 1rem;
-
-  &[aria-invalid='true'] {
-    border-color: $danger-ink;
-  }
-}
-.entry__error {
-  margin: $gap-2 0 0;
-  color: $danger-ink;
-  font-size: $fs-sm;
-}
-.entry__rule {
-  flex: 1;
-  height: 1px;
-  background: $border;
-}
-.entry__divider-text {
-  color: $fg-25;
-  font-size: $fs-xs;
-}
-
-.entry__free {
-  align-self: center;
 }
