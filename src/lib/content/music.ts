@@ -3,9 +3,9 @@ import { asset } from '../assets'
 import { MUSIC_TRACK_IDS } from '../protocol/types'
 
 // Background-music manifest: id → label + category, keyed off the DOM-free MUSIC_TRACK_IDS the
-// server validates against, so the two can't drift. Category is both the subfolder the file lives
-// under (public/assets/audio/music/<category>, no CDN) and the dropdown group. Credit is in
-// LICENSE.md and the in-app Credits page — CC-BY requires a visible credit.
+// server validates against, so the two can't drift. Category is the dropdown group, and its
+// lowercase form the subfolder the file lives under (public/assets/audio/music/<category>, no
+// CDN). Credit is in LICENSE.md and the in-app Credits page — CC-BY requires a visible credit.
 
 export type MusicCategory = 'Upbeat' | 'Classical'
 
@@ -32,9 +32,10 @@ export const MUSIC_TRACKS: MusicTrack[] = MUSIC_TRACK_IDS.map(id => ({
   category: TRACKS[id].category,
 }))
 
-/** Resolve a track id to its asset URL (files live under the category subfolder). */
+/** Resolve a track id to its asset URL (files live under the lowercase category subfolder). */
 export function trackSrc(id: MusicTrackId): string {
-  return asset(`assets/audio/music/${TRACKS[id].category}/${id}.webm`)
+  // Lowercase, not the display label: a miscased path gets index.html back and plays as silence.
+  return asset(`assets/audio/music/${TRACKS[id].category.toLowerCase()}/${id}.webm`)
 }
 
 /** The display label for a track id. */
