@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.13.0](https://github.com/kspiteri/pixmaler/compare/0.12.0...0.13.0) (2026-10-09)
+
+
+### New
+
+* **audio:** add classical music tracks ([39688d0](https://github.com/kspiteri/pixmaler/commit/39688d0ffc4249db3d15ae822d1534f76e013534))
+* **disclosure:** add `variant="link"` for inline help styling ([e21d0ce](https://github.com/kspiteri/pixmaler/commit/e21d0ceb5cfa4f21ae9ca3f934b8de9ac1d6198e))
+* **music:** add error handling for track failures and controls state ([5ac2646](https://github.com/kspiteri/pixmaler/commit/5ac2646825a31ece22c16da0c3cc7c67020b9869))
+* **music:** enhance MusicWidget with error handling and mobile popover ([79ed32d](https://github.com/kspiteri/pixmaler/commit/79ed32d11844fcabc43c75522440d40e0ad8cdbb))
+* **slider:** add neutral mode and customizable fill color ([e1bd8c6](https://github.com/kspiteri/pixmaler/commit/e1bd8c6036743e5da314c8deb6b480a5be622ae6))
+
+
+### Fixes
+
+* **paint:** update settings panel scroll ([25168e0](https://github.com/kspiteri/pixmaler/commit/25168e0644ec67d7b7356ced00f0192290782a90))
+* **picker:** improve readability of controls ([649c8b1](https://github.com/kspiteri/pixmaler/commit/649c8b199db1d39b88fc5587443b624f50de6b09))
+
+
+### Under the hood
+
+* **deps:** bump the github-actions group across 1 directory with 7 updates ([1fb5fe9](https://github.com/kspiteri/pixmaler/commit/1fb5fe96ee6f7ea72ba8762e3a9ad99ec5540ea1))
+* **deps:** bump typescript from 5.9.3 to 6.0.3 ([7d81a51](https://github.com/kspiteri/pixmaler/commit/7d81a5109038f66ec5f61c6ac194eb5073f08239))
+
 ## [0.12.0](https://github.com/kspiteri/pixmaler/compare/0.11.0...0.12.0) (2026-10-08)
 
 
