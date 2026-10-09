@@ -91,13 +91,35 @@ let musicId: number | undefined
 export const currentTrack = ref<MusicTrackId | null>(null)
 export const musicPaused = ref(false)
 export const musicVolume = ref(MUSIC_VOLUME)
+// The track that last failed to load; cleared when a track plays or the music stops.
+export const musicError = ref<MusicTrackId | null>(null)
+// Whether the widget's song + volume panel is open; session-only, shared across phase headers.
+export const musicControlsOpen = ref(false)
 
 /** Play a streamed, looping track, fading in from silence. Gated on the `music` toggle. */
 export function playMusic(track: MusicTrackId, { fadeMs = MUSIC_FADE_MS } = {}): void {
   if (!music.value)
     return
   stopMusic({ fadeMs: 0 })
-  const howl = new Howl({ src: [trackSrc(track)], html5: true, loop: true, volume: 0 })
+  const howl: Howl = new Howl({
+    src: [trackSrc(track)],
+    html5: true,
+    loop: true,
+    volume: 0,
+    onloaderror: () => {
+      if (howl !== musicHowl)
+        return
+      stopMusic({ fadeMs: 0 })
+      musicError.value = track
+    },
+    // An autoplay lock refuses the first play; Howler fires 'unlock' on the next gesture.
+    onplayerror: () => {
+      howl.once('unlock', () => {
+        if (howl === musicHowl && !musicPaused.value)
+          howl.play(musicId)
+      })
+    },
+  })
   musicHowl = howl
   currentTrack.value = track
   musicPaused.value = false
@@ -109,6 +131,7 @@ export function playMusic(track: MusicTrackId, { fadeMs = MUSIC_FADE_MS } = {}):
 export function stopMusic({ fadeMs = MUSIC_FADE_MS } = {}): void {
   const howl = musicHowl
   const id = musicId
+  musicError.value = null
   if (!howl)
     return
   musicHowl = null
