@@ -81,8 +81,20 @@ export interface RenameMsg {
 
 // Background-music track ids. A runtime array like AVATAR_SHAPES: the server validates
 // `config.musicTrack` against it, and the client keys its asset manifest off it. The id →
-// file/label manifest lives client-side in `lib/content/music`, keyed by these ids.
-export const MUSIC_TRACK_IDS = ['blue-ska', 'cheery-monday', 'rocket-power', 'the-builder', 'the-show-must-be-go'] as const
+// label/category/credit manifest lives client-side in `lib/content/music`, keyed by these ids.
+export const MUSIC_TRACK_IDS = [
+  'blue-ska',
+  'cheery-monday',
+  'rocket-power',
+  'the-builder',
+  'the-show-must-be-go',
+  'boccherini-minuet',
+  'offenbach-can-can',
+  'tchaikovsky-piano-concerto-1',
+  'mozart-eine-kleine-nachtmusik',
+  'rossini-william-tell',
+  'grieg-mountain-king',
+] as const
 export type MusicTrackId = typeof MUSIC_TRACK_IDS[number]
 
 // The single music-track validator; both sides import it. Clamps an unknown or unlisted value

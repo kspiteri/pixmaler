@@ -6,11 +6,10 @@
 // privacy notice is a data-minimisation nudge.
 
 import { onMounted, useTemplateRef } from 'vue'
-import { activeInfo, closeInfo, MUSIC_TRACKS } from '@/lib'
+import { activeInfo, closeInfo, MUSIC_CREDIT_GROUPS } from '@/lib'
 import Button from './Button.vue'
 
 const dialogEl = useTemplateRef<HTMLDialogElement>('dialogEl')
-const musicTitles = MUSIC_TRACKS.map(t => `“${t.label}”`).join(', ')
 
 onMounted(() => dialogEl.value?.showModal())
 
@@ -70,14 +69,11 @@ function onBackdrop(e: MouseEvent) {
         <h3 class="info-modal__heading">
           Music
         </h3>
-        <p>{{ musicTitles }}</p>
-        <p>Kevin MacLeod (<a href="https://incompetech.com" target="_blank" rel="noopener">incompetech.com</a>)</p>
-        <p>Licensed under Creative Commons: By Attribution 4.0</p>
-        <p>
-          <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">
-            creativecommons.org/licenses/by/4.0/
-          </a>
-        </p>
+        <div v-for="g in MUSIC_CREDIT_GROUPS" :key="g.id" class="info-modal__credit">
+          <p>{{ g.titles.join(', ') }}</p>
+          <p>{{ g.credit.artist }} (<a :href="g.credit.sourceUrl" target="_blank" rel="noopener">{{ g.credit.source }}</a>)</p>
+          <p><a :href="g.credit.licenceUrl" target="_blank" rel="noopener">{{ g.credit.licence }}</a></p>
+        </div>
       </section>
     </template>
 

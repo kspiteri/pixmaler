@@ -138,11 +138,11 @@ test/           # Vitest suites, with the shared fake RoomCtx in test/support/
 
 Bundled assets and their obligations live in [`LICENSE.md`](./LICENSE.md):
 
-- **Music** — Kevin MacLeod, **CC-BY 4.0**. The one that needs a *visible* credit, so it's shown in-app under **Credits** in the settings menu (per incompetech's FAQ, a game's credits screen satisfies it). Tracks are self-hosted webm/Opus under `public/assets/audio/music/`, transcoded from source with `ffmpeg` (gapless + small); no CDN (#44).
+- **Music** — self-hosted webm/Opus under `public/assets/audio/music/<category>/` (transcoded with `ffmpeg`, no CDN), in two dropdown groups: **upbeat** (Kevin MacLeod, **CC-BY 4.0**) and **classical** (Gregor Quendel — the classicals.de tracks are **CC BY-NC 4.0**, the Pixabay tracks the **Pixabay Content License**). CC-BY and CC BY-NC both need a *visible* credit, so every track is listed in-app under **Credits** in the settings menu, grouped by source (a game's credits screen is reasonable-manner attribution under CC 4.0; incompetech's FAQ confirms it for MacLeod). Note the **NonCommercial** classical tracks keep the bundle non-commercial — swap them for a commercial licence before any commercial use.
 - **Fonts** — Fredoka, Space Grotesk, Plus Jakarta Sans under **SIL OFL 1.1**: ship the licence with the fonts, no in-app credit required.
 - **Dependencies + Lucide icons** — MIT/ISC: retain the notices (kept in `LICENSE.md`).
 
-Adding an asset with an attribution or notice obligation? Record it in `LICENSE.md`; only if its licence needs a *visible* credit (CC-BY does; OFL/MIT/ISC don't) also add it to the Credits modal (`InfoModal.vue`).
+Adding an asset with an attribution or notice obligation? Record it in `LICENSE.md`; only if its licence needs a *visible* credit (CC-BY and CC BY-NC do; OFL/MIT/ISC don't) also add it to the Credits modal (`InfoModal.vue`).
 
 ## Submitting changes
 

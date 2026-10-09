@@ -45,4 +45,4 @@ Both are needed to play; the `/paint` sandbox needs only `pnpm dev`. Set `VITE_P
 
 ## Licences
 
-Third-party assets are recorded in [`LICENSE.md`](./LICENSE.md): the background music (Kevin MacLeod, **CC-BY 4.0**), the self-hosted fonts (**SIL OFL 1.1**) and the bundled dependencies (MIT/ISC). The music credit is also shown in-app, under **Credits** in the settings menu — CC-BY requires a visible attribution.
+Third-party assets are recorded in [`LICENSE.md`](./LICENSE.md): the background music (upbeat by Kevin MacLeod, **CC-BY 4.0**; classical by Gregor Quendel, **CC BY-NC 4.0** via classicals.de and the **Pixabay Content License**), the self-hosted fonts (**SIL OFL 1.1**) and the bundled dependencies (MIT/ISC). Every track's credit is shown in-app under **Credits** in the settings menu, grouped by source — CC-BY and CC BY-NC both require a visible attribution.

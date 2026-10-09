@@ -53,6 +53,22 @@
     }
   }
 
+  &__credit {
+    @include chrome($rung: $radius-sm);
+    padding: $gap-2;
+    background: $fg-20;
+
+    p {
+      margin: 0;
+    }
+    p + p {
+      margin-top: $gap-1;
+    }
+    & + & {
+      margin-top: $gap-3;
+    }
+  }
+
   // The dialog's one action, at the trailing edge like AlertDialog's.
   &__close {
     display: flex;

@@ -4,10 +4,26 @@ Third-party assets and dependencies bundled in Pixmaler and their licences.
 
 ## Music
 
+### Upbeat
+
 "Blue Ska", "Cheery Monday", "Rocket Power", "The Builder", "The Show Must Be Go"
 Kevin MacLeod (incompetech.com)
 Licensed under Creative Commons: By Attribution 4.0
 http://creativecommons.org/licenses/by/4.0/
+
+### Classical
+
+Recorded, produced and published by Gregor Quendel. Transcoded to webm/Opus for the web; no other changes.
+
+"Boccherini: Minuet", "Offenbach: Can-can", "Tchaikovsky: Piano Concerto No. 1"
+via classicals.de (https://www.classicals.de)
+Licensed under Creative Commons: Attribution-NonCommercial 4.0
+https://creativecommons.org/licenses/by-nc/4.0/
+
+"Mozart: Eine kleine Nachtmusik", "Rossini: William Tell", "Grieg: In the Hall of the Mountain King"
+via Pixabay (GregorQuendel)
+Pixabay Content License
+https://pixabay.com/service/license-summary/
 
 ## Fonts
 
