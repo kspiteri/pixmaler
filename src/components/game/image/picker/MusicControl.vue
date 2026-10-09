@@ -5,11 +5,13 @@
 
 import type { MusicTrackId } from '@/lib'
 import { ChevronDown } from '@lucide/vue'
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 import { MUSIC_CATEGORIES, MUSIC_TRACKS } from '@/lib'
 
 defineProps<{ modelValue: MusicTrackId | null }>()
 const emit = defineEmits<{ 'update:modelValue': [value: MusicTrackId | null] }>()
+
+const selectId = useId()
 
 function onChange(e: Event) {
   const v = (e.target as HTMLSelectElement).value
@@ -25,10 +27,12 @@ const groups = computed(() =>
 </script>
 
 <template>
-  <label class="picker__setting">
-    <span class="picker__setting-label">Music</span>
+  <div class="picker__field">
+    <div class="picker__field-head">
+      <label :for="selectId" class="picker__field-label">Music</label>
+    </div>
     <div class="picker__select">
-      <select class="picker__select-input" :value="modelValue ?? ''" aria-label="Background music" @change="onChange">
+      <select :id="selectId" class="picker__select-input" :value="modelValue ?? ''" aria-label="Background music" @change="onChange">
         <option value="">
           None
         </option>
@@ -40,5 +44,5 @@ const groups = computed(() =>
       </select>
       <ChevronDown class="picker__select-chevron" :size="16" aria-hidden="true" />
     </div>
-  </label>
+  </div>
 </template>

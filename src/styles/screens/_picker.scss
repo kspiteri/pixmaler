@@ -2,12 +2,15 @@
 @use 'chrome' as *;
 
 // ImagePicker — a persistent target preview + a single-open accordion of steps (Image →
-// Framing → Look → Timer), shared by the Lobby's GM controls and the /paint sandbox. Static and
-// unscoped, so the preview reaches its imperatively-appended canvas with plain selectors.
+// Adjust target → Game settings), shared by the Lobby's GM controls and the /paint sandbox. Static
+// and unscoped, so the preview reaches its imperatively-appended canvas with plain selectors.
+
+// The shared width every slider and select is capped to; segmented groups keep their own.
+$measure: 20rem;
 
 .picker {
   display: flex;
-  align-items: flex-start;
+  align-items: stretch;
   gap: $gap-5;
 
   // Left column: the accordion of steps, plus any source-loading error above it.
@@ -27,6 +30,10 @@
     flex-direction: column;
     gap: $gap-3;
     align-items: flex-start;
+    // Stays in view while the steps scroll past it (desktop; the phone layout stacks).
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
   }
   // "Next step" button, tail of an accordion step body.
   &__next {
@@ -41,26 +48,92 @@
     gap: $gap-4;
   }
 
-  // ── Settings card ─────────────────────────────────────────────────────────
-  &__setting {
+  // ── Groups and fields ─────────────────────────────────────────────────────
+  // A step body holds headed groups of fields; a field is a label line, the control, then an
+  // optional caption. Spacing tiers: 8px inside a field, 16px between fields, 32px between groups.
+  &__group {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: $gap-4;
 
-    &--inline {
-      gap: $gap-2;
+    & + & {
+      margin-top: $gap-6 - $gap-4;
+      padding-top: $gap-5;
+      border-top: 1px solid $border-soft;
     }
   }
-  &__setting-label {
-    color: $fg-60;
+  &__group-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: $gap-4;
+  }
+  &__group-title {
+    margin: 0;
+    color: $fg;
+    font-family: $font-display;
     font-size: $fs-sm;
-    flex-shrink: 0;
+    font-weight: $fw-semibold;
+  }
+  &__field {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $gap-2;
+    padding: 0 0 $gap-1 $gap-2;
+    border-left: 1px solid $border-soft;
+    &:hover {
+      border-color: $accent-ink;
+    }
+  }
+  &__field-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: $gap-3;
+    width: 100%;
+    max-width: $measure;
+  }
+  // Medium, not semibold: the body face at 14px out-sizes Fredoka, so a heavier label would outrank its group title.
+  &__field-label {
+    color: $fg-80;
+    font-size: $fs-sm;
+    font-weight: $fw-medium;
+  }
+  // Value readout on the label line; a reserved width keeps a changing value from twitching it.
+  &__field-value {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: $gap-1;
+    min-width: 7rem;
+    color: $muted;
+    font-size: $fs-sm;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  &__field-control {
+    width: 100%;
+    max-width: $measure;
+  }
+  &__field-hint {
+    margin: 0;
+    color: $fg-50;
+    font-size: $fs-xs;
+    line-height: $lh-snug;
+  }
+  &__custom-time {
+    display: flex;
+    align-items: center;
+    gap: $gap-2;
+    color: $fg-50;
+    font-size: $fs-sm;
   }
   // Music picker: a styled native <select> (OS arrow off, lucide chevron overlaid).
   &__select {
     position: relative;
-    flex: 1;
-    min-width: 0;
+    width: 100%;
+    max-width: $measure;
     display: flex;
   }
   &__select-input {
@@ -84,11 +157,6 @@
     translate: 0 -50%;
     color: $fg-50;
     pointer-events: none;
-  }
-  &__style {
-    display: flex;
-    flex-direction: column;
-    gap: $gap-2;
   }
   &__style-help {
     @include chrome($rung: $radius);
@@ -118,27 +186,6 @@
   &__style-note {
     margin: 0;
     color: $fg-50;
-  }
-  // Readout: "12 → 40×60" plus the busy spinner. Right-aligned in a reserved slot
-  // so digit-count changes don't resize the slider beside it.
-  &__scale-out {
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: $gap-1;
-    flex-shrink: 0;
-    min-width: 7rem;
-  }
-  &__scale-val {
-    // Space Grotesk, not the display face — a value to be read precisely.
-    font-family: $font-alert;
-    font-weight: $fw-bold;
-    white-space: nowrap;
-  }
-  &__scale-grid {
-    color: $fg-60;
-    font-size: $fs-xs;
-    white-space: nowrap;
   }
   &__spinner {
     color: $muted;
@@ -237,10 +284,6 @@
     flex-direction: column;
     gap: $gap-2;
   }
-  &__samples-label {
-    color: $fg-60;
-    font-size: $fs-sm;
-  }
   &__sample-list {
     list-style: none;
     margin: 0;
@@ -291,19 +334,8 @@
   &__crop {
     display: flex;
     flex-direction: column;
-    gap: $gap-2;
+    gap: $gap-4;
   }
-  // Label and shape control sit as one pair, matching the Colours row above —
-  // the crop is a setting in the settings card, so it should read like the rest
-  // of them. Deliberately not `space-between`: that pushed the buttons to the far
-  // edge of the card, where they read as unrelated to the word "Framing".
-  &__crop-head {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: $gap-2;
-  }
-  &__crop-hint,
   &__source-hint {
     margin: 0;
     color: $fg-60;
@@ -355,26 +387,6 @@
     pointer-events: none;
   }
 
-  &__crop-zoom {
-    display: flex;
-    align-items: center;
-    gap: $gap-2;
-    max-width: 240px;
-
-    input {
-      flex: 1;
-      min-width: 0;
-    }
-  }
-  &__crop-zoom-val {
-    flex: 0 0 auto;
-    min-width: 3.5ch;
-    color: $fg-60;
-    font-size: $fs-xs;
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-  }
-
   // ── Messages + preview ────────────────────────────────────────────────────
   // A tinted card, not just orange text, so it reads as an alert at a glance.
   &__warn {
@@ -412,7 +424,7 @@
     }
 
     canvas {
-      max-width: 95% !important;
+      max-width: 95%;
       height: auto;
       border-radius: $radius-sm;
       border: 1px solid $border;
@@ -430,6 +442,18 @@
     flex-direction: column;
     align-items: flex-start;
     gap: $gap-2;
+  }
+  // Mobile-only mini preview beside the Look heading, so a change stays in view on a phone.
+  &__preview-area--compact {
+    flex-shrink: 0;
+    align-items: flex-end;
+    gap: $gap-1;
+
+    .picker__preview canvas {
+      max-width: 7rem;
+      max-height: 6rem;
+      width: auto;
+    }
   }
   // Names the swatch strip below the preview, in the same voice as the "Target" label above it.
   &__palette-label {
@@ -456,6 +480,10 @@
 @media (max-width: $bp-mobile) {
   .picker {
     flex-direction: column;
+  }
+  .picker__status {
+    position: static;
+    align-self: auto;
   }
 }
 

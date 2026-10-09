@@ -14,8 +14,10 @@ const OPTIONS = CLASSIC_BASE.map(({ name, rgb }) => ({ name, hex: rgbToHex(...rg
 </script>
 
 <template>
-  <div class="picker__setting picker__setting--inline">
-    <span :id="labelId" class="picker__setting-label">Alpha colour</span>
+  <div class="picker__field">
+    <div class="picker__field-head">
+      <span :id="labelId" class="picker__field-label">Alpha colour</span>
+    </div>
     <div class="picker__bg-list" role="group" :aria-labelledby="labelId">
       <button
         v-for="opt in OPTIONS"

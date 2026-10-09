@@ -5,9 +5,9 @@
 // Emits shape/crop via v-model; the picker reprocesses off those.
 
 import type { CropSelection, TargetRatioId } from '@/lib'
-import { computed, useTemplateRef } from 'vue'
+import { computed, useId, useTemplateRef } from 'vue'
 import Slider from '@/components/elements/Slider.vue'
-import { CROP_MIN_ZOOM, cropRect, TARGET_RATIO_IDS, TARGET_RATIOS } from '@/lib'
+import { CROP_MIN_ZOOM, cropRect, isTouch, TARGET_RATIO_IDS, TARGET_RATIOS } from '@/lib'
 
 const props = defineProps<{
   naturalDims: { w: number, h: number } | null
@@ -41,6 +41,15 @@ const cropMovable = computed(() => {
   return sw < dims.w || sh < dims.h
 })
 
+const hint = computed(() => {
+  if (!cropMovable.value)
+    return 'This shape uses the whole image.'
+  return isTouch.value ? 'Drag the frame to reframe.' : 'Drag, or use the arrow keys, to reframe.'
+})
+
+const shapeId = useId()
+const zoomId = useId()
+const zoomPercent = computed(() => Math.round(crop.value.zoom * 100))
 const cropFrame = useTemplateRef<HTMLElement>('cropFrame')
 
 function onCropPointerDown(e: PointerEvent) {
@@ -104,10 +113,12 @@ function onCropKeyDown(e: KeyboardEvent) {
 
 <template>
   <div class="picker__crop">
-    <div class="picker__crop-head">
-      <span id="picker-ratio" class="picker__setting-label">Framing</span>
+    <div class="picker__field">
+      <div class="picker__field-head">
+        <span :id="shapeId" class="picker__field-label">Shape</span>
+      </div>
       <!-- Preselected from the image's own proportions; an override, not a required step. -->
-      <div class="segmented" role="group" aria-labelledby="picker-ratio">
+      <div class="segmented" role="group" :aria-labelledby="shapeId">
         <button
           v-for="id in TARGET_RATIO_IDS"
           :key="id"
@@ -123,43 +134,48 @@ function onCropKeyDown(e: KeyboardEvent) {
       </div>
     </div>
 
-    <!-- The frame is the interactive element, so it takes the tabindex and keyboard handler;
-         the overlay and window inside it are decoration. -->
-    <div
-      ref="cropFrame"
-      class="picker__crop-frame"
-      :class="{ 'is-static': !cropMovable }"
-      :tabindex="cropMovable ? 0 : -1"
-      role="application"
-      :aria-label="`Framing: ${TARGET_RATIOS[ratio].label}. Arrow keys reframe.`"
-      @pointerdown="onCropPointerDown"
-      @pointermove="onCropPointerMove"
-      @keydown="onCropKeyDown"
-    >
-      <!-- Tinted with the chosen background so a transparent upload previews as it's sampled. -->
-      <img
-        class="picker__crop-img"
-        :src="sourceUrl"
-        :style="{ background }"
-        :alt="`${sourceLabel}, full frame`"
+    <div class="picker__field">
+      <!-- The frame is the interactive element, so it takes the tabindex and keyboard handler;
+           the overlay and window inside it are decoration. -->
+      <div
+        ref="cropFrame"
+        class="picker__crop-frame"
+        :class="{ 'is-static': !cropMovable }"
+        :tabindex="cropMovable ? 0 : -1"
+        role="application"
+        :aria-label="`Framing: ${TARGET_RATIOS[ratio].label}. Arrow keys reframe.`"
+        @pointerdown="onCropPointerDown"
+        @pointermove="onCropPointerMove"
+        @keydown="onCropKeyDown"
       >
-      <div class="picker__crop-shade" />
-      <div v-if="cropBox" class="picker__crop-window" :style="cropBox" />
+        <!-- Tinted with the chosen background so a transparent upload previews as it's sampled. -->
+        <img
+          class="picker__crop-img"
+          :src="sourceUrl"
+          :style="{ background }"
+          :alt="`${sourceLabel}, full frame`"
+        >
+        <div class="picker__crop-shade" />
+        <div v-if="cropBox" class="picker__crop-window" :style="cropBox" />
+      </div>
+      <p class="picker__field-hint">
+        {{ hint }}
+      </p>
     </div>
 
-    <label class="picker__crop-zoom">
-      <span class="picker__sr">Crop size</span>
+    <div class="picker__field">
+      <div class="picker__field-head">
+        <label :for="zoomId" class="picker__field-label">Crop size</label>
+        <span class="picker__field-value">{{ zoomPercent }}%</span>
+      </div>
       <Slider
-        :model-value="Math.round(crop.zoom * 100)"
+        :id="zoomId"
+        class="picker__field-control"
+        :model-value="zoomPercent"
         :min="Math.round(CROP_MIN_ZOOM * 100)"
         :max="100"
         @update:model-value="onCropZoom"
       />
-      <span class="picker__crop-zoom-val">{{ Math.round(crop.zoom * 100) }}%</span>
-    </label>
-
-    <p class="picker__crop-hint">
-      {{ cropMovable ? 'Drag, or use the arrow keys, to reframe.' : 'This shape uses the whole image.' }}
-    </p>
+    </div>
   </div>
 </template>

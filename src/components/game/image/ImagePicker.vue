@@ -7,11 +7,11 @@
 
 import type { CropSelection, MusicTrackId, PickerMeta, PickerSettings, PipelineResult, PixelationStyle, RoundConfig, TargetRatioId } from '@/lib'
 import { ChevronDown, Trash2 } from '@lucide/vue'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import Accordion from '@/components/elements/accordion/Accordion.vue'
 import AccordionItem from '@/components/elements/accordion/Item.vue'
 import Button from '@/components/elements/Button.vue'
-import { asset, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_PIXELATION_STYLE, DEFAULT_RATIO, DEFAULT_SCALE, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, nearestRatioFor, processImage, quantiserFor, TARGET_RATIOS, trackLabel, unsupportedImage } from '@/lib'
+import { asset, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_PIXELATION_STYLE, DEFAULT_RATIO, DEFAULT_SCALE, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, nearestRatioFor, processImage, quantiserFor, TARGET_RATIOS, trackLabel, unsupportedImage, useAppLayout } from '@/lib'
 import AlphaControl from './picker/AlphaControl.vue'
 import ColourControl from './picker/ColourControl.vue'
 import CropWidget from './picker/CropWidget.vue'
@@ -78,6 +78,9 @@ const sourceLabel = ref('')
 const openStep = ref<string | null>('source')
 // Restored settings with no image behind them (an upload, or a sample that failed to load).
 const restoredOnly = ref(false)
+const { isMobile } = useAppLayout()
+const framingId = useId()
+const lookId = useId()
 
 const samples: { name: SampleName, label: string }[] = [
   { name: 'monalisa', label: 'Mona Lisa' },
@@ -434,18 +437,31 @@ onBeforeUnmount(() => {
           <template #summary>
             {{ adjustSummary }}
           </template>
-          <CropWidget
-            v-model:ratio="ratio"
-            v-model:crop="crop"
-            :natural-dims="naturalDims"
-            :source-url="sourceUrl"
-            :source-label="sourceLabel"
-            :background="background"
-          />
-          <PixelationStyleControl v-model="pixelationStyle" />
-          <DetailControl v-model="scale" :grid-preview="gridPreview" :busy="busy" />
-          <ColourControl v-model="colorCount" />
-          <AlphaControl v-if="hasAlpha" v-model="background" />
+          <section class="picker__group" :aria-labelledby="framingId">
+            <h3 :id="framingId" class="picker__group-title">
+              Framing
+            </h3>
+            <CropWidget
+              v-model:ratio="ratio"
+              v-model:crop="crop"
+              :natural-dims="naturalDims"
+              :source-url="sourceUrl"
+              :source-label="sourceLabel"
+              :background="background"
+            />
+          </section>
+          <section class="picker__group" :aria-labelledby="lookId">
+            <div class="picker__group-head">
+              <h3 :id="lookId" class="picker__group-title">
+                Look
+              </h3>
+              <TargetPreview v-if="showPreview && isMobile && previewResult" compact :result="previewResult" :busy="busy" :warn="false" />
+            </div>
+            <PixelationStyleControl v-model="pixelationStyle" />
+            <DetailControl v-model="scale" :grid-preview="gridPreview" :busy="busy" />
+            <ColourControl v-model="colorCount" />
+            <AlphaControl v-if="hasAlpha" v-model="background" />
+          </section>
           <div v-if="stepAfter('adjust')" class="picker__next">
             <Button variant="secondary" size="small" @click="openStep = stepAfter('adjust')">
               Next step

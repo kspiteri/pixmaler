@@ -17,8 +17,10 @@ const OPTIONS: { value: number, label: string }[] = [
 </script>
 
 <template>
-  <div class="picker__setting picker__setting--inline">
-    <span :id="labelId" class="picker__setting-label">Colours</span>
+  <div class="picker__field">
+    <div class="picker__field-head">
+      <span :id="labelId" class="picker__field-label">Colours</span>
+    </div>
     <div class="segmented segmented--wide" role="group" :aria-labelledby="labelId">
       <button
         v-for="opt in OPTIONS"

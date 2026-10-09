@@ -26,7 +26,7 @@ function onFileChange() {
 <template>
   <div class="picker__source">
     <div class="picker__upload-row">
-      <span class="picker__setting-label">Upload image</span>
+      <span class="picker__field-label">Upload image</span>
       <label class="picker__browse pressable">
         Browse…
         <!-- Raster formats only: `image/*` offers SVGs the pipeline can't decode. HEIC/HEIF stay
@@ -42,7 +42,7 @@ function onFileChange() {
     </div>
 
     <div class="picker__samples">
-      <span class="picker__samples-label">Or try a sample:</span>
+      <span class="picker__field-label">Or try a sample:</span>
       <ul class="picker__sample-list">
         <li v-for="s in samples" :key="s.name">
           <button
