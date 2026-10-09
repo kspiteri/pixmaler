@@ -5,17 +5,7 @@
 
 .paint {
   // A `.phase--fixed` variant — the shell, bar and fixed sizing come from `_phase.scss`.
-  // Only the body-centring and the mobile settings-open lift are Paint's own.
-
-  // Mobile: an open settings panel can be taller than the fixed shell, so let the page
-  // scroll rather than clip the picker. Three classes, so it beats `.phase--fixed`.
-  &.phase--fixed.paint--settings-open {
-    @media (max-width: $bp-mobile) {
-      height: auto;
-      max-height: none;
-      overflow: visible;
-    }
-  }
+  // Only the body-centring and the open settings panel's scroll are Paint's own.
 
   // <Tagline> in the status cluster; the bar's flex gap owns the spacing.
   &__sub {
@@ -52,6 +42,14 @@
   &__settings-body {
     min-height: 0;
     overflow: auto;
+  }
+  // Open, the canvas pair is unmounted, so the panel takes the row's height and its body
+  // scrolls; at its intrinsic height the fixed shell clipped everything below the fold.
+  &--settings-open &__settings {
+    flex: 1 1 auto;
+  }
+  &--settings-open &__settings-body {
+    flex: 1 1 auto;
   }
 
   &__toggle {
