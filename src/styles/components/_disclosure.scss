@@ -1,8 +1,9 @@
 @use 'tokens' as *;
 
 // Disclosure.vue - a subtle toggle over revealed content. The trigger and chevron are the
-// Button's; this only stacks the two and keeps a non-block trigger from stretching. The revealed
-// body styles itself at each site.
+// Button's; this only stacks the two and keeps a non-block trigger from stretching. `--link`
+// strips the trigger's border and padding to an underlined inline help link. The revealed body
+// styles itself at each site.
 .disclosure {
   display: flex;
   flex-direction: column;
@@ -10,4 +11,12 @@
 }
 .disclosure__trigger {
   align-self: flex-start;
+}
+.btn.disclosure__trigger--link {
+  gap: $gap-1;
+  padding: 0;
+  border: none;
+  font-size: $fs-xs;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }

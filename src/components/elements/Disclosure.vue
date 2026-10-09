@@ -3,7 +3,7 @@
 // the aria-expanded/controls wiring. One mechanism for every tap-to-reveal toggle (the keyboard-
 // shortcuts help, the pixelation-style help). Fall-through attrs (e.g. `@pointerdown.stop`) land on
 // the trigger; `#icon` is an optional leading glyph, the default slot is the revealed body, which
-// styles itself at each site.
+// styles itself at each site. `variant="link"` drops the button chrome so inline help reads as help.
 
 import { ChevronDown, ChevronUp } from '@lucide/vue'
 import { ref, useId } from 'vue'
@@ -17,7 +17,8 @@ withDefaults(defineProps<{
   ariaLabel?: string
   // Full-width trigger, for a docked toggle that should fill its row.
   block?: boolean
-}>(), { block: false })
+  variant?: 'button' | 'link'
+}>(), { block: false, variant: 'button' })
 
 const open = ref(false)
 const bodyId = useId()
@@ -31,6 +32,7 @@ const bodyId = useId()
       size="x-small"
       :block="block"
       class="disclosure__trigger"
+      :class="{ 'disclosure__trigger--link no-shadow': variant === 'link' }"
       :aria-label="ariaLabel ?? label"
       :aria-expanded="open"
       :aria-controls="bodyId"
