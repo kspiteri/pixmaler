@@ -1,70 +1,121 @@
 @use 'tokens' as *;
 @use 'chrome' as *;
 
-// MusicWidget.vue — a compact header transport. Collapsed it's a single music button; expanded it
-// reveals play/pause + title + volume, sliding out horizontally. Play/pause is transport,
-// separate from the Sound → Music mute toggle.
+// MusicWidget.vue — the header transport: play/pause and a chevron, always visible, inside one
+// chrome box. The chevron reveals the song title + volume: inline to the left on desktop, so
+// neither button moves, and as a popover under the widget below $bp-mobile.
 .music-widget {
+  position: relative;
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
+  gap: $gap-1;
   @include chrome($rung: $radius);
-  padding: $gap-1;
+  padding: 0.125rem;
 
-  &__body {
-    display: flex;
-    align-items: center;
-    gap: $gap-2;
-    max-width: 0;
-    overflow: hidden;
-    opacity: 0;
-    visibility: hidden;
-    transition:
-      max-width 0.25s ease,
-      opacity 0.2s ease,
-      visibility 0.25s;
+  // One border: the box's, not the buttons' too.
+  .btn--subtle,
+  .btn--subtle:not(:disabled):hover {
+    border-color: transparent;
+  }
+  .btn--subtle:not(:disabled):hover {
+    background: color-mix(in srgb, #{$fg} 8%, transparent);
   }
 
-  &--expanded &__body {
-    max-width: 18rem;
-    margin-left: $gap-1;
-    opacity: 1;
-    visibility: visible;
+  &__chevron {
+    transition: rotate 0.2s ease;
+  }
+  &--open &__chevron {
+    rotate: 180deg;
   }
 
-  &__container {
+  &__panel {
+    order: -1;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
+    gap: 0.125rem;
+    padding-inline: $gap-2 $gap-1;
   }
 
   &__title {
-    max-width: 8rem;
+    max-width: 10rem;
     overflow: hidden;
     color: $fg-80;
-    font-size: $fs-2xs;
+    font-size: $fs-xs;
     white-space: nowrap;
     text-overflow: ellipsis;
   }
 
+  &__error {
+    color: $muted;
+    font-size: $fs-xs;
+  }
+
   &__vol {
     display: flex;
-    justify-content: flex-start;
     align-items: center;
-    flex-direction: row;
+    gap: $gap-1;
+    width: 100%;
+    min-width: 6rem;
 
     &-icon {
       flex-shrink: 0;
-      color: $fg-50;
-    }
-
-    &-slider {
-      width: 4rem;
+      color: $muted;
     }
   }
 }
 
-// A border pulse while a track is actually playing (paused → no pulse). Neutral ink: playing is
-// status, not a choice, so it doesn't borrow lime.
+.music-widget-reveal-enter-active,
+.music-widget-reveal-leave-active {
+  transition:
+    opacity 0.15s ease,
+    translate 0.15s ease;
+}
+.music-widget-reveal-enter-from,
+.music-widget-reveal-leave-to {
+  opacity: 0;
+  translate: $gap-2 0;
+}
+
+@media (max-width: $bp-mobile) {
+  .music-widget {
+    &__chevron {
+      rotate: -90deg;
+    }
+    &--open &__chevron {
+      rotate: 90deg;
+    }
+
+    &__panel {
+      position: absolute;
+      top: calc(100% + #{$gap-2});
+      right: 0;
+      z-index: 20;
+      width: 15rem;
+      max-width: calc(100vw - #{$gap-4});
+      box-sizing: border-box;
+      gap: $gap-2;
+      padding: $gap-3;
+      @include chrome($rung: $radius-lg);
+      box-shadow: $shadow-2;
+    }
+
+    &__title {
+      max-width: none;
+      font-size: $fs-sm;
+      white-space: normal;
+    }
+  }
+
+  .music-widget-reveal-enter-from,
+  .music-widget-reveal-leave-to {
+    translate: 0 (-$gap-2);
+  }
+}
+
+// A border pulse while a track is actually playing (paused or failed → still), so a room can
+// tell which device the music is coming from. Neutral ink: playing is status, not a choice.
 .music-widget--playing {
   animation: music-pulse 1.6s ease-in-out infinite;
 }
@@ -79,7 +130,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .music-widget__body {
+  .music-widget__chevron,
+  .music-widget-reveal-enter-active,
+  .music-widget-reveal-leave-active {
     transition: none;
   }
   .music-widget--playing {
