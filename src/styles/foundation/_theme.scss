@@ -17,6 +17,8 @@
 
   --border: rgba(255, 255, 255, 0.1);
   --border-soft: rgba(255, 255, 255, 0.07);
+  // Avatar chip with no seat yet. Must edge against $surface and carry the dark chip ink.
+  --avatar-blank: var(--fg-80);
 
   // `-hi` is the bottom edge (catches the light), `-lo` the top (in shadow).
   --frame-base: #eeeeee;
@@ -72,6 +74,7 @@
   // Alphas unchanged: 0.1 is 1.28:1 on dark and 1.25:1 here.
   --border: rgba(14, 14, 18, 0.1);
   --border-soft: rgba(14, 14, 18, 0.07);
+  --avatar-blank: var(--fg-20);
 
   // A grey mat — bone-white would vanish into the page.
   --frame-base: #b4b4c0;

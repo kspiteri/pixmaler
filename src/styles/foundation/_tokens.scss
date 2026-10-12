@@ -63,6 +63,9 @@ $paper: var(--paper);
 // because the fill under it doesn't change — following $bg would break all 21 seats.
 $ink-on-colour: #0e0e12;
 
+// Fill for an avatar chip with no seat yet (the name gate). Themed: it sits on the page.
+$avatar-blank: var(--avatar-blank);
+
 // The bevelled frame's width; its three shades are `--frame-*`, read directly by
 // `_surfaces.scss`.
 $frame-w: 6px;

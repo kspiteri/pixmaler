@@ -14,7 +14,7 @@ $avatar-round: 0.5rem;
   justify-content: center;
   width: 1.75rem;
   height: 1.75rem;
-  background: var(--seat-colour, #{$paper}); // $paper for when there is no seat yet
+  background: var(--seat-colour, #{$avatar-blank});
   color: $ink-on-colour;
   font-family: $font-display;
   font-weight: $fw-bold;
