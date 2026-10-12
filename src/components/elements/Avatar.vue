@@ -11,7 +11,7 @@ const props = withDefaults(defineProps<{
   shape: AvatarShape
   initial: string
   seed: string
-  // Unset falls back to the neutral chip, for a player with no seat yet.
+  // Unset (no seat yet) falls back to seat 0's colour.
   colour?: string
   lean?: number
   small?: boolean
@@ -24,7 +24,7 @@ const mask = computed(() => faceMask(props.seed))
 <template>
   <span
     class="avatar"
-    :class="[`avatar--${shape}`, { 'avatar--sm': small, 'avatar--neutral': !colour }]"
+    :class="[`avatar--${shape}`, { 'avatar--sm': small }]"
     :style="{ '--seat-colour': colour, '--seat-lean': lean }"
     aria-hidden="true"
   >
