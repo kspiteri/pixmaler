@@ -1,13 +1,13 @@
 <script setup lang="ts">
 // Gallery section: PlayerTag across all avatar shapes, sizes and the truncate variant. One
-// seat per shape so colour, initial, shape and lean all show. Layout via the parent's :deep().
+// seat per shape so colour, face, shape and lean all show. Layout via the parent's :deep().
 
 import PlayerTag from '@/components/elements/PlayerTag.vue'
 import { AVATAR_SHAPES, seatFor } from '@/lib'
 
-const tagNames = ['Mara', 'Bo', 'Cleo', 'Dag', 'Eve', 'Fox']
+const tagNames = ['Mara', 'Bo', 'Cleo', 'Dag', 'Eve', 'Fox', 'Gus', 'Hana', 'Ivo', 'Jo', 'Kai', 'Lea']
 const shapeSeats = AVATAR_SHAPES.map((shape, i) => {
-  const player = { name: tagNames[i] ?? shape, shape }
+  const player = { clientId: `demo-${i}`, name: tagNames[i] ?? shape, shape }
   return { ...player, seat: seatFor(i, player)! }
 })
 </script>
@@ -18,14 +18,14 @@ const shapeSeats = AVATAR_SHAPES.map((shape, i) => {
       <h3 class="demo__heading">
         shapes (row, 28px)
       </h3>
-      <div class="demo__row">
+      <div class="demo__row no-break">
         <PlayerTag v-for="s in shapeSeats" :key="s.shape" :seat="s.seat" :name="s.name" size="row" />
       </div>
     </section>
 
     <section class="demo__section">
       <h3 class="demo__heading">
-        inline (20px, in running text)
+        inline (24px, in running text)
       </h3>
       <p class="demo__note">
         waiting for <PlayerTag :seat="shapeSeats[0].seat" :name="shapeSeats[0].name" /> to finish…

@@ -12,7 +12,7 @@ import PlayerTag from '@/components/elements/PlayerTag.vue'
 import Tagline from '@/components/elements/Tagline.vue'
 import { GmControls, PixelThumb, PlayerList } from '@/components/game'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
-import { announce, AVATAR_SHAPES, clientIdKey, sanitiseName, seatFor, setName, setShape, socketKey, useGmActions } from '@/lib'
+import { announce, clientIdKey, sanitiseName, seatFor, setName, setShape, socketKey, useGmActions } from '@/lib'
 
 type State = Extract<ServerMsg, { type: 'state' }>
 
@@ -82,8 +82,8 @@ const mySeat = computed(() => {
   return i < 0 ? null : seatFor(i, props.state.players[i])
 })
 
-function pickShape(shape: AvatarShape) {
-  if (shape === mySeat.value?.shape)
+function pickShape(shape: AvatarShape | undefined) {
+  if (!shape || shape === mySeat.value?.shape)
     return
   socket.send(JSON.stringify({ type: 'shape', shape } satisfies ClientMsg))
 }
@@ -180,32 +180,15 @@ onBeforeUnmount(() => {
         <div class="lobby__name">
           <NameField
             v-model="nameDraft"
+            :shape="mySeat?.shape"
             label="Your name"
+            :seed="clientId"
+            :colour="mySeat?.colour"
+            @update:shape="pickShape"
             @focus="renaming = true"
             @keydown.enter="onRenameKey"
             @blur="commitName"
           />
-        </div>
-        <div v-if="mySeat" class="field lobby__shape">
-          <span id="lobby-shape" class="label">Your avatar shape</span>
-          <div class="lobby__shapes" role="group" aria-labelledby="lobby-shape">
-            <button
-              v-for="s in AVATAR_SHAPES"
-              :key="s"
-              class="lobby__shape-btn pressable no-shadow"
-              type="button"
-              :aria-pressed="s === mySeat.shape"
-              :aria-label="s"
-              @click="pickShape(s)"
-            >
-              <span
-                class="avatar"
-                :class="`avatar--${s}`"
-                :style="{ '--seat-colour': mySeat.colour }"
-                aria-hidden="true"
-              >{{ mySeat.initial }}</span>
-            </button>
-          </div>
         </div>
         <PlayerList :players="state.players" :gm-client-id="state.gmClientId" />
         <!-- GM sees the tagline here, under the roster. Non-GMs get it beside the
