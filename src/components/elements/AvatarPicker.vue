@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// Avatar shape picker: one button per shape, each previewing the player's own chip.
+// Avatar shape picker: one button per shape, each previewing the player's own chip. Unlabelled
+// on purpose — its host (NameField's accordion region) carries the "Avatar shape" name.
 
 import type { AvatarShape } from '@/lib'
 import { AVATAR_SHAPES, shapeLabel } from '@/lib'
@@ -14,7 +15,7 @@ const shape = defineModel<AvatarShape>({ required: true })
 </script>
 
 <template>
-  <div class="avatar-picker" role="group" aria-label="Avatar shape">
+  <div class="avatar-picker">
     <button
       v-for="s in AVATAR_SHAPES"
       :key="s"
