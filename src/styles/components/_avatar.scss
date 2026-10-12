@@ -14,7 +14,7 @@ $avatar-round: 0.5rem;
   justify-content: center;
   width: 1.75rem;
   height: 1.75rem;
-  background: var(--seat-colour, #{$fg-25});
+  background: var(--seat-colour, #{$paper}); // $paper for when there is no seat yet
   color: $ink-on-colour;
   font-family: $font-display;
   font-weight: $fw-bold;
@@ -31,11 +31,6 @@ $avatar-round: 0.5rem;
     mask-position: center;
     mask-repeat: no-repeat;
     mask-size: 100%;
-  }
-
-  // No seat yet: the fill is a translucent page tint, so the ink follows the page too.
-  &--neutral {
-    color: $fg;
   }
 
   // The smaller chip, inside `PlayerTag`. **Size only** — a `border-radius` here
