@@ -31,6 +31,9 @@ function submitName() {
 
 <template>
   <RoomInterstitial :eyebrow="creating ? 'new room' : 'joining room'">
+    <h1 class="sr-only">
+      Pick a name and avatar
+    </h1>
     <form class="room-screen__form" @submit.prevent="submitName">
       <NameField v-model="nameInput" v-model:shape="shape" label="Your name" :seed="clientId" shapes-open autofocus />
       <Button variant="primary" type="submit">
