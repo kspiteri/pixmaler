@@ -1,8 +1,8 @@
 @use 'tokens' as *;
 
-// NameField.vue — a labelled display-name input with a dice "randomise" button beside it.
-// The button matches the input's stretched height and presses like every control; the
-// input keeps its `.input` chrome.
+// NameField.vue — a labelled display-name input with a dice "randomise" button beside it, and
+// optionally the player's avatar preview before it and the shape picker below. The button
+// matches the input's stretched height and presses like every control.
 
 .name-field {
   &__row {
@@ -14,6 +14,14 @@
   .input {
     flex: 1;
     min-width: 0;
+  }
+
+  &__preview {
+    align-self: center;
+  }
+
+  &__shapes {
+    margin-top: $gap-3;
   }
 
   // The dice matches the input's stretched height, not the icon button's fixed square. The
