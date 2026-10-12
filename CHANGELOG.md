@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.14.0](https://github.com/kspiteri/pixmaler/compare/0.13.0...0.14.0) (2026-10-12)
+
+
+### New
+
+* **avatar:** add `Avatar` component and new shape styles ([88ed5c7](https://github.com/kspiteri/pixmaler/commit/88ed5c77750b180045a93e5c2e47955dc0626a42))
+* **avatar:** add `AvatarPicker` for selecting avatar shapes ([1a72f8b](https://github.com/kspiteri/pixmaler/commit/1a72f8bdbc0fff4d2d377cb28c0071c3d8afc19b))
+* **name-field:** add avatar preview and shape picker ([29160a7](https://github.com/kspiteri/pixmaler/commit/29160a701aa46135f2db6c24e523f92e303c828e))
+* **player:** add `shapeLabel` helper for avatar shape formatting ([13854fa](https://github.com/kspiteri/pixmaler/commit/13854faaa2fb48b9ea01cadb8583ea334a0b3b44))
+* **player:** add face rendering and integrate with seat system ([4087ac8](https://github.com/kspiteri/pixmaler/commit/4087ac8d790aa2d9d6b9eeb6a38fb66735db41f7))
+
+
+### Fixes
+
+* **avatar:** update fallback to use `$avatar-blank` ([b2bf8cc](https://github.com/kspiteri/pixmaler/commit/b2bf8ccf34fddb328ebef47229bed5eb50393295))
+* **avatar:** update no seat fallback ([87f2a46](https://github.com/kspiteri/pixmaler/commit/87f2a465f8700cca32293ec4342b76b22fd9e2fb))
+* **avatar:** update no seat fallback to use `$paper` ([df2b351](https://github.com/kspiteri/pixmaler/commit/df2b351f3407a3093951429833435039d97cf5c2))
+* improve accessibility and clarify avatar picker labeling ([2bb3671](https://github.com/kspiteri/pixmaler/commit/2bb36717d56232d6a267386d8644eb5c241932d4))
+
+
+### Under the hood
+
+* **demo:** update summaries and improve player tag/NameField demos ([0c87fad](https://github.com/kspiteri/pixmaler/commit/0c87fadda2f291f6eca924d10cd1400b8fa8bd19))
+* **deps:** add @dicebear/core and @dicebear/styles dependencies ([f123fa6](https://github.com/kspiteri/pixmaler/commit/f123fa67bba3c252ce37fac8c0a7fe4e6b997692))
+* **deps:** bump minor/patch dependencies ([d4cf900](https://github.com/kspiteri/pixmaler/commit/d4cf9000f18ce419cce9d30ae0423bdd739f216d))
+* **lobby:** remove shape picker and integrate with NameField ([053430d](https://github.com/kspiteri/pixmaler/commit/053430da52338fef2e6e420277510ca623e21dc2))
+* **player:** replace inline avatar with `Avatar` component ([5df4007](https://github.com/kspiteri/pixmaler/commit/5df40070fd8599a66be6b1515692cb27673b5496))
+
 ## [0.13.0](https://github.com/kspiteri/pixmaler/compare/0.12.0...0.13.0) (2026-10-09)
 
 
