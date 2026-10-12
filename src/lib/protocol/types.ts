@@ -4,8 +4,8 @@ export type Phase = 'LOBBY' | 'DRAWING' | 'VOTING' | 'RESULTS'
 
 // Avatar shapes for the seat chip. A runtime array, not just a union, because the server
 // validates against it and the value reaches the DOM as a class name. Restricted to shapes
-// that hold a centred capital at 28 px, since the letter maps chip to name.
-export const AVATAR_SHAPES = ['rounded', 'square', 'circle', 'hexagon', 'octagon', 'leaf'] as const
+// that hold a centred face at 24 px.
+export const AVATAR_SHAPES = ['rounded', 'square', 'circle', 'hexagon', 'octagon', 'leaf', 'pixel', 'ticket', 'pebble', 'blob', 'shield', 'stamp'] as const
 export type AvatarShape = typeof AVATAR_SHAPES[number]
 export const DEFAULT_AVATAR_SHAPE: AvatarShape = 'rounded'
 

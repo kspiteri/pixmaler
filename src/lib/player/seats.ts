@@ -1,4 +1,4 @@
-// Seat identity: a player's colour, initial, avatar shape and chip tilt, shared by the
+// Seat identity: a player's colour, initial, face seed, avatar shape and chip tilt, shared by the
 // lobby roster and the results screen so the colour follows the player rather than the
 // screen. Colours arrive only as `--player-colour-N` custom properties — the ramp lives
 // in `_tokens.scss` and no hex crosses into TypeScript.
@@ -25,25 +25,32 @@ export interface Seat {
   colour: string
   /** Decorative: the name is rendered beside it, so the chip is `aria-hidden`. */
   initial: string
+  /** The face's seed — the clientId, so the face survives a rename. */
+  seed: string
   /** Modifier class suffix — `avatar--<shape>` (see `_avatar.scss`). */
   shape: AvatarShape
   /** Multiplier on `$wonk-avatar` (see `LEANS`). */
   lean: number
 }
 
+// Code points, not UTF-16 units. `charAt(0)` returned a lone high surrogate, so every
+// emoji in a block collapsed to the same tofu glyph *and* the same lean — U+1F300–1F3FF
+// all share \uD83C. The '?' fallback stops an all-whitespace name reaching `LEANS`.
+export function initialOf(name: string): string {
+  return [...name.trim()][0]?.toUpperCase() ?? '?'
+}
+
 // Null for a player absent from the roster, so the caller renders no chip rather than
 // guessing a colour — don't reintroduce `?? -1` at a call site to lean on the `seat < 0`
 // branch. Seats past `SEAT_COUNT` wrap. Takes the player so the chip's inputs stay together.
-export function seatFor(seat: number, player: Pick<Player, 'name' | 'shape'>): Seat | null {
+export function seatFor(seat: number, player: Pick<Player, 'clientId' | 'name' | 'shape'>): Seat | null {
   if (seat < 0)
     return null
-  // Code points, not UTF-16 units. `charAt(0)` returned a lone high surrogate, so every
-  // emoji in a block collapsed to the same tofu glyph *and* the same lean — U+1F300–1F3FF
-  // all share \uD83C. The '?' fallback stops an all-whitespace name reaching `LEANS`.
-  const initial = [...player.name.trim()][0]?.toUpperCase() ?? '?'
+  const initial = initialOf(player.name)
   return {
     colour: `var(--player-colour-${seat % SEAT_COUNT})`,
     initial,
+    seed: player.clientId,
     // The read-side boundary: `state` is assigned verbatim by App.vue's dispatcher, and
     // client and server deploy independently, so a newer client could emit
     // `avatar--undefined`. Normalising keeps the declared type honest.
