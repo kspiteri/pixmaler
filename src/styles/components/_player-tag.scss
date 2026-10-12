@@ -40,6 +40,11 @@
   &--inline {
     align-items: baseline;
     gap: $gap-1;
+
+    // A face has no text baseline, so a baseline-aligned chip would sit on the line, not beside it.
+    .avatar {
+      align-self: center;
+    }
   }
 
   &--truncate {

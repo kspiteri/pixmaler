@@ -5,10 +5,11 @@
 // by construction; don't add a `showName` flag to render a chip alone.
 //
 // `size` is the chip's size, not the name's: `row` for the 28px roster chip, `inline` for
-// the 20px one in a sentence. The name inherits font-size and weight from the host (they
+// the 24px one in a sentence. The name inherits font-size and weight from the host (they
 // differ per site); this component owns the family, so every name uses the display face.
 
 import type { Seat } from '@/lib'
+import Avatar from './Avatar.vue'
 
 withDefaults(defineProps<{
   seat: Seat
@@ -22,12 +23,14 @@ withDefaults(defineProps<{
 
 <template>
   <span class="player-tag" :class="[`player-tag--${size}`, { 'player-tag--truncate': truncate }]">
-    <span
-      class="avatar"
-      :class="[{ 'avatar--sm': size === 'inline' }, `avatar--${seat.shape}`]"
-      :style="{ '--seat-colour': seat.colour, '--seat-lean': seat.lean }"
-      aria-hidden="true"
-    >{{ seat.initial }}</span>
+    <Avatar
+      :shape="seat.shape"
+      :initial="seat.initial"
+      :seed="seat.seed"
+      :colour="seat.colour"
+      :lean="seat.lean"
+      :small="size === 'inline'"
+    />
     <span class="player-tag__name">{{ name }}<slot name="suffix" /></span>
   </span>
 </template>
