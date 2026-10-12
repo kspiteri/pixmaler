@@ -1,6 +1,6 @@
 // The face is the player's identity across rooms and renames, and it's painted as a CSS
-// mask, so two things must hold: the same seed always yields the same face, and nothing
-// but the ink lines is opaque — an opaque background or paper fill would flood the chip.
+// mask, so two things must hold: a seed always yields the same face, and nothing but the
+// ink lines is opaque — an opaque background or paper fill would flood the chip.
 
 import { beforeAll, describe, expect, it } from 'vitest'
 import { faceMask, loadFaces } from '../src/lib/player/face'
@@ -11,8 +11,12 @@ const seeds = Array.from({ length: 60 }, (_, i) => `00000000-0000-4000-8000-${St
 describe('faceMask', () => {
   beforeAll(loadFaces)
 
-  it('gives a seed the same face every time, and different seeds different faces', () => {
-    expect(faceMask(seeds[0])).toBe(faceMask(seeds[0]))
+  // A DiceBear upgrade that fails this changes every returning player's face — decide before updating it.
+  it('renders a known seed to the same face as before', () => {
+    expect(svgOf(faceMask(seeds[0])!)).toMatchSnapshot()
+  })
+
+  it('gives different seeds different faces', () => {
     expect(new Set(seeds.map(faceMask)).size).toBeGreaterThan(seeds.length * 0.9)
   })
 
