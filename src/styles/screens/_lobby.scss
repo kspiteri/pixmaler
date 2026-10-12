@@ -54,51 +54,6 @@
     margin-bottom: $gap-4;
   }
 
-  // Avatar shape picker — each button previews the viewer's own chip.
-  &__shape {
-    margin-bottom: $gap-4;
-  }
-  // One row, always: the six 44px targets flex to fit the ~231px aside.
-  &__shapes {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(1.75rem, 1fr));
-    gap: $gap-1;
-    margin-top: $gap-2;
-  }
-  // No chrome: the chip *is* the control (selection = opacity + size step). Keep
-  // `border-radius`: it shapes the focus ring.
-  &__shape-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    aspect-ratio: 1;
-    padding: 0;
-    border: none;
-    border-radius: $radius;
-    background: none;
-    cursor: pointer;
-
-    // Fade the **chip**, not the button — button opacity would composite its
-    // `:focus-visible` ring too.
-    .avatar {
-      opacity: 0.45;
-      transition:
-        opacity 0.15s,
-        scale 0.15s;
-    }
-
-    &:hover .avatar {
-      opacity: 0.6;
-    }
-
-    // **Must stay below `:hover`** — both tie at 0-3-0, so source order decides.
-    // `scale`, not `transform`: `.pressable` owns `transform` for the press travel.
-    &[aria-pressed='true'] .avatar {
-      opacity: 1;
-      scale: 1.12;
-    }
-  }
-
   &__notice {
     margin: $gap-4 auto 0;
     max-width: 34rem;
