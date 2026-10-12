@@ -25,6 +25,12 @@ via Pixabay (GregorQuendel)
 Pixabay Content License
 https://pixabay.com/service/license-summary/
 
+## Avatar faces
+
+Player faces are generated locally with DiceBear's "Notionists Neutral" style, a remix of
+"Notionists" (https://heyzoish.gumroad.com/l/notionists) by Zoish, licensed under CC0 1.0
+(https://creativecommons.org/publicdomain/zero/1.0/). CC0 needs no in-app credit.
+
 ## Fonts
 
 Fredoka, Space Grotesk and Plus Jakarta Sans are self-hosted (`src/assets/fonts/`) and
@@ -131,6 +137,7 @@ listed below; the full MIT and ISC texts follow.
 - partysocket — MIT — Copyright (c) 2010-2012, Joe Walnes
 - unique-names-generator — MIT — Copyright (c) 2018-2022 AndreaSonny
 - Lucide (icons) — ISC — Copyright (c) 2026 Lucide Icons and Contributors; some icons derived from Feather, MIT, Copyright (c) 2013-present Cole Bemis
+- DiceBear (`@dicebear/core`, `@dicebear/styles`) — MIT — Copyright (c) 2026 Florian Körner
 - PartyServer — ISC — Copyright (c) PartyKit contributors
 
 ### The MIT License (MIT)
