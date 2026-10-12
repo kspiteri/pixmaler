@@ -11,7 +11,7 @@ const props = withDefaults(defineProps<{
   shape: AvatarShape
   initial: string
   seed: string
-  // Unset (no seat yet) falls back to seat 0's colour.
+  // Unset (no seat yet) falls back to $paper.
   colour?: string
   lean?: number
   small?: boolean
