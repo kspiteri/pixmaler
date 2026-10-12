@@ -43,6 +43,8 @@ function onBackdrop(e: MouseEvent) {
           <li>
             Your nickname, random id and avatar are sent to the game server and held in memory only
             while a room is live; they're wiped when it goes idle or the session is closed by the GM.
+            Your avatar face is drawn from the random id, so it stays the same even if you change your
+            nickname, people you play with often will recognise it.
           </li>
           <li>
             Settings include your theme, text size, touch mode, sound preferences, palette
