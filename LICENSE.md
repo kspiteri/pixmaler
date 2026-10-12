@@ -137,7 +137,7 @@ listed below; the full MIT and ISC texts follow.
 - partysocket — MIT — Copyright (c) 2010-2012, Joe Walnes
 - unique-names-generator — MIT — Copyright (c) 2018-2022 AndreaSonny
 - Lucide (icons) — ISC — Copyright (c) 2026 Lucide Icons and Contributors; some icons derived from Feather, MIT, Copyright (c) 2013-present Cole Bemis
-- DiceBear (`@dicebear/core`, `@dicebear/styles`) — MIT — Copyright (c) 2026 Florian Körner
+- DiceBear (`@dicebear/core`, and the `@dicebear/styles` tooling) — MIT — Copyright (c) 2026 Florian Körner; the bundled style artwork is CC0, see Avatar faces above
 - PartyServer — ISC — Copyright (c) PartyKit contributors
 
 ### The MIT License (MIT)
