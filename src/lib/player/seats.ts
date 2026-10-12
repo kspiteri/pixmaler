@@ -40,6 +40,10 @@ export function initialOf(name: string): string {
   return [...name.trim()][0]?.toUpperCase() ?? '?'
 }
 
+export function shapeLabel(shape: AvatarShape): string {
+  return shape.charAt(0).toUpperCase() + shape.slice(1)
+}
+
 // Null for a player absent from the roster, so the caller renders no chip rather than
 // guessing a colour — don't reintroduce `?? -1` at a call site to lean on the `seat < 0`
 // branch. Seats past `SEAT_COUNT` wrap. Takes the player so the chip's inputs stay together.
