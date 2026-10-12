@@ -18,7 +18,7 @@ const shapeSeats = AVATAR_SHAPES.map((shape, i) => {
       <h3 class="demo__heading">
         shapes (row, 28px)
       </h3>
-      <div class="demo__row no-break">
+      <div class="demo__row">
         <PlayerTag v-for="s in shapeSeats" :key="s.shape" :seat="s.seat" :name="s.name" size="row" />
       </div>
     </section>

@@ -22,10 +22,10 @@ const split = ref(false)
 
 const sections = [
   { id: 'button', title: 'Button', summary: 'variant × size · icon · block · tone · link', demo: ButtonDemo },
-  { id: 'player-tag', title: 'PlayerTag', summary: '6 shapes · row / inline · truncate', demo: PlayerTagDemo },
+  { id: 'player-tag', title: 'PlayerTag', summary: '12 shapes · faces · row / inline · truncate', demo: PlayerTagDemo },
   { id: 'slider', title: 'Slider', summary: 'continuous · stepped', demo: SliderDemo },
   { id: 'toggle', title: 'ToggleSwitch', summary: 'two-state · v-model', demo: ToggleSwitchDemo },
-  { id: 'name-field', title: 'NameField', summary: 'input + dice randomise', demo: NameFieldDemo },
+  { id: 'name-field', title: 'NameField', summary: 'input + dice randomise · avatar preview + shape accordion', demo: NameFieldDemo },
   { id: 'notice', title: 'AlertNotice', summary: 'info · warn · error · non-dismissable', demo: AlertNoticeDemo },
   { id: 'dialog', title: 'AlertDialog', summary: 'modal queue: alert · confirm', demo: AlertDialogDemo },
 ]
