@@ -9,7 +9,8 @@
 @use 'fonts'; // self-hosted @font-face — vendored, no Google CDN
 @use 'backdrop'; // html base colour + the app-wide pixel grid & vignette
 @use 'alerts'; // the alert register — AlertNotice (+ .conn-banner) + AlertDialog
-@use 'avatar'; // the seat chip + its shape modifiers (shared: roster + results)
+@use 'avatar'; // Avatar.vue — the seat chip, its face mask and shape modifiers
+@use 'avatar-picker'; // AvatarPicker.vue — the shape grid inside NameField
 @use 'buttons';
 @use 'name-field'; // NameField.vue — display-name input + dice randomise
 @use 'forms';
