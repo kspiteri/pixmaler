@@ -14,7 +14,7 @@ const shape = ref<AvatarShape>(DEFAULT_AVATAR_SHAPE)
 <template>
   <section class="demo__section">
     <div class="demo__stack">
-      <NameField v-model="name" v-model:shape="shape" label="Your name" seed="demo-name-field" colour="var(--player-colour-4)" />
+      <NameField v-model="name" v-model:shape="shape" label="Your name" seed="demo-name-field" />
       <span class="demo__note">value: {{ name || '(empty)' }} · shape: {{ shape }}</span>
     </div>
   </section>
