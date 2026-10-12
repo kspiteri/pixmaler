@@ -18,6 +18,8 @@
     "prepare": "simple-git-hooks"
   },
   "dependencies": {
+    "@dicebear/core": "catalog:prod",
+    "@dicebear/styles": "catalog:prod",
     "@lucide/vue": "catalog:prod",
     "howler": "catalog:prod",
     "partyserver": "catalog:prod",

@@ -33,6 +33,10 @@ export default defineConfig({
   server: {
     port: 7965, // PXML
   },
+  // Only ever imported lazily, so Vite would otherwise discover it mid-session and re-optimise.
+  optimizeDeps: {
+    include: ['@dicebear/core'],
+  },
   css: {
     preprocessorOptions: {
       scss: { loadPaths: styleLoadPaths },

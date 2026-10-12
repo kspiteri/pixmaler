@@ -58,6 +58,12 @@ catalogs:
       specifier: ^4.105.0
       version: 4.105.0
   prod:
+    '@dicebear/core':
+      specifier: ^10.7.0
+      version: 10.7.0
+    '@dicebear/styles':
+      specifier: ^10.6.0
+      version: 10.6.0
     '@lucide/vue':
       specifier: ^1.23.0
       version: 1.23.0
@@ -81,6 +87,12 @@ importers:
 
   .:
     dependencies:
+      '@dicebear/core':
+        specifier: catalog:prod
+        version: 10.7.0
+      '@dicebear/styles':
+        specifier: catalog:prod
+        version: 10.6.0
       '@lucide/vue':
         specifier: catalog:prod
         version: 1.23.0(vue@3.5.35(typescript@6.0.3))
@@ -346,6 +358,13 @@ packages:
     engines: {node: '>=20.19.0'}
     peerDependencies:
       postcss-selector-parser: ^7.1.1
+
+  '@dicebear/core@10.7.0':
+    resolution: {integrity: sha512-JUOzKOd8RUByJJo8ZL+C7YE/pvEsWewfpbWUmR8OIQZWv/PvUQHnohdevySC3icyyxe6EIU/8B/rQgA42us1QA==}
+    engines: {node: '>=22.0.0'}
+
+  '@dicebear/styles@10.6.0':
+    resolution: {integrity: sha512-KhxbEVI+z8TaenX58+ZhIRFBt7adggu/F+8g6ZYLu43H2/lgLuWA3Kg8vHBrCVWdfTTTt1p2wUhQomIkkypTuQ==}
 
   '@dprint/formatter@0.5.1':
     resolution: {integrity: sha512-cdZUrm0iv/FnnY3CKE2dEcVhNEzrC551aE2h2mTFwQCRBrqyARLDnb7D+3PlXTUVp3s34ftlnGOVCmhLT9DeKA==}
@@ -3275,6 +3294,10 @@ snapshots:
   '@csstools/selector-specificity@6.0.0(postcss-selector-parser@7.1.6)':
     dependencies:
       postcss-selector-parser: 7.1.6
+
+  '@dicebear/core@10.7.0': {}
+
+  '@dicebear/styles@10.6.0': {}
 
   '@dprint/formatter@0.5.1': {}
 

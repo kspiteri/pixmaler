@@ -29,6 +29,8 @@ catalogs:
     vue-tsc: ^3.3.4
     wrangler: ^4.105.0
   prod:
+    '@dicebear/core': ^10.7.0
+    '@dicebear/styles': ^10.6.0
     '@lucide/vue': ^1.23.0
     howler: ^2.2.4
     partyserver: ^0.5.10
