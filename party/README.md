@@ -45,6 +45,8 @@ Lives in **`src/lib/protocol/`**, not here, because both deploy targets need it:
 
 `LOBBY → DRAWING → VOTING → RESULTS`, timer transitions deadline-driven: the server broadcasts a deadline timestamp, clients tick locally, and a **single DO alarm** (never `setTimeout`) wakes for whichever deadline is nearest — draw deadline, VOTING backstop, empty-room grace or idle wipe. `onMessage` re-arms it after every message, which is also what lets the GM's "+15s" (`gm:extendTime`, capped at `MAX_EXTENSIONS`) simply bump `state.deadline` and work. See [`docs/.plans/archive/10-room-lifecycle.md`](../docs/.plans/archive/10-room-lifecycle.md).
 
+Every `state` and `phase` also carries a **`serverNow`** — the DO's wall clock at send. Each client measures its offset from it (`src/lib/serverClock.ts`) and ticks the countdown against the server's estimated time, so a device with a skewed clock still agrees with the room on when the round ends. It is a protocol change, so it ships on the next Worker deploy; an older Worker simply omits it and clients fall back to their own clock.
+
 Two orderings are load-bearing, pinned by `test/phases.test.ts`:
 
 - **Payload before phase flip** — `endDrawing` broadcasts `gallery` then `phase`; `endVoting` broadcasts `results` then `phase`. Flipping first mounts the incoming screen against the previous round's payload.

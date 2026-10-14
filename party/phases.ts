@@ -36,7 +36,7 @@ export function handleStart(ctx: RoomCtx, conn: RoomConn) {
   for (const p of state.players.values()) { p.doneDrawing = false; p.spectating = false; p.drewThisRound = false }
 
   // Round-end fires from the DO alarm at `deadline`, which survives eviction.
-  ctx.broadcast({ type: 'phase', phase: 'DRAWING', deadline })
+  ctx.broadcast({ type: 'phase', phase: 'DRAWING', deadline, serverNow: Date.now() })
 }
 
 // Shared by "Play again" and "Cancel round". The target image goes too — cancel's
@@ -111,7 +111,7 @@ export function endDrawing(ctx: RoomCtx) {
   // its own card without any client learning another's. Per-recipient, unlike the gallery
   // above, and before the phase flip so the view mounts with it in hand.
   ctx.sendEach(clientId => buildVoteState(state, clientId))
-  ctx.broadcast({ type: 'phase', phase: 'VOTING', deadline: state.deadline })
+  ctx.broadcast({ type: 'phase', phase: 'VOTING', deadline: state.deadline, serverNow: Date.now() })
 }
 
 export function endVoting(ctx: RoomCtx) {
@@ -128,5 +128,5 @@ export function endVoting(ctx: RoomCtx) {
   // the client still holds — the previous round's — and flashes last round's winner.
   state.ranked = ranked
   ctx.broadcast({ type: 'results', ranked, palette: cfg.palette, gridW: cfg.gridW, gridH: cfg.gridH })
-  ctx.broadcast({ type: 'phase', phase: 'RESULTS', deadline: null })
+  ctx.broadcast({ type: 'phase', phase: 'RESULTS', deadline: null, serverNow: Date.now() })
 }

@@ -167,6 +167,7 @@ export function buildState(state: RoomState): StateMsg {
     gmClientId: state.gmClientId,
     config: roundConfig(state.config),
     deadline: state.deadline,
+    serverNow: Date.now(), // sampled at send, for the client clock-offset correction
     roundSeconds: state.roundSeconds,
     extensionsLeft: Math.max(0, MAX_EXTENSIONS - state.extensions),
     ...drawProgress(state),
