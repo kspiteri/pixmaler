@@ -225,16 +225,3 @@ Milestones name **themes, not versions**: `Image pipeline`, `Server refactor`, `
 Component is a label (`area:drawing`, `area:server`, `area:pipeline`, `area:a11y`, …) rather than a container, so an item spanning two areas carries both and closes as one unit. Priority is **which milestone it sits in**, ordered by severity not date; no milestone means unscheduled. Plan-item numbers cited in older titles (`[56] …`) resolve into the frozen archive — a closed namespace, **not** GitHub issue numbers (plan-item 33 is issue #69).
 
 **Anyone can report a bug** through the form in [`.github/ISSUE_TEMPLATE/`](./.github/ISSUE_TEMPLATE/) — it asks for room code, phase, device and player count, because a playtest showed two of six reports were not what they first looked like for want of that context.
-
-### Sequencing the board can't express
-
-Milestones own *what* is left and its priority; these are the ordering constraints between open issues, recorded because getting them wrong means redoing work:
-
-- **[#11](https://github.com/kspiteri/pixmaler/issues/11) before the orchestrated entrance** (frozen `14` item 28, indexed in [#70](https://github.com/kspiteri/pixmaler/issues/70)). Animating into a grid that reserves empty tracks bakes the misalignment into the motion.
-- **[#12](https://github.com/kspiteri/pixmaler/issues/12) before the winner-screen celebration** (frozen `14` item 15). Celebrating one winner harder while everyone else gets no rank or category credit makes the imbalance worse.
-- **[#10](https://github.com/kspiteri/pixmaler/issues/10) and [#15](https://github.com/kspiteri/pixmaler/issues/15) together** — both add to the phase status slot (one a live region, one a GM signal that can un-fire); same edit site, and apart they risk two competing announcers.
-- **[#5](https://github.com/kspiteri/pixmaler/issues/5) before inviting strangers** — an unguarded `grid` lets one crafted message strand a room.
-- **[#18](https://github.com/kspiteri/pixmaler/issues/18)'s `reason` flag last, its `<Interstitial>` component later still** — extracting a component before the screen is designed guesses at its shape, and `PhaseBoundary` can't use it (an error boundary renders no children). The flag touches `party/` + the protocol, so batch it with other protocol work.
-- **[#16](https://github.com/kspiteri/pixmaler/issues/16) waits on nothing** — it needs no server change (`resetToLobby`'s two callers let a client infer a cancel), and it's a lobby notice, not the terminal closed screen of #18.
-- **`Player.hasVoted` + the compact player strip ship together or not at all** (frozen `13` 66.a + `14` 66.b, in [#70](https://github.com/kspiteri/pixmaler/issues/70)) — the flag has no consumer without the strip, and the strip is half-blind without the flag.
-- **Protocol/server work batches into one Worker deploy.** The 16-player cap, name sanitiser (#64), room gating (#66), offline removal (#68) and kick (#69) each end every game in progress on deploy — pay that price once.
