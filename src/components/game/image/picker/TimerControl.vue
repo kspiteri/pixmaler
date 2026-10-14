@@ -6,9 +6,9 @@
 import { computed, ref, useId } from 'vue'
 import Slider from '@/components/elements/Slider.vue'
 import { clampDrawSeconds, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN } from '@/lib'
-import { CUSTOM_SECS, DURATION_STOPS, durationLabel } from './stops'
+import { CUSTOM_SECS, DURATION_STOPS, mmss } from './stops'
 
-const props = defineProps<{ modelValue: number }>()
+const props = defineProps<{ modelValue: number, songSeconds?: number | null }>()
 const emit = defineEmits<{ 'update:modelValue': [value: number] }>()
 
 const sliderId = useId()
@@ -16,8 +16,26 @@ const hintId = useId()
 
 // Sticky: once the GM picks the custom stop it stays selected even if they type a preset value.
 const custom = ref(false)
+
+// When a track is chosen, offer a "Song" stop at its (clamped) length so the song can set the
+// round length. It replaces any preset of the same value, to avoid a duplicate tick.
+const songStop = computed(() => {
+  const s = props.songSeconds
+  if (!s)
+    return null
+  const value = clampDrawSeconds(s)
+  return { value, label: `Song · ${mmss(value)}` }
+})
+const stops = computed(() =>
+  songStop.value
+    ? [songStop.value, ...DURATION_STOPS.filter(s => s.value !== songStop.value!.value)]
+    : DURATION_STOPS,
+)
+
 const sliderModel = computed(() => (custom.value ? CUSTOM_SECS : props.modelValue))
-const readout = computed(() => (custom.value ? `${props.modelValue}s` : durationLabel(sliderModel.value)))
+const readout = computed(() =>
+  custom.value ? `${props.modelValue}s` : (stops.value.find(s => s.value === sliderModel.value)?.label ?? `${props.modelValue}s`),
+)
 
 function onSlider(value: number) {
   if (value === CUSTOM_SECS) {
@@ -44,7 +62,7 @@ function onCustom(e: Event) {
       :id="sliderId"
       class="picker__field-control"
       :model-value="sliderModel"
-      :stops="DURATION_STOPS"
+      :stops="stops"
       @update:model-value="onSlider"
     />
     <template v-if="custom">

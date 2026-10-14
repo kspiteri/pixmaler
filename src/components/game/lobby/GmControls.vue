@@ -35,8 +35,7 @@ function onResult(result: PipelineResult) {
     targetGrid: result.targetGrid,
     drawSeconds: pickerRef.value?.getDrawSeconds() ?? 120,
     musicTrack: pickerRef.value?.getMusicTrack() ?? null,
-    // Finale is the default fit; the picker control to change it lands with the Game-settings UI.
-    musicFit: 'finale',
+    musicFit: pickerRef.value?.getMusicFit() ?? 'finale',
   }
   socket.send(JSON.stringify(lastConfig))
   imageReady.value = true
@@ -75,6 +74,7 @@ function startGame() {
       ...lastConfig,
       drawSeconds: pickerRef.value?.getDrawSeconds() ?? 120,
       musicTrack: pickerRef.value?.getMusicTrack() ?? null,
+      musicFit: pickerRef.value?.getMusicFit() ?? 'finale',
     }
     socket.send(JSON.stringify(finalConfig))
   }

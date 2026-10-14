@@ -5,18 +5,19 @@
 // under ./picker; this file wires them and runs `processImage` on any change that differs from
 // the committed inputs (the ones behind the last accepted result).
 
-import type { CropSelection, MusicTrackId, PickerMeta, PickerSettings, PipelineResult, PixelationStyle, RoundConfig, TargetRatioId } from '@/lib'
+import type { CropSelection, MusicFit, MusicTrackId, PickerMeta, PickerSettings, PipelineResult, PixelationStyle, RoundConfig, TargetRatioId } from '@/lib'
 import { ChevronDown, Trash2 } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import Accordion from '@/components/elements/accordion/Accordion.vue'
 import AccordionItem from '@/components/elements/accordion/Item.vue'
 import Button from '@/components/elements/Button.vue'
-import { asset, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_PIXELATION_STYLE, DEFAULT_RATIO, DEFAULT_SCALE, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, nearestRatioFor, processImage, quantiserFor, TARGET_RATIOS, trackLabel, unsupportedImage, useAppLayout } from '@/lib'
+import { asset, clampDrawSeconds, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_PIXELATION_STYLE, DEFAULT_RATIO, DEFAULT_SCALE, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, MUSIC_TRACKS, nearestRatioFor, processImage, quantiserFor, TARGET_RATIOS, trackLabel, unsupportedImage, useAppLayout } from '@/lib'
 import AlphaControl from './picker/AlphaControl.vue'
 import ColourControl from './picker/ColourControl.vue'
 import CropWidget from './picker/CropWidget.vue'
 import DetailControl from './picker/DetailControl.vue'
 import MusicControl from './picker/MusicControl.vue'
+import MusicFitControl from './picker/MusicFitControl.vue'
 import PixelationStyleControl from './picker/PixelationStyleControl.vue'
 import SourcePicker from './picker/SourcePicker.vue'
 import { detailLabel, DURATION_STOPS } from './picker/stops'
@@ -66,6 +67,13 @@ const naturalDims = ref<{ w: number, h: number } | null>(null)
 const sourceUrl = ref('')
 const drawSecs = ref(DEFAULT_DRAW_SECONDS)
 const musicTrack = ref<MusicTrackId | null>(null)
+const musicFit = ref<MusicFit>('finale')
+// The chosen track's length, so Draw time can offer a "Song" stop and the fit control can appear
+// only when the round outlasts the song.
+const songSeconds = computed(() => {
+  const t = musicTrack.value
+  return t ? (MUSIC_TRACKS.find(x => x.id === t)?.durationS ?? 0) : 0
+})
 const status = ref('')
 const busy = ref(false)
 // Scale-independent source dims from the last result, so the grid readout recomputes live as
@@ -88,7 +96,7 @@ const samples: { name: SampleName, label: string }[] = [
   { name: 'pearls', label: 'Pearl Earring' },
 ]
 
-defineExpose({ getDrawSeconds: () => drawSecs.value, getMusicTrack: () => musicTrack.value, reset })
+defineExpose({ getDrawSeconds: () => drawSecs.value, getMusicTrack: () => musicTrack.value, getMusicFit: () => musicFit.value, reset })
 
 let cachedFile: File | null = null
 let runId = 0
@@ -228,7 +236,12 @@ function scheduleReprocess() {
 }
 
 watch([scale, colorCount, ratio, background, crop, pixelationStyle], scheduleReprocess)
-watch(musicTrack, t => emit('music', t))
+watch(musicTrack, (t) => {
+  emit('music', t)
+  // Song sets the round length by default — picking a track snaps Draw time to its duration.
+  if (t && props.showDrawSeconds)
+    drawSecs.value = clampDrawSeconds(songSeconds.value)
+})
 
 // Adopt a newly-chosen image: preselect the ratio closest to its own framing and reset the crop
 // to the whole frame, so any crop is a deliberate second choice. Costs one extra decode.
@@ -476,8 +489,9 @@ onBeforeUnmount(() => {
           <template #summary>
             {{ settingsSummary }}
           </template>
-          <TimerControl v-if="showDrawSeconds" v-model="drawSecs" />
           <MusicControl v-model="musicTrack" />
+          <MusicFitControl v-if="showDrawSeconds && musicTrack && drawSecs > songSeconds" v-model="musicFit" />
+          <TimerControl v-if="showDrawSeconds" v-model="drawSecs" :song-seconds="songSeconds" />
         </AccordionItem>
       </Accordion>
     </div>

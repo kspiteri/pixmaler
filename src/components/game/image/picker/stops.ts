@@ -30,3 +30,10 @@ export function detailLabel(scale: number): string {
 export function durationLabel(value: number): string {
   return DURATION_STOPS.find(s => s.value === value)?.label ?? 'custom'
 }
+
+// Seconds → "m:ss", for the Song timer stop and the track durations in the Music dropdown.
+export function mmss(seconds: number): string {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${m}:${String(s).padStart(2, '0')}`
+}
