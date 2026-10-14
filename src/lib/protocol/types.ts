@@ -254,6 +254,9 @@ export interface StateMsg {
   gmClientId: string
   config: RoundConfig | null
   deadline: number | null // unix ms
+  // The server's wall clock at send (unix ms). Clients measure their offset from it so the
+  // deadline-driven countdown and music agree across devices with skewed clocks.
+  serverNow: number
   // The round's *current* length, growing with each extension. `config.drawSeconds`
   // is where it starts; the countdown bar divides by this instead, or it pins at
   // 100% once time is added.
@@ -272,6 +275,8 @@ export interface PhaseMsg {
   type: 'phase'
   phase: Phase
   deadline: number | null
+  // Server wall clock at send (unix ms), for the client clock-offset correction. See StateMsg.
+  serverNow: number
 }
 
 export interface Submission {

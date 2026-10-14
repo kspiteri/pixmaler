@@ -6,6 +6,7 @@ import type PartySocket from 'partysocket'
 import type { Ref, ShallowRef } from 'vue'
 import type { ServerMsg } from '../../protocol/types'
 import { askAlert } from '../../dialog'
+import { syncServerClock } from '../../serverClock'
 
 // `shallowRef` throughout: the whole object is replaced on each message, so no deep-watch.
 export type StateMsg = Extract<ServerMsg, { type: 'state' }>
@@ -40,6 +41,7 @@ export interface RoomRefs {
 export function applyServerMessage(msg: ServerMsg, refs: RoomRefs, socket: PartySocket): void {
   switch (msg.type) {
     case 'state':
+      syncServerClock(msg.serverNow)
       refs.state.value = msg
       refs.joinCreate.value = false // accepted — never re-create on a later reconnect (#66)
       // `config: null` is the room leaving a round behind, so the grid goes with it.
@@ -48,6 +50,7 @@ export function applyServerMessage(msg: ServerMsg, refs: RoomRefs, socket: Party
       break
     case 'target': refs.targetGrid.value = msg.grid; break
     case 'phase':
+      syncServerClock(msg.serverNow)
       // `phase` doesn't carry config/players — patch the cached state.
       if (refs.state.value)
         refs.state.value = { ...refs.state.value, phase: msg.phase, deadline: msg.deadline }
