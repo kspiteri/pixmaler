@@ -32,6 +32,11 @@
     transition:
       scale 1s linear,
       background 0.4s;
+    // A luminance pulse marks the critical band without relying on hue, so the run-out reads
+    // under deuteranopia. Filter, not colour, so it rides whatever the ramp already set.
+    &--pulse {
+      animation: phase-progress-pulse 1s ease-in-out infinite;
+    }
   }
 
   &__bar {
@@ -101,5 +106,24 @@
 
   &__note {
     @include interstitial-note;
+  }
+}
+
+@keyframes phase-progress-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.45);
+  }
+}
+
+// Reduced motion: hold the brighter step instead of pulsing, so the critical band still
+// reads as a luminance jump from the lower bands without needing hue.
+@media (prefers-reduced-motion: reduce) {
+  .phase__progress-fill--pulse {
+    animation: none;
+    filter: brightness(1.3);
   }
 }
