@@ -97,7 +97,7 @@ export const musicError = ref<MusicTrackId | null>(null)
 export const musicControlsOpen = ref(false)
 
 /** Play a streamed, looping track, fading in from silence. Gated on the `music` toggle. */
-export function playMusic(track: MusicTrackId, { fadeMs = MUSIC_FADE_MS } = {}): void {
+export function playMusic(track: MusicTrackId, { fadeMs = MUSIC_FADE_MS, offsetS = 0 } = {}): void {
   if (!music.value)
     return
   stopMusic({ fadeMs: 0 })
@@ -124,6 +124,10 @@ export function playMusic(track: MusicTrackId, { fadeMs = MUSIC_FADE_MS } = {}):
   currentTrack.value = track
   musicPaused.value = false
   musicId = howl.play()
+  // Seek once playback has actually begun: a streamed html5 track ignores an early seek, and
+  // Howler reports position only from 'play'. This is what lands a late joiner at the synced spot.
+  if (offsetS > 0)
+    howl.once('play', () => howl.seek(offsetS, musicId))
   howl.fade(0, musicVolume.value, fadeMs, musicId)
 }
 
