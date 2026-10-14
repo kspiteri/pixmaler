@@ -84,6 +84,9 @@
     &--active {
       background: $accent;
       color: $accent-fg;
+      &:hover {
+        color: $accent-fg;
+      }
     }
   }
 
