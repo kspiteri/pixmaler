@@ -175,14 +175,58 @@ export function setMusicVolume(v: number): void {
   musicHowl?.volume(musicVolume.value)
 }
 
+// -- ambient channel --------------------------------------------------------------------------
+
+// A short, calm loop that fills the gaps the chosen song leaves — the finale lead-in, the tail
+// after it ends, and the VOTING/RESULTS gallery. Preloaded Web Audio (not html5) so it loops
+// click-free, unlike the streamed music channel. Gated on the same `music` toggle as tracks.
+
+const AMBIENT_VOLUME = 0.3
+let ambientHowl: Howl | null = null
+let ambientActive = false
+let ambientStopTimer: number | null = null
+
+/** Fade the ambient bed in (looping); no-op if the music toggle is off or it's already up. */
+export function playAmbient({ fadeMs = MUSIC_FADE_MS } = {}): void {
+  if (!music.value || ambientActive)
+    return
+  ambientActive = true
+  if (ambientStopTimer) {
+    clearTimeout(ambientStopTimer)
+    ambientStopTimer = null
+  }
+  ambientHowl ??= new Howl({ src: [asset('assets/audio/ambient.wav')], loop: true, volume: 0 })
+  // Reuse the single instance: if a fade-out was in flight it's still playing, so just fade back up.
+  if (!ambientHowl.playing())
+    ambientHowl.play()
+  ambientHowl.fade(ambientHowl.volume(), AMBIENT_VOLUME, fadeMs)
+}
+
+/** Fade the ambient bed out and stop it; it stays loaded for the next gap. */
+export function stopAmbient({ fadeMs = MUSIC_FADE_MS } = {}): void {
+  const howl = ambientHowl
+  if (!howl || !ambientActive)
+    return
+  ambientActive = false
+  if (fadeMs > 0) {
+    howl.fade(howl.volume(), 0, fadeMs)
+    ambientStopTimer = setTimeout(() => { howl.stop(); ambientStopTimer = null }, fadeMs)
+  }
+  else {
+    howl.stop()
+  }
+}
+
 // -- toggles ----------------------------------------------------------------------------------
 
 export function toggleMusic(): void {
   music.value = !music.value
   persist()
   // Silence the channel immediately when switched off; a switch-on is heard on the next track.
-  if (!music.value)
+  if (!music.value) {
     stopMusic()
+    stopAmbient()
+  }
 }
 
 export function toggleSfx(): void {

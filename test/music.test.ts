@@ -23,3 +23,10 @@ describe('track durations', () => {
     expect(durationS).toBeLessThan(1200)
   })
 })
+
+describe('ambient loop', () => {
+  it('is bundled (a miscased or missing path would play as silence)', () => {
+    const bundled = Object.keys(import.meta.glob('../public/assets/audio/ambient.wav'))
+    expect(bundled).toEqual(['../public/assets/audio/ambient.wav'])
+  })
+})
