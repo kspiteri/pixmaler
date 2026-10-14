@@ -26,7 +26,6 @@ function storedPrefs(): AudioPrefs {
     return {
       music: typeof p.music === 'boolean' ? p.music : DEFAULT_AUDIO_PREFS.music,
       sfx: typeof p.sfx === 'boolean' ? p.sfx : DEFAULT_AUDIO_PREFS.sfx,
-      ticktock: typeof p.ticktock === 'boolean' ? p.ticktock : DEFAULT_AUDIO_PREFS.ticktock,
     }
   }
   catch {
@@ -39,14 +38,13 @@ const initial = storedPrefs()
 // Reactive mirrors: a `ToggleSwitch` in SettingsMenu reads and drives these directly.
 export const music = ref(initial.music)
 export const sfx = ref(initial.sfx)
-export const ticktock = ref(initial.ticktock)
 
 function persist(): void {
-  writeStored(KEY, JSON.stringify({ music: music.value, sfx: sfx.value, ticktock: ticktock.value }))
+  writeStored(KEY, JSON.stringify({ music: music.value, sfx: sfx.value }))
 }
 
 function currentPrefs(): AudioPrefs {
-  return { music: music.value, sfx: sfx.value, ticktock: ticktock.value }
+  return { music: music.value, sfx: sfx.value }
 }
 
 // -- sfx channel ------------------------------------------------------------------------------
@@ -72,7 +70,7 @@ export function playSfx(key: SfxKey): void {
   if (!(key in SPRITE))
     return
   const now = Date.now()
-  if (!shouldPlay(key, currentPrefs(), now, lastPlayed.get(key) ?? null))
+  if (!shouldPlay(currentPrefs(), now, lastPlayed.get(key) ?? null))
     return
   lastPlayed.set(key, now)
   sfxHowl.play(key)
@@ -238,10 +236,5 @@ export function toggleMusic(): void {
 
 export function toggleSfx(): void {
   sfx.value = !sfx.value
-  persist()
-}
-
-export function toggleTicktock(): void {
-  ticktock.value = !ticktock.value
   persist()
 }
