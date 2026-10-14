@@ -13,6 +13,7 @@
     "lint:fix": "eslint . --fix",
     "lint:css": "stylelint \"src/**/*.{scss,vue}\"",
     "test": "vitest run",
+    "music:durations": "node scripts/probe-music.mjs",
     "wr:dev": "wrangler dev",
     "wr:deploy": "wrangler deploy",
     "prepare": "simple-git-hooks"
