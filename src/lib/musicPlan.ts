@@ -3,7 +3,9 @@
 // song starts), or stay silent. No Howler, no DOM, so it unit-tests like `audio.gate.ts`. The
 // consumer (`useMusic`) applies the result and owns the ambient bed and the fade/seek calls.
 
-export type MusicFit = 'loop' | 'once' | 'finale'
+import type { MusicFit } from './protocol/types'
+
+export type { MusicFit }
 
 export interface MusicPlanInput {
   fit: MusicFit

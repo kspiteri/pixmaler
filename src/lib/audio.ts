@@ -96,15 +96,16 @@ export const musicError = ref<MusicTrackId | null>(null)
 // Whether the widget's song + volume panel is open; session-only, shared across phase headers.
 export const musicControlsOpen = ref(false)
 
-/** Play a streamed, looping track, fading in from silence. Gated on the `music` toggle. */
-export function playMusic(track: MusicTrackId, { fadeMs = MUSIC_FADE_MS, offsetS = 0 } = {}): void {
+/** Play a streamed track (looping by default), fading in from silence. Gated on the `music` toggle. */
+export function playMusic(track: MusicTrackId, opts: { fadeMs?: number, offsetS?: number, loop?: boolean, onEnd?: () => void } = {}): void {
+  const { fadeMs = MUSIC_FADE_MS, offsetS = 0, loop = true, onEnd } = opts
   if (!music.value)
     return
   stopMusic({ fadeMs: 0 })
   const howl: Howl = new Howl({
     src: [trackSrc(track)],
     html5: true,
-    loop: true,
+    loop,
     volume: 0,
     onloaderror: () => {
       if (howl !== musicHowl)
@@ -118,6 +119,12 @@ export function playMusic(track: MusicTrackId, { fadeMs = MUSIC_FADE_MS, offsetS
         if (howl === musicHowl && !musicPaused.value)
           howl.play(musicId)
       })
+    },
+    // A non-looping track (once/finale) ends by itself; tell the consumer so the ambient bed can
+    // cover the rest of the phase.
+    onend: () => {
+      if (howl === musicHowl && !loop)
+        onEnd?.()
     },
   })
   musicHowl = howl

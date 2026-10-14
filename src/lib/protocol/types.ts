@@ -103,6 +103,19 @@ export function normaliseMusicTrack(track: unknown): MusicTrackId | null {
   return MUSIC_TRACK_IDS.includes(track as MusicTrackId) ? track as MusicTrackId : null
 }
 
+// How a chosen song fills the round, picked by the GM alongside the track. `finale` is the
+// default: the song ends exactly on the deadline, so the music is the countdown. `loop` is the
+// old continuous behaviour; `once` plays through once then falls silent. A runtime array like
+// MUSIC_TRACK_IDS so the server validates against it and the picker keys its control off it.
+export const MUSIC_FITS = ['finale', 'loop', 'once'] as const
+export type MusicFit = typeof MUSIC_FITS[number]
+
+// The single music-fit validator; both sides import it. Clamps an unknown or unlisted value to
+// `finale` (the default).
+export function normaliseMusicFit(fit: unknown): MusicFit {
+  return MUSIC_FITS.includes(fit as MusicFit) ? fit as MusicFit : 'finale'
+}
+
 // The round's settings, small enough to ride on every `state`. The target grid is not
 // here: it never changes mid-round and dominates the payload, so it travels once in its
 // own `TargetMsg` instead of being re-sent on every vote and join.
@@ -113,6 +126,8 @@ export interface RoundConfig {
   drawSeconds: number
   // Background music the GM picks in the Game settings step; `null` = no music (opt-in).
   musicTrack: MusicTrackId | null
+  // How the track fills the round (default `finale` — ends on the deadline). See MUSIC_FITS.
+  musicFit: MusicFit
 }
 
 export interface GmConfigureMsg extends RoundConfig {

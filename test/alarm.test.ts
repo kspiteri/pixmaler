@@ -188,6 +188,7 @@ describe('handleExtendTime', () => {
     targetGrid: [0, 1, 1, 0],
     drawSeconds: 60,
     musicTrack: null,
+    musicFit: 'finale',
   } satisfies GmConfigureMsg
 
   function drawing(over: Partial<RoomState> = {}) {

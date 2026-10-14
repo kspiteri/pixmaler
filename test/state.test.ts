@@ -22,6 +22,7 @@ const config = {
   targetGrid: [0, 1, 1, 0],
   drawSeconds: 60,
   musicTrack: null,
+  musicFit: 'finale',
 } satisfies GmConfigureMsg
 
 function player(clientId: string, over: Partial<RoomPlayer> = {}): RoomPlayer {
@@ -214,6 +215,7 @@ describe('buildState', () => {
       palette: config.palette,
       drawSeconds: config.drawSeconds,
       musicTrack: config.musicTrack,
+      musicFit: config.musicFit,
     })
   })
 

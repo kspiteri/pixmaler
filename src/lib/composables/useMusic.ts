@@ -1,43 +1,119 @@
 import type { Ref, ShallowRef } from 'vue'
-import type { MusicTrackId, StateMsg } from '../protocol/types'
-import { watch } from 'vue'
-import { currentTrack, playMusic, stopMusic } from '../audio'
+import type { StateMsg } from '../protocol/types'
+import { onBeforeUnmount, watch } from 'vue'
+import { currentTrack, playAmbient, playMusic, stopAmbient, stopMusic } from '../audio'
 import { MUSIC_TRACKS } from '../content/music'
 import { musicPlan } from '../musicPlan'
 import { normaliseMusicTrack } from '../protocol/types'
 import { serverTime } from '../serverClock'
 
-// Phase-driven background music: fades in when DRAWING begins, carries through VOTING and
-// RESULTS, fades out on return to LOBBY (or Play again). The track is the GM's
-// `config.musicTrack` (null = none). On start it seeks to the position the whole room is at
-// (musicPlan, loop fit), so a late joiner or a reloaded tab lands in sync, not back at 0:00.
-// Gating on the `music` toggle lives in the audio module. App calls this once on the room route.
+// Phase-driven background music. The chosen track plays during DRAWING, fitted to the round by
+// `config.musicFit` (default finale: the song ends on the deadline, so the music is the
+// countdown). A short ambient loop fills any gap the song leaves — the finale lead-in, an
+// extension tail, and the VOTING/RESULTS gallery. Everything is re-derived from the pure plan
+// (musicPlan) on each state push, visibility change and extension, so a late joiner, a +15s and a
+// backgrounded tab all converge. App calls this once on the room route.
 export function useMusic(state: ShallowRef<StateMsg | null>, closed: Ref<boolean>): void {
-  // Where in the track the room is now, so a client starting late lands in sync. Only meaningful
-  // during DRAWING, where the deadline describes this round; elsewhere start from the top.
-  function startOffsetS(track: MusicTrackId): number {
-    const s = state.value
-    if (!s || s.phase !== 'DRAWING' || s.deadline === null)
-      return 0
-    const durationS = MUSIC_TRACKS.find(t => t.id === track)?.durationS ?? 0
-    const plan = musicPlan({ fit: 'loop', durationS, roundSeconds: s.roundSeconds, deadline: s.deadline, now: serverTime() })
-    return plan.action === 'play' ? plan.offsetS : 0
+  // Pending finale start during a lead-in gap.
+  let startTimer: number | null = null
+
+  function clearStartTimer(): void {
+    if (startTimer !== null) {
+      clearTimeout(startTimer)
+      startTimer = null
+    }
   }
 
-  watch(() => state.value?.phase ?? null, (phase) => {
+  // A finale that ends before the deadline (an extension left a tail) hands off to the ambient bed.
+  // The ended howl is left in place so replan won't restart it; the next phase clears it.
+  function onFinaleEnd(): void {
+    if (state.value?.phase === 'DRAWING')
+      playAmbient()
+  }
+
+  function replan(): void {
+    clearStartTimer()
+    const s = state.value
+    const phase = s?.phase ?? null
+
     if (!phase || phase === 'LOBBY') {
       stopMusic()
+      stopAmbient()
       return
     }
-    // Start the round's track — also for a client that lands mid-round in VOTING/RESULTS — but
-    // skip if it's already playing, so the track carries across phases instead of restarting.
-    const track = normaliseMusicTrack(state.value?.config?.musicTrack)
-    if (track && currentTrack.value !== track)
-      playMusic(track, { offsetS: startOffsetS(track) })
-  })
-  // A session can end in RESULTS, on a screen with no widget or menu to mute it — so stop here.
-  watch(closed, (isClosed) => {
-    if (isClosed)
+
+    const track = normaliseMusicTrack(s!.config?.musicTrack)
+    if (!track) {
+      // The GM chose no music: silence, not the ambient bed.
       stopMusic()
+      stopAmbient()
+      return
+    }
+
+    // Only DRAWING runs the song against its deadline. By VOTING/RESULTS the finale is over, so
+    // the ambient bed becomes the gallery music.
+    if (phase !== 'DRAWING' || s!.deadline === null) {
+      stopMusic()
+      playAmbient()
+      return
+    }
+
+    const fit = s!.config!.musicFit
+    const plan = musicPlan({
+      fit,
+      durationS: MUSIC_TRACKS.find(t => t.id === track)?.durationS ?? 0,
+      roundSeconds: s!.roundSeconds,
+      deadline: s!.deadline,
+      now: serverTime(),
+    })
+
+    if (plan.action === 'wait') {
+      // Finale lead-in: ambient now, song when the timer fires (a later re-plan starts it).
+      playAmbient()
+      startTimer = window.setTimeout(replan, plan.startInMs)
+      return
+    }
+    if (plan.action === 'silent') {
+      // The song has finished. Ambient covers the tail, unless the GM asked for `once` (= silence).
+      stopMusic()
+      if (fit === 'once')
+        stopAmbient()
+      else
+        playAmbient()
+      return
+    }
+    // play: start at the synced offset and crossfade the ambient out. If it's already this track,
+    // leave it — never seek a playing song backward, which is the +15s "no seek-back" rule, and
+    // also what stops an ended finale from being restarted mid-tail.
+    if (currentTrack.value !== track) {
+      playMusic(track, {
+        offsetS: plan.offsetS,
+        loop: plan.loop,
+        onEnd: fit === 'finale' ? onFinaleEnd : undefined,
+      })
+      stopAmbient()
+    }
+  }
+
+  watch(() => state.value?.phase ?? null, replan)
+  watch(() => state.value?.deadline ?? null, replan)
+  watch(closed, (isClosed) => {
+    if (isClosed) {
+      clearStartTimer()
+      stopMusic()
+      stopAmbient()
+    }
+  })
+
+  // Background tabs throttle timers, so the lead-in timer and the clock can drift; re-plan on the
+  // way back to resync.
+  function onVisible(): void {
+    if (document.visibilityState === 'visible')
+      replan()
+  }
+  document.addEventListener('visibilitychange', onVisible)
+  onBeforeUnmount(() => {
+    document.removeEventListener('visibilitychange', onVisible)
+    clearStartTimer()
   })
 }
