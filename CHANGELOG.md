@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.15.0](https://github.com/kspiteri/pixmaler/compare/0.14.0...0.15.0) (2026-10-16)
+
+
+### New
+
+* set music to act as countdown ([#125](https://github.com/kspiteri/pixmaler/issues/125)) ([3633ac0](https://github.com/kspiteri/pixmaler/commit/3633ac05c17cc0f627d9f7eff185d15134c4af40))
+
+
+### Fixes
+
+* **forms:** add hover state for active form buttons ([68916b1](https://github.com/kspiteri/pixmaler/commit/68916b152a6147e10a242127802a3a2c869b24fd))
+
+
+### Under the hood
+
+* **deps:** bump @antfu/eslint-config to 9.5.1, @lucide/vue and workers ([db5f0d4](https://github.com/kspiteri/pixmaler/commit/db5f0d4c2ebd6980921e68ee48a0c69a49f09b68))
+
 ## [0.14.0](https://github.com/kspiteri/pixmaler/compare/0.13.0...0.14.0) (2026-10-12)
 
 
