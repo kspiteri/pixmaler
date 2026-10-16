@@ -40,9 +40,13 @@ export function musicPlan({ fit, durationS, roundSeconds, deadline, now }: Music
   if (fit === 'loop')
     return { action: 'play', offsetS: elapsedS % durationS, startInMs: 0, loop: true }
 
-  // `once` and the can't-fit finale both play from the top and simply stop when the track ends.
-  if (fit === 'once' || durationS > roundSeconds) {
+  if (fit === 'once') {
     return elapsedS < durationS
+      ? { action: 'play', offsetS: elapsedS, startInMs: 0, loop: false }
+      : SILENT
+  }
+  if (durationS > roundSeconds) {
+    return elapsedS < roundSeconds
       ? { action: 'play', offsetS: elapsedS, startInMs: 0, loop: false }
       : SILENT
   }
