@@ -4,7 +4,7 @@ import { onBeforeUnmount, watch } from 'vue'
 import { currentTrack, playAmbient, playMusic, stopAmbient, stopMusic } from '../audio'
 import { MUSIC_TRACKS } from '../content/music'
 import { musicPlan } from '../musicPlan'
-import { normaliseMusicTrack } from '../protocol/types'
+import { normaliseMusicFit, normaliseMusicTrack } from '../protocol/types'
 import { serverTime } from '../serverClock'
 
 // Phase-driven background music. The chosen track plays during DRAWING, fitted to the round by
@@ -33,6 +33,13 @@ export function useMusic(state: ShallowRef<StateMsg | null>, closed: Ref<boolean
 
   function replan(): void {
     clearStartTimer()
+    // A closed session can still hold a non-LOBBY phase; a visibilitychange replan would then
+    // restart music on the terminal screen, which has no widget to stop it.
+    if (closed.value) {
+      stopMusic()
+      stopAmbient()
+      return
+    }
     const s = state.value
     const phase = s?.phase ?? null
 
@@ -58,7 +65,7 @@ export function useMusic(state: ShallowRef<StateMsg | null>, closed: Ref<boolean
       return
     }
 
-    const fit = s!.config!.musicFit
+    const fit = normaliseMusicFit(s!.config?.musicFit)
     const plan = musicPlan({
       fit,
       durationS: MUSIC_TRACKS.find(t => t.id === track)?.durationS ?? 0,
@@ -68,6 +75,10 @@ export function useMusic(state: ShallowRef<StateMsg | null>, closed: Ref<boolean
     })
 
     if (plan.action === 'wait') {
+      // Already playing (an extension pushed songStart past now): leave it — never seek a playing
+      // song backward, and don't bring the ambient bed up under it.
+      if (currentTrack.value === track)
+        return
       // Finale lead-in: ambient now, song when the timer fires (a later re-plan starts it).
       playAmbient()
       startTimer = window.setTimeout(replan, plan.startInMs)

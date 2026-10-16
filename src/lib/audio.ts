@@ -178,6 +178,7 @@ export function resumeMusic(): void {
 export function setMusicVolume(v: number): void {
   musicVolume.value = Math.min(1, Math.max(0, v))
   musicHowl?.volume(musicVolume.value)
+  syncAmbientVolume()
 }
 
 // -- ambient channel --------------------------------------------------------------------------
@@ -190,6 +191,16 @@ const AMBIENT_VOLUME = 0.3
 let ambientHowl: Howl | null = null
 let ambientActive = false
 let ambientStopTimer: number | null = null
+
+// The ambient bed scales with the music volume slider (it has no widget of its own), relative to
+// the music channel's base level.
+function ambientTarget(): number {
+  return Math.min(1, AMBIENT_VOLUME * musicVolume.value / MUSIC_VOLUME)
+}
+function syncAmbientVolume(): void {
+  if (ambientActive)
+    ambientHowl?.volume(ambientTarget())
+}
 
 /** Fade the ambient bed in (looping); no-op if the music toggle is off or it's already up. */
 export function playAmbient({ fadeMs = MUSIC_FADE_MS } = {}): void {
@@ -204,7 +215,7 @@ export function playAmbient({ fadeMs = MUSIC_FADE_MS } = {}): void {
   // Reuse the single instance: if a fade-out was in flight it's still playing, so just fade back up.
   if (!ambientHowl.playing())
     ambientHowl.play()
-  ambientHowl.fade(ambientHowl.volume(), AMBIENT_VOLUME, fadeMs)
+  ambientHowl.fade(ambientHowl.volume(), ambientTarget(), fadeMs)
 }
 
 /** Fade the ambient bed out and stop it; it stays loaded for the next gap. */
