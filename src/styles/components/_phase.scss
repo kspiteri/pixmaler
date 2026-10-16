@@ -32,8 +32,8 @@
     transition:
       scale 1s linear,
       background 0.4s;
-    // A luminance pulse marks the critical band without relying on hue, so the run-out reads
-    // under deuteranopia. Filter, not colour, so it rides whatever the ramp already set.
+    // A fade pulse marks the critical band without relying on hue, so the run-out reads under
+    // deuteranopia. Opacity, not colour, so it works whatever the ramp set (see the keyframes).
     &--pulse {
       animation: phase-progress-pulse 1s ease-in-out infinite;
     }
@@ -112,18 +112,19 @@
 @keyframes phase-progress-pulse {
   0%,
   100% {
-    filter: brightness(1);
+    opacity: 1;
   }
   50% {
-    filter: brightness(1.45);
+    opacity: 0.4;
   }
 }
 
-// Reduced motion: hold the brighter step instead of pulsing, so the critical band still
-// reads as a luminance jump from the lower bands without needing hue.
+// Reduced motion: hold a translucent step instead of pulsing. Opacity, not brightness — the
+// dark-theme danger red is channel-clipped, so a brightness bump barely moves its luminance, and
+// this ribbon is the only non-hue run-out cue on mobile (the numeric timer is hidden there).
 @media (prefers-reduced-motion: reduce) {
   .phase__progress-fill--pulse {
     animation: none;
-    filter: brightness(1.3);
+    opacity: 0.6;
   }
 }
