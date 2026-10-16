@@ -51,9 +51,15 @@ export function applyServerMessage(msg: ServerMsg, refs: RoomRefs, socket: Party
     case 'target': refs.targetGrid.value = msg.grid; break
     case 'phase':
       syncServerClock(msg.serverNow)
-      // `phase` doesn't carry config/players — patch the cached state.
-      if (refs.state.value)
-        refs.state.value = { ...refs.state.value, phase: msg.phase, deadline: msg.deadline }
+      // `phase` doesn't carry config/players/roundSeconds — patch the cached state. A fresh DRAWING
+      // resets roundSeconds to the configured length (the server did too, but doesn't re-broadcast
+      // it); the stale LOBBY value is 0 in a new room, which would wreck the music/countdown maths.
+      if (refs.state.value) {
+        const roundSeconds = msg.phase === 'DRAWING'
+          ? (refs.state.value.config?.drawSeconds ?? refs.state.value.roundSeconds)
+          : refs.state.value.roundSeconds
+        refs.state.value = { ...refs.state.value, phase: msg.phase, deadline: msg.deadline, roundSeconds }
+      }
       // A `phase` message with DRAWING is only broadcast by handleStart — a fresh round the
       // server has cleared — so drop everything held from the previous round or Play again
       // resurrects it. A mid-round rejoin arrives as `state`, so restores survive. Nothing
