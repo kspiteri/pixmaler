@@ -18,7 +18,8 @@ const hintId = useId()
 const custom = ref(false)
 
 // When a track is chosen, offer a "Song" stop at its (clamped) length so the song can set the
-// round length. It replaces any preset of the same value, to avoid a duplicate tick.
+// round length. Insert it in value order (the slider walks stops by index, so the thumb must move
+// monotonically) and keep `custom` last; a preset of the same value is dropped to avoid a dup tick.
 const songStop = computed(() => {
   const s = props.songSeconds
   if (!s)
@@ -26,11 +27,14 @@ const songStop = computed(() => {
   const value = clampDrawSeconds(s)
   return { value, label: `Song · ${mmss(value)}` }
 })
-const stops = computed(() =>
-  songStop.value
-    ? [songStop.value, ...DURATION_STOPS.filter(s => s.value !== songStop.value!.value)]
-    : DURATION_STOPS,
-)
+const stops = computed(() => {
+  const song = songStop.value
+  if (!song)
+    return DURATION_STOPS
+  const presets = DURATION_STOPS.filter(s => s.value !== CUSTOM_SECS && s.value !== song.value)
+  const customStop = DURATION_STOPS.find(s => s.value === CUSTOM_SECS)!
+  return [...[...presets, song].sort((a, b) => a.value - b.value), customStop]
+})
 
 const sliderModel = computed(() => (custom.value ? CUSTOM_SECS : props.modelValue))
 const readout = computed(() =>

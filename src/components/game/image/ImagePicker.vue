@@ -20,7 +20,7 @@ import MusicControl from './picker/MusicControl.vue'
 import MusicFitControl from './picker/MusicFitControl.vue'
 import PixelationStyleControl from './picker/PixelationStyleControl.vue'
 import SourcePicker from './picker/SourcePicker.vue'
-import { detailLabel, DURATION_STOPS } from './picker/stops'
+import { detailLabel, DURATION_STOPS, mmss } from './picker/stops'
 import TargetPreview from './picker/TargetPreview.vue'
 import TimerControl from './picker/TimerControl.vue'
 
@@ -155,7 +155,9 @@ const sourceSummary = computed(() => sourceLabel.value || 'none chosen')
 const ratioLabel = computed(() => TARGET_RATIOS[ratio.value].label)
 const lookSummary = computed(() => `${detailLabel(scale.value)} · ${colorCount.value} colours`)
 const timerSummary = computed(() =>
-  DURATION_STOPS.find(s => s.value === drawSecs.value)?.label ?? `${drawSecs.value}s`,
+  songSeconds.value && drawSecs.value === clampDrawSeconds(songSeconds.value)
+    ? `Song · ${mmss(drawSecs.value)}`
+    : (DURATION_STOPS.find(s => s.value === drawSecs.value)?.label ?? `${drawSecs.value}s`),
 )
 
 const adjustSummary = computed(() =>
@@ -238,9 +240,11 @@ function scheduleReprocess() {
 watch([scale, colorCount, ratio, background, crop, pixelationStyle], scheduleReprocess)
 watch(musicTrack, (t) => {
   emit('music', t)
-  // Song sets the round length by default — picking a track snaps Draw time to its duration.
-  if (t && props.showDrawSeconds)
-    drawSecs.value = clampDrawSeconds(songSeconds.value)
+  if (!props.showDrawSeconds)
+    return
+  // Song sets the round length by default — picking a track snaps Draw time to its duration;
+  // clearing it drops back to the default so the slider never shows an orphaned off-stop value.
+  drawSecs.value = t ? clampDrawSeconds(songSeconds.value) : DEFAULT_DRAW_SECONDS
 })
 
 // Adopt a newly-chosen image: preselect the ratio closest to its own framing and reset the crop
@@ -490,8 +494,8 @@ onBeforeUnmount(() => {
             {{ settingsSummary }}
           </template>
           <MusicControl v-model="musicTrack" />
-          <MusicFitControl v-if="showDrawSeconds && musicTrack && drawSecs > songSeconds" v-model="musicFit" />
           <TimerControl v-if="showDrawSeconds" v-model="drawSecs" :song-seconds="songSeconds" />
+          <MusicFitControl v-if="showDrawSeconds && musicTrack && drawSecs > songSeconds" v-model="musicFit" />
         </AccordionItem>
       </Accordion>
     </div>
