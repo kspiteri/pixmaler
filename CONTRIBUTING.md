@@ -15,20 +15,9 @@ You need **both** servers to play — the frontend talks to the Worker over a We
 - **`.env.local`** — Vite's. `VITE_PARTYKIT_HOST=127.0.0.1:1999` in dev. (The var keeps its historical name.)
 - **`.dev.vars`** — `wrangler dev`'s. `PIXMALER_DEV=1` lifts the server's "min 2 players + GM" start gate so the whole flow can be driven solo across two browsers. Never deployed.
 
-The server's lifecycle windows and hot-path guards are env-overridable too, which is the only sane way to test them — the defaults are measured in minutes. All of them are read per-call from `this.env`, so `wrangler dev` picks up a `.dev.vars` change on reload:
+The server's lifecycle windows and hot-path guards (`VOTING_MS`, `IDLE_MS`, `EMPTY_GRACE_MS`, `RATE_BURST`, `RATE_PER_SEC`, `MAX_FRAME_BYTES`) are env-overridable too; the full table is in [`party/README.md`](./party/README.md#configuration). They're read per call, so `wrangler dev` picks up a `.dev.vars` change on reload. Set one low (`VOTING_MS=20000`) rather than waiting, and remember a wipe is deliberately destructive: it clears the players, the GM and the round.
 
-| Var | Default | What it bounds |
-|---|---|---|
-| `VOTING_MS` | 5 min | Backstop that resolves a stalled VOTING phase. A safety net, not a mechanic — an absent GM used to lose the round to the idle wipe instead. Surfaces to players only in the last 30 s. |
-| `IDLE_MS` | 45 min | No messages for this long → the room is wiped and every open tab is dropped onto the closed screen. |
-| `EMPTY_GRACE_MS` | 60 s | Wipe this long after the last connection closes, so a room code reuses clean. |
-| `RATE_BURST` | 40 | Max frames a connection may send back-to-back before the token bucket throttles it (#75). |
-| `RATE_PER_SEC` | 20 | Sustained frames/sec once the burst is spent. |
-| `MAX_FRAME_BYTES` | 1 000 000 | A frame longer than this is dropped before it is ever parsed. |
-
-Set one low (`VOTING_MS=20000`) rather than waiting, and remember a wipe is deliberately destructive: it clears the players, the GM and the round.
-
-> The server runs on **PartyServer + `wrangler`**, configured in `wrangler.jsonc`. There is no `partykit` dependency and no `partykit.json` — the managed PartyKit host was blocked by a shared-zone cap and replaced. If a round won't pick up server edits, check for a leftover process on the port: `lsof -nP -iTCP:1999 -sTCP:LISTEN`. The full server guide — module map, phase machine, alarm lifecycle — is [`party/README.md`](./party/README.md).
+> The server runs on **PartyServer + `wrangler`** (`wrangler.jsonc`); its guide is [`party/README.md`](./party/README.md). If a round won't pick up server edits, check for a leftover process on the port: `lsof -nP -iTCP:1999 -sTCP:LISTEN`.
 
 **Populating a round without friends:** `node scripts/testbots.mjs --room=<code> --count=5` connects 1–10 bots to a local room over WebSocket — they join, submit an imperfect redraw of the target during DRAWING, and vote during VOTING, resetting each round. Open/create the room as the GM in a real browser first, then launch the bots. Local only: prod refuses non-browser sockets by design.
 
@@ -66,11 +55,11 @@ pnpm wr:deploy    # deploy the realtime server to Cloudflare
 **Lint + format** via `@antfu/eslint-config` (no separate Prettier) — config in `eslint.config.mjs`. Two local tweaks:
 
 - `style/max-statements-per-line` relaxed to `max: 6` — grouped one-line variable inits are idiomatic in the algorithmic code.
-- `no-alert` on, **with no inline exemptions** — the rule covers `confirm()` as well as `alert()`, and both have an in-UI replacement. `src/lib/dialog.ts` exposes `askAlert(message)` and `askConfirm(message)`; each returns a promise, so a guard reads `if (!await askConfirm('End voting now?')) return`. Requests queue into the one `AlertDialog.vue` instance mounted in `App.vue`, which renders acknowledge or yes/no from its `mode` prop (`'alert'` by default). Reach for the browser's dialogs only if you're prepared to explain why in the same commit that adds the disable.
+- `no-alert` on, **with no inline exemptions** — it covers `confirm()` as well as `alert()`. Use `askAlert` / `askConfirm` from `src/lib/dialog.ts` instead (rules in [`AGENTS.md`](./AGENTS.md) and [`docs/design-system.md`](./docs/design-system.md)). Reach for the browser's dialogs only if you're prepared to explain why in the same commit that adds the disable.
 
 Run `pnpm lint:fix` before committing. Most issues auto-fix.
 
-**Stylelint — the colour-literal guard.** `.stylelintrc.json` fails on any hex, or `rgb()`/`hsl()` in a fill/ink/border property, anywhere but `_theme.scss` and `_tokens.scss` (the value/name layer) — so a colour is always a token, never a one-off. `color-mix()` on a token derives a shade or an alpha; shadows, filters and gradients keep the black-alpha idiom. `pnpm lint:css` runs it over `.scss` files and Vue `<style>` blocks.
+**Stylelint — the colour-literal guard.** `.stylelintrc.json` fails on any hex, or `rgb()`/`hsl()` in a fill/ink/border property, anywhere but `_theme.scss` and `_tokens.scss`. `pnpm lint:css` runs it over `.scss` files and Vue `<style>` blocks. The colour rules it enforces are in [`docs/design-system.md`](./docs/design-system.md).
 
 **Git hooks** — `simple-git-hooks` + `lint-staged` run at pre-commit: `eslint --fix` on staged files, plus `stylelint` on staged `.scss`/`.vue`. Installed by the `prepare` script on `pnpm install`. If they don't fire, run `pnpm exec simple-git-hooks`.
 
@@ -105,35 +94,16 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 
 When you add a test, make it fail first: revert the fix it guards and check it goes red. Several of these were written that way, and two of them caught mutations that a green-only run would have missed. What the suite cannot reach is anything needing a real `getContext('2d')` — canvas rendering, the decode → crop → flatten → sample half of `processImage`, `hasTransparency` — or component behaviour. Verify those by driving the app in a browser.
 
-## Conventions
+## Conventions and structure
 
-- **British English** in user-facing strings, comments, and docs (`colour`, `behaviour`, `centre`). Identifiers mirroring DOM/web APIs stay as-is (`color` in CSS, `fillStyle` on canvas).
-- **Copy has a voice, in three bands.** Flavour (lowercase, dry — the taglines) for idle/empty/roll-call; Explanatory (clear, light touch) for status and spectator notes; Direct (plain, Sentence case) for instructions, labels, errors, GM controls and Settings. No em-dashes in user-facing strings (comma, colon or full stop instead), and no exclamation marks bar the one earned `ready!`. Full rule in `CLAUDE.md`.
-- **Vue 3 Composition API** with `<script setup>`. **Styling convention:** static, non-reactive styles live in per-screen partials (`src/styles/_<screen>.scss`) and shared primitives (`_alerts`, `_buttons`, `_forms`, `_logo`, `_phase`, `_surfaces`, `_tools-panel`), all `@use`d into `main.scss`; tokens in `_tokens.scss`. Recipe partials are the exception: `_chrome` (the chrome surface), `_wonk` (the tilt) and `_screen` (the interstitial shape shared by `RoomInterstitial.vue`'s five room screens and the phase-error fallback) define mixins and **emit no CSS**, so they are `@use`d by whoever includes them rather than by `main.scss` — a rule in one would land wherever the first `@use` resolved and reorder the cascade. `_surfaces.scss`'s header is where the three surface roles are written down — artefact (a drawing), chrome (panels and inputs), person/choice (roster rows, vote cards) — and it owns the `.art-frame` / `.art-surface` pair that every finished drawing goes in. A component's scoped `<style>` is reserved for genuinely reactive or component-local rules — chiefly `:deep()` reaching imperatively-mounted `PixelCanvas` elements, which only works in a scoped block. The one unscoped exception is `Tagline.vue`'s `::view-transition` block: document-level pseudo-elements can't be scoped.
-- **Colour is two layers, and a linter enforces it.** `_theme.scss` is the only file that writes a colour value — the two palettes, emitted as custom properties; `_tokens.scss` only *names* them (`$bg: var(--bg)`), so a call site never changes when a theme does. Never write a literal hex or an `rgb()`/`hsl()` fill/ink/border outside those two files — `.stylelintrc.json` fails the build on it (see Code quality). To derive a shade or an alpha, `color-mix()` on a token; deep press shades are their own static tokens (`$accent-deep`, `$primary-deep`). Breakpoints are tokens too: `$bp-mobile` (640px) and `$bp-tablet` (1024px), each the max-width boundary for "that size and smaller".
-- **Inject infrastructure, prop data.** `socket` and `clientId` are `provide`/`inject`ed once at connection; reactive game state flows down as props. No Pinia.
-- **Import `lib/` through the barrel.** Consumers do `import { … } from '../lib'`; `lib/index.ts` re-exports every module, so moving a file between folders never touches a call site. Inter-lib imports stay **direct** (relative paths), never the barrel, to avoid cycles. The Worker imports the DOM-free **`protocol/` barrel** (`'../src/lib/protocol'`) plus specific modules like `content/words` — never the client barrel, which re-exports DOM-dependent modules (`prefs/theme`, `prefs/textScale` read `localStorage` on load) that break the Workers and Vitest builds.
-- **`PixelCanvas` is imperative** — it owns its `<canvas>` and is instantiated in `onMounted`/watchers, not driven by reactivity.
-- **Audio is module-level, like the theme.** `lib/audio.ts` owns Howler — one preloaded SFX sprite plus a streamed music channel — and three per-device toggles (`music` · `sfx` · `ticktock`, stored as `pixmaler:audio`); the pure `lib/audio.gate.ts` decides what may sound (channel gate + repeat throttle) so it tests without Howler. Sound a key with `playSfx(key)`; `Button` plays `click` on a primary press and takes `sfx`/`silent` to override or mute one instance. Background music is a **round setting** (`musicTrack` on `RoundConfig`, chosen in the picker's Game-settings step, validated by `normaliseMusicTrack`, played phase-driven by `useMusic`). `lib/infoModal.ts` + `InfoModal.vue` are the single global Credits/Privacy modal, opened from the settings menu.
-- **The server is authoritative** for phase, timer, submissions, and votes. Client state is a view of the server's truth — derive from the latest `state` message rather than holding local state that can drift.
-- **Broadcast the payload before the phase flip.** `endDrawing` sends `gallery` then `phase`; `endVoting` sends `results` then `phase`. That order is deliberate — flipping the phase first mounts the incoming screen against whatever payload the client still holds, which is the *previous* round's, and that was the root of the blank-winner bug (`13` item 48). A new phase that carries data follows the same order.
-- **Clear per-round client state when a round starts.** `App.vue`'s `phase === 'DRAWING'` branch nulls `drawState`, `results`, `gallery` and `voteState`. Nothing else clears them, and a payload outliving its round is a whole family of bugs — a stale ranking flashing last round's winner, round 1's votes pre-filling round 2's vote UI. Anything new you cache from a server message belongs in that reset.
-- **antfu gotcha:** `ts/no-use-before-define` — declare `useTemplateRef`/`ref`s *above* any `watch`/`computed` that references them.
+Every code and UI rule has one home, so this file doesn't repeat them:
 
-## Structure
+- [`AGENTS.md`](./AGENTS.md) — code rules (imports, state, the server contract, comments) and the short form of the UI rules.
+- [`docs/design-system.md`](./docs/design-system.md) — copy voice, colour, type, controls, surfaces and styling mechanics, with their reasons.
+- [`docs/architecture.md`](./docs/architecture.md) — the source tree and how the pieces work together.
+- [`party/README.md`](./party/README.md) — the realtime server.
 
-```
-src/lib/        # domain folders behind the index.ts barrel: protocol/ · canvas/ · composables/ · prefs/ · player/ · content/ (+ keys, dialog, audio, audio.gate, infoModal, appLayout, assets)
-src/components/ # by role: elements/ (primitives) · layout/ (app shell, header, room-screen shell) · game/ (drawing + gameplay, sub-grouped image/canvas/lobby/shared behind a public @/components/game barrel)
-src/views/      # Entry (+ entry/: its Door and JoinForm parts), Paint, Taglines, phases/ (the four game screens), rooms/ (name gate + 4 refusal screens, via RoomInterstitial)
-src/styles/     # role folders (foundation · mixins · base · components · screens) + main.scss; partials @use by bare name, resolved via sass loadPaths (vite.config.ts)
-party/          # PartyServer Durable Object — server.ts plus the per-concern handler modules; config in wrangler.jsonc; guide in party/README.md
-test/           # Vitest suites, with the shared fake RoomCtx in test/support/
-```
-
-> **Import alias:** `@` resolves to `src/` (Vite `resolve.alias` + tsconfig `paths`), so cross-tree imports are depth-independent — `@/lib`, `@/components/<role>/X.vue`, `@/views/…`. Same-directory siblings stay relative (`./Sibling.vue`).
-
-> **IDE note:** partials `@use` each other by **bare name** (`@use 'tokens'`), resolved via a sass `loadPaths` in `vite.config.ts`. An editor that doesn't read Vite's config (WebStorm, say) may flag these as *unresolved* — the build and CI resolve them fine. To teach the IDE the same paths, mark each `src/styles/` role folder (`foundation`, `mixins`, `base`, `components`, `screens`) as a **Resource Root** (WebStorm: right-click → *Mark Directory as → Resource Root*), or use your editor's equivalent load-path setting.
+> **IDE note:** style partials `@use` each other by **bare name** (`@use 'tokens'`), resolved via a sass `loadPaths` in `vite.config.ts`. An editor that doesn't read Vite's config (WebStorm, say) may flag these as *unresolved* — the build and CI resolve them fine. To teach the IDE the same paths, mark each `src/styles/` role folder (`foundation`, `mixins`, `base`, `components`, `screens`) as a **Resource Root** (WebStorm: right-click → *Mark Directory as → Resource Root*), or use your editor's equivalent load-path setting.
 
 ## Third-party assets & licences
 
@@ -220,7 +190,7 @@ Milestones name **themes, not versions**: `Image pipeline`, `Server refactor`, `
 
 ## Plans & issues
 
-**[`docs/.plans/`](./docs/.plans/) is temporary working space** — design notes and in-flight planning for whatever's being built right now. When the work lands, its doc is moved to [`docs/.plans/archive/`](./docs/.plans/archive/) and kept as a dated record, not maintained; the standing plans were archived there on 2026-09-14. **[GitHub Issues](https://github.com/kspiteri/pixmaler/issues) own everything durable** — open work *and* its reasoning; file all new work as an issue, its body carrying the full "why" (see #66, #68, #69). CLAUDE.md owns how the code works. Deferred / post-1.0 work is indexed in [#70](https://github.com/kspiteri/pixmaler/issues/70).
+**[`docs/.plans/`](./docs/.plans/) is temporary working space** — design notes and in-flight planning for whatever's being built right now. When the work lands, its doc is moved to [`docs/.plans/archive/`](./docs/.plans/archive/) and kept as a dated record, not maintained; the standing plans were archived there on 2026-09-14. **[GitHub Issues](https://github.com/kspiteri/pixmaler/issues) own everything durable** — open work *and* its reasoning; file all new work as an issue, its body carrying the full "why" (see #66, #68, #69). [`AGENTS.md`](./AGENTS.md) and [`docs/`](./docs/) own how the code works. Deferred / post-1.0 work is indexed in [#70](https://github.com/kspiteri/pixmaler/issues/70).
 
 Component is a label (`area:drawing`, `area:server`, `area:pipeline`, `area:a11y`, …) rather than a container, so an item spanning two areas carries both and closes as one unit. Priority is **which milestone it sits in**, ordered by severity not date; no milestone means unscheduled. Plan-item numbers cited in older titles (`[56] …`) resolve into the frozen archive — a closed namespace, **not** GitHub issue numbers (plan-item 33 is issue #69).
 
