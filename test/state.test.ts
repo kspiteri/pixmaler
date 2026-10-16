@@ -12,6 +12,7 @@ import type { GmConfigureMsg } from '../src/lib/protocol/types'
 import { describe, expect, it } from 'vitest'
 import { buildState, drawProgress, freshRoomState, MAX_EXTENSIONS, votingProgress } from '../party/state'
 import { voteKey } from '../party/tally'
+import { MAX_PLAYERS, NAME_MAX_LEN } from '../src/lib/protocol/types'
 
 const config = {
   type: 'gm:configure',
@@ -21,6 +22,7 @@ const config = {
   targetGrid: [0, 1, 1, 0],
   drawSeconds: 60,
   musicTrack: null,
+  musicFit: 'finale',
 } satisfies GmConfigureMsg
 
 function player(clientId: string, over: Partial<RoomPlayer> = {}): RoomPlayer {
@@ -206,13 +208,14 @@ describe('buildState', () => {
   })
 
   it('still ships the settings a client needs on every update', () => {
-    const s = room([player('a')], { config })
+    const s = room([player('a')], { config: { ...config, musicFit: 'loop' } })
     expect(buildState(s).config).toEqual({
       gridW: config.gridW,
       gridH: config.gridH,
       palette: config.palette,
       drawSeconds: config.drawSeconds,
       musicTrack: config.musicTrack,
+      musicFit: 'loop',
     })
   })
 
@@ -239,6 +242,10 @@ describe('buildState', () => {
     expect(buildState(s)).toMatchObject({ type: 'state', phase: 'DRAWING', deadline: 1234, roundSeconds: 120 })
   })
 
+  it('stamps serverNow with the current send time', () => {
+    expect(Math.abs(buildState(room()).serverNow - Date.now())).toBeLessThan(1000)
+  })
+
   it('reports remaining extensions, floored at zero', () => {
     expect(buildState(room()).extensionsLeft).toBe(MAX_EXTENSIONS)
     expect(buildState(room([], { extensions: 1 })).extensionsLeft).toBe(MAX_EXTENSIONS - 1)
@@ -256,5 +263,17 @@ describe('buildState', () => {
     const s = room([player('a', { isGm: false })], { gmClientId: 'a' })
     buildState(s)
     expect(s.players.get('a')!.isGm).toBe(false)
+  })
+})
+
+describe('broadcast size', () => {
+  it('keeps a full-room DRAWING frame small — the target grid never rides the hot path', () => {
+    // `state` is re-sent on every join, vote and submission echo, so it must stay compact.
+    // Re-adding the 48x48 target grid here (#35) would blow well past this ceiling.
+    const palette = Array.from({ length: 24 }, (_, i) => `#${i.toString(16).padStart(6, '0')}`)
+    const players = Array.from({ length: MAX_PLAYERS }, (_, i) =>
+      player(crypto.randomUUID(), { name: 'W'.repeat(NAME_MAX_LEN), doneDrawing: i % 2 === 0 }))
+    const s = room(players, { phase: 'DRAWING', deadline: 1_700_000_000_000, roundSeconds: 180, config: { ...config, palette, gridW: 48, gridH: 48 } })
+    expect(JSON.stringify(buildState(s)).length).toBeLessThan(4096)
   })
 })

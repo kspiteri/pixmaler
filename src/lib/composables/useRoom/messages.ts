@@ -6,6 +6,7 @@ import type PartySocket from 'partysocket'
 import type { Ref, ShallowRef } from 'vue'
 import type { ServerMsg } from '../../protocol/types'
 import { askAlert } from '../../dialog'
+import { syncServerClock } from '../../serverClock'
 
 // `shallowRef` throughout: the whole object is replaced on each message, so no deep-watch.
 export type StateMsg = Extract<ServerMsg, { type: 'state' }>
@@ -40,6 +41,7 @@ export interface RoomRefs {
 export function applyServerMessage(msg: ServerMsg, refs: RoomRefs, socket: PartySocket): void {
   switch (msg.type) {
     case 'state':
+      syncServerClock(msg.serverNow)
       refs.state.value = msg
       refs.joinCreate.value = false // accepted — never re-create on a later reconnect (#66)
       // `config: null` is the room leaving a round behind, so the grid goes with it.
@@ -48,9 +50,16 @@ export function applyServerMessage(msg: ServerMsg, refs: RoomRefs, socket: Party
       break
     case 'target': refs.targetGrid.value = msg.grid; break
     case 'phase':
-      // `phase` doesn't carry config/players — patch the cached state.
-      if (refs.state.value)
-        refs.state.value = { ...refs.state.value, phase: msg.phase, deadline: msg.deadline }
+      syncServerClock(msg.serverNow)
+      // `phase` doesn't carry config/players/roundSeconds — patch the cached state. A fresh DRAWING
+      // resets roundSeconds to the configured length (the server did too, but doesn't re-broadcast
+      // it); the stale LOBBY value is 0 in a new room, which would wreck the music/countdown maths.
+      if (refs.state.value) {
+        const roundSeconds = msg.phase === 'DRAWING'
+          ? (refs.state.value.config?.drawSeconds ?? refs.state.value.roundSeconds)
+          : refs.state.value.roundSeconds
+        refs.state.value = { ...refs.state.value, phase: msg.phase, deadline: msg.deadline, roundSeconds }
+      }
       // A `phase` message with DRAWING is only broadcast by handleStart — a fresh round the
       // server has cleared — so drop everything held from the previous round or Play again
       // resurrects it. A mid-round rejoin arrives as `state`, so restores survive. Nothing

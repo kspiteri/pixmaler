@@ -7,6 +7,7 @@ import type PartySocket from 'partysocket'
 import type { Ref } from 'vue'
 import type { ClientMsg } from '../protocol/types'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { serverTime } from '../serverClock'
 
 const RESUBMIT_DEBOUNCE_MS = 500
 
@@ -93,13 +94,13 @@ export function useDrawSubmit(opts: Options): {
       const now = deadline()
       if (!now)
         return
-      const left = Math.max(0, Math.ceil((now - Date.now()) / 1000))
+      const left = Math.max(0, Math.ceil((now - serverTime()) / 1000))
       secondsLeft.value = left
       if (left > 0)
         rafId = requestAnimationFrame(tick)
     }
     rafId = requestAnimationFrame(tick)
-    autoSubmitTimer = setTimeout(autoSubmitAtDeadline, Math.max(0, dl - Date.now()))
+    autoSubmitTimer = setTimeout(autoSubmitAtDeadline, Math.max(0, dl - serverTime()))
   }
 
   watch(deadline, armCountdown)

@@ -9,6 +9,12 @@
     font-weight: 700;
     font-size: fs(1.05rem); // off-rung; scales like the tokens
 
+    // A non-colour pulse over the last stretch (≤20s), so the run-out reads without the ramp's
+    // hue. Scale, a standalone property, never clobbers a press.
+    &--critical {
+      animation: drawing-timer-critical 1s ease-in-out infinite;
+    }
+
     // A brief lift when the GM adds time. Standalone `scale`, not `transform`, so it never
     // clobbers a press.
     &--added {
@@ -125,9 +131,24 @@
   }
 }
 
+@keyframes drawing-timer-critical {
+  0%,
+  100% {
+    scale: 1;
+  }
+  50% {
+    scale: 1.12;
+  }
+}
+
 // The number still jumps — only the flourish goes.
 @media (prefers-reduced-motion: reduce) {
   .drawing__timer--added {
     animation: none;
+  }
+  // Hold a slight size step instead of pulsing — a static, non-hue mark of the critical band.
+  .drawing__timer--critical {
+    animation: none;
+    scale: 1.08;
   }
 }

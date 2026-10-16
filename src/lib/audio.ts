@@ -26,7 +26,6 @@ function storedPrefs(): AudioPrefs {
     return {
       music: typeof p.music === 'boolean' ? p.music : DEFAULT_AUDIO_PREFS.music,
       sfx: typeof p.sfx === 'boolean' ? p.sfx : DEFAULT_AUDIO_PREFS.sfx,
-      ticktock: typeof p.ticktock === 'boolean' ? p.ticktock : DEFAULT_AUDIO_PREFS.ticktock,
     }
   }
   catch {
@@ -39,14 +38,13 @@ const initial = storedPrefs()
 // Reactive mirrors: a `ToggleSwitch` in SettingsMenu reads and drives these directly.
 export const music = ref(initial.music)
 export const sfx = ref(initial.sfx)
-export const ticktock = ref(initial.ticktock)
 
 function persist(): void {
-  writeStored(KEY, JSON.stringify({ music: music.value, sfx: sfx.value, ticktock: ticktock.value }))
+  writeStored(KEY, JSON.stringify({ music: music.value, sfx: sfx.value }))
 }
 
 function currentPrefs(): AudioPrefs {
-  return { music: music.value, sfx: sfx.value, ticktock: ticktock.value }
+  return { music: music.value, sfx: sfx.value }
 }
 
 // -- sfx channel ------------------------------------------------------------------------------
@@ -72,7 +70,7 @@ export function playSfx(key: SfxKey): void {
   if (!(key in SPRITE))
     return
   const now = Date.now()
-  if (!shouldPlay(key, currentPrefs(), now, lastPlayed.get(key) ?? null))
+  if (!shouldPlay(currentPrefs(), now, lastPlayed.get(key) ?? null))
     return
   lastPlayed.set(key, now)
   sfxHowl.play(key)
@@ -96,15 +94,16 @@ export const musicError = ref<MusicTrackId | null>(null)
 // Whether the widget's song + volume panel is open; session-only, shared across phase headers.
 export const musicControlsOpen = ref(false)
 
-/** Play a streamed, looping track, fading in from silence. Gated on the `music` toggle. */
-export function playMusic(track: MusicTrackId, { fadeMs = MUSIC_FADE_MS } = {}): void {
+/** Play a streamed track (looping by default), fading in from silence. Gated on the `music` toggle. */
+export function playMusic(track: MusicTrackId, opts: { fadeMs?: number, offsetS?: number, loop?: boolean, onEnd?: () => void } = {}): void {
+  const { fadeMs = MUSIC_FADE_MS, offsetS = 0, loop = true, onEnd } = opts
   if (!music.value)
     return
   stopMusic({ fadeMs: 0 })
   const howl: Howl = new Howl({
     src: [trackSrc(track)],
     html5: true,
-    loop: true,
+    loop,
     volume: 0,
     onloaderror: () => {
       if (howl !== musicHowl)
@@ -119,11 +118,21 @@ export function playMusic(track: MusicTrackId, { fadeMs = MUSIC_FADE_MS } = {}):
           howl.play(musicId)
       })
     },
+    // A non-looping track (once/finale) ends by itself; tell the consumer so the ambient bed can
+    // cover the rest of the phase.
+    onend: () => {
+      if (howl === musicHowl && !loop)
+        onEnd?.()
+    },
   })
   musicHowl = howl
   currentTrack.value = track
   musicPaused.value = false
   musicId = howl.play()
+  // Seek once playback has actually begun: a streamed html5 track ignores an early seek, and
+  // Howler reports position only from 'play'. This is what lands a late joiner at the synced spot.
+  if (offsetS > 0)
+    howl.once('play', () => howl.seek(offsetS, musicId))
   howl.fade(0, musicVolume.value, fadeMs, musicId)
 }
 
@@ -169,6 +178,59 @@ export function resumeMusic(): void {
 export function setMusicVolume(v: number): void {
   musicVolume.value = Math.min(1, Math.max(0, v))
   musicHowl?.volume(musicVolume.value)
+  syncAmbientVolume()
+}
+
+// -- ambient channel --------------------------------------------------------------------------
+
+// A short, calm loop that fills the gaps the chosen song leaves — the finale lead-in, the tail
+// after it ends, and the VOTING/RESULTS gallery. Preloaded Web Audio (not html5) so it loops
+// click-free, unlike the streamed music channel. Gated on the same `music` toggle as tracks.
+
+const AMBIENT_VOLUME = 0.3
+let ambientHowl: Howl | null = null
+let ambientActive = false
+let ambientStopTimer: number | null = null
+
+// The ambient bed scales with the music volume slider (it has no widget of its own), relative to
+// the music channel's base level.
+function ambientTarget(): number {
+  return Math.min(1, AMBIENT_VOLUME * musicVolume.value / MUSIC_VOLUME)
+}
+function syncAmbientVolume(): void {
+  if (ambientActive)
+    ambientHowl?.volume(ambientTarget())
+}
+
+/** Fade the ambient bed in (looping); no-op if the music toggle is off or it's already up. */
+export function playAmbient({ fadeMs = MUSIC_FADE_MS } = {}): void {
+  if (!music.value || ambientActive)
+    return
+  ambientActive = true
+  if (ambientStopTimer) {
+    clearTimeout(ambientStopTimer)
+    ambientStopTimer = null
+  }
+  ambientHowl ??= new Howl({ src: [asset('assets/audio/ambient.wav')], loop: true, volume: 0 })
+  // Reuse the single instance: if a fade-out was in flight it's still playing, so just fade back up.
+  if (!ambientHowl.playing())
+    ambientHowl.play()
+  ambientHowl.fade(ambientHowl.volume(), ambientTarget(), fadeMs)
+}
+
+/** Fade the ambient bed out and stop it; it stays loaded for the next gap. */
+export function stopAmbient({ fadeMs = MUSIC_FADE_MS } = {}): void {
+  const howl = ambientHowl
+  if (!howl || !ambientActive)
+    return
+  ambientActive = false
+  if (fadeMs > 0) {
+    howl.fade(howl.volume(), 0, fadeMs)
+    ambientStopTimer = setTimeout(() => { howl.stop(); ambientStopTimer = null }, fadeMs)
+  }
+  else {
+    howl.stop()
+  }
 }
 
 // -- toggles ----------------------------------------------------------------------------------
@@ -177,16 +239,13 @@ export function toggleMusic(): void {
   music.value = !music.value
   persist()
   // Silence the channel immediately when switched off; a switch-on is heard on the next track.
-  if (!music.value)
+  if (!music.value) {
     stopMusic()
+    stopAmbient()
+  }
 }
 
 export function toggleSfx(): void {
   sfx.value = !sfx.value
-  persist()
-}
-
-export function toggleTicktock(): void {
-  ticktock.value = !ticktock.value
   persist()
 }

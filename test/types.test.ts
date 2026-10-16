@@ -213,6 +213,7 @@ describe('parseClientMsg — gm:configure', () => {
       targetGrid: [0, 1, 1, 0],
       drawSeconds: 120,
       musicTrack: null,
+      musicFit: 'finale',
     })
   })
 
@@ -220,6 +221,12 @@ describe('parseClientMsg — gm:configure', () => {
     expect(parse(configure({ musicTrack: 'blue-ska' }))).toMatchObject({ musicTrack: 'blue-ska' })
     expect(parse(configure({ musicTrack: 'nope' }))).toMatchObject({ musicTrack: null })
     expect(parse(configure())).toMatchObject({ musicTrack: null })
+  })
+
+  it('normalises the music fit, defaulting an unknown value to finale', () => {
+    expect(parse(configure({ musicFit: 'loop' }))).toMatchObject({ musicFit: 'loop' })
+    expect(parse(configure({ musicFit: 'nope' }))).toMatchObject({ musicFit: 'finale' })
+    expect(parse(configure())).toMatchObject({ musicFit: 'finale' })
   })
 
   it('rejects grid sides outside 1..GRID_MAX_SIDE', () => {

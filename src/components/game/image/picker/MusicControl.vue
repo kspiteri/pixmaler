@@ -7,6 +7,7 @@ import type { MusicTrackId } from '@/lib'
 import { ChevronDown } from '@lucide/vue'
 import { computed, useId } from 'vue'
 import { MUSIC_CATEGORIES, MUSIC_TRACKS } from '@/lib'
+import { mmss } from './stops'
 
 defineProps<{ modelValue: MusicTrackId | null }>()
 const emit = defineEmits<{ 'update:modelValue': [value: MusicTrackId | null] }>()
@@ -38,7 +39,7 @@ const groups = computed(() =>
         </option>
         <optgroup v-for="g in groups" :key="g.category" :label="g.category">
           <option v-for="t in g.tracks" :key="t.id" :value="t.id">
-            {{ t.label }}
+            {{ t.label }} · {{ mmss(t.durationS) }}
           </option>
         </optgroup>
       </select>

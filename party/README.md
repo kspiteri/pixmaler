@@ -41,9 +41,13 @@ Lives in **`src/lib/protocol/`**, not here, because both deploy targets need it:
 
 **Background music (#2) rides the existing config plumbing** — no new message or handler. `musicTrack` is a field on `RoundConfig` (carried by `gm:configure`), validated in `parseClientMsg` by `normaliseMusicTrack` against the DOM-free `MUSIC_TRACK_IDS`, then stored and broadcast through `handleConfigure` → `roundConfig()` like `drawSeconds`. Playback is entirely client-side (`useMusic`); the server only stores and echoes the chosen id. It is still a protocol change, so it ships on the next **Worker deploy**.
 
+**`musicFit` rides the same plumbing** — a second `RoundConfig` field (`finale` default, else `loop`/`once`), validated by `normaliseMusicFit` against `MUSIC_FITS`. It decides how a chosen song fills the round; the server only stores and echoes it, while the client (`useMusic` + the pure `musicPlan`) does all the timing. `finale` ends the song on the deadline, so the music is the countdown. Same deploy note as above.
+
 ## Phases, deadlines and the one alarm
 
 `LOBBY → DRAWING → VOTING → RESULTS`, timer transitions deadline-driven: the server broadcasts a deadline timestamp, clients tick locally, and a **single DO alarm** (never `setTimeout`) wakes for whichever deadline is nearest — draw deadline, VOTING backstop, empty-room grace or idle wipe. `onMessage` re-arms it after every message, which is also what lets the GM's "+15s" (`gm:extendTime`, capped at `MAX_EXTENSIONS`) simply bump `state.deadline` and work. See [`docs/.plans/archive/10-room-lifecycle.md`](../docs/.plans/archive/10-room-lifecycle.md).
+
+Every `state` and `phase` also carries a **`serverNow`** — the DO's wall clock at send. Each client measures its offset from it (`src/lib/serverClock.ts`) and ticks the countdown against the server's estimated time, so a device with a skewed clock still agrees with the room on when the round ends. It is a protocol change, so it ships on the next Worker deploy; an older Worker simply omits it and clients fall back to their own clock.
 
 Two orderings are load-bearing, pinned by `test/phases.test.ts`:
 

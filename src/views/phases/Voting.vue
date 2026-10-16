@@ -11,7 +11,7 @@ import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, useTemplat
 import Button from '@/components/elements/Button.vue'
 import { SalonWall, VotingCloseup } from '@/components/game'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
-import { clientIdKey, socketKey, useCountdownAnnounce, useGmActions, useSalonWall, VOTE_CATEGORIES } from '@/lib'
+import { clientIdKey, serverTime, socketKey, useCountdownAnnounce, useGmActions, useSalonWall, VOTE_CATEGORIES } from '@/lib'
 
 const props = defineProps<{
   gallery: Gallery | null
@@ -55,7 +55,7 @@ function readClock() {
     secondsLeft.value = null
     return
   }
-  const remaining = Math.max(0, Math.ceil((props.deadline - Date.now()) / 1000))
+  const remaining = Math.max(0, Math.ceil((props.deadline - serverTime()) / 1000))
   secondsLeft.value = remaining <= WARN_AT_SECONDS ? remaining : null
 }
 

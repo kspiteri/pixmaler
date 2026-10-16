@@ -163,21 +163,6 @@ function showInfo(show: () => void) {
           <span class="settings-menu__label">Sound effects</span>
           <ToggleSwitch :model-value="sfx" label="Sound effects" @update:model-value="toggleSfx" />
         </div>
-
-        <!-- todo: enable when ticktock available
-        <div class="settings-menu__row">
-          <span class="settings-menu__label">
-            Countdown ticks
-            <span id="settings-menu-tick-hint" class="settings-menu__hint">The ticking clock while you draw</span>
-          </span>
-          <ToggleSwitch
-            :model-value="ticktock"
-            label="Countdown ticks"
-            describedby="settings-menu-tick-hint"
-            @update:model-value="toggleTicktock"
-          />
-        </div>
-      -->
       </section>
 
       <footer class="settings-menu__foot">

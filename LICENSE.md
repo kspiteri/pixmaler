@@ -25,6 +25,13 @@ via Pixabay (GregorQuendel)
 Pixabay Content License
 https://pixabay.com/service/license-summary/
 
+## Ambience
+
+"Calm loop" — a short background bed that fills the gaps between songs (the finale lead-in and the
+VOTING/RESULTS gallery). From Pixabay's Freesound Community, converted to mono WAV; no other changes.
+Pixabay Content License
+https://pixabay.com/service/license-summary/
+
 ## Avatar faces
 
 Player faces are generated locally with DiceBear's "Notionists Neutral" style, a remix of

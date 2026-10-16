@@ -125,6 +125,9 @@ const timerColour = computed(() => {
     return 'var(--timer-warn)'
   return 'var(--timer-danger)'
 })
+// The final, most urgent band (the `--timer-danger` ramp step, ≤20s). A non-colour pulse marks
+// it so the run-out reads without hue, the gap the colour-vision audit flagged.
+const critical = computed(() => secondsLeft.value !== null && secondsLeft.value <= 20)
 
 // Shown only in the closing stretch and only over an empty canvas — earlier would be noise,
 // with nothing underneath to obscure. 20 s reuses the `--timer-danger` threshold.
@@ -151,11 +154,11 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <PhaseLayout heading="Drawing" class="phase--fixed" :progress="timerPct" :progress-colour="timerColour">
+  <PhaseLayout heading="Drawing" class="phase--fixed" :progress="timerPct" :progress-colour="timerColour" :pulse="critical">
     <template #status>
       <span
         class="drawing__timer"
-        :class="{ 'drawing__timer--added': timeAdded }"
+        :class="{ 'drawing__timer--added': timeAdded, 'drawing__timer--critical': critical }"
         :style="{ color: timerColour }"
       >
         {{ timerText }}

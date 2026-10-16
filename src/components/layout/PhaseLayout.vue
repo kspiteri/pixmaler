@@ -12,10 +12,12 @@ withDefaults(defineProps<{
   // 0–100 width of the top bar. Omit to hide the bar entirely.
   progress?: number | null
   progressColour?: string
+  // Pulse the progress fill's luminance to flag an urgent state without relying on colour.
+  pulse?: boolean
   // When set, the logo becomes a link to this href (the /paint sandbox's way home).
   // In a room the logo is inert — you don't leave a game by clicking it.
   home?: string
-}>(), { progress: null, progressColour: 'var(--timer-ok)', home: undefined })
+}>(), { progress: null, progressColour: 'var(--timer-ok)', pulse: false, home: undefined })
 </script>
 
 <template>
@@ -39,6 +41,7 @@ withDefaults(defineProps<{
     >
       <div
         class="phase__progress-fill"
+        :class="{ 'phase__progress-fill--pulse': pulse }"
         :style="{ scale: `${progress / 100} 1`, background: progressColour }"
       />
     </div>
