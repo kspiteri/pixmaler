@@ -61,9 +61,10 @@ describe('musicPlan', () => {
   })
 
   describe('finale (song longer than the round)', () => {
-    it('plays from the top and never seeks mid-song — cut short at the deadline', () => {
+    it('plays from the top, cut short at the deadline (no mid-song seek)', () => {
       expect(plan('finale', 80, 60, 0)).toMatchObject({ action: 'play', offsetS: 0, loop: false })
-      expect(plan('finale', 80, 60, 60)).toMatchObject({ action: 'play', offsetS: 60, loop: false })
+      expect(plan('finale', 80, 60, 30)).toMatchObject({ action: 'play', offsetS: 30, loop: false })
+      expect(plan('finale', 80, 60, 60).action).toBe('silent')
     })
   })
 

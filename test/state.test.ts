@@ -208,14 +208,14 @@ describe('buildState', () => {
   })
 
   it('still ships the settings a client needs on every update', () => {
-    const s = room([player('a')], { config })
+    const s = room([player('a')], { config: { ...config, musicFit: 'loop' } })
     expect(buildState(s).config).toEqual({
       gridW: config.gridW,
       gridH: config.gridH,
       palette: config.palette,
       drawSeconds: config.drawSeconds,
       musicTrack: config.musicTrack,
-      musicFit: config.musicFit,
+      musicFit: 'loop',
     })
   })
 

@@ -16,11 +16,12 @@ describe('serverClock', () => {
     now.mockRestore()
   })
 
-  it('ignores a missing serverNow (older Worker) so it falls back to the local clock', () => {
-    const now = vi.spyOn(Date, 'now').mockReturnValue(5000)
-    syncServerClock(5000) // offset 0 — in sync
+  it('keeps the last good offset when serverNow is missing or NaN (older Worker)', () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1000)
+    syncServerClock(61_000)
     syncServerClock(undefined as unknown as number)
-    expect(serverTime()).toBe(5000) // unchanged, not NaN
+    syncServerClock(Number.NaN)
+    expect(serverTime()).toBe(61_000)
     now.mockRestore()
   })
 })
