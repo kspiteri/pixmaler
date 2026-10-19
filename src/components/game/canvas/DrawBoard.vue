@@ -5,7 +5,7 @@
 
 import type { BrushHandle, SwatchHandle } from '@/lib'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
-import { buildBrushControls, buildSwatch, PixelCanvas, useAppLayout, useCanvasShortcuts } from '@/lib'
+import { buildBrushControls, buildSwatch, PixelCanvas, shortcutsEnabled, useAppLayout, useCanvasShortcuts } from '@/lib'
 import PaletteTools from './PaletteTools.vue'
 
 interface Props {
@@ -131,6 +131,11 @@ onMounted(() => {
     onUpdate: (grid) => {
       canUndo.value = player.canUndo()
       emit('update', grid)
+    },
+    onPick: (index) => {
+      // Right-click eyedropper, gated on the shortcuts preference.
+      if (shortcutsEnabled.value)
+        swatch.select(index)
     },
   })
   player.canvas.classList.add('canvas-pair__draw-canvas')

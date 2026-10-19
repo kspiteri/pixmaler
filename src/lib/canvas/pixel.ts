@@ -18,6 +18,8 @@ export interface CanvasOptions {
   onUpdate?: (grid: number[]) => void
   // Fires when the cursor moves to a different cell (null on leave), to mirror it to a reference canvas.
   onHover?: (cell: { x: number, y: number } | null) => void
+  // Right-click eyedropper: the palette index sampled from the cell under the cursor.
+  onPick?: (index: number) => void
 }
 
 const CELL_SIZE = 14 // px per grid cell at 1× scale — scales up on large screens
@@ -58,6 +60,11 @@ export class PixelCanvas {
   // Snapshots of the grid pushed at the start of each stroke. `undo()` pops.
   private undoStack: number[][] = []
   private static UNDO_DEPTH = 30
+
+  // Pre-stroke grid captured on pointer-down; pushed to `undoStack` only once a stroke
+  // actually changes a cell, so a no-op click adds no undo step.
+  private pendingSnapshot: number[] | null = null
+  private strokeCommitted = false
 
   // One controller for every DOM listener attached below; `destroy()` aborts it to detach them.
   private readonly listeners = new AbortController()
@@ -165,7 +172,11 @@ export class PixelCanvas {
   // Push the current grid onto the undo stack. Called at the start of each stroke, or
   // explicitly before a destructive Clear so that's undoable too.
   pushUndoSnapshot() {
-    this.undoStack.push([...this.grid])
+    this.commitSnapshot([...this.grid])
+  }
+
+  private commitSnapshot(snap: number[]) {
+    this.undoStack.push(snap)
     if (this.undoStack.length > PixelCanvas.UNDO_DEPTH)
       this.undoStack.shift()
   }
@@ -366,9 +377,19 @@ export class PixelCanvas {
     el.addEventListener('pointerdown', (e) => {
       if (this.locked)
         return
+      // Only the primary button paints. Right-click samples the colour under the cursor
+      // (eyedropper) via onPick; every other button is ignored, never painting.
+      if (e.button !== 0) {
+        if (e.button === 2)
+          this.pickAt(e.clientX, e.clientY)
+        return
+      }
       try { el.setPointerCapture(e.pointerId) }
       catch { /* capture is best-effort; painting still works without it */ }
-      this.pushUndoSnapshot()
+      // Snapshot the pre-stroke grid, but defer pushing it until a cell actually changes
+      // (in paintCell), so a no-op click leaves no undo step.
+      this.pendingSnapshot = [...this.grid]
+      this.strokeCommitted = false
       this.painting = true
       this.resetStroke()
       // Promote the hover preview into a real paint at the same cell.
@@ -412,6 +433,7 @@ export class PixelCanvas {
       if (!this.painting)
         return
       this.painting = false
+      this.pendingSnapshot = null
       this.resetStroke()
       try { el.releasePointerCapture(e.pointerId) }
       catch { /* no-op if capture was never taken */ }
@@ -428,6 +450,8 @@ export class PixelCanvas {
         this.opts.onHover?.(null)
       }
     }, { signal })
+    // Right-click drives the eyedropper, so never let the browser menu pop over the art.
+    el.addEventListener('contextmenu', e => e.preventDefault(), { signal })
   }
 
   // Lightweight hover tracking for read-only canvases — fires `onHover` only, no
@@ -460,6 +484,18 @@ export class PixelCanvas {
   private eventCell(clientX: number, clientY: number): Cell {
     const { gridW, gridH } = this.opts
     return cellAt(clientX, clientY, this.canvas.getBoundingClientRect(), gridW, gridH)
+  }
+
+  // Eyedropper: sample the painted colour at a viewport point into the active swatch via
+  // onPick. Untouched cells (-1) have no colour, so a pick there is a no-op.
+  private pickAt(clientX: number, clientY: number) {
+    const { gridW, gridH } = this.opts
+    const { x, y } = this.eventCell(clientX, clientY)
+    if (x < 0 || y < 0 || x >= gridW || y >= gridH)
+      return
+    const index = this.grid[indexOf(x, y, gridW)] ?? -1
+    if (index >= 0)
+      this.opts.onPick?.(index)
   }
 
   // Fills gaps on fast drags. Clamps first, so a pointer that left the canvas paints
@@ -500,7 +536,13 @@ export class PixelCanvas {
         changed = true
       }
     }
-    if (changed)
+    if (changed) {
+      // Lazily record the pre-stroke snapshot the first time this stroke changes a cell.
+      if (this.pendingSnapshot && !this.strokeCommitted) {
+        this.commitSnapshot(this.pendingSnapshot)
+        this.strokeCommitted = true
+      }
       this.opts.onUpdate?.(this.getGrid())
+    }
   }
 }

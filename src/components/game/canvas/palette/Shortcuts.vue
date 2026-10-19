@@ -24,6 +24,7 @@ const SHORTCUTS: Shortcut[] = [
   { key: 'hold Shift', shortcut: ['hold', markRaw(ArrowBigUp)], desc: 'show colour map, tap to switch' },
   { key: 'arrow keys', shortcut: [markRaw(ArrowLeft), markRaw(ArrowRight)], desc: 'change colour' },
   { key: 'scroll wheel', shortcut: [markRaw(Mouse), 'scroll'], desc: 'change brush size' },
+  { key: 'right-click', shortcut: [markRaw(Mouse), 'right'], desc: 'pick a colour (eyedropper)' },
   { key: '⌘/Ctrl+Z', aria: 'Command or Control plus Z', desc: 'undo' },
 ]
 </script>

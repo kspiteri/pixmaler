@@ -107,8 +107,12 @@ export function useDrawSubmit(opts: Options): {
 
   onMounted(() => {
     const restored = restoredGrid()
-    if (restored)
+    if (restored) {
       lastSentGrid = [...restored]
+      // A restored drawing isn't blank — clear the seeded-true flag, or the "empty" warning
+      // fires over restored work after a mid-round reload.
+      canvasBlank.value = !restored.some(cell => cell !== -1)
+    }
     armCountdown()
     socket.addEventListener('close', cancelTimers, { once: true })
   })
