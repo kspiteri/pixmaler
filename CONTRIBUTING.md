@@ -6,6 +6,7 @@ Small, single-package project. The workflow is light. This covers setup, tooling
 
 ```bash
 pnpm install               # installs deps + wires git hooks
+pnpm exec playwright install chromium   # one-time, for the browser-mode test
 pnpm dev                   # Vite frontend on :7965
 pnpm wr:dev                # realtime Worker on :1999 (separate terminal)
 pnpm dev:all               # or run both at once; one Ctrl-C stops both
@@ -48,7 +49,8 @@ pnpm typecheck    # vue-tsc --noEmit + tsc -p tsconfig.worker.json (no build)
 pnpm lint         # eslint .
 pnpm lint:fix     # eslint . --fix
 pnpm lint:css     # stylelint (SCSS + Vue <style>) — the colour-literal guard
-pnpm test         # vitest run (unit tests in test/)
+pnpm test         # vitest: Node suites + browser-mode canvas smoke
+pnpm test:unit    # Node suites only (what CI runs; no browser)
 pnpm wr:deploy    # deploy the realtime server to Cloudflare
 pnpm bots         # fill a local room with test players (--room=<code> --count=5)
 ```
@@ -68,7 +70,7 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 
 **Types** — `strict` is on. `pnpm build` runs `vue-tsc --noEmit` first, so a type error fails the build; `pnpm typecheck` also covers `party/` against Workers globals via `tsconfig.worker.json`. Keep the tree green.
 
-**Tests** — `pnpm test` runs Vitest over `test/`: 26 files, 522 tests, and [`ci.yml`](./.github/workflows/ci.yml) runs them on every push and PR. Coverage is deliberately narrow *and* deliberately DOM-free: pure, load-bearing logic that a plausible refactor could silently break, reachable without a browser. That constraint shaped the code as much as it shaped the tests — `src/lib/canvas/palette.ts` and `party/tally.ts` both exist because the logic in them was worth testing and was trapped inside something that needed a canvas or a Durable Object, and `party/ctx.ts` is the seam that lets every room handler run against a fake `RoomCtx` (`test/support/room.ts`) instead of a live one.
+**Tests** — `pnpm test` runs Vitest over `test/`: 27 files, 525 tests. The Node suites (26 files) are deliberately DOM-free; a small browser-mode smoke (`test/browser/`, Vitest Browser Mode in headless Chromium) covers the editable canvas. CI runs `pnpm test:unit` — the Node suites only, since the browser smoke needs a Chromium download and runs on your `pnpm test`. Coverage is deliberately narrow: pure, load-bearing logic that a plausible refactor could silently break, reachable without a browser. That constraint shaped the code as much as it shaped the tests — `src/lib/canvas/palette.ts` and `party/tally.ts` both exist because the logic in them was worth testing and was trapped inside something that needed a canvas or a Durable Object, and `party/ctx.ts` is the seam that lets every room handler run against a fake `RoomCtx` (`test/support/room.ts`) instead of a live one.
 
 | Suite | Guards |
 |---|---|
@@ -98,7 +100,7 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 | `serverClock.test.ts` | The clock-offset correction: `serverTime()` reports the server's wall clock, not the device's (so a skewed phone still agrees on the deadline), and a missing `serverNow` from an older Worker falls back to the local clock instead of `NaN`. |
 | `samples.test.ts` | Every sample artwork's image and thumbnail names a bundled file, matched case-sensitively, and no two works share an id. A miscased file shows a broken tile and fails to decode; a duplicate id restores the wrong work. |
 
-When you add a test, make it fail first: revert the fix it guards and check it goes red. Several of these were written that way, and two of them caught mutations that a green-only run would have missed. What the suite cannot reach is anything needing a real `getContext('2d')` — canvas rendering, the decode → crop → flatten → sample half of `processImage`, `hasTransparency` — or component behaviour. Verify those by driving the app in a browser.
+When you add a test, make it fail first: revert the fix it guards and check it goes red. Several of these were written that way, and two of them caught mutations that a green-only run would have missed. The browser-mode smoke in `test/browser/` reaches the editable canvas now, but the Node suite still can't touch the browser half of `processImage` (decode → crop → flatten → sample, `hasTransparency`) or component behaviour — verify those by driving the app in a browser.
 
 ## Conventions and structure
 
@@ -131,7 +133,7 @@ Adding an asset with an attribution or notice obligation? Record it in `LICENSE.
 4. Verify in dev with **both** servers running. Test a reconnect (reload mid-game) if you touched anything stateful — and reload during **RESULTS** specifically, which used to strand the room (`13` item 54). If you touched a phase transition, also drive the two rounds that look like nothing: one where **nobody draws**, and one where people draw but **nobody votes**.
 5. Open a PR describing what changed and how you verified it. Note protocol changes explicitly.
 
-A green `pnpm test` is part of the bar, not all of it. The suite is DOM-free by design, so it says nothing about canvas rendering or the half of `processImage` that needs a real `getContext('2d')` — pipeline and drawing changes are verified by driving the app in a browser instead. It doesn't exercise a live room either: anything stateful still needs both dev servers and a real reconnect. Describe what you tested, whichever kind it was.
+A green `pnpm test` is part of the bar, not all of it. The Node suites are DOM-free by design and the browser smoke only skims the canvas, so neither says much about the rest of `processImage`'s browser half or component behaviour — pipeline and drawing changes are verified by driving the app in a browser instead. It doesn't exercise a live room either: anything stateful still needs both dev servers and a real reconnect. Describe what you tested, whichever kind it was.
 
 ## Commit messages
 

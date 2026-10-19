@@ -53,8 +53,11 @@ jobs:
       # `endDrawing` computing its gallery before mutating state, `buildState`
       # deriving `isGm` rather than trusting it, spectators excluded from progress.
       # They are only a safety net if they run without being remembered.
+      #
+      # `test:unit` is the Node suite only: the browser-mode smoke needs a Chromium
+      # download and runs on a developer's `pnpm test`, deliberately not in CI.
       - name: Test
-        run: pnpm test
+        run: pnpm test:unit
 
       # Catches a broken Vite/SCSS build that typecheck alone misses: neither lint nor
       # vue-tsc compiles the stylesheets, so an undefined SCSS token passes both.

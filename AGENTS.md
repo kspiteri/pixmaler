@@ -29,7 +29,8 @@ pnpm typecheck    # client + worker (vue-tsc --noEmit && tsc --noEmit -p tsconfi
 pnpm lint         # ESLint (@antfu/eslint-config)
 pnpm lint:fix     # ESLint with --fix
 pnpm lint:css     # Stylelint, the colour-literal guard
-pnpm test         # Vitest (DOM-free suites in test/)
+pnpm test         # Vitest: Node suites + browser-mode canvas smoke
+pnpm test:unit    # Node suites only (what CI runs; no browser)
 pnpm wr:deploy    # deploy the Worker (ends every live game, see Deployment)
 pnpm bots         # fill a local room with test players (--room=<code> --count=5)
 ```
@@ -40,15 +41,16 @@ pnpm bots         # fill a local room with test players (--room=<code> --count=5
 - **`.env.local`** (Vite) sets `VITE_PARTYKIT_HOST=127.0.0.1:1999`. The variable keeps its historical name; there is no `partykit` dependency or `partykit.json`, the server runs on PartyServer + `wrangler` (`wrangler.jsonc`).
 - **`.dev.vars`** (auto-loaded by `wrangler dev`) sets `PIXMALER_DEV=1`, which lifts the server's "two players besides the GM" start gate and its origin allowlist, so a whole round can be driven solo. A `PIXMALER_DEV` line in `.env.local` does nothing; Vite only exposes `VITE_`-prefixed variables. Never deploy either file.
 - **Bots:** `pnpm bots --room=<code> --count=5` fills a local room (details in `CONTRIBUTING.md`).
+- **Browser-mode test:** `pnpm test` includes a canvas smoke in headless Chromium, so a fresh clone needs `pnpm exec playwright install chromium` once; `pnpm test:unit` skips it.
 - **Server changes not picked up?** Look for a stale process on the port: `lsof -nP -iTCP:1999 -sTCP:LISTEN`.
 
 ## Before you call it done
 
-- **Gates:** `pnpm lint`, `pnpm lint:css`, `pnpm typecheck`, `pnpm test`. CI (`ci.yml`) runs the same plus a build and a `wrangler deploy --dry-run` on every push and PR.
+- **Gates:** `pnpm lint`, `pnpm lint:css`, `pnpm typecheck`, `pnpm test`. CI (`ci.yml`) runs the same but with `pnpm test:unit` (Node only — the browser smoke needs Chromium and runs on your `pnpm test`), plus a build and a `wrangler deploy --dry-run` on every push and PR.
 - **The pre-commit hook** (`simple-git-hooks` + `lint-staged`) runs `eslint --fix` on staged files and Stylelint on staged `.scss`/`.vue`, and aborts the commit on any error.
 - **Commits are [Conventional Commits](https://www.conventionalcommits.org)**, enforced by `scripts/commit-msg.mjs`. release-please derives the version and changelog from the types, so an unparseable message drops out of both.
 - **Any change under `party/`** (a handler, a phase transition, the tally, the state shape) must run `test/smoke.test.ts`, and update it only when the path's shape genuinely changes, never to pin broken behaviour.
-- **The suite is DOM-free.** Canvas rendering, the browser half of the image pipeline and component behaviour are verified by driving the app in a browser. Anything stateful also needs both servers and a real reconnect (reload mid-game, including during RESULTS).
+- **The Node suite is DOM-free**, verified without a browser; a small browser-mode smoke (`test/browser/`, headless Chromium) now covers the editable canvas. Canvas rendering beyond that, the browser half of the image pipeline and component behaviour are still verified by driving the app in a browser. Anything stateful also needs both servers and a real reconnect (reload mid-game, including during RESULTS).
 
 ## Code rules
 
