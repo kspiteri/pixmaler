@@ -130,7 +130,7 @@ Elsewhere: `party/` (server), `test/` (Vitest; fake room context in `test/suppor
 - **The deadline moves.** The GM's +15 s (`gm:extendTime`) bumps `state.deadline` and `state.roundSeconds`, up to `MAX_EXTENSIONS` (2); `extensionsLeft` decides whether the button shows. `onMessage` re-arms the alarm after every message, so nothing re-arms it explicitly.
 - **React to the deadline, never snapshot it.** `useDrawSubmit` re-arms its countdown and deadline submit from a `watch`, and its rAF tick reads the live value each frame; `Voting.vue` watches its `deadline` prop.
 - **Progress divides by `roundSeconds`**, the current length; `config.drawSeconds` is only the configured start, and dividing by it pins the bar at 100 % after an extension. The timer flashes when `roundSeconds` grows, so the jump reads as a decision.
-- **DRAWING submits continuously:** a debounced (500 ms, deduped) `draw:submit` per stroke plus one at the deadline. "Done" is a social signal, and the canvas is never locked client-side — only the server's move to VOTING ends the round.
+- **DRAWING submits continuously:** a throttled, deduped `draw:submit` — a 500 ms trailing send, and at least once a second while the canvas keeps changing — plus one sent just before the deadline so it lands before the phase flips to VOTING. "Done" is a social signal, and the canvas is never locked client-side — only the server's move to VOTING ends the round.
 - **Countdown colour** goes `--timer-ok` → `--timer-warn` (≤40 s) → `--timer-danger` (≤20 s); the blank-canvas warning shows only in that last 20 s. Screen readers hear milestones (60/30/10/5…1), never every second.
 
 ## Audio

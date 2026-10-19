@@ -1,5 +1,5 @@
 // DRAWING-phase handlers (#19). `draw:submit` is high-frequency — the client
-// debounces it on every stroke — so this is the hottest path on the server, and it
+// throttles it as the canvas is drawn — so this is the hottest path on the server, and it
 // broadcasts nothing.
 
 import type { ClientMsg } from '../src/lib/protocol'

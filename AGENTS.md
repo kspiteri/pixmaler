@@ -22,6 +22,7 @@ Read the deep doc for the area you're changing before you change it.
 ```bash
 pnpm dev          # Vite frontend on :7965
 pnpm wr:dev       # realtime Worker on :1999 (run alongside pnpm dev)
+pnpm dev:all      # Vite + Worker together; one Ctrl-C stops both
 pnpm build        # type-check + production build (vue-tsc --noEmit && vite build)
 pnpm preview      # preview the built dist
 pnpm typecheck    # client + worker (vue-tsc --noEmit && tsc --noEmit -p tsconfig.worker.json)
@@ -30,14 +31,15 @@ pnpm lint:fix     # ESLint with --fix
 pnpm lint:css     # Stylelint, the colour-literal guard
 pnpm test         # Vitest (DOM-free suites in test/)
 pnpm wr:deploy    # deploy the Worker (ends every live game, see Deployment)
+pnpm bots         # fill a local room with test players (--room=<code> --count=5)
 ```
 
 ## Local setup
 
-- **Both servers are needed to play**; `/pixmaler/paint` (Free mode) needs only `pnpm dev`.
+- **Both servers are needed to play** — `pnpm dev:all` runs both (or `pnpm dev` + `pnpm wr:dev` in two terminals); `/pixmaler/paint` (Free mode) needs only `pnpm dev`.
 - **`.env.local`** (Vite) sets `VITE_PARTYKIT_HOST=127.0.0.1:1999`. The variable keeps its historical name; there is no `partykit` dependency or `partykit.json`, the server runs on PartyServer + `wrangler` (`wrangler.jsonc`).
 - **`.dev.vars`** (auto-loaded by `wrangler dev`) sets `PIXMALER_DEV=1`, which lifts the server's "two players besides the GM" start gate and its origin allowlist, so a whole round can be driven solo. A `PIXMALER_DEV` line in `.env.local` does nothing; Vite only exposes `VITE_`-prefixed variables. Never deploy either file.
-- **Bots:** `node scripts/testbots.mjs --room=<code> --count=5` fills a local room (details in `CONTRIBUTING.md`).
+- **Bots:** `pnpm bots --room=<code> --count=5` fills a local room (details in `CONTRIBUTING.md`).
 - **Server changes not picked up?** Look for a stale process on the port: `lsof -nP -iTCP:1999 -sTCP:LISTEN`.
 
 ## Before you call it done

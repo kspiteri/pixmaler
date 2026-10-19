@@ -8,9 +8,10 @@ Small, single-package project. The workflow is light. This covers setup, tooling
 pnpm install               # installs deps + wires git hooks
 pnpm dev                   # Vite frontend on :7965
 pnpm wr:dev                # realtime Worker on :1999 (separate terminal)
+pnpm dev:all               # or run both at once; one Ctrl-C stops both
 ```
 
-You need **both** servers to play — the frontend talks to the Worker over a WebSocket. Two gitignored env files, read by different tools:
+You need **both** servers to play (`pnpm dev:all` runs the pair) — the frontend talks to the Worker over a WebSocket. Two gitignored env files, read by different tools:
 
 - **`.env.local`** — Vite's. `VITE_PARTYKIT_HOST=127.0.0.1:1999` in dev. (The var keeps its historical name.)
 - **`.dev.vars`** — `wrangler dev`'s. `PIXMALER_DEV=1` lifts the server's "min 2 players + GM" start gate so the whole flow can be driven solo across two browsers. Never deployed.
@@ -19,7 +20,7 @@ The server's lifecycle windows and hot-path guards (`VOTING_MS`, `IDLE_MS`, `EMP
 
 > The server runs on **PartyServer + `wrangler`** (`wrangler.jsonc`); its guide is [`party/README.md`](./party/README.md). If a round won't pick up server edits, check for a leftover process on the port: `lsof -nP -iTCP:1999 -sTCP:LISTEN`.
 
-**Populating a round without friends:** `node scripts/testbots.mjs --room=<code> --count=5` connects 1–10 bots to a local room over WebSocket — they join, submit an imperfect redraw of the target during DRAWING, and vote during VOTING, resetting each round. Open/create the room as the GM in a real browser first, then launch the bots. Local only: prod refuses non-browser sockets by design.
+**Populating a round without friends:** `pnpm bots --room=<code> --count=5` connects 1–10 bots to a local room over WebSocket — they join, submit an imperfect redraw of the target during DRAWING, and vote during VOTING, resetting each round. Open/create the room as the GM in a real browser first, then launch the bots. Local only: prod refuses non-browser sockets by design.
 
 The solo `/pixmaler/paint` sandbox needs only `pnpm dev` — no socket.
 
@@ -40,6 +41,7 @@ Then move the version into the relevant catalog and change the `package.json` en
 ```bash
 pnpm dev          # Vite dev server (:7965)
 pnpm wr:dev       # realtime Worker (:1999)
+pnpm dev:all      # Vite + Worker together (one Ctrl-C stops both)
 pnpm build        # type-check + production build
 pnpm preview      # preview the built dist
 pnpm typecheck    # vue-tsc --noEmit + tsc -p tsconfig.worker.json (no build)
@@ -48,6 +50,7 @@ pnpm lint:fix     # eslint . --fix
 pnpm lint:css     # stylelint (SCSS + Vue <style>) — the colour-literal guard
 pnpm test         # vitest run (unit tests in test/)
 pnpm wr:deploy    # deploy the realtime server to Cloudflare
+pnpm bots         # fill a local room with test players (--room=<code> --count=5)
 ```
 
 ## Code quality
@@ -65,7 +68,7 @@ Run `pnpm lint:fix` before committing. Most issues auto-fix.
 
 **Types** — `strict` is on. `pnpm build` runs `vue-tsc --noEmit` first, so a type error fails the build; `pnpm typecheck` also covers `party/` against Workers globals via `tsconfig.worker.json`. Keep the tree green.
 
-**Tests** — `pnpm test` runs Vitest over `test/`: 26 files, 520 tests, and [`ci.yml`](./.github/workflows/ci.yml) runs them on every push and PR. Coverage is deliberately narrow *and* deliberately DOM-free: pure, load-bearing logic that a plausible refactor could silently break, reachable without a browser. That constraint shaped the code as much as it shaped the tests — `src/lib/canvas/palette.ts` and `party/tally.ts` both exist because the logic in them was worth testing and was trapped inside something that needed a canvas or a Durable Object, and `party/ctx.ts` is the seam that lets every room handler run against a fake `RoomCtx` (`test/support/room.ts`) instead of a live one.
+**Tests** — `pnpm test` runs Vitest over `test/`: 26 files, 522 tests, and [`ci.yml`](./.github/workflows/ci.yml) runs them on every push and PR. Coverage is deliberately narrow *and* deliberately DOM-free: pure, load-bearing logic that a plausible refactor could silently break, reachable without a browser. That constraint shaped the code as much as it shaped the tests — `src/lib/canvas/palette.ts` and `party/tally.ts` both exist because the logic in them was worth testing and was trapped inside something that needed a canvas or a Durable Object, and `party/ctx.ts` is the seam that lets every room handler run against a fake `RoomCtx` (`test/support/room.ts`) instead of a live one.
 
 | Suite | Guards |
 |---|---|
