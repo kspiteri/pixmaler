@@ -1,5 +1,5 @@
-// The DRAWING submit + countdown engine: debounced auto-submit of the canvas as it's drawn,
-// a final submit locked in at the deadline, and the rAF countdown. Restartable because the
+// The DRAWING submit + countdown engine: throttled auto-submit of the canvas as it's drawn,
+// a final submit locked in just before the deadline, and the rAF countdown. Restartable because the
 // deadline can move (the GM's +15s arrives as a fresh state push), so the tick and the
 // auto-submit always read the live deadline, never a mount-time value.
 
@@ -10,6 +10,9 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { serverTime } from '../serverClock'
 
 const RESUBMIT_DEBOUNCE_MS = 500
+const RESUBMIT_MAX_WAIT_MS = 1000
+// A submit exactly at the deadline races the DRAWING phase flip and can be dropped.
+const DEADLINE_SUBMIT_MARGIN_MS = 400
 
 interface Options {
   socket: PartySocket
@@ -36,6 +39,7 @@ export function useDrawSubmit(opts: Options): {
   let rafId: number | null = null
   let latestGrid: number[] | null = null
   let lastSentGrid: number[] | null = null
+  let lastSentAt = 0
 
   function gridsEqual(a: number[], b: number[]): boolean {
     if (a === b)
@@ -54,15 +58,23 @@ export function useDrawSubmit(opts: Options): {
       return
     // Snapshot the array — `latestGrid` may keep mutating as more strokes land.
     lastSentGrid = [...grid]
+    lastSentAt = serverTime()
     socket.send(JSON.stringify({ type: 'draw:submit', grid } satisfies ClientMsg))
   }
 
   function onCanvasUpdate(grid: number[]) {
     latestGrid = grid
     canvasBlank.value = grid.every(cell => cell === -1)
-    if (resubmitTimer)
+    if (resubmitTimer) {
       clearTimeout(resubmitTimer)
+      resubmitTimer = null
+    }
+    if (serverTime() - lastSentAt >= RESUBMIT_MAX_WAIT_MS) {
+      sendSubmit(grid)
+      return
+    }
     resubmitTimer = setTimeout(() => {
+      resubmitTimer = null
       if (latestGrid)
         sendSubmit(latestGrid)
     }, RESUBMIT_DEBOUNCE_MS)
@@ -100,7 +112,7 @@ export function useDrawSubmit(opts: Options): {
         rafId = requestAnimationFrame(tick)
     }
     rafId = requestAnimationFrame(tick)
-    autoSubmitTimer = setTimeout(autoSubmitAtDeadline, Math.max(0, dl - serverTime()))
+    autoSubmitTimer = setTimeout(autoSubmitAtDeadline, Math.max(0, dl - serverTime() - DEADLINE_SUBMIT_MARGIN_MS))
   }
 
   watch(deadline, armCountdown)
