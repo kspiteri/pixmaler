@@ -20,6 +20,9 @@ export interface CanvasOptions {
   onHover?: (cell: { x: number, y: number } | null) => void
   // Right-click eyedropper: the palette index sampled from the cell under the cursor.
   onPick?: (index: number) => void
+  // Device px per cell in the backing store. Defaults to CELL_SIZE; read-only thumbnails pass
+  // 1 to render at native grid resolution and let `image-rendering: pixelated` scale them up.
+  cellPx?: number
 }
 
 const CELL_SIZE = 14 // px per grid cell at 1× scale — scales up on large screens
@@ -69,8 +72,17 @@ export class PixelCanvas {
   // One controller for every DOM listener attached below; `destroy()` aborts it to detach them.
   private readonly listeners = new AbortController()
 
+  // Device px per cell in the backing store (see CanvasOptions.cellPx).
+  private readonly cellPx: number
+
+  // Coalesce `onUpdate`: a stroke marks this dirty and schedules one rAF that fires a single
+  // callback per frame; `pointerup`/`pointercancel` flush it so the final grid is delivered.
+  private pendingUpdate = false
+  private rafHandle: number | null = null
+
   constructor(opts: CanvasOptions) {
     this.opts = opts
+    this.cellPx = opts.cellPx ?? CELL_SIZE
     this.brushMax = brushMaxFor(opts.gridW, opts.gridH)
     this.brushSize = defaultBrushFor(opts.gridW, opts.gridH)
     // Read-only canvases render `targetGrid`; editable ones start blank (-1 = untouched,
@@ -81,8 +93,8 @@ export class PixelCanvas {
       : Array.from<number>({ length: opts.gridW * opts.gridH }).fill(opts.editable ? -1 : 0)
 
     this.canvas = document.createElement('canvas')
-    this.canvas.width = opts.gridW * CELL_SIZE
-    this.canvas.height = opts.gridH * CELL_SIZE
+    this.canvas.width = opts.gridW * this.cellPx
+    this.canvas.height = opts.gridH * this.cellPx
     this.canvas.style.imageRendering = 'pixelated'
     this.canvas.style.cursor = opts.editable ? 'crosshair' : 'inherit'
     this.canvas.style.display = 'block'
@@ -104,6 +116,7 @@ export class PixelCanvas {
   // Detaches every DOM listener this instance attached. Call when replacing or discarding a
   // canvas (e.g. a fresh PixelThumb per grid change) so nothing outlives its element.
   destroy(): void {
+    this.discardPendingUpdate()
     this.listeners.abort()
   }
 
@@ -120,6 +133,7 @@ export class PixelCanvas {
   setGrid(grid: number[]) {
     this.grid = [...grid]
     this.render()
+    this.discardPendingUpdate()
     this.opts.onUpdate?.(this.getGrid())
   }
 
@@ -196,6 +210,7 @@ export class PixelCanvas {
     this.grid = prev
     this.clearHover()
     this.render()
+    this.discardPendingUpdate()
     this.opts.onUpdate?.(this.getGrid())
     return true
   }
@@ -209,14 +224,15 @@ export class PixelCanvas {
   // Paint an unpainted cell's ground: a checkerboard on an editable canvas (so white paint
   // shows against nothing), transparent on a read-only one so `$paper` shows through.
   private paintEmptyCell(cx: number, cy: number) {
-    const x = cx * CELL_SIZE
-    const y = cy * CELL_SIZE
+    const px = this.cellPx
+    const x = cx * px
+    const y = cy * px
     if (!this.opts.editable) {
-      this.ctx.clearRect(x, y, CELL_SIZE, CELL_SIZE)
+      this.ctx.clearRect(x, y, px, px)
       return
     }
     this.ctx.fillStyle = (cx + cy) % 2 === 0 ? EMPTY_LIGHT : EMPTY_DARK
-    this.ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE)
+    this.ctx.fillRect(x, y, px, px)
   }
 
   render() {
@@ -233,7 +249,7 @@ export class PixelCanvas {
           continue
         }
         ctx.fillStyle = palette[idx] ?? '#000'
-        ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+        ctx.fillRect(x * this.cellPx, y * this.cellPx, this.cellPx, this.cellPx)
       }
     }
   }
@@ -435,6 +451,8 @@ export class PixelCanvas {
       this.painting = false
       this.pendingSnapshot = null
       this.resetStroke()
+      // Deliver the final grid immediately, bypassing the per-frame coalesce.
+      this.flushUpdate()
       try { el.releasePointerCapture(e.pointerId) }
       catch { /* no-op if capture was never taken */ }
     }
@@ -542,7 +560,41 @@ export class PixelCanvas {
         this.commitSnapshot(this.pendingSnapshot)
         this.strokeCommitted = true
       }
-      this.opts.onUpdate?.(this.getGrid())
+      this.scheduleUpdate()
+    }
+  }
+
+  // Mark the grid dirty and schedule a single `onUpdate` for the next frame, so a drag firing
+  // dozens of cell changes yields one full-grid copy + callback per frame instead of per cell.
+  private scheduleUpdate() {
+    this.pendingUpdate = true
+    if (this.rafHandle !== null)
+      return
+    this.rafHandle = requestAnimationFrame(() => {
+      this.rafHandle = null
+      this.flushUpdate()
+    })
+  }
+
+  // Deliver any pending update now and cancel the scheduled frame.
+  private flushUpdate() {
+    if (this.rafHandle !== null) {
+      cancelAnimationFrame(this.rafHandle)
+      this.rafHandle = null
+    }
+    if (!this.pendingUpdate)
+      return
+    this.pendingUpdate = false
+    this.opts.onUpdate?.(this.getGrid())
+  }
+
+  // Drop any pending update without delivering it — paths that call `onUpdate` directly
+  // (undo/setGrid) or discard the canvas (destroy) use this to cancel the scheduled frame.
+  private discardPendingUpdate() {
+    this.pendingUpdate = false
+    if (this.rafHandle !== null) {
+      cancelAnimationFrame(this.rafHandle)
+      this.rafHandle = null
     }
   }
 }

@@ -25,6 +25,7 @@ function render() {
     palette: props.palette,
     targetGrid: props.grid,
     editable: false,
+    cellPx: 1,
   })
   root.value.replaceChildren(pc.canvas)
 }

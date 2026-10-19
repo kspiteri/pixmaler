@@ -321,9 +321,9 @@ onMounted(() => pickSample('mona-lisa'))
     font-size: $fs-sm;
   }
 
-  // The drawing sits on paper. PixelCanvas builds the <canvas> at 14px per cell (far wider than
-  // a column), so pin it to the column width and let the height follow — the whole image scales
-  // in, rather than overflowing and being clipped by the box.
+  // The drawing sits on paper. The thumbnail's <canvas> is a native-resolution bitmap, so pin it
+  // to the column width and let the height follow — the whole image scales in crisply, rather
+  // than rendering at its tiny native size.
   &__art {
     background: $paper;
     border-radius: $radius-sm;
