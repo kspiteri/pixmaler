@@ -15,7 +15,7 @@ export interface PipelineResult {
   gridH: number
   palette: string[] // hex colours
   targetGrid: number[] // palette indices, length gridW*gridH
-  // The normalised source dimensions the grid was derived from (≤ SOURCE_MAX_SIDE
+  // The normalised source dimensions the grid was derived from (SOURCE_MAX_SIDE
   // on the longest side). Scale-independent, so a caller can feed them back into
   // `gridSizeFor` to preview the grid for *any* scale without reprocessing.
   sourceW: number
@@ -37,9 +37,9 @@ export interface PickerSettings {
 // later. The colour count shown is `PipelineResult.palette`'s, not `settings.colorCount`:
 // a flat image cannot always fill the count asked for.
 export interface PickerMeta {
-  /** Human-readable source: a sample's label, or the uploaded file's name. */
+  /** Human-readable source: a sample's title, or the uploaded file's name. */
   source: string
-  /** The bundled sample's name, or null for an upload. Absent in sessions saved before it existed. */
+  /** The sample's manifest id (`content/samples.ts`), or null for an upload. Absent in sessions saved before it existed. */
   sample?: string | null
   settings?: PickerSettings
 }
@@ -47,7 +47,7 @@ export interface PickerMeta {
 export const DEFAULT_COLOR_COUNT = 16
 export const DEFAULT_SCALE = 8 // cells per 100 source px; range 1-50
 export const MOBILE_WARN_GRID = 64 // warn if computed grid longest side exceeds this
-export const SOURCE_MAX_SIDE = 768 // normalise uploads so the slider behaves consistently
+export const SOURCE_MAX_SIDE = 768 // every crop normalises to this long side, so Detail gives one grid size
 // Cap for the fallback decode's canvas. A large phone photo can exceed what a mobile
 // browser will decode into a canvas at all (iOS caps a 2D canvas near ~16.7M px) — the
 // likeliest reason `createImageBitmap` refused it. 4096 stays inside every known mobile
@@ -173,10 +173,10 @@ export async function sampleImage(
   const bitmap = await decodeImage(file)
 
   // Constrain to one of three shapes (see `aspect.ts`): take the rect the GM framed, then
-  // normalise into that ratio's box. `SOURCE_MAX_SIDE` caps the long axis so the scale
-  // slider means the same for every upload.
+  // normalise into that ratio's box at `SOURCE_MAX_SIDE`, up or down, so the scale slider gives
+  // the same grid for every upload and crop.
   const { sx, sy, sw, sh } = cropRect(bitmap.width, bitmap.height, ratio, crop)
-  const { w: sourceW, h: sourceH } = ratioBox(ratio, Math.min(SOURCE_MAX_SIDE, Math.max(sw, sh)))
+  const { w: sourceW, h: sourceH } = ratioBox(ratio, SOURCE_MAX_SIDE)
 
   // The downscale below reads from this. Framed source rect → whole canvas.
   const sourceCanvas = document.createElement('canvas')

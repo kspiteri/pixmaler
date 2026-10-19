@@ -24,7 +24,7 @@ How Pixmaler looks and reads: copy voice, feedback, controls, colour and theme, 
   - [`PhaseBoundary.vue`](../src/components/layout/PhaseBoundary.vue) is for a view that has *died*: it replaces the screen.
   - A condition that clears itself is not a dialog.
 - **A notice's `variant` sets ink and politeness together:** only `error` interrupts (`role="alert"`, `$danger-ink`); `warn` (`$warn-ink`) and `info` use `role="status"`. `info` takes a neutral `$border` edge. There's no `success` variant or green token.
-- **In-place regions that annotate visible text keep their own `role="status"`** — the countdowns ([`countdown.ts`](../src/lib/composables/countdown.ts)), the Voting tally, the Drawing done-count, the picker size warning, the Lobby start hint, the Paint skeleton; SettingsMenu's text-size readout is `aria-live="polite"`.
+- **In-place regions that annotate visible text keep their own `role="status"`** — the countdowns ([`countdown.ts`](../src/lib/composables/countdown.ts)), the Voting tally, the Drawing done-count, the picker size warning, the Lobby start hint, the Paint empty state; SettingsMenu's text-size readout is `aria-live="polite"`.
 - **A one-off message with no visible home uses [`announce()`](../src/lib/announce.ts)** (e.g. the room-link copy, only an icon swap): one polite and one assertive `sr-only` region mounted once in `App.vue`. A live region must exist before its text changes, and `announce` clears then re-sets on the next frame so a repeat still speaks.
 - **`AlertDialog` is not a live region** — a modal announces by taking focus with `role="alertdialog"` + `aria-describedby`. Don't add aria-live.
 
@@ -165,6 +165,7 @@ If a colour sits on something other than the page, it belongs here:
 
 - `ImagePicker`'s **Adjust target** step has two groups — **Framing** (shape, crop frame, crop size) and **Look** (style, detail, colours, alpha) — each `<section class="picker__group">` with an `h3.picker__group-title` under the accordion's `h2`.
 - **Every control is a `.picker__field`:** `__field-head` (`__field-label` left, optional `__field-value` right in `$muted`), the control (sliders and selects take `__field-control`, capped at `$measure`, 20rem; segmented groups keep their width), optional `__field-hint`. Game settings (Draw time, Music) uses it too.
+- **The Image step's samples** scroll in one bordered box (`__sample-scroll`, 20rem cap), grouped under lowercase category eyebrows (`__sample-group-title`). Tiles are thumbnail-only (the `alt` is the title); the info line below (`__sample-info`, two lines reserved so hovering doesn't shift the layout) names the hovered, focused or selected work as title, then `artist · year · origin · Source`. The same label (`SampleCaption`) sits under the crop frame in Adjust target while a sample is loaded; an upload gets none.
 - **Spacing tiers:** 8 px within a field, 16 px between fields, 32 px between groups with a `$border-soft` hairline.
 - Under `$bp-mobile` a `compact` `TargetPreview` sits by the Look heading — the hosts' `overflow: auto` wrappers defeat the sticky desktop preview. The crop hint follows touch mode; style help is a `Disclosure variant="link"`.
 

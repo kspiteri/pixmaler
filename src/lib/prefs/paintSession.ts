@@ -5,8 +5,8 @@ import { readStored, removeStored, writeStored } from '../storage'
 
 // The /paint sandbox remembers the chosen image, its settings and the canvas progress across
 // reloads — it's solo practice with no server to hold them. One JSON blob per browser,
-// module-level like the other prefs. An absent key means a fresh sandbox (the ImagePicker
-// auto-loads its default sample). `clearAllData` wipes it with every other `pixmaler:*` key.
+// module-level like the other prefs. An absent key means a fresh sandbox, which opens on the
+// picker with no image. `clearAllData` wipes it with every other `pixmaler:*` key.
 
 const KEY = 'pixmaler:paintSession'
 

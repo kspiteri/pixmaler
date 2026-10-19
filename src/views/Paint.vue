@@ -33,11 +33,10 @@ const seedGrid = ref<number[] | null>(saved?.grid ?? null)
 const currentGrid = ref<number[]>(saved?.grid ?? [])
 // Bumped per accepted result, so the pair remounts even when the canvas shape is unchanged.
 const boardRev = ref(0)
-// Skip the ImagePicker's default sample when we've restored an image, or it would overwrite it.
-const autoLoadSample = saved ? undefined : 'monalisa'
 const restore = saved ? { result: saved.result, meta: saved.meta } : null
 
-// Settings start open, collapsing once the first image loads; a restored session opens collapsed.
+// Settings start open on the picker; they collapse once the first image loads. A restored
+// session opens collapsed.
 const settingsOpen = ref(!saved)
 let collapsedOnce = Boolean(saved)
 
@@ -180,7 +179,6 @@ const summary = computed(() => {
         <div v-show="settingsOpen" class="paint__settings-body">
           <ImagePicker
             show-preview
-            :auto-load-sample="autoLoadSample"
             :restore="restore"
             :confirm-result="confirmResult"
             @result="onResult"
@@ -205,10 +203,10 @@ const summary = computed(() => {
           :orientation="orientation"
           @update="onDrawUpdate"
         />
-        <div v-else class="paint__skeleton" role="status">
-          <div class="paint__skeleton-box" />
-          <p class="paint__skeleton-text">
-            Preparing canvas…
+        <div v-else class="paint__empty" role="status">
+          <div class="paint__empty-box" />
+          <p class="paint__empty-text">
+            Pick an image to start painting.
           </p>
         </div>
       </template>

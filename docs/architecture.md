@@ -43,7 +43,7 @@ src/
 │   │   └── useCanvasShortcuts.ts · useOrientation.ts · useDraggable.ts
 │   ├── prefs/                 # theme · textScale · motion · touch · shortcuts · palette · paintSession
 │   ├── player/                # identity (identity keys, clearAllData) · seats (seatFor) · face (DiceBear mask)
-│   └── content/               # words (codes, isRoomCode, formatRoomInput) · taglines · music (manifest + credits) · heroArt
+│   └── content/               # words (codes, isRoomCode, formatRoomInput) · taglines · music (manifest + credits) · samples (artwork manifest) · heroArt
 ├── assets/fonts/              # self-hosted woff2
 ├── components/
 │   ├── elements/              # primitives
@@ -89,7 +89,7 @@ src/
 └── styles/                    # main.scss + foundation/ · mixins/ · base/ · components/ · screens/
 ```
 
-Elsewhere: `party/` (server), `test/` (Vitest; fake room context in `test/support/room.ts`), `public/assets/` (samples, `audio/sfx.wav`, `audio/music/<category>/*.webm`), `scripts/` (`commit-msg.mjs`, `testbots.mjs`). `/components` and `/quantise` resolve only under `import.meta.env.DEV` and are imported conditionally, so they drop out of production; `/taglines` ships unlinked.
+Elsewhere: `party/` (server), `test/` (Vitest; fake room context in `test/support/room.ts`), `public/assets/` (`samples/<id>.webp` + `samples/thumbs/<id>.webp`, `audio/sfx.wav`, `audio/music/<category>/*.webm`), `scripts/` (`commit-msg.mjs`, `testbots.mjs`). `/components` and `/quantise` resolve only under `import.meta.env.DEV` and are imported conditionally, so they drop out of production; `/taglines` ships unlinked.
 
 ## State flow
 
@@ -105,7 +105,7 @@ Elsewhere: `party/` (server), `test/` (Vitest; fake room context in `test/suppor
 
 ## Image pipeline
 
-[`lib/canvas/pipeline.ts`](../src/lib/canvas/pipeline.ts): decode → crop to the ratio → normalise to ≤768 px long side (`SOURCE_MAX_SIDE`, so Detail means the same for every upload) → flatten onto the background colour → downscale straight to `gridW × gridH` → derive a palette with the chosen quantiser → nearest-entry per cell → sort the swatch.
+[`lib/canvas/pipeline.ts`](../src/lib/canvas/pipeline.ts): decode → crop to the ratio → normalise the crop to 768 px on its long side, scaling up or down (`SOURCE_MAX_SIDE`, so Detail gives the same grid for every upload and every crop) → flatten onto the background colour → downscale straight to `gridW × gridH` → derive a palette with the chosen quantiser → nearest-entry per cell → sort the swatch.
 
 - **Trap: flatten before sampling.** `getImageData` reports transparent pixels as black and the quantiser reads no alpha, so an unflattened transparent region turns black. `AlphaControl` picks the background.
 - **Quantiser by outcome:** Bold (median cut), Balanced (Wu, default), Faithful (k-means), registered in `quantisers/index.ts`. `/quantise` compares them on one shared `sampleImage`.
@@ -120,6 +120,7 @@ Elsewhere: `party/` (server), `test/` (Vitest; fake room context in `test/suppor
 - **`restore`** rebuilds the picker around a stored result without emitting. `prefs/paintSession.ts` persists result, `PickerMeta` (`sample`, `settings`) and drawing in `pixmaler:paintSession`; a session lacking meta still restores the drawing. A sample is re-fetched on restore; an upload can't be, so it must be re-chosen to adjust.
 - **Trap: the canvas pair unmounts while Settings is open** and remounts from `seedGrid`. Paint refreshes `seedGrid` from the live drawing when the panel opens and on every accepted result; seeding from the load-time grid silently discards every stroke since the last reload.
 - Free mode's music comes from the picker's Music step and isn't persisted.
+- **Samples** come from [`lib/content/samples.ts`](../src/lib/content/samples.ts): id → title, artist, year, origin, category, Commons `credit`, pixel `dims`. `SourcePicker` groups them by category, shows the ~240 px WebP thumbnails (lazy, sized from `dims` before they load), and the picker `fetch`es the full `<id>.webp` only on selection. `PickerMeta.sample` stores the id, and everything else is looked up with `sampleById`, so a stored session never carries stale metadata. A fresh `/paint` opens on the picker with no image.
 
 ## Phases and deadlines
 

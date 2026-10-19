@@ -22,7 +22,7 @@ Rooms are named with a memorable word-pair, like `feral-crayon`. Share the code 
 - **Server-authoritative, so no cheating.** Phase, timer, submissions, and the vote tally all live on the server. Drawings stay hidden until voting; you only ever see a live "X of Y finished" count during the round.
 - **Reconnect-safe.** Drop and rejoin. Your drawing, votes survive. The GM reclaims their role on reconnect, or hands it off; if they vanish, the longest-present player steps up.
 - **Palettes you can actually match.** Ask for 24 colours and the room paints with exactly 24, from a palette derived from the image itself.
-- **Any raster upload, handled gracefully.** Transparency is flattened onto a background colour you choose.
+- **Any raster upload, handled gracefully.** Transparency is flattened onto a background colour you choose. No image to hand? Pick from 25 public-domain paintings, then crop in on the part you want painted.
 - **Music that doubles as the clock.** The GM picks a per-round, royalty-free soundtrack; by default it's timed so the song finishes right as the round ends — a countdown you can hear — with a calm ambient loop covering any gap and the gallery. Music and sound effects are independent per-device toggles.
 - **Solo paint sandbox.** The [`/paint`] route is a single-player canvas; for warming up, testing palettes, or just goofing around. No timer and your progress gets saved on your device.
 

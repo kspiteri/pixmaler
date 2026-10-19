@@ -38,6 +38,13 @@ Player faces are generated locally with DiceBear's "Notionists Neutral" style, a
 "Notionists" (https://heyzoish.gumroad.com/l/notionists) by Zoish, licensed under CC0 1.0
 (https://creativecommons.org/publicdomain/zero/1.0/). CC0 needs no in-app credit.
 
+## Sample artworks
+
+The bundled sample images (`public/assets/samples/`) are reproductions of public-domain
+paintings and prints, sourced from Wikimedia Commons; each work's file page is linked from the
+picker and listed in `src/lib/content/samples.ts`. All are public domain except the Loch Lomond
+file, which is CC0 1.0. Neither needs an in-app credit.
+
 ## Fonts
 
 Fredoka, Space Grotesk and Plus Jakarta Sans are self-hosted (`src/assets/fonts/`) and

@@ -11,7 +11,7 @@ import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import Accordion from '@/components/elements/accordion/Accordion.vue'
 import AccordionItem from '@/components/elements/accordion/Item.vue'
 import Button from '@/components/elements/Button.vue'
-import { asset, clampDrawSeconds, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_PIXELATION_STYLE, DEFAULT_RATIO, DEFAULT_SCALE, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, MUSIC_TRACKS, nearestRatioFor, processImage, quantiserFor, TARGET_RATIOS, trackLabel, unsupportedImage, useAppLayout } from '@/lib'
+import { clampDrawSeconds, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_PIXELATION_STYLE, DEFAULT_RATIO, DEFAULT_SCALE, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, MUSIC_TRACKS, nearestRatioFor, processImage, quantiserFor, sampleById, sampleUrl, TARGET_RATIOS, trackLabel, unsupportedImage, useAppLayout } from '@/lib'
 import AlphaControl from './picker/AlphaControl.vue'
 import ColourControl from './picker/ColourControl.vue'
 import CropWidget from './picker/CropWidget.vue'
@@ -19,13 +19,11 @@ import DetailControl from './picker/DetailControl.vue'
 import MusicControl from './picker/MusicControl.vue'
 import MusicFitControl from './picker/MusicFitControl.vue'
 import PixelationStyleControl from './picker/PixelationStyleControl.vue'
+import SampleCaption from './picker/SampleCaption.vue'
 import SourcePicker from './picker/SourcePicker.vue'
 import { detailLabel, DURATION_STOPS, mmss } from './picker/stops'
 import TargetPreview from './picker/TargetPreview.vue'
 import TimerControl from './picker/TimerControl.vue'
-
-// The bundled sample images (`public/assets/<name>.png`).
-type SampleName = 'monalisa' | 'scream' | 'pearls'
 
 interface Props {
   showMobileWarn?: boolean
@@ -34,9 +32,7 @@ interface Props {
   // The room's current target, so a reloaded GM sees it in the preview and can start off it.
   roomConfig?: RoundConfig | null
   roomTarget?: number[] | null
-  // Autoload a sample on first render, for the sandbox where an image is required.
-  autoLoadSample?: SampleName
-  // A previous result to rebuild the picker around instead of autoloading. Only a sample can be
+  // A previous result to rebuild the picker around. Only a sample can be
   // re-fetched; an upload keeps its settings but needs uploading again to adjust.
   restore?: { result: PipelineResult, meta: PickerMeta } | null
   // Asked before a new result is emitted; false reverts the picker to the committed inputs.
@@ -90,12 +86,6 @@ const { isMobile } = useAppLayout()
 const framingId = useId()
 const lookId = useId()
 
-const samples: { name: SampleName, label: string }[] = [
-  { name: 'monalisa', label: 'Mona Lisa' },
-  { name: 'scream', label: 'The Scream' },
-  { name: 'pearls', label: 'Pearl Earring' },
-]
-
 defineExpose({ getDrawSeconds: () => drawSecs.value, getMusicTrack: () => musicTrack.value, getMusicFit: () => musicFit.value, reset })
 
 let cachedFile: File | null = null
@@ -128,6 +118,7 @@ function sameSettings(a: PickerSettings, b: PickerSettings): boolean {
 }
 
 const hasImage = computed(() => !!sourceUrl.value && !!naturalDims.value)
+const selectedWork = computed(() => (selected.value ? sampleById(selected.value) : undefined))
 const gridPreview = computed(() => {
   if (!sourceDims.value)
     return ''
@@ -289,27 +280,27 @@ function onFile(file: File) {
   adoptFile(file, file.name)
 }
 
-async function fetchSample(name: string): Promise<File> {
-  const res = await fetch(asset(`assets/${name}.png`))
+async function fetchSample(id: string): Promise<File> {
+  const res = await fetch(sampleUrl(id))
   if (!res.ok)
     throw new Error(`${res.status} ${res.statusText}`)
   const blob = await res.blob()
-  return new File([blob], `${name}.png`, { type: blob.type || 'image/png' })
+  return new File([blob], `${id}.webp`, { type: blob.type || 'image/webp' })
 }
 
-async function loadSample(name: string) {
+async function loadSample(id: string) {
   // Re-choosing the loaded sample keeps its crop and settings rather than starting over.
-  if (name === selected.value && cachedFile) {
+  if (id === selected.value && cachedFile) {
     openStep.value = 'adjust'
     return
   }
   try {
-    const file = await fetchSample(name)
-    selected.value = name
-    await adoptFile(file, samples.find(s => s.name === name)?.label ?? name)
+    const file = await fetchSample(id)
+    selected.value = id
+    await adoptFile(file, sampleById(id)?.title ?? id)
   }
   catch (err) {
-    status.value = `Could not load sample "${name}": ${err}`
+    status.value = `Could not load sample "${id}": ${err}`
   }
 }
 
@@ -346,13 +337,13 @@ async function hydrate({ result, meta }: NonNullable<Props['restore']>) {
   sourceLabel.value = meta.source
   sourceDims.value = { w: result.sourceW, h: result.sourceH }
   lastResult.value = result
-  const sample = samples.find(s => s.name === meta.sample)
+  const sample = meta.sample ? sampleById(meta.sample) : undefined
   if (!sample) {
     restoredOnly.value = true
     return
   }
   try {
-    const file = await fetchSample(sample.name)
+    const file = await fetchSample(sample.id)
     const bitmap = await decodeImage(file)
     const dims = { w: bitmap.width, h: bitmap.height }
     const alpha = hasTransparency(bitmap)
@@ -361,8 +352,8 @@ async function hydrate({ result, meta }: NonNullable<Props['restore']>) {
     if (cachedFile || committed?.settings !== settings)
       return
     cachedFile = file
-    committed = { ...committed, file, sample: sample.name, naturalDims: dims, hasAlpha: alpha }
-    selected.value = sample.name
+    committed = { ...committed, file, sample: sample.id, naturalDims: dims, hasAlpha: alpha }
+    selected.value = sample.id
     sourceUrl.value = URL.createObjectURL(file)
     naturalDims.value = dims
     hasAlpha.value = alpha
@@ -414,8 +405,6 @@ function clearImage() {
 onMounted(() => {
   if (props.restore?.meta.settings)
     hydrate(props.restore)
-  else if (props.autoLoadSample)
-    loadSample(props.autoLoadSample)
 })
 
 onBeforeUnmount(() => {
@@ -444,7 +433,7 @@ onBeforeUnmount(() => {
           <template #summary>
             {{ sourceSummary }}
           </template>
-          <SourcePicker :samples="samples" :selected="selected" @file="onFile" @sample="loadSample" />
+          <SourcePicker :selected="selected" @file="onFile" @sample="loadSample" />
           <p v-if="restoredOnly" class="picker__source-hint">
             Choose {{ sourceLabel }} again to adjust it.
           </p>
@@ -465,7 +454,9 @@ onBeforeUnmount(() => {
               :source-url="sourceUrl"
               :source-label="sourceLabel"
               :background="background"
-            />
+            >
+              <SampleCaption v-if="selectedWork" :work="selectedWork" />
+            </CropWidget>
           </section>
           <section class="picker__group" :aria-labelledby="lookId">
             <div class="picker__group-head">

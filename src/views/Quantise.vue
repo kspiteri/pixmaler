@@ -10,15 +10,10 @@ import Logo from '@/components/elements/Logo.vue'
 import Slider from '@/components/elements/Slider.vue'
 import PixelThumb from '@/components/game/shared/PixelThumb.vue'
 import SettingsMenu from '@/components/layout/SettingsMenu.vue'
-import { appHref, asset, DEFAULT_COLOR_COUNT, DEFAULT_SCALE, derivePalette, mergeNearDuplicates, quantiseToPalette, rgbToHex, sampleImage, TARGET_RATIO_IDS, TARGET_RATIOS } from '@/lib'
+import { appHref, DEFAULT_COLOR_COUNT, DEFAULT_SCALE, derivePalette, mergeNearDuplicates, quantiseToPalette, rgbToHex, sampleImage, SAMPLES, sampleUrl, TARGET_RATIO_IDS, TARGET_RATIOS } from '@/lib'
 import { kmeansQuantiser, wuQuantiser } from '@/lib/canvas/quantisers'
 import { distinctColoursUsed, paletteSpread, quantiseError } from '@/lib/canvas/quantisers/metrics'
 
-const SAMPLES = [
-  { name: 'monalisa', label: 'Mona Lisa' },
-  { name: 'scream', label: 'The Scream' },
-  { name: 'pearls', label: 'Pearl Earring' },
-]
 // Each returns its *raw* palette; the near-duplicate merge is applied uniformly below (behind
 // the toggle) so the columns are compared on equal footing — the shipped pipeline runs median-cut
 // + merge, so that pairing reproduces production while Wu/k-means show what a swap would give.
@@ -42,7 +37,7 @@ interface Column {
 }
 
 const homeHref = appHref()
-const selected = ref('monalisa')
+const selected = ref('mona-lisa')
 const ratio = ref<TargetRatioId>('landscape')
 const count = ref(DEFAULT_COLOR_COUNT)
 const busy = ref(false)
@@ -57,10 +52,10 @@ const gridLabel = computed(() => (columns.value[0] ? `${columns.value[0].gridW}�
 
 let currentFile: File | null = null
 
-async function pickSample(name: string) {
-  selected.value = name
-  const res = await fetch(asset(`assets/${name}.png`))
-  currentFile = new File([await res.blob()], `${name}.png`, { type: 'image/png' })
+async function pickSample(id: string) {
+  selected.value = id
+  const res = await fetch(sampleUrl(id))
+  currentFile = new File([await res.blob()], `${id}.webp`, { type: 'image/webp' })
   await recompute()
 }
 
@@ -116,7 +111,7 @@ async function recompute() {
 }
 
 watch([scale, count, ratio, merge], recompute)
-onMounted(() => pickSample('monalisa'))
+onMounted(() => pickSample('mona-lisa'))
 </script>
 
 <template>
@@ -141,13 +136,13 @@ onMounted(() => pickSample('monalisa'))
         <span class="quantise__label">sample</span>
         <button
           v-for="s in SAMPLES"
-          :key="s.name"
+          :key="s.id"
           type="button"
           class="quantise__chip pressable"
-          :class="{ 'is-selected': selected === s.name }"
-          @click="pickSample(s.name)"
+          :class="{ 'is-selected': selected === s.id }"
+          @click="pickSample(s.id)"
         >
-          {{ s.label }}
+          {{ s.title }}
         </button>
         <label class="quantise__chip pressable">
           Upload…

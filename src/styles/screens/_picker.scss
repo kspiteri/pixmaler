@@ -284,6 +284,32 @@ $measure: 20rem;
     flex-direction: column;
     gap: $gap-2;
   }
+  // The grouped grid scrolls inside the Image step; the padding keeps focus rings and the
+  // press shadow clear of the clipping edge.
+  &__sample-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-3;
+    max-height: 20rem;
+    padding: $gap-1 $gap-1 $gap-2;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 1px solid $border-soft;
+    border-radius: $radius;
+  }
+  &__sample-group {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-1;
+  }
+  // Lowercase eyebrow, a style rather than a form label.
+  &__sample-group-title {
+    margin: 0;
+    color: $fg-50;
+    font-family: $font-body;
+    font-size: $fs-xs;
+    font-weight: $fw-medium;
+  }
   &__sample-list {
     list-style: none;
     margin: 0;
@@ -298,18 +324,13 @@ $measure: 20rem;
   &__sample {
     flex: 0 0 auto;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: $gap-1;
     padding: $gap-1;
     border-radius: $radius-sm;
     background: transparent;
-    font-size: $fs-2xs;
 
     // Selected sample wears the accent — the only "which image am I painting?" cue
     // once the panel collapses.
     &.is-selected {
-      color: $accent-ink;
       border-color: $accent-ink;
       background: color-mix(in srgb, $accent-ink 8%, transparent);
     }
@@ -319,13 +340,32 @@ $measure: 20rem;
     display: block;
     height: 4rem;
     width: auto;
-    max-width: 7rem;
+    max-width: 10rem;
     object-fit: contain;
     border-radius: calc($radius-sm / 2);
   }
-  &__sample-name {
-    white-space: nowrap;
+  // Two lines reserved, so hovering across the grid doesn't shift the layout below.
+  &__sample-info {
+    min-height: calc(2lh + $gap-1);
+    font-size: $fs-xs;
     line-height: $lh-snug;
+  }
+  // A sample's label (SampleCaption): in the info line above, and under the crop frame.
+  &__sample-caption {
+    display: flex;
+    flex-direction: column;
+    gap: $gap-1;
+    font-size: $fs-xs;
+    line-height: $lh-snug;
+  }
+  &__sample-title {
+    margin: 0;
+    color: $fg;
+    font-weight: $fw-semibold;
+  }
+  &__sample-meta {
+    margin: 0;
+    color: $fg-60;
   }
 
   // ── Crop framing ──────────────────────────────────────────────────────────

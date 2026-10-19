@@ -2,7 +2,7 @@
 
 const BASE = import.meta.env.BASE_URL
 
-// A public/ asset: asset('assets/monalisa.png') → '/pixmaler/assets/monalisa.png'.
+// A public/ asset: asset('assets/samples/mona-lisa.webp') → '/pixmaler/assets/samples/mona-lisa.webp'.
 export function asset(path: string): string {
   return `${BASE}${path}`
 }

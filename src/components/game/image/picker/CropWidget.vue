@@ -158,6 +158,8 @@ function onCropKeyDown(e: KeyboardEvent) {
         <div class="picker__crop-shade" />
         <div v-if="cropBox" class="picker__crop-window" :style="cropBox" />
       </div>
+      <!-- What the image is, when it's a bundled sample. -->
+      <slot />
       <p class="picker__field-hint">
         {{ hint }}
       </p>
