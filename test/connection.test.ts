@@ -107,6 +107,27 @@ describe('handleJoin — new player', () => {
   })
 })
 
+describe('handleJoin — one identity per socket', () => {
+  it('refuses a second join on the same connection with a different clientId', () => {
+    const h = harness()
+    handleJoin(h.ctx, h.conn('c1'), join('a', { create: true }))
+    handleJoin(h.ctx, h.conn('c1'), join('b'))
+    // The socket stays bound to the first seat; the second identity leaves no trace.
+    expect(h.state.connMap.get('c1')).toBe('a')
+    expect(h.state.players.has('b')).toBe(false)
+    expect(h.state.players.size).toBe(1)
+    expect(h.state.players.get('a')!.connected).toBe(true)
+  })
+
+  it('still allows a repeat join on the same connection with the same clientId', () => {
+    const h = harness()
+    handleJoin(h.ctx, h.conn('c1'), join('a', { create: true }))
+    handleJoin(h.ctx, h.conn('c1'), join('a'))
+    expect(h.state.connMap.get('c1')).toBe('a')
+    expect(h.state.players.size).toBe(1)
+  })
+})
+
 describe('handleJoin — room cap', () => {
   const fill = (n: number, over: Partial<RoomPlayer> = {}) =>
     Array.from({ length: n }, (_, i) => player(`p${i}`, over))

@@ -46,6 +46,13 @@ export function handleJoin(
     return
   }
 
+  // One socket keeps one identity for its life. A second join on the same connection with a
+  // different clientId would rebind connMap and strand the first seat as a connected ghost no
+  // live socket maps to. Our client sends one join per socket; only a crafted one hits this.
+  const mappedClientId = state.connMap.get(conn.id)
+  if (mappedClientId !== undefined && mappedClientId !== msg.clientId)
+    return
+
   ctx.markOccupied() // somebody is here — cancel any pending empty-room wipe
   state.connMap.set(conn.id, msg.clientId)
   if (existing) {

@@ -93,6 +93,14 @@ function guardOrigin(req: Request, env: Env): Response | undefined {
   return new Response('Forbidden origin', { status: 403 })
 }
 
+// Hard ceiling on concurrent sockets per room: multi-tab and spectators sit above the seat
+// cap, but an unbounded socket count is a cheap denial of service. Generous for real play.
+const MAX_CONNECTIONS = 64
+
+// A socket must identify itself with `join` within this window or it is closed: an un-joined
+// socket only holds a slot and receives nothing.
+const UNJOINED_GRACE_MS = 10_000
+
 // Standard Durable Object, ported from PartyKit. State is in-memory and lost on eviction
 // — deferred deliberately, since evicted rooms are the ones we wipe anyway — and a single
 // alarm drives the round deadline and lifecycle wipes. See docs/.plans/10-room-lifecycle.md.
@@ -111,6 +119,10 @@ export class PixmalerServer extends Server<Env> {
   // would let a flooder reset their own budget at will. A reconnect starting fresh is the
   // accepted cost; dropped in onClose.
   private buckets = new Map<string, Bucket>()
+
+  // Closes a socket that connects but never sends `join` (see UNJOINED_GRACE_MS). Keyed by
+  // conn.id; cleared once the socket joins or closes.
+  private joinTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
   // ── HTTP existence check ───────────────────────────────────────────────────
   // A dormant existence probe the client pre-flights before a *join* (#66): a room "exists"
@@ -137,6 +149,11 @@ export class PixmalerServer extends Server<Env> {
 
   // ── Connection lifecycle ───────────────────────────────────────────────────
   onConnect(conn: Connection, _ctx: ConnectionContext) {
+    // Cap concurrent sockets before any work: a flood never reaches the room's state.
+    if ([...this.getConnections()].length > MAX_CONNECTIONS) {
+      conn.close(1013, 'room busy')
+      return
+    }
     // No `state` here: the client hasn't identified itself yet, so the snapshot would
     // be stale — `handleJoin` broadcasts one once it has. The version is safe to send
     // now, since it describes the Worker rather than the player.
@@ -147,9 +164,20 @@ export class PixmalerServer extends Server<Env> {
       tag: v?.tag ?? '',
       timestamp: v?.timestamp ?? '',
     } satisfies ServerMsg))
+    // Close the socket if it never joins — until then it holds a slot and receives nothing.
+    this.joinTimers.set(conn.id, setTimeout(() => {
+      this.joinTimers.delete(conn.id)
+      if (!this.state.connMap.has(conn.id))
+        conn.close(1008, 'join timeout')
+    }, UNJOINED_GRACE_MS))
   }
 
   onClose(conn: Connection) {
+    const timer = this.joinTimers.get(conn.id)
+    if (timer) {
+      clearTimeout(timer)
+      this.joinTimers.delete(conn.id)
+    }
     handleClose(this.ctxFor(), conn.id)
     this.buckets.delete(conn.id)
     this.armAlarm()
@@ -201,6 +229,13 @@ export class PixmalerServer extends Server<Env> {
       case 'gm:playAgain': handlePlayAgain(this.ctxFor(), sender); break
       case 'gm:cancelRound': handleCancelRound(this.ctxFor(), sender); break
       case 'gm:endSession': handleEndSession(this.ctxFor(), sender); break
+    }
+
+    // A socket that has identified itself no longer needs the un-join timeout.
+    const joinTimer = this.joinTimers.get(sender.id)
+    if (joinTimer && this.state.connMap.has(sender.id)) {
+      clearTimeout(joinTimer)
+      this.joinTimers.delete(sender.id)
     }
 
     // Re-arm the lifecycle alarm after every message: the activity stamp moved,
@@ -313,6 +348,8 @@ export class PixmalerServer extends Server<Env> {
     this.emptySince = null
     this.lastActivityAt = Date.now()
     this.buckets.clear()
+    this.joinTimers.forEach(clearTimeout)
+    this.joinTimers.clear()
     this.armedFor = null
     this.ctx.storage.deleteAlarm().catch(err =>
       console.error('[pixmaler] deleteAlarm failed', err),
@@ -326,7 +363,7 @@ export class PixmalerServer extends Server<Env> {
     return {
       state: this.state,
       roomName: this.name,
-      broadcast: msg => this.broadcastAll(msg),
+      broadcast: msg => this.broadcastMembers(msg),
       broadcastState: () => this.broadcastState(),
       broadcastDoneStatus: () => this.broadcastDoneStatus(),
       send: (conn, msg) => conn.send(JSON.stringify(msg)),
@@ -352,16 +389,28 @@ export class PixmalerServer extends Server<Env> {
     }
   }
 
+  // Every connected socket, joined or not. Only lifecycle signals (session-closed) use this;
+  // game and roster payloads go to members via broadcastMembers.
   private broadcastAll(msg: ServerMsg) {
     this.broadcast(JSON.stringify(msg))
   }
 
+  // Only sockets that have joined (are in connMap). A socket that connects but never joins
+  // must not receive the roster or any game payload.
+  private broadcastMembers(msg: ServerMsg) {
+    const data = JSON.stringify(msg)
+    for (const conn of this.getConnections()) {
+      if (this.state.connMap.has(conn.id))
+        conn.send(data)
+    }
+  }
+
   private broadcastState() {
-    this.broadcastAll(buildState(this.state))
+    this.broadcastMembers(buildState(this.state))
   }
 
   private broadcastDoneStatus() {
-    this.broadcastAll({ type: 'done-status', ...drawProgress(this.state) })
+    this.broadcastMembers({ type: 'done-status', ...drawProgress(this.state) })
   }
 }
 
