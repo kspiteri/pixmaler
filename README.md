@@ -42,4 +42,4 @@ Run it locally and dig in — tooling, conventions, project layout, and deploy a
 
 ## Licences
 
-Third-party assets are recorded in [`LICENSE.md`](./LICENSE.md): the background music (upbeat by Kevin MacLeod, **CC-BY 4.0**; classical by Gregor Quendel, **CC BY-NC 4.0** via classicals.de and the **Pixabay Content License**), the self-hosted fonts (**SIL OFL 1.1**) and the bundled dependencies (MIT/ISC). Every track's credit is shown in-app under **Credits** in the settings menu, grouped by source — CC-BY and CC BY-NC both require a visible attribution.
+Pixmaler's own source code is under the [**MIT License**](./LICENSE). Third-party assets are recorded in [`LICENSE.md`](./LICENSE.md): the background music (upbeat by Kevin MacLeod, **CC-BY 4.0**; classical by Gregor Quendel, **CC BY-NC 4.0** via classicals.de and the **Pixabay Content License**), the self-hosted fonts (**SIL OFL 1.1**) and the bundled dependencies (MIT/ISC). Every track's credit is shown in-app under **Credits** in the settings menu, grouped by source — CC-BY and CC BY-NC both require a visible attribution. The CC BY-NC tracks mean a commercial build would need different music.

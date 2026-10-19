@@ -4,6 +4,7 @@
   "version": "0.14.0",
   "private": true,
   "packageManager": "pnpm@11.1.2",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "dev:all": "node scripts/dev.mjs",

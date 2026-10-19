@@ -1,6 +1,8 @@
-# Licences
+# Third-party licences
 
-Third-party assets and dependencies bundled in Pixmaler and their licences.
+Pixmaler's own source code is under the MIT License — see [`LICENSE`](./LICENSE). This file
+records the third-party assets and dependencies bundled with it, which keep their own licences.
+The classicals.de music tracks are CC BY-NC 4.0 (non-commercial); see Music.
 
 ## Music
 
