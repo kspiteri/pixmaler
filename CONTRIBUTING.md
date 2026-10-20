@@ -52,6 +52,7 @@ pnpm lint:css     # stylelint (SCSS + Vue <style>) — the colour-literal guard
 pnpm test         # vitest: Node suites + browser-mode canvas smoke
 pnpm test:unit    # Node suites only (what CI runs; no browser)
 pnpm wr:deploy    # deploy the realtime server to Cloudflare
+pnpm release      # gate, deploy-if-changed, merge the Release PR, name it (prompts)
 pnpm bots         # fill a local room with test players (--room=<code> --count=5)
 ```
 
@@ -187,6 +188,8 @@ Required repo config, under Settings → Secrets and variables → Actions:
 No secrets. That is the point.
 
 ### Cutting a release
+
+**`pnpm release` runs this whole flow** — gates (lint, lint:css, typecheck, test, build, worker dry-run), then the Worker deploy *only if `party/` or `src/lib/protocol/` changed*, the Release PR merge, watching the run, and naming the release — prompting before each destructive step (`--yes` skips the prompts; `--theme "two or three words"` presets the name). By hand, the steps are:
 
 1. Review the open **Release PR**. release-please has already written the version into `package.json` and the entry into `CHANGELOG.md`, derived from the conventional-commit types since the last release.
 2. **`pnpm wr:deploy` — but only if the server actually changed.** Check with `git diff <last-tag>..HEAD -- party/ src/lib/protocol/`. A Worker deploy **ends every game in progress**, so this is not a ritual: skip it when that diff is empty. When it is not empty, deploy *before* merging — the frontend inlines `VITE_PARTYKIT_HOST` at build time, and a newer server tolerates older clients while the reverse does not.
