@@ -26,6 +26,9 @@ pnpm-debug.log*
 # TypeScript
 *.tsbuildinfo
 
+# Vitest browser mode artifact cache
+.vitest/
+
 # Other
 docs/.plans/
 
