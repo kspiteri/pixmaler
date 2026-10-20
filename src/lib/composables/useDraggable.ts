@@ -58,9 +58,12 @@ export function useDraggable(opts: UseDraggableOpts) {
 
     e.preventDefault()
     const target = e.currentTarget as HTMLElement
-    target.setPointerCapture(e.pointerId)
     activeTarget = target
     activePointerId = e.pointerId
+    // Best-effort, as with the release in onEnd: some engines reject capturing a
+    // non-active pointer, but the move listeners below still drive the drag.
+    try { target.setPointerCapture(e.pointerId) }
+    catch { /* capture unavailable — the drag still works without it */ }
 
     startClientX = e.clientX
     startClientY = e.clientY
