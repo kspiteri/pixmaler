@@ -58,7 +58,7 @@ How Pixmaler looks and reads: copy voice, feedback, controls, colour and theme, 
 
 ### Lime means "go" and "chosen"
 
-- It fills the primary CTA and marks what the player has picked or earned: the selected segment, swatch and sample, a switch that's on, the slider's filled track, text selection, their awards, the winner's frame. The wordmark is brand lime (a logotype is exempt). **Nothing else is lime.**
+- It fills the primary CTA and marks what the player has picked or earned: the selected segment, swatch and sample, a switch that's on, the slider's filled track, text selection, their awards, the **"yours" mark on the Results reveal** (a `__you` chip and a ring on your own card), the winner's frame. The wordmark is brand lime (a logotype is exempt). **Nothing else is lime.**
 - **Focus is page ink** — a 2 px `$fg` `:focus-visible` ring app-wide, inputs included. Room codes, `/paint`'s open settings toggle, the music widget (and its playing pulse), spinners and links are page ink too.
 - A slider whose value isn't a choice (music volume) takes **`.slider--neutral`** (`--slider-fill: $fg-60`).
 - **Purple means the GM and the secondary button**, never "selected".
@@ -135,7 +135,7 @@ If a colour sits on something other than the page, it belongs here:
 
 ### `PlayerTag`
 
-- **Every chip-beside-a-name is [`PlayerTag.vue`](../src/components/elements/PlayerTag.vue)** — lobby roster, "waiting for …" line, Results hero, gallery and no-show list. Never hand-roll the pair.
+- **Every chip-beside-a-name is [`PlayerTag.vue`](../src/components/elements/PlayerTag.vue)** — lobby roster, "waiting for …" line, Results hero, the Best/Funniest awards, gallery and no-show list. Never hand-roll the pair.
 - **Its invariant:** the chip is `aria-hidden` because a name is always beside it. Don't add a chip-only flag.
 - It owns the chip, gap and name font-family; the host sets size and weight. `size` sets only the chip: `row` (28 px) or `inline` (24 px, default). `--inline` centres the chip while the name keeps the baseline.
 - **Traps:** `<PlayerTag>` without an import renders nothing and neither `vue-tsc` nor ESLint notices. `--truncate` needs `max-width: 100%` — an `inline-flex` box is shrink-to-fit and ignores its container.

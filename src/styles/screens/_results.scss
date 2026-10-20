@@ -1,9 +1,9 @@
 @use 'tokens' as *;
 @use 'wonk' as *;
 
-// Results screen — hero winner card plus a gallery of the rest by overall points. Each
-// drawing is a PixelCanvas appended into an `.art-surface`; it's sized by the unscoped
-// `.art-surface > canvas` rule in `_surfaces.scss`, so there's no per-screen canvas rule.
+// Results screen — overall winner hero, Best + Funniest awards, then a gallery of the rest by
+// overall points. Each drawing is a PixelCanvas appended into an `.art-surface`; it's sized by the
+// unscoped `.art-surface > canvas` rule in `_surfaces.scss`, so there's no per-screen canvas rule.
 
 .results {
   max-width: 48rem;
@@ -15,10 +15,26 @@
     color: $muted;
   }
 
+  // ── Awards block reveal ──────────────────────────────────────────────────────
+  // The gallery is on screen at mount; this block (hero + awards) fades in just after, so the
+  // reveal travels bottom→top. Only opacity/translate move, so the art canvases inside stay put.
+  &__podium {
+    opacity: 0;
+    translate: 0 12px;
+    transition:
+      opacity 0.5s ease,
+      translate 0.5s ease;
+
+    &--in {
+      opacity: 1;
+      translate: 0 0;
+    }
+  }
+
   // ── Hero ───────────────────────────────────────────────────────────────────
   &__hero {
     text-align: center;
-    margin-bottom: $gap-6;
+    margin-bottom: $gap-5;
   }
   &__crown {
     margin: 0 0 $gap-4;
@@ -71,6 +87,11 @@
     margin: 0;
     font-weight: 700;
     font-size: $fs-lg;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $gap-2;
+    flex-wrap: wrap;
   }
   &__winner-votes {
     margin: 0.125rem 0 0;
@@ -78,22 +99,104 @@
     font-weight: 700;
     color: $accent-ink;
   }
-  &__winner-breakdown {
-    margin: 0.125rem 0 0;
-    color: $muted;
-    font-size: $fs-sm;
+
+  // ── Best + Funniest awards ────────────────────────────────────────────────────
+  &__awards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: $gap-4;
+    max-width: 34rem;
+    margin: 0 auto;
+
+    @media (max-width: $bp-mobile) {
+      grid-template-columns: 1fr;
+    }
   }
-  &__winner-breakdown-item {
-    display: inline-flex;
+  &__award {
+    background: $surface;
+    border-radius: $radius-lg;
+    padding: $gap-3 $gap-4;
+
+    @include wonk;
+  }
+  &__award-label {
+    margin: 0 0 $gap-3;
+    display: flex;
     align-items: center;
-    gap: 0.25rem;
-    vertical-align: middle;
+    gap: $gap-2;
+    font-family: $font-body;
+    font-weight: 700;
+    font-size: $fs-xs;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: $accent-ink;
   }
-  &__breakdown-icon {
-    width: 1.5rem;
-    height: 1.5rem;
+  &__award-icon {
+    width: 1.25rem;
+    height: 1.25rem;
     display: block;
     color: $accent-ink;
+  }
+  // Italic rather than a new colour — every accent already carries a meaning.
+  &__award-empty {
+    margin: 0;
+    color: $muted;
+    font-size: $fs-sm;
+    font-style: italic;
+  }
+  &__award-item {
+    display: flex;
+    align-items: center;
+    gap: $gap-3;
+
+    & + & {
+      margin-top: $gap-3;
+    }
+
+    // "Yours": a lime ring (lime = what a player earned).
+    &--mine {
+      outline: 2px solid $accent-ink;
+      outline-offset: 3px;
+      border-radius: $radius;
+    }
+  }
+  &__award-art {
+    width: 80px;
+    flex: none;
+  }
+  &__award-meta {
+    min-width: 0;
+  }
+  &__award-name {
+    margin: 0;
+    font-weight: 600;
+    font-size: $fs-sm;
+    display: flex;
+    align-items: center;
+    gap: $gap-2;
+    flex-wrap: wrap;
+  }
+  &__award-votes {
+    margin: 0.125rem 0 0;
+    font-family: $font-display;
+    font-weight: 700;
+    font-size: $fs-sm;
+    color: $accent-ink;
+  }
+  // A champion already shown elsewhere (the overall hero, or the other award) — named, not redrawn.
+  &__award-mention {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: $gap-2;
+    flex-wrap: wrap;
+    font-weight: 600;
+    font-size: $fs-sm;
+  }
+  &__award-mention-note {
+    color: $muted;
+    font-weight: 400;
+    font-size: $fs-xs;
   }
 
   // ── Gallery (the rest) ───────────────────────────────────────────────────────
@@ -110,8 +213,10 @@
     grid-template-columns: repeat(auto-fit, minmax(140px, 200px));
     justify-content: center;
     gap: $gap-4;
+    margin-top: $gap-5;
   }
   &__item {
+    position: relative;
     background: $surface;
     border-radius: $radius-lg;
     padding: $gap-3;
@@ -119,9 +224,26 @@
 
     @include wonk;
 
+    // "Yours": the same lime ring as the awards, so your drawing is findable at a glance.
     &--mine {
-      border-color: $fg-25;
+      outline: 2px solid $accent-ink;
+      outline-offset: 2px;
     }
+  }
+  // Competition rank, sitting over the top-left of the frame.
+  &__rank {
+    position: absolute;
+    top: $gap-2;
+    left: $gap-2;
+    z-index: 1;
+    background: color-mix(in srgb, $bg 78%, transparent);
+    border: 1px solid $border;
+    border-radius: $radius;
+    padding: 0.1rem 0.4rem;
+    font-family: $font-display;
+    font-weight: 700;
+    font-size: $fs-2xs;
+    color: $fg-80;
   }
   &__item-art {
     margin-bottom: $gap-2;
@@ -137,13 +259,26 @@
     color: $muted;
     font-size: $fs-xs;
   }
-  // Stands in for the score on a wiped canvas. Italic rather than a new colour — every
-  // accent already carries a meaning.
-  &__item-wiped {
-    margin: 0.125rem 0 0;
-    color: $muted;
-    font-size: $fs-xs;
-    font-style: italic;
+
+  // The "you" marker — lime fill (what you earned), its own ink for contrast on either theme.
+  &__you {
+    display: inline-flex;
+    align-items: center;
+    background: $accent;
+    color: $accent-fg;
+    font-family: $font-body;
+    font-weight: 800;
+    font-size: $fs-2xs;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    line-height: 1.4;
+
+    &--tile {
+      position: absolute;
+      top: $gap-2;
+      right: $gap-2;
+      z-index: 1;
+    }
   }
 
   // Roll call of players who never drew. Deliberately unlike `__gallery` — no frames, grid
@@ -179,5 +314,14 @@
   &__hint {
     color: $fg-35;
     font-size: $fs-sm;
+  }
+}
+
+// The awards fade is motion; honour the reduced-motion preference.
+@media (prefers-reduced-motion: reduce) {
+  .results__podium {
+    opacity: 1;
+    translate: none;
+    transition: none;
   }
 }

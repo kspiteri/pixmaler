@@ -1,11 +1,13 @@
 <script setup lang="ts">
-// RESULTS phase — overall reveal. Winner(s) (most total votes, joint on a tie) take the
-// hero card; everyone else falls into a gallery ordered by points, each drawing once.
-// The GM gets "Play again" in the status bar and repeated, full size, under the reveal.
+// RESULTS phase — the reveal. The overall winner(s) take the hero; Best and Funniest are awarded
+// beneath it. A category the overall winner also took is named there, never redrawn; a distinct
+// champion shows their drawing in the award and is not repeated below. Everyone else falls into a
+// ranked gallery, each drawing once. The awards fade in just after the gallery so the reveal
+// travels bottom→top. The GM gets "Play again" in the status bar and, full size, under the reveal.
 
-import type { Player, RankedResult, ServerMsg } from '@/lib'
+import type { Player, RankedResult, ServerMsg, VoteCategory } from '@/lib'
 import { Power, RotateCcw } from '@lucide/vue'
-import { computed, inject } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import PlayerTag from '@/components/elements/PlayerTag.vue'
 import Tagline from '@/components/elements/Tagline.vue'
@@ -25,6 +27,7 @@ const props = defineProps<{
 
 type Results = Extract<ServerMsg, { type: 'results' }>
 type Entry = Results['ranked'][number]
+type Seat = ReturnType<typeof seatFor>
 
 const socket = inject(socketKey)!.value!
 const clientId = inject(clientIdKey)!
@@ -38,104 +41,171 @@ const seats = computed(() =>
   new Map(props.players.map((p, i) => [p.clientId, { seat: i, player: p }])),
 )
 
-// All drawings share the GM's image dimensions — one ratio drives every art slot (hero +
-// gallery) via `--art-ratio`, so non-square images keep shape.
+// All drawings share the GM's image dimensions — one ratio drives every art slot via
+// `--art-ratio`, so non-square images keep shape.
 const artRatio = computed(() =>
   props.results ? artRatioFor(props.results.gridW, props.results.gridH) : '1 / 1',
 )
 
-// Top scorers (joint on a tie) become the hero; the rest form the gallery in points order.
-// `ranked` arrives pre-sorted descending. Each entry is paired with its seat here so the
-// template resolves the lookup once per card.
+// `ranked` arrives pre-sorted descending by overall points (funniest + best).
 const ranked = computed<Entry[]>(() => props.results?.ranked ?? [])
-function withSeats(entries: Entry[]) {
-  return entries.map((e) => {
-    const found = seats.value.get(e.clientId)
-    return { entry: e, seat: found ? seatFor(found.seat, found.player) : null }
-  })
+
+function withSeat(e: Entry): { entry: Entry, seat: Seat | null } {
+  const found = seats.value.get(e.clientId)
+  return { entry: e, seat: found ? seatFor(found.seat, found.player) : null }
 }
 
-// Players who were competing and never put a mark down. Derived by subtracting `ranked`
-// from the roster, NOT by reading `drewThisRound`: that flag is set silently server-side
-// and never reaches the client, so the roster still says `false` for everyone who drew.
-// `ranked` can't go stale — it arrives in the same `results` message and is exactly the
-// gallery. Deriving rather than appending matters: `nobodyDrew` infers from `ranked` being
-// empty, so padding it would break the zero-submission reveal. Spectators are excluded;
-// disconnected players are not — they were here and did not draw.
-const drewIds = computed(() => new Set(ranked.value.map(e => e.clientId)))
-const neverDrew = computed(() =>
-  props.players
-    .filter(p => !p.spectating && !drewIds.value.has(p.clientId))
-    .map((p) => {
-      const found = seats.value.get(p.clientId)
-      return { player: p, seat: found ? seatFor(found.seat, found.player) : null }
-    }),
-)
-
-// Nobody drew at all. The server skips VOTING in this case (see endDrawing), so this
-// arrives straight from DRAWING with an empty ranked field.
+// Nobody drew at all. The server skips VOTING in this case (see endDrawing), so this arrives
+// straight from DRAWING with an empty ranked field.
 const nobodyDrew = computed(() => ranked.value.length === 0)
-// No human winner — either nobody drew, or people drew and nobody voted. `ranked` arrives
-// sorted descending, so a zero at the top means a zero everywhere; without this guard
-// `e.votes === top` matched every entry and deleted the gallery. Either way the target
-// takes the hero and everyone falls into the gallery.
+// No human winner — either nobody drew, or people drew and nobody voted. `ranked` is sorted
+// descending, so a zero at the top means a zero everywhere. Either way the target takes the hero.
 const noWinner = computed(() => nobodyDrew.value || ranked.value[0].votes === 0)
 
+// Top scorers (joint on a tie) become the hero.
 const winners = computed(() => {
   const all = ranked.value
   if (all.length === 0 || noWinner.value)
     return []
   const top = all[0].votes
-  return withSeats(all.filter(e => e.votes === top))
+  return all.filter(e => e.votes === top).map(withSeat)
 })
-// Empty `winners` makes this `slice(0)` — the whole ranked field — which is what the
-// no-winner case wants: nobody crowned, everybody in the gallery.
-const rest = computed(() => withSeats(ranked.value.slice(winners.value.length)))
+const overallIds = computed(() => new Set(winners.value.map(w => w.entry.submissionId)))
 
-// A player who drew and then cleared.
+// The entries tied for the most votes in one category, or none when that category drew no votes.
+function championsOf(cat: VoteCategory): { max: number, entries: Entry[] } {
+  const all = ranked.value
+  let max = 0
+  for (const e of all)
+    max = Math.max(max, e.breakdown?.[cat] ?? 0)
+  if (max === 0)
+    return { max: 0, entries: [] }
+  return { max, entries: all.filter(e => (e.breakdown?.[cat] ?? 0) === max) }
+}
+
+interface AwardItem { entry: Entry, seat: Seat | null, asArt: boolean, mention: 'overall' | 'best' | null, count: number }
+interface Award { cat: VoteCategory, label: string, max: number, items: AwardItem[], shared: boolean }
+
+// Best, then Funniest. A champion who also won overall is named, never redrawn. A drawing that
+// takes both categories (but not overall) shows its art under Best and is named under Funniest —
+// the processing order below decides that. `shownArt` collects every drawing shown in an award
+// so the gallery can exclude it (a distinct champion lives in its award only).
+const awards = computed(() => {
+  const shownArt = new Set<string>()
+  const oIds = overallIds.value
+  const list = (['best', 'funniest'] as const).map<Award>((cat) => {
+    const { max, entries } = championsOf(cat)
+    const label = VOTE_CATEGORIES.find(c => c.id === cat)?.label ?? cat
+    const built = entries.map<AwardItem>((e) => {
+      const isOverall = oIds.has(e.submissionId)
+      const asArt = !isOverall && !shownArt.has(e.submissionId)
+      if (asArt)
+        shownArt.add(e.submissionId)
+      return { ...withSeat(e), asArt, mention: asArt ? null : (isOverall ? 'overall' : 'best'), count: e.breakdown?.[cat] ?? 0 }
+    })
+    // Drawings of the winners first, then the "won by the overall winner" note underneath.
+    const items = [...built.filter(i => i.asArt), ...built.filter(i => !i.asArt)]
+    // `shared` when a listed co-winner's drawing is shown alongside an overall-winner mention.
+    return { cat, label, max, items, shared: built.some(i => i.asArt) && built.some(i => !i.asArt) }
+  })
+  return { list, shownArt }
+})
+
+// Standard competition ranking over the full field (ties share a rank, the next rank skips).
+const rankMap = computed(() => {
+  const m = new Map<string, { rank: number, shared: boolean }>()
+  const all = ranked.value
+  let i = 0
+  while (i < all.length) {
+    let j = i
+    while (j < all.length && all[j].votes === all[i].votes)
+      j++
+    for (let k = i; k < j; k++)
+      m.set(all[k].submissionId, { rank: i + 1, shared: j - i > 1 })
+    i = j
+  }
+  return m
+})
+
+// A player who drew and then cleared back to an empty canvas.
 function isWiped(entry: RankedResult): boolean {
   return entry.grid.every(cell => cell === -1)
 }
 
-// Per-category breakdown for the hero. Falls back to 0 for any missing category so a
-// stale results payload can't crash the reveal.
-function breakdownItems(entry: Entry) {
-  return VOTE_CATEGORIES.map(c => ({
-    id: c.id,
-    label: c.label,
-    count: entry.breakdown?.[c.id] ?? 0,
-  }))
+// Everyone who finished a drawing, minus the overall winner and anyone shown with their drawing in
+// an award. Wiped canvases are not here — they join the "didn't finish" group below.
+const gallery = computed(() => {
+  const shown = awards.value.shownArt
+  const oIds = overallIds.value
+  return ranked.value
+    .filter(e => !oIds.has(e.submissionId) && !shown.has(e.submissionId) && !isWiped(e))
+    .map(e => ({ ...withSeat(e), rank: rankMap.value.get(e.submissionId) ?? { rank: 0, shared: false } }))
+})
+
+// "Didn't finish" — wiped canvases and players who never put a mark down, as one group below the
+// ranked gallery so a 0-vote non-finisher never reads as having come last. Never-drew is derived by
+// subtracting `ranked` from the roster, NOT from `drewThisRound` (set silently server-side, never
+// sent). Spectators are excluded; disconnected players are not — they were here and did not finish.
+const didNotFinish = computed(() => {
+  const shown = awards.value.shownArt
+  const oIds = overallIds.value
+  const wiped = ranked.value
+    .filter(e => !oIds.has(e.submissionId) && !shown.has(e.submissionId) && isWiped(e))
+    .map((e) => {
+      const found = seats.value.get(e.clientId)
+      return { key: e.submissionId, name: e.name, seat: found ? seatFor(found.seat, found.player) : null, line: 'wiped their canvas' }
+    })
+  const never = props.players
+    .filter(p => !p.spectating && !ranked.value.some(e => e.clientId === p.clientId))
+    .map((p) => {
+      const found = seats.value.get(p.clientId)
+      return { key: p.clientId, name: p.name, seat: found ? seatFor(found.seat, found.player) : null, line: 'seems to have lost their paint brush' }
+    })
+  return [...wiped, ...never]
+})
+
+function ordinal(n: number): string {
+  const suffix = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return `${n}${suffix[(v - 20) % 10] ?? suffix[v] ?? suffix[0]}`
+}
+function rankLabel(r: { rank: number, shared: boolean }): string {
+  return (r.shared ? '=' : '') + ordinal(r.rank)
 }
 
 // Slot key for the target image's hero canvas; never collides with a submissionId.
 const TARGET_SLOT = '__target__'
 
-// Mount each ranked drawing into its hero or gallery slot (hero wins if a winner briefly
-// appears in both), plus the target image in the hero when nobody won.
+// The reveal travels bottom→top: the gallery is on screen at mount, the awards block fades in just
+// after. The art canvases stay mounted throughout (the block only animates opacity and translate),
+// so a faded-in award already has its drawing. Reduced motion shows the block at once.
+const revealed = ref(false)
+onMounted(() => {
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    revealed.value = true
+    return
+  }
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    revealed.value = true
+  }))
+})
+
+// Mount each shown drawing into its one slot: overall winner(s) → hero, a distinct category
+// champion → that award, everyone else → gallery, plus the target in the hero when nobody won.
 const { setSlot } = useReadonlyCanvases(
   () => [props.results, props.targetGrid],
   () => {
     const r = props.results
     if (!r)
       return []
-    const thumbs = r.ranked.map(entry => ({
-      groups: ['hero', 'gallery'],
-      key: entry.submissionId,
-      gridW: r.gridW,
-      gridH: r.gridH,
-      palette: r.palette,
-      grid: entry.grid,
-    }))
-    if (noWinner.value && props.targetGrid) {
-      thumbs.push({
-        groups: ['hero'],
-        key: TARGET_SLOT,
-        gridW: r.gridW,
-        gridH: r.gridH,
-        palette: r.palette,
-        grid: props.targetGrid,
-      })
-    }
+    const dims = { gridW: r.gridW, gridH: r.gridH, palette: r.palette }
+    const thumbs = [
+      ...winners.value.map(w => ({ groups: ['hero'], key: w.entry.submissionId, ...dims, grid: w.entry.grid })),
+      ...awards.value.list.flatMap(a => a.items.filter(it => it.asArt).map(it => ({ groups: [a.cat], key: it.entry.submissionId, ...dims, grid: it.entry.grid }))),
+      ...gallery.value.map(g => ({ groups: ['gallery'], key: g.entry.submissionId, ...dims, grid: g.entry.grid })),
+    ]
+    if (noWinner.value && props.targetGrid)
+      thumbs.push({ groups: ['hero'], key: TARGET_SLOT, ...dims, grid: props.targetGrid })
     return thumbs
   },
 )
@@ -182,68 +252,112 @@ const { setSlot } = useReadonlyCanvases(
       </p>
 
       <template v-else>
-        <!-- Hero: overall winner(s), or the target image when nobody voted. -->
-        <div class="results__hero">
-          <p class="results__crown">
-            <GameIcon name="crown" class="results__crown-icon" />
-            {{ noWinner ? (nobodyDrew ? "nobody drew, so the original wins" : "nobody voted, so the original wins") : winners.length > 1 ? "joint winners" : "overall winner" }}
-          </p>
-          <div class="results__winners">
-            <!-- Nobody voted, so the target takes the hero. Same frame as a real
-                 winner: it did beat them. -->
-            <div v-if="noWinner" class="results__winner">
-              <div class="results__winner-art art-frame art-frame--winner">
-                <div :ref="el => setSlot('hero', TARGET_SLOT, el)" class="art-surface" />
+        <!-- Awards block — on screen but faded until just after mount, so the reveal lands
+             bottom→top (the gallery first, these after). -->
+        <div class="results__podium" :class="{ 'results__podium--in': revealed }">
+          <!-- TODO(#43): fire the winner confetti here, once this podium reveal lands. -->
+
+          <!-- Hero: overall winner(s), or the target image when nobody voted. -->
+          <div class="results__hero">
+            <p class="results__crown">
+              <GameIcon name="crown" class="results__crown-icon" />
+              {{ noWinner ? (nobodyDrew ? "nobody drew, so the original wins" : "nobody voted, so the original wins") : winners.length > 1 ? "joint winners" : "overall winner" }}
+            </p>
+            <div class="results__winners">
+              <!-- Nobody voted, so the target takes the hero. Same frame as a real winner. -->
+              <div v-if="noWinner" class="results__winner">
+                <div class="results__winner-art art-frame art-frame--winner">
+                  <div :ref="el => setSlot('hero', TARGET_SLOT, el)" class="art-surface" />
+                </div>
+                <div class="results__winner-meta">
+                  <p class="results__winner-name">
+                    the original
+                  </p>
+                  <p class="results__winner-votes">
+                    {{ nobodyDrew ? "unchallenged" : "undefeated" }}
+                  </p>
+                </div>
               </div>
-              <div class="results__winner-meta">
-                <p class="results__winner-name">
-                  the original
-                </p>
-                <p class="results__winner-votes">
-                  {{ nobodyDrew ? "unchallenged" : "undefeated" }}
-                </p>
+              <div
+                v-for="{ entry: w, seat } in winners"
+                :key="w.submissionId"
+                class="results__winner"
+                :class="{ 'results__winner--mine': w.clientId === clientId }"
+              >
+                <div class="results__winner-art art-frame art-frame--winner">
+                  <div :ref="el => setSlot('hero', w.submissionId, el)" class="art-surface" />
+                </div>
+                <div class="results__winner-meta">
+                  <p class="results__winner-name">
+                    <PlayerTag v-if="seat" :seat="seat" :name="w.name" />
+                    <span v-if="w.clientId === clientId" class="results__you">you</span>
+                  </p>
+                  <p class="results__winner-votes">
+                    {{ w.votes }} point{{ w.votes === 1 ? "" : "s" }}
+                  </p>
+                </div>
               </div>
             </div>
-            <div
-              v-for="{ entry: w, seat } in winners"
-              :key="w.submissionId"
-              class="results__winner"
-              :class="{ 'results__winner--mine': w.clientId === clientId }"
-            >
-              <div class="results__winner-art art-frame art-frame--winner">
-                <div :ref="el => setSlot('hero', w.submissionId, el)" class="art-surface" />
-              </div>
-              <div class="results__winner-meta">
-                <p class="results__winner-name">
-                  <PlayerTag v-if="seat" :seat="seat" :name="w.name" />
-                </p>
-                <p class="results__winner-votes">
-                  {{ w.votes }} vote{{ w.votes === 1 ? "" : "s" }}
-                </p>
-                <p class="results__winner-breakdown">
-                  <span
-                    v-for="(b, i) in breakdownItems(w)"
-                    :key="b.id"
-                    class="results__winner-breakdown-item"
-                  >
-                    <template v-if="i > 0"> · </template>
-                    {{ b.count }}
-                    <GameIcon :name="b.id" class="results__breakdown-icon" />
-                  </span>
-                </p>
-              </div>
+          </div>
+
+          <!-- Best + Funniest. Hidden when nobody won: there are no votes to award. -->
+          <div v-if="!noWinner" class="results__awards">
+            <div v-for="a in awards.list" :key="a.cat" class="results__award">
+              <p class="results__award-label">
+                <GameIcon :name="a.cat" class="results__award-icon" />
+                {{ a.label }}
+              </p>
+              <p v-if="a.max === 0" class="results__award-empty">
+                no {{ a.cat === "funniest" ? "funny" : "best" }} votes this round
+              </p>
+              <template v-else>
+                <div
+                  v-for="it in a.items"
+                  :key="it.entry.submissionId"
+                  class="results__award-item"
+                  :class="{ 'results__award-item--mine': it.asArt && it.entry.clientId === clientId }"
+                >
+                  <template v-if="it.asArt">
+                    <div class="results__award-art art-frame">
+                      <div :ref="el => setSlot(a.cat, it.entry.submissionId, el)" class="art-surface" />
+                    </div>
+                    <div class="results__award-meta">
+                      <p class="results__award-name">
+                        <PlayerTag v-if="it.seat" :seat="it.seat" :name="it.entry.name" truncate />
+                        <span v-if="it.entry.clientId === clientId" class="results__you">you</span>
+                      </p>
+                      <p class="results__award-votes">
+                        {{ it.count }} {{ a.cat === "funniest" ? "funny" : "best" }} vote{{ it.count === 1 ? "" : "s" }}
+                      </p>
+                    </div>
+                  </template>
+                  <p v-else class="results__award-mention">
+                    <!-- The winner is named large in the hero, so a single overall winner needs no
+                         repeat. Joint winners keep the name — it says which of them took this category. -->
+                    <template v-if="it.mention === 'overall' && winners.length > 1">
+                      <PlayerTag v-if="it.seat" :seat="it.seat" :name="it.entry.name" truncate />
+                      <span class="results__award-mention-note">· a joint winner</span>
+                    </template>
+                    <span v-else class="results__award-mention-note">
+                      {{ it.mention === "overall" ? (a.shared ? "shared with the overall winner" : "won by the overall winner") : "also won best" }}
+                    </span>
+                  </p>
+                </div>
+              </template>
             </div>
           </div>
         </div>
 
-        <!-- Gallery: everyone else, ordered by overall points. -->
-        <div v-if="rest.length" class="results__gallery">
+        <!-- Everyone else — ranked by overall points, on screen from load. -->
+        <div v-if="gallery.length" class="results__gallery">
           <div
-            v-for="{ entry, seat } in rest"
+            v-for="{ entry, seat, rank } in gallery"
             :key="entry.submissionId"
             class="results__item"
             :class="{ 'results__item--mine': entry.clientId === clientId }"
           >
+            <span class="results__rank">{{ rankLabel(rank) }}</span>
+            <span v-if="entry.clientId === clientId" class="results__you results__you--tile">you</span>
             <div class="results__item-art art-frame">
               <div :ref="el => setSlot('gallery', entry.submissionId, el)" class="art-surface" />
             </div>
@@ -255,24 +369,21 @@ const { setSlot } = useReadonlyCanvases(
                 truncate
               />
             </p>
-            <p v-if="isWiped(entry)" class="results__item-wiped">
-              wiped their canvas
-            </p>
-            <p v-else class="results__item-votes">
+            <p class="results__item-votes">
               {{ entry.votes }} pt{{ entry.votes === 1 ? "" : "s" }}
             </p>
           </div>
         </div>
 
-        <!-- Players who never drew. -->
-        <ul v-if="neverDrew.length" class="results__nodraw">
+        <!-- Didn't finish: wiped canvases and players who never drew, as one group. -->
+        <ul v-if="didNotFinish.length" class="results__nodraw">
           <li
-            v-for="{ player, seat } in neverDrew"
-            :key="player.clientId"
+            v-for="p in didNotFinish"
+            :key="p.key"
             class="results__nodraw-item"
           >
-            <PlayerTag v-if="seat" :seat="seat" :name="player.name" />
-            seems to have lost their paint brush
+            <PlayerTag v-if="p.seat" :seat="p.seat" :name="p.name" />
+            {{ p.line }}
           </li>
         </ul>
 
