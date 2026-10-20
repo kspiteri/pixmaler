@@ -34,7 +34,7 @@ const TYPES = {
 
 // Optional, but they group the release notes usefully — deliberately mirroring the
 // `area:*` labels on the issue tracker so a note and an issue describe the same place.
-const SCOPES = ['lobby', 'drawing', 'voting', 'results', 'server', 'pipeline', 'a11y', 'canvas', 'deps', 'ci']
+const SCOPES = ['lobby', 'drawing', 'voting', 'results', 'server', 'pipeline', 'a11y', 'canvas', 'audio', 'deps', 'ci']
 
 const path = process.argv[2]
 if (!path) {
