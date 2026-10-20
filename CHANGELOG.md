@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.15.0](https://github.com/kspiteri/pixmaler/compare/0.14.0...0.15.0) (2026-10-20)
+
+
+### New
+
+* **pipeline:** curated 25-work sample set with grouped picker ([c8b58de](https://github.com/kspiteri/pixmaler/commit/c8b58ded31d562b93b68f478254849de92a4322d))
+* set music to act as countdown ([#125](https://github.com/kspiteri/pixmaler/issues/125)) ([3633ac0](https://github.com/kspiteri/pixmaler/commit/3633ac05c17cc0f627d9f7eff185d15134c4af40))
+
+
+### Fixes
+
+* **audio:** build the sfx howl lazily so import can't crash ([a8df41e](https://github.com/kspiteri/pixmaler/commit/a8df41e5053f4dbec353e8dc935ed8f42b38c123))
+* **canvas:** eyedropper, honest undo, restore-aware blank warning ([f487a91](https://github.com/kspiteri/pixmaler/commit/f487a911df260a6383fb596e655b3d6b889c788f))
+* **canvas:** native-resolution thumbnails and one update per frame ([996ea60](https://github.com/kspiteri/pixmaler/commit/996ea605dcfc924daf2bdd1a954ea8ad9750f07c))
+* **drawing:** save continuously and submit before the deadline ([b87354d](https://github.com/kspiteri/pixmaler/commit/b87354d169f9cb2009fdae5b39f6301242ecc8df))
+* **forms:** add hover state for active form buttons ([68916b1](https://github.com/kspiteri/pixmaler/commit/68916b152a6147e10a242127802a3a2c869b24fd))
+* make the panel drag's pointer capture best-effort ([02a82d5](https://github.com/kspiteri/pixmaler/commit/02a82d51841fe9ac2d0803c8e5e4f86e0c906f5a))
+* **server:** one identity per socket, broadcasts to members only ([90a464f](https://github.com/kspiteri/pixmaler/commit/90a464f7e4e3b14e30b89cec8bd8a41d0559a458))
+
+
+### Under the hood
+
+* add a dev:all command and a bots script ([0b7ff58](https://github.com/kspiteri/pixmaler/commit/0b7ff58a85bcb0053a034b6a1cc972fcf5c79c3b))
+* add a pnpm release script ([f505018](https://github.com/kspiteri/pixmaler/commit/f505018c3234272f7bc009bc7a394e31af4487be))
+* **deps:** bump @antfu/eslint-config to 9.5.1, @lucide/vue and workers ([db5f0d4](https://github.com/kspiteri/pixmaler/commit/db5f0d4c2ebd6980921e68ee48a0c69a49f09b68))
+
 ## [0.14.0](https://github.com/kspiteri/pixmaler/compare/0.13.0...0.14.0) (2026-10-12)
 
 
