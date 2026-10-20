@@ -55,11 +55,27 @@ const SPRITE: { [K in string]: [number, number] } = {
   click: [0, 120],
 }
 
-const sfxHowl = new Howl({
-  src: [asset('assets/audio/sfx.wav')],
-  sprite: SPRITE,
-  preload: true,
-})
+// Constructed on first play, not at import: that defers the AudioContext to a user gesture and
+// stops a headless browser with no audio device (e.g. WebKit under test) throwing when `@/lib` is
+// imported. `undefined` = not yet built, `null` = build failed, so a dead context degrades to
+// silence rather than propagating. The music channel below is lazy for the same reason.
+let sfxHowl: Howl | null | undefined
+
+function getSfxHowl(): Howl | null {
+  if (sfxHowl === undefined) {
+    try {
+      sfxHowl = new Howl({
+        src: [asset('assets/audio/sfx.wav')],
+        sprite: SPRITE,
+        preload: true,
+      })
+    }
+    catch {
+      sfxHowl = null
+    }
+  }
+  return sfxHowl
+}
 
 // Per-key last-played stamp for the repeat throttle (see `shouldPlay`).
 const lastPlayed = new Map<SfxKey, number>()
@@ -73,7 +89,7 @@ export function playSfx(key: SfxKey): void {
   if (!shouldPlay(currentPrefs(), now, lastPlayed.get(key) ?? null))
     return
   lastPlayed.set(key, now)
-  sfxHowl.play(key)
+  getSfxHowl()?.play(key)
 }
 
 // -- music channel ----------------------------------------------------------------------------
