@@ -193,11 +193,13 @@ interface Box {
 }
 
 // Channel ties go to red, then green. The choice has to be deterministic for a given
-// cloud, or the same image yields a different palette between runs.
-function measure(pixels: Rgb[], lo: number, hi: number): Box {
+// cloud, or the same image yields a different palette between runs. Reads RGB straight from
+// the flat `rgba` buffer (stride 4, alpha skipped) through the `order` index permutation.
+function measure(rgba: Uint8ClampedArray, order: number[], lo: number, hi: number): Box {
   let minR = 255; let maxR = 0; let minG = 255; let maxG = 0; let minB = 255; let maxB = 0
   for (let i = lo; i < hi; i++) {
-    const [r, g, b] = pixels[i]
+    const p = order[i] * 4
+    const r = rgba[p]; const g = rgba[p + 1]; const b = rgba[p + 2]
     if (r < minR)
       minR = r
     if (r > maxR)
@@ -224,28 +226,31 @@ function measure(pixels: Rgb[], lo: number, hi: number): Box {
   return { lo, hi, ch, range, priority: (hi - lo) * range }
 }
 
-// Sorts the box's own span on its widest channel and halves it at the median.
-// `Array.prototype.sort` cannot address a sub-range, hence the copy out and back —
-// still a single pass over that span rather than the whole cloud.
-function splitBox(pixels: Rgb[], box: Box): [Box, Box] {
-  const span = pixels.slice(box.lo, box.hi)
-  span.sort((a, b) => a[box.ch] - b[box.ch])
+// Sorts the box's own span — a slice of the `order` index array — on its widest channel and
+// halves it at the median. A plain-array `sort` is stable (ES2019+), so pixels tied on that
+// channel keep their current order: the same tie-break the old per-pixel tuple sort relied on,
+// which is what keeps the flat palette byte-identical to it. `rgba` is never reordered, so
+// `quantiseToPalette` can re-read it afterwards.
+function splitBox(rgba: Uint8ClampedArray, order: number[], box: Box): [Box, Box] {
+  const span = order.slice(box.lo, box.hi)
+  span.sort((a, b) => rgba[a * 4 + box.ch] - rgba[b * 4 + box.ch])
   for (let i = 0; i < span.length; i++)
-    pixels[box.lo + i] = span[i]
+    order[box.lo + i] = span[i]
   const mid = box.lo + (span.length >> 1)
-  return [measure(pixels, box.lo, mid), measure(pixels, mid, box.hi)]
+  return [measure(rgba, order, box.lo, mid), measure(rgba, order, mid, box.hi)]
 }
 
-// Splits the cloud into **exactly** `count` buckets, halving whichever bucket carries
-// the most colour error each time — so any count works, not only powers of two.
-// Returns fewer only when the cloud runs out of distinct colours to separate.
-// **Sorts `pixels` in place** — the caller owns a throwaway array from `getImageData`,
-// so copying 262144 triples to preserve order would be waste.
-export function medianCut(pixels: Rgb[], count: number): Rgb[][] {
-  if (count <= 1 || pixels.length === 0)
-    return [pixels]
+// Splits the cloud into **exactly** `count` buckets, halving whichever bucket carries the most
+// colour error each time — so any count works, not only powers of two. Returns each bucket as a
+// list of pixel indices into `rgba` (stride 4). Allocates one `order` permutation rather than one
+// array per pixel, and leaves `rgba` untouched (an index sort, not an in-place pixel sort).
+export function medianCut(rgba: Uint8ClampedArray, count: number): number[][] {
+  const n = rgba.length >> 2
+  const order = Array.from({ length: n }, (_, i) => i)
+  if (count <= 1 || n === 0)
+    return [order]
 
-  const boxes = [measure(pixels, 0, pixels.length)]
+  const boxes = [measure(rgba, order, 0, n)]
   while (boxes.length < count) {
     // Linear scan rather than a heap: `count` is bounded by `PALETTE_MAX_LEN`, so this
     // is a few thousand comparisons against sorting up to 262144 pixels.
@@ -254,29 +259,34 @@ export function medianCut(pixels: Rgb[], count: number): Rgb[][] {
       if (boxes[i].priority > boxes[best].priority)
         best = i
     }
-    // Every bucket holds a single colour, so there is nothing left to separate. Stop
-    // short of `count` and let `withClassics` make up the difference.
+    // Every bucket holds a single colour, so there is nothing left to separate.
     if (boxes[best].priority === 0)
       break
-    const [low, high] = splitBox(pixels, boxes[best])
+    const [low, high] = splitBox(rgba, order, boxes[best])
     boxes[best] = low
     boxes.push(high)
   }
-  return boxes.map(b => pixels.slice(b.lo, b.hi))
+  return boxes.map(b => order.slice(b.lo, b.hi))
 }
 
-// Mean colour per non-empty bucket, so the palette is exactly `colorCount` long when
-// the image can supply that many distinct colours, and shorter when it cannot.
-// `mergeNearDuplicates` may then shorten it further.
-export function derivePalette(pixels: Rgb[], colorCount: number): Rgb[] {
-  return medianCut(pixels, colorCount)
-    .filter(b => b.length > 0)
+// Mean colour per non-empty bucket, so the palette is exactly `colorCount` long when the image
+// can supply that many distinct colours, and shorter when it cannot. `mergeNearDuplicates` may
+// then shorten it further. Sums straight from `rgba` by each bucket's pixel indices.
+export function derivePalette(rgba: Uint8ClampedArray, colorCount: number): Rgb[] {
+  return medianCut(rgba, colorCount)
+    .filter(bucket => bucket.length > 0)
     .map((bucket) => {
-      const sum = bucket.reduce((acc, [r, g, b]) => [acc[0] + r, acc[1] + g, acc[2] + b], [0, 0, 0])
+      let sumR = 0; let sumG = 0; let sumB = 0
+      for (const pixel of bucket) {
+        const p = pixel * 4
+        sumR += rgba[p]
+        sumG += rgba[p + 1]
+        sumB += rgba[p + 2]
+      }
       return [
-        Math.round(sum[0] / bucket.length),
-        Math.round(sum[1] / bucket.length),
-        Math.round(sum[2] / bucket.length),
+        Math.round(sumR / bucket.length),
+        Math.round(sumG / bucket.length),
+        Math.round(sumB / bucket.length),
       ] as Rgb
     })
 }

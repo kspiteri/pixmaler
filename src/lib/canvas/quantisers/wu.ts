@@ -23,8 +23,8 @@ interface WuBox {
   vol: number
 }
 
-export function wuQuantiser(pixels: Rgb[], count: number): Rgb[] {
-  if (pixels.length === 0)
+export function wuQuantiser(rgba: Uint8ClampedArray, count: number): Rgb[] {
+  if (rgba.length === 0)
     return []
   const target = Math.max(1, count)
   const size = SIDE * SIDE * SIDE
@@ -36,10 +36,10 @@ export function wuQuantiser(pixels: Rgb[], count: number): Rgb[] {
   const m2 = new Float64Array(size)
 
   // Histogram, binned to 5 bits and shifted to 1..32 so the cumulative below has a zero margin.
-  for (let p = 0; p < pixels.length; p++) {
-    const r = pixels[p][0]
-    const g = pixels[p][1]
-    const b = pixels[p][2]
+  for (let p = 0; p < rgba.length; p += 4) {
+    const r = rgba[p]
+    const g = rgba[p + 1]
+    const b = rgba[p + 2]
     const i = wuIndex((r >> 3) + 1, (g >> 3) + 1, (b >> 3) + 1)
     wt[i] += 1
     mr[i] += r

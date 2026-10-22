@@ -8,13 +8,19 @@ import { describe, expect, it } from 'vitest'
 import { kmeansQuantiser, wuQuantiser } from '../src/lib/canvas/quantisers'
 import { distinctColoursUsed, paletteSpread, quantiseError } from '../src/lib/canvas/quantisers/metrics'
 
-// A cloud of four well-separated colours, `per` copies each, in a fixed order.
+// A cloud of four well-separated colours, `per` copies each, packed as flat RGBA (stride 4).
 const CORNERS: Rgb[] = [[0, 0, 0], [230, 20, 20], [20, 220, 40], [30, 40, 240]]
-function cloud(per: number): Rgb[] {
-  const out: Rgb[] = []
+function cloud(per: number): Uint8ClampedArray {
+  const out = new Uint8ClampedArray(per * CORNERS.length * 4)
+  let p = 0
   for (let i = 0; i < per; i++) {
-    for (const c of CORNERS)
-      out.push([...c] as Rgb)
+    for (const [r, g, b] of CORNERS) {
+      out[p] = r
+      out[p + 1] = g
+      out[p + 2] = b
+      out[p + 3] = 255
+      p += 4
+    }
   }
   return out
 }
@@ -30,8 +36,7 @@ describe.each([
   })
 
   it('is deterministic — the same pixels give the same palette', () => {
-    const pixels = cloud(50)
-    expect(keyOf(quantise(pixels, 8))).toBe(keyOf(quantise([...pixels], 8)))
+    expect(keyOf(quantise(cloud(50), 8))).toBe(keyOf(quantise(cloud(50), 8)))
   })
 
   it('keeps every channel in range', () => {
@@ -49,7 +54,7 @@ describe.each([
   })
 
   it('returns nothing for an empty cloud', () => {
-    expect(quantise([], 8)).toEqual([])
+    expect(quantise(new Uint8ClampedArray(0), 8)).toEqual([])
   })
 })
 

@@ -18,6 +18,18 @@ function ramp(n: number): Rgb[] {
   })
 }
 
+// Packs a tuple cloud into the flat RGBA buffer the quantisers now take (stride 4, opaque).
+function toRgba(pixels: Rgb[]): Uint8ClampedArray {
+  const out = new Uint8ClampedArray(pixels.length * 4)
+  for (let i = 0; i < pixels.length; i++) {
+    out[i * 4] = pixels[i][0]
+    out[i * 4 + 1] = pixels[i][1]
+    out[i * 4 + 2] = pixels[i][2]
+    out[i * 4 + 3] = 255
+  }
+  return out
+}
+
 describe('hex conversion', () => {
   it('round-trips every channel, including values needing a zero pad', () => {
     const cases: Rgb[] = [[0, 0, 0], [255, 255, 255], [1, 16, 171], [124, 92, 255]]
@@ -105,88 +117,87 @@ describe('rgbToHsl', () => {
 
 describe('medianCut', () => {
   it('splits to exactly the requested bucket count', () => {
-    expect(medianCut(ramp(64), 0)).toHaveLength(1)
-    expect(medianCut(ramp(64), 1)).toHaveLength(1)
-    expect(medianCut(ramp(64), 2)).toHaveLength(2)
-    expect(medianCut(ramp(64), 16)).toHaveLength(16)
+    expect(medianCut(toRgba(ramp(64)), 0)).toHaveLength(1)
+    expect(medianCut(toRgba(ramp(64)), 1)).toHaveLength(1)
+    expect(medianCut(toRgba(ramp(64)), 2)).toHaveLength(2)
+    expect(medianCut(toRgba(ramp(64)), 16)).toHaveLength(16)
   })
 
   it('honours counts that are not powers of two — issue #28', () => {
     // The old signature took a depth and halved at every level, so it could only ever
     // return 2**n buckets. This is the whole point of the priority queue.
     for (const count of [3, 7, 24, 30])
-      expect(medianCut(ramp(64), count)).toHaveLength(count)
+      expect(medianCut(toRgba(ramp(64)), count)).toHaveLength(count)
   })
 
   it('stops short when the cloud runs out of colours to separate', () => {
     // Three distinct colours cannot make eight buckets. A zero-range bucket has
     // nothing left to split, so the loop ends rather than returning empties.
     const pixels: Rgb[] = [[0, 0, 0], [0, 0, 0], [10, 10, 10], [20, 20, 20]]
-    expect(medianCut(pixels, 8)).toHaveLength(3)
+    expect(medianCut(toRgba(pixels), 8)).toHaveLength(3)
   })
 
   it('never returns an empty bucket for a non-empty cloud', () => {
     // Load-bearing: an empty bucket would average to NaN in `derivePalette`.
-    for (const bucket of medianCut(ramp(30), 24))
+    for (const bucket of medianCut(toRgba(ramp(30)), 24))
       expect(bucket.length).toBeGreaterThan(0)
   })
 
   it('keeps every pixel — buckets partition the input', () => {
-    const pixels = ramp(64)
-    const total = medianCut(pixels, 16).reduce((n, b) => n + b.length, 0)
+    const total = medianCut(toRgba(ramp(64)), 16).reduce((n, b) => n + b.length, 0)
     expect(total).toBe(64)
   })
 
-  it('sorts its input in place, which callers must expect', () => {
-    // Documented, not accidental: copying 262144 triples per run would be waste.
-    // Anything needing the original order has to copy first.
-    const pixels: Rgb[] = [[255, 0, 0], [0, 0, 0], [128, 0, 0]]
-    const before = [...pixels]
-    medianCut(pixels, 2)
-    expect(pixels).not.toEqual(before)
-    expect(pixels).toHaveLength(3)
+  it('leaves the pixel buffer untouched — it sorts an index permutation', () => {
+    // The new contract: `quantiseToPalette` re-reads the same `rgba` after the palette
+    // is derived, so median-cut must not reorder it in place.
+    const rgba = toRgba([[255, 0, 0], [0, 0, 0], [128, 0, 0]])
+    const before = Uint8ClampedArray.from(rgba)
+    medianCut(rgba, 2)
+    expect(rgba).toEqual(before)
   })
 
   it('handles an empty cloud without recursing forever', () => {
-    expect(medianCut([], 4)).toEqual([[]])
+    expect(medianCut(new Uint8ClampedArray(0), 4)).toEqual([[]])
   })
 
   it('splits on the widest channel', () => {
-    // Blue varies across the full range, red and green not at all, so the split
-    // must separate low blue from high blue.
-    const pixels: Rgb[] = [[10, 10, 0], [10, 10, 255], [10, 10, 10], [10, 10, 240]]
-    const [low, high] = medianCut(pixels, 2)
-    expect(Math.max(...low.map(p => p[2]))).toBeLessThan(Math.min(...high.map(p => p[2])))
+    // Blue varies across the full range, red and green not at all, so the split must
+    // separate low blue from high blue. Buckets are pixel indices into `rgba`.
+    const rgba = toRgba([[10, 10, 0], [10, 10, 255], [10, 10, 10], [10, 10, 240]])
+    const [low, high] = medianCut(rgba, 2)
+    const blue = (i: number) => rgba[i * 4 + 2]
+    expect(Math.max(...low.map(blue))).toBeLessThan(Math.min(...high.map(blue)))
   })
 })
 
 describe('derivePalette', () => {
   it('returns exactly as many colours as asked for', () => {
-    expect(derivePalette(ramp(64), 16)).toHaveLength(16)
-    expect(derivePalette(ramp(64), 8)).toHaveLength(8)
+    expect(derivePalette(toRgba(ramp(64)), 16)).toHaveLength(16)
+    expect(derivePalette(toRgba(ramp(64)), 8)).toHaveLength(8)
   })
 
   it('honours a request that is not a power of two — issue #28', () => {
     // Was: depth = ceil(log2(24)) = 5, so a request for 24 silently produced 32. The
     // picker offers 24 and the swatch now matches it.
-    expect(derivePalette(ramp(64), 24)).toHaveLength(24)
-    expect(derivePalette(ramp(64), 20)).toHaveLength(20)
+    expect(derivePalette(toRgba(ramp(64)), 24)).toHaveLength(24)
+    expect(derivePalette(toRgba(ramp(64)), 20)).toHaveLength(20)
   })
 
   it('falls short only when the image has fewer distinct colours', () => {
     // Two colours cannot make sixteen; `withClassics` tops the swatch up instead.
-    expect(derivePalette([[0, 0, 0], [255, 255, 255]], 16)).toHaveLength(2)
+    expect(derivePalette(toRgba([[0, 0, 0], [255, 255, 255]]), 16)).toHaveLength(2)
   })
 
   it('averages each bucket rather than picking a member', () => {
     // Two pixels, two buckets → one each, so each colour survives exactly.
-    expect(derivePalette([[0, 0, 0], [10, 20, 30]], 2)).toEqual([[0, 0, 0], [10, 20, 30]])
+    expect(derivePalette(toRgba([[0, 0, 0], [10, 20, 30]]), 2)).toEqual([[0, 0, 0], [10, 20, 30]])
     // Both in one bucket at a count of 1 → the mean.
-    expect(derivePalette([[0, 0, 0], [10, 20, 30]], 1)).toEqual([[5, 10, 15]])
+    expect(derivePalette(toRgba([[0, 0, 0], [10, 20, 30]]), 1)).toEqual([[5, 10, 15]])
   })
 
   it('emits channels inside 0..255 as whole numbers', () => {
-    for (const [r, g, b] of derivePalette(ramp(50), 16)) {
+    for (const [r, g, b] of derivePalette(toRgba(ramp(50)), 16)) {
       for (const v of [r, g, b]) {
         expect(Number.isInteger(v)).toBe(true)
         expect(v).toBeGreaterThanOrEqual(0)
@@ -196,11 +207,108 @@ describe('derivePalette', () => {
   })
 
   it('never returns an empty palette for a non-empty cloud', () => {
-    expect(derivePalette([[7, 7, 7]], 16).length).toBeGreaterThan(0)
+    expect(derivePalette(toRgba([[7, 7, 7]]), 16).length).toBeGreaterThan(0)
   })
 
   it('returns nothing for an empty cloud rather than a NaN colour', () => {
-    expect(derivePalette([], 16)).toEqual([])
+    expect(derivePalette(new Uint8ClampedArray(0), 16)).toEqual([])
+  })
+})
+
+// Golden equivalence: the flat `rgba` median-cut must produce the exact palette the original
+// tuple implementation did. The real risk in the refactor was a silent palette shift from a
+// mishandled sort tie, so this pins the output over clouds built to tie heavily. `ref*` below is
+// the pre-refactor algorithm, kept deliberately independent of the code under test.
+describe('median-cut golden equivalence (flat vs tuple)', () => {
+  interface RefBox { px: Rgb[], ch: number, range: number, priority: number }
+  function refMeasure(px: Rgb[]): RefBox {
+    let minR = 255; let maxR = 0; let minG = 255; let maxG = 0; let minB = 255; let maxB = 0
+    for (const [r, g, b] of px) {
+      if (r < minR)
+        minR = r
+      if (r > maxR)
+        maxR = r
+      if (g < minG)
+        minG = g
+      if (g > maxG)
+        maxG = g
+      if (b < minB)
+        minB = b
+      if (b > maxB)
+        maxB = b
+    }
+    const rangeR = maxR - minR; const rangeG = maxG - minG; const rangeB = maxB - minB
+    let ch = 0; let range = rangeR
+    if (rangeG > range) {
+      ch = 1
+      range = rangeG
+    }
+    if (rangeB > range) {
+      ch = 2
+      range = rangeB
+    }
+    return { px, ch, range, priority: px.length * range }
+  }
+  function refMedianCut(pixels: Rgb[], count: number): Rgb[][] {
+    if (count <= 1 || pixels.length === 0)
+      return [pixels]
+    const boxes = [refMeasure(pixels)]
+    while (boxes.length < count) {
+      let best = 0
+      for (let i = 1; i < boxes.length; i++) {
+        if (boxes[i].priority > boxes[best].priority)
+          best = i
+      }
+      if (boxes[best].priority === 0)
+        break
+      const b = boxes[best]
+      const sorted = [...b.px].sort((x, y) => x[b.ch] - y[b.ch])
+      const mid = sorted.length >> 1
+      boxes[best] = refMeasure(sorted.slice(0, mid))
+      boxes.push(refMeasure(sorted.slice(mid)))
+    }
+    return boxes.map(box => box.px)
+  }
+  function refDerive(pixels: Rgb[], count: number): Rgb[] {
+    return refMedianCut(pixels, count)
+      .filter(b => b.length > 0)
+      .map((b) => {
+        const sum = b.reduce((a, [r, g, bl]) => [a[0] + r, a[1] + g, a[2] + bl], [0, 0, 0])
+        return [Math.round(sum[0] / b.length), Math.round(sum[1] / b.length), Math.round(sum[2] / b.length)] as Rgb
+      })
+  }
+
+  function mulberry32(seed: number): () => number {
+    return () => {
+      seed = (seed + 0x6D2B79F5) | 0
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed)
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+    }
+  }
+  // Draw `n` pixels from a small random palette, so exact colour ties are common — the case
+  // that a mishandled sort tie would silently reorder.
+  function cloud(seed: number, n: number, distinct: number): Rgb[] {
+    const rng = mulberry32(seed)
+    const palette = Array.from({ length: distinct }, () => [Math.floor(rng() * 256), Math.floor(rng() * 256), Math.floor(rng() * 256)] as Rgb)
+    return Array.from({ length: n }, () => palette[Math.floor(rng() * distinct)])
+  }
+
+  it('derives a byte-identical palette across seeded clouds and colour counts', () => {
+    for (let seed = 1; seed <= 20; seed++) {
+      for (const distinct of [3, 5, 17, 64, 200]) {
+        for (const count of [2, 3, 7, 16, 24, 32]) {
+          const pixels = cloud(seed, 300, distinct)
+          expect(derivePalette(toRgba(pixels), count)).toEqual(refDerive(pixels, count))
+        }
+      }
+    }
+  })
+
+  it('partitions pixels into the same buckets, in the same order', () => {
+    const pixels = cloud(99, 300, 40)
+    const flat = medianCut(toRgba(pixels), 16).map(bucket => bucket.map(i => pixels[i]))
+    expect(flat).toEqual(refMedianCut(pixels, 16))
   })
 })
 
@@ -347,7 +455,7 @@ describe('withClassics', () => {
 // picker makes is only kept by the composition — issue #28 was that nothing checked it.
 describe('the swatch the pipeline builds', () => {
   const swatchFor = (pixels: Rgb[], count: number) =>
-    withClassics(mergeNearDuplicates(derivePalette(pixels, count)), count)
+    withClassics(mergeNearDuplicates(derivePalette(toRgba(pixels), count)), count)
 
   it('never hands back more colours than the GM asked for', () => {
     for (const count of [8, 16, 24, 32])

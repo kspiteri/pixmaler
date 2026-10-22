@@ -154,10 +154,9 @@ export interface ImageSample {
   gridH: number
   sourceW: number
   sourceH: number
-  // The downscaled grid as RGBA (row-major), for `quantiseToPalette`; and the same pixels as
-  // RGB tuples, for a quantiser.
+  // The downscaled grid as RGBA (row-major): `quantiseToPalette` maps each cell against the
+  // palette, and a quantiser reads it (stride 4) to derive that palette.
   rgba: Uint8ClampedArray
-  pixels: Rgb[]
 }
 
 // The colour-independent half of the pipeline: decode → crop to ratio → downscale to the grid →
@@ -201,11 +200,7 @@ export async function sampleImage(
   sampleCtx.drawImage(sourceCanvas, 0, 0, sourceW, sourceH, 0, 0, gridW, gridH)
   const rgba = sampleCtx.getImageData(0, 0, gridW, gridH).data
 
-  const pixels: Rgb[] = []
-  for (let i = 0; i < rgba.length; i += 4)
-    pixels.push([rgba[i], rgba[i + 1], rgba[i + 2]])
-
-  return { gridW, gridH, sourceW, sourceH, rgba, pixels }
+  return { gridW, gridH, sourceW, sourceH, rgba }
 }
 
 export async function processImage(
@@ -217,10 +212,10 @@ export async function processImage(
   background: string = DEFAULT_BACKGROUND, // CSS colour behind a transparent upload
   quantise: Quantiser = quantiserFor(DEFAULT_PIXELATION_STYLE),
 ): Promise<PipelineResult> {
-  const { gridW, gridH, sourceW, sourceH, rgba, pixels } = await sampleImage(file, scale, ratio, crop, background)
+  const { gridW, gridH, sourceW, sourceH, rgba } = await sampleImage(file, scale, ratio, crop, background)
 
   // The target uses only image-derived colours; classics top the swatch up to `colorCount`.
-  const derived = quantise(pixels, colorCount)
+  const derived = quantise(rgba, colorCount)
 
   // Quantise each cell against the derived palette. Indices map into `derived`, the prefix
   // of the wire palette below.

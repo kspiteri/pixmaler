@@ -17,7 +17,7 @@ import { distinctColoursUsed, paletteSpread, quantiseError } from '@/lib/canvas/
 // Each returns its *raw* palette; the near-duplicate merge is applied uniformly below (behind
 // the toggle) so the columns are compared on equal footing — the shipped pipeline runs median-cut
 // + merge, so that pairing reproduces production while Wu/k-means show what a swap would give.
-const QUANTISERS: { id: string, label: string, run: (p: Rgb[], n: number) => Rgb[] }[] = [
+const QUANTISERS: { id: string, label: string, run: (rgba: Uint8ClampedArray, n: number) => Rgb[] }[] = [
   { id: 'median', label: 'median-cut (current)', run: derivePalette },
   { id: 'wu', label: 'Wu (1992)', run: wuQuantiser },
   { id: 'kmeans', label: 'k-means (seeded)', run: kmeansQuantiser },
@@ -81,7 +81,7 @@ async function recompute() {
       let derived: Rgb[] = []
       for (let r = 0; r < 3; r++) {
         const t0 = performance.now()
-        derived = q.run(sample.pixels, count.value)
+        derived = q.run(sample.rgba, count.value)
         times.push(performance.now() - t0)
       }
       times.sort((a, b) => a - b)

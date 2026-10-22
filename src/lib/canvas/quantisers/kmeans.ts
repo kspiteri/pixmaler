@@ -1,6 +1,5 @@
 // Seeded k-means - the 'Faithful' colour style (see ./index).
 import type { Rgb } from '../palette'
-import { colorDist } from '../palette'
 
 // ── Seeded k-means (Lloyd) ───────────────────────────────────────────────────────
 // The fidelity ceiling, made deterministic by a fixed k-means++ seed and an iteration cap.
@@ -17,21 +16,26 @@ function mulberry32(seed: number): () => number {
 
 const KMEANS_MAX_ITERS = 12
 
-export function kmeansQuantiser(pixels: Rgb[], count: number): Rgb[] {
-  if (pixels.length === 0)
+export function kmeansQuantiser(rgba: Uint8ClampedArray, count: number): Rgb[] {
+  const n = rgba.length >> 2
+  if (n === 0)
     return []
-  const k = Math.min(Math.max(1, count), pixels.length)
+  const k = Math.min(Math.max(1, count), n)
   const rng = mulberry32(0x51ED_2A17)
 
   // k-means++ seeding: each new centre is drawn with probability proportional to its squared
   // distance from the nearest chosen centre, so the start already spreads across the colours.
-  const centres: Rgb[] = [pixels[Math.floor(rng() * pixels.length)]]
-  const d2 = new Float64Array(pixels.length).fill(Infinity)
+  // Centres are materialised as tuples from the flat buffer (read at stride 4).
+  const seed = Math.floor(rng() * n) * 4
+  const centres: Rgb[] = [[rgba[seed], rgba[seed + 1], rgba[seed + 2]]]
+  const d2 = new Float64Array(n).fill(Infinity)
   while (centres.length < k) {
     const last = centres[centres.length - 1]
     let sum = 0
-    for (let i = 0; i < pixels.length; i++) {
-      const d = colorDist(pixels[i], last)
+    for (let i = 0; i < n; i++) {
+      const p = i * 4
+      const dr = rgba[p] - last[0]; const dg = rgba[p + 1] - last[1]; const db = rgba[p + 2] - last[2]
+      const d = dr * dr + dg * dg + db * db
       if (d < d2[i])
         d2[i] = d
       sum += d2[i]
@@ -39,26 +43,31 @@ export function kmeansQuantiser(pixels: Rgb[], count: number): Rgb[] {
     if (sum === 0)
       break // every pixel already coincides with a centre
     let r = rng() * sum
-    let chosen = pixels.length - 1
-    for (let i = 0; i < pixels.length; i++) {
+    let chosen = n - 1
+    for (let i = 0; i < n; i++) {
       r -= d2[i]
       if (r <= 0) {
         chosen = i
         break
       }
     }
-    centres.push(pixels[chosen])
+    const p = chosen * 4
+    centres.push([rgba[p], rgba[p + 1], rgba[p + 2]])
   }
 
-  const assign = new Int32Array(pixels.length)
+  const assign = new Int32Array(n)
   const cnt = new Float64Array(centres.length)
   for (let iter = 0; iter < KMEANS_MAX_ITERS; iter++) {
     let changed = false
-    for (let i = 0; i < pixels.length; i++) {
+    for (let i = 0; i < n; i++) {
+      const p = i * 4
+      const pr = rgba[p]; const pg = rgba[p + 1]; const pb = rgba[p + 2]
       let best = 0
       let bestD = Infinity
       for (let c = 0; c < centres.length; c++) {
-        const d = colorDist(pixels[i], centres[c])
+        const ctr = centres[c]
+        const dr = pr - ctr[0]; const dg = pg - ctr[1]; const db = pb - ctr[2]
+        const d = dr * dr + dg * dg + db * db
         if (d < bestD) {
           bestD = d
           best = c
@@ -74,11 +83,12 @@ export function kmeansQuantiser(pixels: Rgb[], count: number): Rgb[] {
     const sumG = new Float64Array(centres.length)
     const sumB = new Float64Array(centres.length)
     cnt.fill(0)
-    for (let i = 0; i < pixels.length; i++) {
+    for (let i = 0; i < n; i++) {
+      const p = i * 4
       const c = assign[i]
-      sumR[c] += pixels[i][0]
-      sumG[c] += pixels[i][1]
-      sumB[c] += pixels[i][2]
+      sumR[c] += rgba[p]
+      sumG[c] += rgba[p + 1]
+      sumB[c] += rgba[p + 2]
       cnt[c] += 1
     }
     for (let c = 0; c < centres.length; c++) {
