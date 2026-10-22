@@ -113,6 +113,69 @@ Elsewhere: `party/` (server), `test/` (Vitest; fake room context in `test/suppor
 - **Classics are swatch-only.** The target uses only derived colours; `withClassics` tops the swatch up toward the colour count with classics far enough from every derived colour. Derived colours stay first so target indices hold; `paletteSortOrder` then reorders and remaps.
 - **Aim for recognisable but redrawable**, not faithful. Dithering, despeckle and edge detection were found unnecessary for this look; don't add them without a reason.
 
+### Three ways to pick the palette
+
+All three quantisers take the same input — the downscaled grid as a cloud of RGB pixels — and
+return the same thing: `count` colours. They differ only in *how* they choose them. (The
+near-duplicate merge and the classics top-up happen afterwards and are shared.)
+
+**Bold — median cut.** Split the biggest box in half, over and over.
+
+```
+  0.  ┌─────────────────┐
+      └─────────────────┘   one box holds every pixel
+
+  1.  ┌────────┬────────┐   halve the widest channel (R, G or B) at the median
+      └────────┴────────┘   pixel, so the two halves hold equal pixel counts
+
+  2.  ┌───┬────┬────────┐   then split whichever box carries the most
+      └───┴────┴────────┘   pixels × colour-spread…
+
+  3.  ┌───┬──┬─┬────┬───┐   …until there are `count` boxes → average each box
+      └───┴──┴─┴────┴───┘
+```
+
+Fast and blunt: it balances pixel *counts*, not how tight each cluster is, so it leans toward
+fewer, punchier colours — which is why Bold also merges hardest afterwards (16 units).
+
+**Balanced — Wu.** Cut where it shrinks the scatter the most.
+
+```
+  0.  ┌─────────────────┐   the cloud, binned into a 5-bit (33³) histogram
+      └─────────────────┘
+
+  1.  ┌──┬──────────────┐   cut at the spot that most reduces the combined
+      └──┴──────────────┘   spread of the two halves — not the median
+
+  2.  ┌──┬─────┬────────┐   always take the cut with the biggest variance
+      └──┴─────┴────────┘   drop, so the boxes hug the clusters…
+
+  3.  ┌──┬───┬──┬───┬───┐   → weighted mean of each box. deterministic, no RNG
+      └──┴───┴──┴───┴───┘
+```
+
+A fuller, more even mix than median cut at the same count (merges at 12 units).
+
+**Faithful — k-means.** Drop K points and let them drift to the crowds.
+
+```
+  seed K centres, spread apart          reassign + recentre, repeat (≤ 12×)
+
+    ·  ·×·   ·  ·×· ·                      ·  ×· ·   · ·×· ·        each × slides to
+   ··  ·  ·× ··  ·  ·×          ──▶       ·· ·  ×·· ·  · ×·    ──▶  the mean of the
+    ·×·· ·  ·· ×·· ·  ·                    ×·· ·  · ×·· ·  ·        pixels nearest it
+```
+
+k-means++ picks the seeds far apart (each new one favoured by its squared distance from the
+nearest existing seed); Lloyd's loop then settles them. Slowest, but the points land on the true
+centres of colour — the subtlest, richest result, so it merges least (8 units).
+
+| Style | Cuts by… | Look | `mergeUnit` |
+|---|---|---|---|
+| **Bold** (median cut) | equal pixel count | punchy, flat | 16 |
+| **Balanced** (Wu) | least variance | full, even | 12 |
+| **Faithful** (k-means) | drifting centres | subtle, rich | 8 |
+
 ## Free mode (`/paint`)
 
 `ImagePicker` tracks the **committed inputs** — source, sample and settings behind its last emitted result — and reprocesses only when the inputs differ, so re-clicking the loaded sample or nudging a control back emits nothing. Two props are Paint-only:
