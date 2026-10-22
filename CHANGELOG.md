@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.16.0](https://github.com/kspiteri/pixmaler/compare/0.15.0...0.16.0) (2026-10-22)
+
+
+### New
+
+* **confetti-demo:** enhance controls and add "card" fire mode ([5c8ba8d](https://github.com/kspiteri/pixmaler/commit/5c8ba8d5a81ce89eecab80641a3a900e942d828f))
+* **palette:** unify near-duplicate merge for all quantisers ([e920df5](https://github.com/kspiteri/pixmaler/commit/e920df5ed0003f761dad814f54866b08af730ea4))
+* **pipeline:** add style-specific merge units for pixelation styles ([c459fd2](https://github.com/kspiteri/pixmaler/commit/c459fd24214a412117b99c1d241856270de534b7))
+* **results:** add confetti on winner reveal ([#43](https://github.com/kspiteri/pixmaler/issues/43)) ([eaae81c](https://github.com/kspiteri/pixmaler/commit/eaae81cc0d9069ce55b8845b1e797ba2993c2a7e))
+* **results:** credit every drawing on the reveal ([a059a57](https://github.com/kspiteri/pixmaler/commit/a059a5750e9fea88e228ccb4d2574dda4a338d5e))
+
+
+### Under the hood
+
+* **palette:** switch quantisers to flat RGBA buffers ([75a1698](https://github.com/kspiteri/pixmaler/commit/75a16986bc6c27ac4f2e833c49e0afd1e16994c7))
+* **release:** sync local main with release after version bump ([5a38c39](https://github.com/kspiteri/pixmaler/commit/5a38c3936e1badd6e4055538b449c79dfb6eb4d4))
+
 ## [0.15.0](https://github.com/kspiteri/pixmaler/compare/0.14.0...0.15.0) (2026-10-20)
 
 
