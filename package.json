@@ -27,6 +27,7 @@
     "@dicebear/core": "catalog:prod",
     "@dicebear/styles": "catalog:prod",
     "@lucide/vue": "catalog:prod",
+    "emoji-blast": "catalog:prod",
     "howler": "catalog:prod",
     "partyserver": "catalog:prod",
     "partysocket": "catalog:prod",

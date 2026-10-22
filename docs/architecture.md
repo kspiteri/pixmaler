@@ -28,6 +28,7 @@ src/
 │   ├── storage.ts             # guarded localStorage; not in the barrel, lib modules import it directly
 │   ├── audio.ts               # Howler engine: sfx sprite, music channel + transport, toggles, error/widget state
 │   ├── audio.gate.ts          # pure shouldPlay: channel gate + repeat throttle
+│   ├── confetti.ts            # winner-reveal burst (#43): emoji-blast wrapper, lazy-loaded, not in the barrel
 │   ├── protocol/              # types.ts (wire types + validators) · protocol.ts (parseClientMsg) · index.ts (DOM-free Worker barrel)
 │   ├── canvas/                # pixel.ts (PixelCanvas) · grid.ts (cell geometry) · tools.ts (swatch/brush DOM)
 │   │                          # pipeline.ts · palette.ts (colour science) · aspect.ts (ratios, crop, orientation)

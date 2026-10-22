@@ -37,6 +37,7 @@ How Pixmaler looks and reads: copy voice, feedback, controls, colour and theme, 
 - **One exemption: `.segmented__item`.** `.segmented` is `overflow: hidden` with flush joins, so a travel would clip; its focus ring is inset for the same reason.
 - **The press owns `transform`.** Anything else that moves a pressable uses standalone `rotate` / `translate` / `scale`.
 - **Reduced motion drops the easing, never the travel** — on touch the movement is the only feedback.
+- **The winner confetti is pure decoration, so reduced motion drops it entirely** (unlike a press, where the travel stays). The RESULTS-reveal burst goes through [`lib/confetti.ts`](../src/lib/confetti.ts) (#43): an `aria-hidden` / `inert` / `pointer-events:none` layer, square confetti in the seat-colour tokens plus the award icons (**never native emoji** — OS fonts break the pixel look), gone within 5 s, lazy-loaded on RESULTS (and the dev `/components` demo).
 - **Every on/off control is [`ToggleSwitch.vue`](../src/components/elements/ToggleSwitch.vue)** (`v-model`, `label`, `describedby`, `#off`/`#on` slots, `role="switch"`). Off: empty track, grey knob; on: lime track, dark knob — state reads from colour, not only position.
 - **Text links take no press** (SettingsMenu's footer, Entry's Free mode link).
 

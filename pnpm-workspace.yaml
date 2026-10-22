@@ -35,6 +35,7 @@ catalogs:
     '@dicebear/core': ^10.7.0
     '@dicebear/styles': ^10.6.0
     '@lucide/vue': ^1.56.0
+    emoji-blast: ^0.12.0
     howler: ^2.2.4
     partyserver: ^0.5.10
     partysocket: ^1.3.0

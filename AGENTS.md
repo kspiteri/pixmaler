@@ -99,6 +99,7 @@ The full rules, with their reasons, are in [`docs/design-system.md`](./docs/desi
 - **Radius and depth are fixed ladders:** radius `$radius-sm`/`$radius`/`$radius-lg`/`$radius-xl` (2/4/6/8 px, near-square); shadows `$shadow-1`, `$shadow-2`/`$shadow-2-up`, `$shadow-press`. Artwork takes no radius.
 - **Tilts use the standalone `rotate`/`translate` properties, never `transform`** (the press owns `transform`), and are deterministic (`:nth-child` or a value derived from the player), never random: server pushes would re-roll a random angle.
 - **Never render an avatar in VOTING.** That gallery is anonymous on purpose.
+- **Winner confetti goes through `lib/confetti.ts`** (#43): the one place celebratory bursts are fired, lazy-imported on RESULTS (and the dev `/components` demo), skipped under reduced motion, built from our square confetti and award icons — **never native emoji**.
 - **No third-party runtime requests.** Fonts are self-hosted woff2 and avatar faces are generated locally; never add a CDN font or call DiceBear's HTTP API.
 
 ## Architecture at a glance

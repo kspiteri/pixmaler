@@ -7,13 +7,13 @@
 
 import type { Player, RankedResult, ServerMsg, VoteCategory } from '@/lib'
 import { Power, RotateCcw } from '@lucide/vue'
-import { computed, inject, onMounted, ref } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import PlayerTag from '@/components/elements/PlayerTag.vue'
 import Tagline from '@/components/elements/Tagline.vue'
 import GameIcon from '@/components/game/shared/GameIcon.vue'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
-import { artRatio as artRatioFor, clientIdKey, seatFor, socketKey, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '@/lib'
+import { artRatio as artRatioFor, clientIdKey, prefersReducedMotion, seatFor, socketKey, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '@/lib'
 
 const props = defineProps<{
   results: Results | null
@@ -178,16 +178,41 @@ const TARGET_SLOT = '__target__'
 
 // The reveal travels bottom→top: the gallery is on screen at mount, the awards block fades in just
 // after. The art canvases stay mounted throughout (the block only animates opacity and translate),
-// so a faded-in award already has its drawing. Reduced motion shows the block at once.
+// so a faded-in award already has its drawing. Reduced motion shows the block at once and skips the
+// burst. The confetti wrapper is dynamic-imported on this route only (#43), so emoji-blast stays off
+// other routes; it's torn down on unmount so Play again mid-burst leaves nothing behind.
+const heroRef = useTemplateRef<HTMLElement>('hero')
 const revealed = ref(false)
+let stopConfetti: (() => void) | null = null
+let revealCancelled = false
+
+function fireReveal(): void {
+  revealed.value = true
+  if (noWinner.value || !props.results || !heroRef.value)
+    return
+  const hero = heroRef.value
+  void import('@/lib/confetti')
+    .then(({ fireConfetti }) => {
+      if (!revealCancelled)
+        stopConfetti = fireConfetti({ origin: hero })
+    })
+    .catch(() => {}) // a failed chunk load just means no confetti; never surface it
+}
+
 onMounted(() => {
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+  // TODO: when a `cheer` clip exists, play it here (above the reduced-motion gate, guarded by
+  // `!noWinner.value` + `props.results`) so it sounds even for reduced-motion users — sound isn't
+  // motion. Add the key + sprite in audio, play via `playSfx`, and update the audio docs then.
+  if (prefersReducedMotion()) {
     revealed.value = true
     return
   }
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    revealed.value = true
-  }))
+  requestAnimationFrame(() => requestAnimationFrame(fireReveal))
+})
+
+onBeforeUnmount(() => {
+  revealCancelled = true
+  stopConfetti?.()
 })
 
 // Mount each shown drawing into its one slot: overall winner(s) → hero, a distinct category
@@ -255,10 +280,8 @@ const { setSlot } = useReadonlyCanvases(
         <!-- Awards block — on screen but faded until just after mount, so the reveal lands
              bottom→top (the gallery first, these after). -->
         <div class="results__podium" :class="{ 'results__podium--in': revealed }">
-          <!-- TODO(#43): fire the winner confetti here, once this podium reveal lands. -->
-
           <!-- Hero: overall winner(s), or the target image when nobody voted. -->
-          <div class="results__hero">
+          <div ref="hero" class="results__hero">
             <p class="results__crown">
               <GameIcon name="crown" class="results__crown-icon" />
               {{ noWinner ? (nobodyDrew ? "nobody drew, so the original wins" : "nobody voted, so the original wins") : winners.length > 1 ? "joint winners" : "overall winner" }}

@@ -76,6 +76,9 @@ catalogs:
     '@lucide/vue':
       specifier: ^1.56.0
       version: 1.57.0
+    emoji-blast:
+      specifier: ^0.12.0
+      version: 0.12.0
     howler:
       specifier: ^2.2.4
       version: 2.2.4
@@ -105,6 +108,9 @@ importers:
       '@lucide/vue':
         specifier: catalog:prod
         version: 1.57.0(vue@3.5.43(typescript@6.0.3))
+      emoji-blast:
+        specifier: catalog:prod
+        version: 0.12.0
       howler:
         specifier: catalog:prod
         version: 2.2.4
@@ -1710,6 +1716,10 @@ packages:
 
   electron-to-chromium@1.5.456:
     resolution: {integrity: sha512-8hboqI6xesozteFb8aa7OGknvxUtTeRJLz0FoePysUEh/oWbddykIGdgpEJRbPRg/nIMfBf2DFos+H2MtvJl2A==}
+
+  emoji-blast@0.12.0:
+    resolution: {integrity: sha512-qhYbW3ztK7/vOI18q8M6OalUf3GbWUzfJ/Cmyzenyv0HcVlk8uwk/czRLoVbcixu8faC/91nXlp9mXSc+ZMprw==}
+    engines: {node: '>=18'}
 
   emoji-regex@8.0.0:
     resolution: {integrity: sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==}
@@ -4547,6 +4557,8 @@ snapshots:
       domhandler: 5.0.3
 
   electron-to-chromium@1.5.456: {}
+
+  emoji-blast@0.12.0: {}
 
   emoji-regex@8.0.0: {}
 

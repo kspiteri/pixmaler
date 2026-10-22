@@ -155,6 +155,7 @@ listed below; the full MIT and ISC texts follow.
 - Lucide (icons) — ISC — Copyright (c) 2026 Lucide Icons and Contributors; some icons derived from Feather, MIT, Copyright (c) 2013-present Cole Bemis
 - DiceBear (`@dicebear/core`, and the `@dicebear/styles` tooling) — MIT — Copyright (c) 2026 Florian Körner; the bundled style artwork is CC0, see Avatar faces above
 - PartyServer — ISC — Copyright (c) PartyKit contributors
+- emoji-blast — MIT — Copyright (c) Josh Goldberg (upstream's LICENSE carries no copyright line)
 
 ### The MIT License (MIT)
 

@@ -12,6 +12,7 @@ import { appHref } from '@/lib'
 import AlertDialogDemo from './components/AlertDialogDemo.vue'
 import AlertNoticeDemo from './components/AlertNoticeDemo.vue'
 import ButtonDemo from './components/ButtonDemo.vue'
+import ConfettiDemo from './components/ConfettiDemo.vue'
 import NameFieldDemo from './components/NameFieldDemo.vue'
 import PlayerTagDemo from './components/PlayerTagDemo.vue'
 import SliderDemo from './components/SliderDemo.vue'
@@ -28,6 +29,7 @@ const sections = [
   { id: 'name-field', title: 'NameField', summary: 'input + dice randomise · avatar preview + shape accordion', demo: NameFieldDemo },
   { id: 'notice', title: 'AlertNotice', summary: 'info · warn · error · non-dismissable', demo: AlertNoticeDemo },
   { id: 'dialog', title: 'AlertDialog', summary: 'modal queue: alert · confirm', demo: AlertDialogDemo },
+  { id: 'confetti', title: 'Confetti', summary: 'winner burst · intensity · colours · launch point', demo: ConfettiDemo },
 ]
 const themes = ['dark', 'light'] as const
 </script>
