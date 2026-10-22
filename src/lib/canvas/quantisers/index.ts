@@ -16,18 +16,21 @@ export interface PixelationStyleMeta {
   // Plain-language explanation (no jargon) for the disclosure, and the accessible name.
   blurb: string
   quantise: Quantiser
+  // Near-duplicate merge distance (RGB units) the pipeline applies after this style's quantiser.
+  // Higher flattens to punchy colours (Bold); lower keeps the fine shades that make Faithful subtle.
+  mergeUnit: number
 }
 
 // GM-facing, outcome-first — the order is the segmented control's order. Bold = median-cut,
 // Balanced = Wu, Faithful = k-means; the GM picks by the live preview, not the algorithm.
 export const PIXELATION_STYLES: PixelationStyleMeta[] = [
-  { id: 'bold', label: 'Bold', blurb: 'Fewer, stronger colours and big flat areas, the easiest to copy.', quantise: medianCutQuantiser },
-  { id: 'balanced', label: 'Balanced', blurb: 'Fuller mix of colours. Good all-rounder for most pictures.', quantise: wuQuantiser },
-  { id: 'faithful', label: 'Faithful', blurb: 'Closest to the original, softer and subtle shades. Hardest to copy.', quantise: kmeansQuantiser },
+  { id: 'bold', label: 'Bold', blurb: 'Fewer, stronger colours and big flat areas, the easiest to copy.', quantise: medianCutQuantiser, mergeUnit: 16 },
+  { id: 'balanced', label: 'Balanced', blurb: 'Fuller mix of colours. Good all-rounder for most pictures.', quantise: wuQuantiser, mergeUnit: 12 },
+  { id: 'faithful', label: 'Faithful', blurb: 'Closest to the original, softer and subtle shades. Hardest to copy.', quantise: kmeansQuantiser, mergeUnit: 8 },
 ]
 
 export const DEFAULT_PIXELATION_STYLE: PixelationStyle = 'balanced'
 
-export function quantiserFor(style: PixelationStyle): Quantiser {
-  return (PIXELATION_STYLES.find(s => s.id === style) ?? PIXELATION_STYLES[1]).quantise
+export function pixelationStyleFor(style: PixelationStyle): PixelationStyleMeta {
+  return PIXELATION_STYLES.find(s => s.id === style) ?? PIXELATION_STYLES[1]
 }

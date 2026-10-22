@@ -11,7 +11,7 @@ import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import Accordion from '@/components/elements/accordion/Accordion.vue'
 import AccordionItem from '@/components/elements/accordion/Item.vue'
 import Button from '@/components/elements/Button.vue'
-import { clampDrawSeconds, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_PIXELATION_STYLE, DEFAULT_RATIO, DEFAULT_SCALE, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, MUSIC_TRACKS, nearestRatioFor, processImage, quantiserFor, sampleById, sampleUrl, TARGET_RATIOS, trackLabel, unsupportedImage, useAppLayout } from '@/lib'
+import { clampDrawSeconds, decodeImage, DEFAULT_BACKGROUND, DEFAULT_COLOR_COUNT, DEFAULT_PIXELATION_STYLE, DEFAULT_RATIO, DEFAULT_SCALE, FULL_CROP, gridSizeFor, hasTransparency, ImageDecodeError, isHeic, isMobileWarning, MUSIC_TRACKS, nearestRatioFor, processImage, sampleById, sampleUrl, TARGET_RATIOS, trackLabel, unsupportedImage, useAppLayout } from '@/lib'
 import AlphaControl from './picker/AlphaControl.vue'
 import ColourControl from './picker/ColourControl.vue'
 import CropWidget from './picker/CropWidget.vue'
@@ -190,7 +190,7 @@ async function reprocess() {
   emit('processing')
 
   try {
-    const result = await processImage(file, inputs.scale, inputs.colorCount, inputs.ratio, inputs.crop, inputs.background, quantiserFor(inputs.pixelationStyle))
+    const result = await processImage(file, inputs.scale, inputs.colorCount, inputs.ratio, inputs.crop, inputs.background, inputs.pixelationStyle)
     if (myRun !== runId || file !== cachedFile)
       return // stale
 

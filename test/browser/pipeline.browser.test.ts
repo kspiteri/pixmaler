@@ -2,7 +2,7 @@
 // canvas, plus the live alpha scan. None reachable without a DOM, so out of the Node suite.
 
 import { afterEach, describe, expect, it } from 'vitest'
-import { colorDist, hasTransparency, processImage, quantiserFor, sampleImage } from '@/lib'
+import { colorDist, hasTransparency, pixelationStyleFor, processImage, sampleImage } from '@/lib'
 
 // Draw a known image and hand it back as a PNG File, so the pipeline decodes real bytes.
 async function imageFile(w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void): Promise<File> {
@@ -90,23 +90,24 @@ describe('image pipeline, browser half', () => {
     expect(hasTransparency(holed)).toBe(true)
   })
 
-  it('merges near-duplicate colours for every pixelation style, not only Bold', async () => {
-    // Two greys 8 units apart per channel — well inside the 20-unit (squared 400) merge
-    // threshold. The non-Bold styles (Wu, k-means) used to skip the merge, so both near-greys
-    // reached the swatch; the merge now runs in the pipeline for every style.
+  it('merges near-duplicate colours at each style merge unit, not only Bold', async () => {
+    // Two greys one unit apart per channel — far inside every style's merge unit, but across a
+    // Wu/k-means bin boundary so the raw quantiser still emits both. Those styles used to skip the
+    // merge, leaving the near-duplicate pair on the swatch; the pipeline now merges for every style.
     const file = await imageFile(64, 64, (ctx) => {
-      ctx.fillStyle = '#282828'
+      ctx.fillStyle = '#2f2f2f'
       ctx.fillRect(0, 0, 32, 64)
       ctx.fillStyle = '#303030'
       ctx.fillRect(32, 0, 32, 64)
     })
 
     for (const style of ['balanced', 'faithful'] as const) {
-      const { palette } = await processImage(file, 8, 2, 'square', undefined, undefined, quantiserFor(style))
+      const threshold = pixelationStyleFor(style).mergeUnit ** 2
+      const { palette } = await processImage(file, 8, 2, 'square', undefined, undefined, style)
       const rgb = palette.map(rgbOf)
       for (let i = 0; i < rgb.length; i++) {
         for (let j = i + 1; j < rgb.length; j++)
-          expect(colorDist(rgb[i], rgb[j]), `${style} swatch keeps a near-duplicate pair`).toBeGreaterThanOrEqual(400)
+          expect(colorDist(rgb[i], rgb[j]), `${style} swatch keeps a near-duplicate pair`).toBeGreaterThanOrEqual(threshold)
       }
     }
   })

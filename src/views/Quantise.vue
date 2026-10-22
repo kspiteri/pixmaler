@@ -4,23 +4,23 @@
 // the real look, not MSE alone. Gated to import.meta.env.DEV in App.vue and linked from nowhere,
 // so this page and the candidate quantisers tree-shake out of production.
 
-import type { Rgb, TargetRatioId } from '@/lib'
-import { computed, onMounted, ref, watch } from 'vue'
+import type { PixelationStyle, Rgb, TargetRatioId } from '@/lib'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import Logo from '@/components/elements/Logo.vue'
 import Slider from '@/components/elements/Slider.vue'
 import PixelThumb from '@/components/game/shared/PixelThumb.vue'
 import SettingsMenu from '@/components/layout/SettingsMenu.vue'
 import { appHref, DEFAULT_COLOR_COUNT, DEFAULT_SCALE, derivePalette, mergeNearDuplicates, quantiseToPalette, rgbToHex, sampleImage, SAMPLES, sampleUrl, TARGET_RATIO_IDS, TARGET_RATIOS } from '@/lib'
-import { kmeansQuantiser, wuQuantiser } from '@/lib/canvas/quantisers'
+import { kmeansQuantiser, pixelationStyleFor, wuQuantiser } from '@/lib/canvas/quantisers'
 import { distinctColoursUsed, paletteSpread, quantiseError } from '@/lib/canvas/quantisers/metrics'
 
-// Each returns its *raw* palette; the near-duplicate merge is applied uniformly below (behind
-// the toggle) so the columns are compared on equal footing — the shipped pipeline runs median-cut
-// + merge, so that pairing reproduces production while Wu/k-means show what a swap would give.
-const QUANTISERS: { id: string, label: string, run: (rgba: Uint8ClampedArray, n: number) => Rgb[] }[] = [
-  { id: 'median', label: 'median-cut (current)', run: derivePalette },
-  { id: 'wu', label: 'Wu (1992)', run: wuQuantiser },
-  { id: 'kmeans', label: 'k-means (seeded)', run: kmeansQuantiser },
+// Each returns its *raw* palette; a per-column near-duplicate merge (the sliders below) then runs,
+// mirroring the pipeline's merge step. The bracketed name is the picker's style label, so the
+// comparison reads in the GM's own vocabulary.
+const QUANTISERS: { id: string, label: string, style: PixelationStyle, run: (rgba: Uint8ClampedArray, n: number) => Rgb[] }[] = [
+  { id: 'median', label: 'median-cut (Bold)', style: 'bold', run: derivePalette },
+  { id: 'wu', label: 'Wu (Balanced)', style: 'balanced', run: wuQuantiser },
+  { id: 'kmeans', label: 'k-means (Faithful)', style: 'faithful', run: kmeansQuantiser },
 ]
 
 interface Column {
@@ -43,9 +43,10 @@ const count = ref(DEFAULT_COLOR_COUNT)
 const busy = ref(false)
 const status = ref('')
 const columns = ref<Column[]>([])
-// Near-duplicate merge, applied to every column so the comparison is even. On = the shipped
-// pipeline step (median-cut + merge is production); off = each quantiser's raw palette.
-const merge = ref(true)
+// Per-quantiser near-duplicate merge unit (RGB distance, keyed by quantiser id); 0 = off. Seeded
+// from each style's production default in the registry, so the page opens on what the picker does;
+// drag a column's slider to explore a different unit.
+const mergeUnits = reactive<Record<string, number>>(Object.fromEntries(QUANTISERS.map(q => [q.id, pixelationStyleFor(q.style).mergeUnit])))
 const scale = ref(DEFAULT_SCALE)
 // The resulting grid dimensions, so the detail slider shows what it costs.
 const gridLabel = computed(() => (columns.value[0] ? `${columns.value[0].gridW}×${columns.value[0].gridH}` : ''))
@@ -85,8 +86,9 @@ async function recompute() {
         times.push(performance.now() - t0)
       }
       times.sort((a, b) => a - b)
-      if (merge.value)
-        derived = mergeNearDuplicates(derived)
+      const unit = mergeUnits[q.id] ?? 0
+      if (unit > 0)
+        derived = mergeNearDuplicates(derived, unit ** 2)
       const grid = quantiseToPalette(sample.rgba, sample.gridW, sample.gridH, derived)
       return {
         id: q.id,
@@ -110,7 +112,8 @@ async function recompute() {
   }
 }
 
-watch([scale, count, ratio, merge], recompute)
+watch([scale, count, ratio], recompute)
+watch(mergeUnits, recompute)
 onMounted(() => pickSample('mona-lisa'))
 </script>
 
@@ -173,19 +176,6 @@ onMounted(() => pickSample('mona-lisa'))
         <span class="quantise__label">colours — {{ count }}</span>
         <Slider v-model="count" :min="2" :max="32" label="Colours" class="quantise__slider" />
       </div>
-
-      <div class="quantise__row">
-        <span class="quantise__label">merge</span>
-        <button
-          type="button"
-          class="quantise__chip pressable"
-          :class="{ 'is-selected': merge }"
-          :aria-pressed="merge"
-          @click="merge = !merge"
-        >
-          near-duplicates {{ merge ? 'on' : 'off' }}
-        </button>
-      </div>
     </div>
 
     <p v-if="status" class="quantise__error">
@@ -202,6 +192,10 @@ onMounted(() => pickSample('mona-lisa'))
         </div>
         <div class="quantise__swatches">
           <span v-for="(hex, i) in col.palette" :key="i" class="quantise__swatch" :style="{ background: hex }" :title="hex" />
+        </div>
+        <div class="quantise__row">
+          <span class="quantise__label">merge — {{ mergeUnits[col.id] === 0 ? 'off' : `${mergeUnits[col.id]} units` }}</span>
+          <Slider v-model="mergeUnits[col.id]" :min="0" :max="24" label="Merge unit" class="quantise__slider" />
         </div>
         <dl class="quantise__metrics">
           <div><dt>time</dt><dd>{{ col.ms.toFixed(1) }} ms</dd></div>

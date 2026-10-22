@@ -5,10 +5,10 @@
 
 import type { CropSelection, TargetRatioId } from './aspect'
 import type { Rgb } from './palette'
-import type { PixelationStyle, Quantiser } from './quantisers'
+import type { PixelationStyle } from './quantisers'
 import { cropRect, FULL_CROP, ratioBox } from './aspect'
 import { mergeNearDuplicates, nearestIndex, paletteSortOrder, rgbToHex, withClassics } from './palette'
-import { DEFAULT_PIXELATION_STYLE, quantiserFor } from './quantisers'
+import { DEFAULT_PIXELATION_STYLE, pixelationStyleFor } from './quantisers'
 
 export interface PipelineResult {
   gridW: number
@@ -210,13 +210,14 @@ export async function processImage(
   ratio: TargetRatioId,
   crop: CropSelection = FULL_CROP,
   background: string = DEFAULT_BACKGROUND, // CSS colour behind a transparent upload
-  quantise: Quantiser = quantiserFor(DEFAULT_PIXELATION_STYLE),
+  style: PixelationStyle = DEFAULT_PIXELATION_STYLE,
 ): Promise<PipelineResult> {
   const { gridW, gridH, sourceW, sourceH, rgba } = await sampleImage(file, scale, ratio, crop, background)
 
-  // Near-duplicate merge runs here, for every pixelation style alike, so the swatch never shows two
-  // shades the eye can't tell apart; classics then top it up to `colorCount`.
-  const derived = mergeNearDuplicates(quantise(rgba, colorCount))
+  // Near-duplicate merge runs here, at the style's own unit, so Bold flattens to punchy colours
+  // while Faithful keeps its fine shades; classics then top the swatch up to `colorCount`.
+  const { quantise, mergeUnit } = pixelationStyleFor(style)
+  const derived = mergeNearDuplicates(quantise(rgba, colorCount), mergeUnit ** 2)
 
   // Quantise each cell against the derived palette. Indices map into `derived`, the prefix
   // of the wire palette below.
