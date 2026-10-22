@@ -5,13 +5,13 @@
 // emoji-blast is never statically pulled into the gallery chunk; `maxParticles` is read once on
 // mount to show the machine's intensity ceiling.
 
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import Slider from '@/components/elements/Slider.vue'
 import { SEAT_COUNT } from '@/lib'
 
 type Source = 'ramp' | 'winner' | 'palette'
-type Spot = 'top' | 'middle' | 'bottom'
+type Spot = 'card' | 'top' | 'middle' | 'bottom'
 
 // A representative artwork palette (muted, like a real quantise) to show the 'palette' tradeoff.
 const SAMPLE_PALETTE = ['#27150e', '#552a13', '#985016', '#de9328', '#f4bd3f', '#7e6e2b', '#a38935', '#463f1e']
@@ -30,7 +30,7 @@ const decayStops = [
 const count = ref(48)
 const decay = ref(60)
 const source = ref<Source>('ramp')
-const spot = ref<Spot>('middle')
+const spot = ref<Spot>('card')
 const cap = ref<number | null>(null)
 
 onMounted(async () => {
@@ -55,18 +55,33 @@ function coloursFor(s: Source): string[] | undefined {
   return [...Array.from<string>({ length: 6 }).fill('var(--player-colour-1)'), ...ramp]
 }
 
-function originFor(s: Spot): { x: number, y: number } {
+function originFor(s: Exclude<Spot, 'card'>): { x: number, y: number } {
   const fraction = { top: 0.16, middle: 0.5, bottom: 0.82 }[s]
   return { x: window.innerWidth / 2, y: window.innerHeight * fraction }
 }
 
+const stage = useTemplateRef<HTMLElement>('stage')
+
+// The exact call RESULTS makes: an element origin (two fountains from its sides) and every other
+// knob left at the wrapper default. No demo controls apply \u2014 this is the reveal, verbatim.
+async function fireLikeResults(): Promise<void> {
+  const { fireConfetti } = await import('@/lib/confetti')
+  if (stage.value)
+    fireConfetti({ origin: stage.value })
+}
+
 async function fire(): Promise<void> {
   const { fireConfetti } = await import('@/lib/confetti')
+  // 'card' is the RESULTS path: launch from the stage element's two sides. The rest are page points.
+  const s = spot.value
+  const origin = s === 'card' ? stage.value : originFor(s)
+  if (!origin)
+    return
   fireConfetti({
     count: count.value,
     opacityDecay: decay.value,
     colours: coloursFor(source.value),
-    origin: originFor(spot.value),
+    origin,
   })
 }
 </script>
@@ -75,64 +90,70 @@ async function fire(): Promise<void> {
   <div>
     <section class="demo__section">
       <h3 class="demo__heading">
-        intensity — {{ intensityLabel }}
+        as RESULTS fires it
       </h3>
-      <div class="demo__stack">
-        <Slider v-model="count" :min="12" :max="120" label="Confetti count" />
-      </div>
-    </section>
-
-    <section class="demo__section">
-      <h3 class="demo__heading">
-        fade — {{ decayLabel }}
-      </h3>
-      <div class="demo__stack">
-        <Slider v-model="decay" :stops="decayStops" label="Fade length" />
-      </div>
-    </section>
-
-    <section class="demo__section">
-      <h3 class="demo__heading">
-        colours
-      </h3>
-      <div class="demo__row">
-        <Button
-          v-for="s in (['ramp', 'winner', 'palette'] as const)"
-          :key="s"
-          :variant="source === s ? 'primary' : 'subtle'"
-          :aria-pressed="source === s"
-          size="small"
-          @click="source = s"
+      <div>
+        <div
+          ref="stage"
+          style="width: 150px; aspect-ratio: 2 / 3; background: var(--surface); border: 2px dashed var(--border); border-radius: 4px; display: grid; place-items: center; text-align: center; color: var(--fg-60); font-size: 0.75rem"
         >
-          {{ s }}
-        </Button>
+          winner card
+        </div>
+        <div class="demo__row">
+          <Button variant="secondary" @click="fireLikeResults">
+            Fire
+          </Button>
+          <p class="demo__note">
+            The reveal's exact call — <code>fireConfetti({ origin })</code> on the card, every other knob at its default. The controls below don't apply.
+          </p>
+        </div>
       </div>
     </section>
-
     <section class="demo__section">
-      <h3 class="demo__heading">
-        launch from
-      </h3>
-      <div class="demo__row">
-        <Button
-          v-for="p in (['top', 'middle', 'bottom'] as const)"
-          :key="p"
-          :variant="spot === p ? 'primary' : 'subtle'"
-          :aria-pressed="spot === p"
-          size="small"
-          @click="spot = p"
-        >
-          {{ p }}
-        </Button>
+      <div class="demo__stack">
+        <div class="demo__item">
+          <span class="demo__heading">intensity — {{ intensityLabel }}</span>
+          <Slider v-model="count" :min="12" :max="120" label="Confetti count" />
+        </div>
+        <div class="demo__item">
+          <span class="demo__heading">fade — {{ decayLabel }}</span>
+          <Slider v-model="decay" :stops="decayStops" label="Fade length" />
+        </div>
+        <div class="demo__item">
+          <span class="demo__heading">colours</span>
+          <div class="segmented" role="group" aria-label="Confetti colours">
+            <button
+              v-for="s in (['ramp', 'winner', 'palette'] as const)"
+              :key="s"
+              class="segmented__item"
+              :class="{ 'segmented__item--active': source === s }"
+              type="button"
+              :aria-pressed="source === s"
+              @click="source = s"
+            >
+              {{ s }}
+            </button>
+          </div>
+        </div>
+        <div class="demo__item">
+          <span class="demo__heading">launch from</span>
+          <div class="segmented" role="group" aria-label="Launch from">
+            <button
+              v-for="p in (['card', 'top', 'middle', 'bottom'] as const)"
+              :key="p"
+              class="segmented__item"
+              :class="{ 'segmented__item--active': spot === p }"
+              type="button"
+              :aria-pressed="spot === p"
+              @click="spot = p"
+            >
+              {{ p }}
+            </button>
+          </div>
+        </div>
       </div>
-    </section>
-
-    <section class="demo__section">
-      <h3 class="demo__heading">
-        go
-      </h3>
       <div class="demo__row">
-        <Button variant="primary" @click="fire">
+        <Button variant="secondary" @click="fire">
           Fire confetti ({{ effective }})
         </Button>
         <span class="demo__note">no burst under reduced motion</span>

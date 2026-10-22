@@ -224,6 +224,12 @@ const themes = ['dark', 'light'] as const
     gap: $gap-3;
     max-width: 22rem;
   }
+  :deep(.demo__item) {
+    display: flex;
+    flex-direction: row;
+    gap: $gap-3;
+    max-width: 22rem;
+  }
 
   :deep(.demo__matrix) {
     display: flex;
