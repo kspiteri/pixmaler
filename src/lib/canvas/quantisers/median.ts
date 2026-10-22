@@ -1,7 +1,7 @@
 import type { Quantiser } from './types'
-import { derivePalette, mergeNearDuplicates } from '../palette'
+import { derivePalette } from '../palette'
 
-// Priority median-cut + near-duplicate merge - the "Bold" colour style: fewer, punchier, deeper
-// colours. The pipeline's original quantiser (the merge collapses near-duplicates that median-cut
-// clusters in shadows), kept as one of the three styles.
-export const medianCutQuantiser: Quantiser = (rgba, count) => mergeNearDuplicates(derivePalette(rgba, count))
+// Priority median-cut - the "Bold" colour style: fewer, punchier, deeper colours. Near-duplicate
+// merging is applied uniformly to every style in the pipeline, not here, so this returns the raw
+// derived palette like the other two quantisers.
+export const medianCutQuantiser: Quantiser = derivePalette

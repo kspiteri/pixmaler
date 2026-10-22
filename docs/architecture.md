@@ -106,10 +106,10 @@ Elsewhere: `party/` (server), `test/` (Vitest; fake room context in `test/suppor
 
 ## Image pipeline
 
-[`lib/canvas/pipeline.ts`](../src/lib/canvas/pipeline.ts): decode → crop to the ratio → normalise the crop to 768 px on its long side, scaling up or down (`SOURCE_MAX_SIDE`, so Detail gives the same grid for every upload and every crop) → flatten onto the background colour → downscale straight to `gridW × gridH` → derive a palette with the chosen quantiser → nearest-entry per cell → sort the swatch.
+[`lib/canvas/pipeline.ts`](../src/lib/canvas/pipeline.ts): decode → crop to the ratio → normalise the crop to 768 px on its long side, scaling up or down (`SOURCE_MAX_SIDE`, so Detail gives the same grid for every upload and every crop) → flatten onto the background colour → downscale straight to `gridW × gridH` → derive a palette with the chosen quantiser → merge near-duplicates → nearest-entry per cell → sort the swatch.
 
 - **Trap: flatten before sampling.** `getImageData` reports transparent pixels as black and the quantiser reads no alpha, so an unflattened transparent region turns black. `AlphaControl` picks the background.
-- **Quantiser by outcome:** Bold (median cut), Balanced (Wu, default), Faithful (k-means), registered in `quantisers/index.ts`. `/quantise` compares them on one shared `sampleImage`.
+- **Quantiser by outcome:** Bold (median cut), Balanced (Wu, default), Faithful (k-means), registered in `quantisers/index.ts`. `/quantise` compares them on one shared `sampleImage`. The near-duplicate merge runs in the pipeline after whichever quantiser, so the style never decides whether barely-distinguishable shades reach the swatch.
 - **Classics are swatch-only.** The target uses only derived colours; `withClassics` tops the swatch up toward the colour count with classics far enough from every derived colour. Derived colours stay first so target indices hold; `paletteSortOrder` then reorders and remaps.
 - **Aim for recognisable but redrawable**, not faithful. Dithering, despeckle and edge detection were found unnecessary for this look; don't add them without a reason.
 

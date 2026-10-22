@@ -34,7 +34,7 @@ Rooms are named with a memorable word-pair, like `feral-crayon`. Share the code 
 - [Howler.js](https://howlerjs.com/) for audio — one preloaded sprite for zero-latency sound effects, streamed per-track music, per-device mute toggles
 - `unique-names-generator` for memorable room codes and for de-duplicating player names, both from a custom curated word list
 - [DiceBear](https://www.dicebear.com/) for player faces — the CC0 "Notionists Neutral" style, generated in the browser from each player's device id and lazy-loaded on the room route; nothing is sent to DiceBear's API
-- Client-side image pipeline: flatten onto an opaque background, one exact downscale to the grid, median-cut palette derivation + near-duplicate merge, then per-cell quantisation. No dependencies, no server image processing, no image storage.
+- Client-side image pipeline: flatten onto an opaque background, one exact downscale to the grid, palette derivation (median-cut, Wu or k-means) + near-duplicate merge, then per-cell quantisation. No dependencies, no server image processing, no image storage.
 
 ## Developing
 

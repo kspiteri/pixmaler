@@ -7,7 +7,7 @@ import type { CropSelection, TargetRatioId } from './aspect'
 import type { Rgb } from './palette'
 import type { PixelationStyle, Quantiser } from './quantisers'
 import { cropRect, FULL_CROP, ratioBox } from './aspect'
-import { nearestIndex, paletteSortOrder, rgbToHex, withClassics } from './palette'
+import { mergeNearDuplicates, nearestIndex, paletteSortOrder, rgbToHex, withClassics } from './palette'
 import { DEFAULT_PIXELATION_STYLE, quantiserFor } from './quantisers'
 
 export interface PipelineResult {
@@ -214,8 +214,9 @@ export async function processImage(
 ): Promise<PipelineResult> {
   const { gridW, gridH, sourceW, sourceH, rgba } = await sampleImage(file, scale, ratio, crop, background)
 
-  // The target uses only image-derived colours; classics top the swatch up to `colorCount`.
-  const derived = quantise(rgba, colorCount)
+  // Near-duplicate merge runs here, for every pixelation style alike, so the swatch never shows two
+  // shades the eye can't tell apart; classics then top it up to `colorCount`.
+  const derived = mergeNearDuplicates(quantise(rgba, colorCount))
 
   // Quantise each cell against the derived palette. Indices map into `derived`, the prefix
   // of the wire palette below.
