@@ -189,12 +189,13 @@ No secrets. That is the point.
 
 ### Cutting a release
 
-**`pnpm release` runs this whole flow** — gates (lint, lint:css, typecheck, test, build, worker dry-run), then the Worker deploy *only if `party/` or `src/lib/protocol/` changed*, the Release PR merge, watching the run, and naming the release — prompting before each destructive step (`--yes` skips the prompts; `--theme "two or three words"` presets the name). By hand, the steps are:
+**`pnpm release` runs this whole flow** — gates (lint, lint:css, typecheck, test, build, worker dry-run), then the Worker deploy *only if `party/` or `src/lib/protocol/` changed*, the Release PR merge, watching the run, naming the release, and a final fast-forward `git pull` to pick up release-please's version-bump commit — prompting before each destructive step (`--yes` skips the prompts; `--theme "two or three words"` presets the name). By hand, the steps are:
 
 1. Review the open **Release PR**. release-please has already written the version into `package.json` and the entry into `CHANGELOG.md`, derived from the conventional-commit types since the last release.
 2. **`pnpm wr:deploy` — but only if the server actually changed.** Check with `git diff <last-tag>..HEAD -- party/ src/lib/protocol/`. A Worker deploy **ends every game in progress**, so this is not a ritual: skip it when that diff is empty. When it is not empty, deploy *before* merging — the frontend inlines `VITE_PARTYKIT_HOST` at build time, and a newer server tolerates older clients while the reverse does not.
 3. **Merge the Release PR.** That tags it, publishes the GitHub release, and deploys Pages.
 4. **Close the milestone the release completes** — if it completes one.
+5. **`git pull`** to bring release-please's version-bump and `CHANGELOG.md` commit into local main, which is otherwise left a commit behind.
 
 Milestones name **themes, not versions**: `Image pipeline`, `Server refactor`, `Accessibility`, `Results Polish`, `Audio and more polish`, `Onboarding`, `1.0.0`. They are ordered by severity — the more severe the work, the earlier the release it lands in — but the version is never chosen, because release-please derives it from the commit types. So a milestone may span several releases, and a release may close none. An issue with no milestone is deliberately not scheduled; parked long-term work stays in `docs/.plans/` rather than sitting on the board looking actionable.
 

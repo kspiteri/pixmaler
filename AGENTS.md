@@ -125,7 +125,7 @@ test/             Vitest suites; the fake room context lives in test/support/
 - **Pages deploys itself; the Worker is deployed by hand.** release-please keeps a Release PR open; merging it tags, publishes and deploys Pages only. The Worker ships with `pnpm wr:deploy` from the maintainer's machine.
 - **A Worker deploy ends every game in progress**: room state is in memory, and Durable Object storage holds only the alarm.
 - **Deploy the Worker before merging the Release PR.** The frontend inlines `VITE_PARTYKIT_HOST` at build time, and a newer server tolerates older clients while the reverse doesn't.
-- **`pnpm release` automates the flow:** gates (incl. build + worker dry-run), then the Worker deploy *only if it changed*, the Release PR merge, watching the run, and naming the release — prompting before each destructive step (`--yes` skips; `--theme "…"` presets the name).
+- **`pnpm release` automates the flow:** gates (incl. build + worker dry-run), then the Worker deploy *only if it changed*, the Release PR merge, watching the run, naming the release, and finally a fast-forward `git pull` so local main picks up the bot's version bump — prompting before each destructive step (`--yes` skips; `--theme "…"` presets the name).
 - **GitHub Pages is static-only** and serves the app under `base: '/pixmaler/'`.
 
 The full release procedure is in `CONTRIBUTING.md`.

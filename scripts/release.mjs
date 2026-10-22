@@ -1,5 +1,5 @@
 // Release helper: gate, deploy the Worker if it changed, merge the release-please PR, watch
-// the deploy, then name the GitHub release. The destructive steps (deploy, merge) prompt first
+// the deploy, name the GitHub release, then pull the bot's version-bump commit. The destructive steps (deploy, merge) prompt first
 // unless --yes. Server-before-merge is deliberate: Pages publishes on merge, so the new server
 // must already be live — an old server tolerates new clients, the reverse breaks live rooms.
 //
@@ -15,7 +15,7 @@ const args = process.argv.slice(2)
 if (args.includes('--help')) {
   console.log('Usage: node scripts/release.mjs [--yes] [--theme "two or three words"]')
   console.log('  Gates (lint, lint:css, typecheck, test, build, worker dry-run), then — if the')
-  console.log('  Worker changed — deploys it, merges the release PR, watches the run, names the release.')
+  console.log('  Worker changed — deploys it, merges the release PR, watches the run, names the release, then pulls main.')
   process.exit(0)
 }
 const SKIP_PROMPTS = args.includes('--yes')
@@ -120,6 +120,11 @@ async function main() {
   else {
     console.log(`\n\u2713 released v${version} (no name set; add one with: gh release edit ${version} --title "v${version} <words>")`)
   }
+
+  // 6. Everything's live and verified — pull the release-please commit (version bump + CHANGELOG)
+  // back into local main so the working copy isn't left behind the remote.
+  console.log('\n\u25B6 syncing local main with the release')
+  run('git', ['pull', '--ff-only'])
 }
 
 main().catch(err => fail(err instanceof Error ? err.message : String(err)))
