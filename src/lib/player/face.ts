@@ -23,15 +23,21 @@ export function loadFaces(): Promise<void> {
   return loading
 }
 
-// A CSS `url()` to use as the face's mask, or null until the generator has loaded.
-export function faceMask(seed: string): string | null {
+// The face as an SVG data URI, or null until the generator has loaded.
+export function faceUri(seed: string): string | null {
   const render = renderer.value
   if (!render || !seed)
     return null
-  let mask = cache.get(seed)
-  if (!mask) {
-    mask = `url("${render(seed)}")`
-    cache.set(seed, mask)
+  let uri = cache.get(seed)
+  if (!uri) {
+    uri = render(seed)
+    cache.set(seed, uri)
   }
-  return mask
+  return uri
+}
+
+// A CSS `url()` to use as the face's mask, or null until the generator has loaded.
+export function faceMask(seed: string): string | null {
+  const uri = faceUri(seed)
+  return uri ? `url("${uri}")` : null
 }

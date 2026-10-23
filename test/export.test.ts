@@ -1,11 +1,14 @@
 // Drawing export — the decisions a player sees: whether Save opens the share sheet or downloads,
-// how big the PNG comes out, and what the file is called.
+// how big the PNG and the share card come out, and what the files are called.
 
+import type { CardLayout } from '../src/lib/export/card'
 import type { DeviceSignals } from '../src/lib/export/deliver'
 import { describe, expect, it } from 'vitest'
+import { cardLayout } from '../src/lib/export/card'
 import { isHandheld, prefersShareSheet } from '../src/lib/export/deliver'
 import { drawingFilename, exportSlug, paintFilename } from '../src/lib/export/filename'
 import { exportScale } from '../src/lib/export/png'
+import { GRID_MAX_SIDE } from '../src/lib/protocol/protocol'
 
 const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1'
 const MAC_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15'
@@ -109,5 +112,67 @@ describe('export filenames', () => {
 
   it('falls back to "drawing" when there is no source at all', () => {
     expect(paintFilename(null)).toBe('pixmaler-paint-drawing.png')
+  })
+
+  it('marks the share card apart from the plain drawing', () => {
+    expect(drawingFilename('feral-crayon', 'Big Al', 'card')).toBe('pixmaler-feral-crayon-big-al-card.png')
+    expect(paintFilename({ sample: 'great-wave', source: 'The Great Wave off Kanagawa' }, 'card')).toBe('pixmaler-paint-great-wave-card.png')
+  })
+})
+
+describe('cardLayout', () => {
+  const LONG_EDGE = 1600
+  // Real grid shapes: the 3:2 / 1:1 / 2:3 ratios at small, typical and the largest detail.
+  const GRIDS: Array<[number, number]> = [[61, 41], [41, 61], [32, 32], [12, 8], [384, 256], [256, 384], [300, 300]]
+
+  function panelsOverlap(l: CardLayout): boolean {
+    const a = l.target
+    const b = l.drawing
+    return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h
+  }
+
+  it('stacks landscape grids and sets square and portrait ones side by side, target first', () => {
+    const landscape = cardLayout(61, 41)
+    expect(landscape.stacked).toBe(true)
+    expect(landscape.drawing.x).toBe(landscape.target.x)
+    expect(landscape.drawing.y).toBeGreaterThan(landscape.target.y + landscape.target.h)
+    for (const [w, h] of [[41, 61], [32, 32]]) {
+      const l = cardLayout(w, h)
+      expect(l.stacked).toBe(false)
+      expect(l.drawing.y).toBe(l.target.y)
+      expect(l.drawing.x).toBeGreaterThan(l.target.x + l.target.w)
+    }
+  })
+
+  it('uses the largest integer panel scale that keeps the long edge within 1600 px', () => {
+    for (const [w, h] of GRIDS) {
+      const l = cardLayout(w, h)
+      expect(Number.isInteger(l.scale)).toBe(true)
+      expect(Math.max(l.width, l.height)).toBeLessThanOrEqual(LONG_EDGE)
+      // One more pixel per cell grows each panel by a cell's worth and must overflow.
+      const grownW = l.width + (l.stacked ? w : 2 * w)
+      const grownH = l.height + (l.stacked ? 2 * h : h)
+      expect(Math.max(grownW, grownH)).toBeGreaterThan(LONG_EDGE)
+      expect([l.target.w, l.target.h]).toEqual([w * l.scale, h * l.scale])
+    }
+  })
+
+  it('keeps both panels inside the card, clear of each other and of the header and footer', () => {
+    for (const [w, h] of GRIDS) {
+      const l = cardLayout(w, h)
+      expect(panelsOverlap(l)).toBe(false)
+      for (const p of [l.target, l.drawing]) {
+        expect(p.y).toBeGreaterThanOrEqual(l.header.y + l.header.h)
+        expect(p.y + p.h).toBeLessThanOrEqual(l.footer.y)
+        expect(p.x + p.w).toBeLessThanOrEqual(l.width)
+      }
+      expect(l.footer.y + l.footer.h).toBeLessThanOrEqual(l.height)
+      expect(l.chip.y).toBeGreaterThanOrEqual(l.footer.y)
+      expect(l.chip.y + l.chip.h).toBeLessThanOrEqual(l.footer.y + l.footer.h)
+    }
+  })
+
+  it('fits the largest grid the wire allows at one pixel per cell', () => {
+    expect(cardLayout(GRID_MAX_SIDE, GRID_MAX_SIDE).scale).toBe(1)
   })
 })

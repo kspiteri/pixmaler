@@ -5,16 +5,16 @@
 // ranked gallery, each drawing once. The awards fade in just after the gallery so the reveal
 // travels bottom→top. The GM gets "Play again" in the status bar and, full size, under the reveal.
 
-import type { ExportGrid, Player, RankedResult, ServerMsg, VoteCategory } from '@/lib'
+import type { Player, RankedResult, ServerMsg, VoteCategory } from '@/lib'
 import { Power, RotateCcw } from '@lucide/vue'
 import { computed, inject, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import PlayerTag from '@/components/elements/PlayerTag.vue'
 import Tagline from '@/components/elements/Tagline.vue'
-import { SaveDrawingButton } from '@/components/game'
+import { ExportButton } from '@/components/game'
 import GameIcon from '@/components/game/shared/GameIcon.vue'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
-import { artRatio as artRatioFor, clientIdKey, drawingFilename, prefersReducedMotion, seatFor, socketKey, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '@/lib'
+import { artRatio as artRatioFor, clientIdKey, drawingFilename, gridToPng, prefersReducedMotion, seatFor, shareCardPng, socketKey, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '@/lib'
 
 const props = defineProps<{
   results: Results | null
@@ -176,9 +176,27 @@ function rankLabel(r: { rank: number, shared: boolean }): string {
 
 const roomCode = new URLSearchParams(location.search).get('room') ?? ''
 
-function exportOf(e: Entry): ExportGrid {
+// Save (the drawing) and, once the target has arrived, Share (the card beside it) for one entry.
+function exportsFor(e: Entry) {
   const r = props.results!
-  return { grid: e.grid, palette: r.palette, gridW: r.gridW, gridH: r.gridH }
+  const dims = { palette: r.palette, gridW: r.gridW, gridH: r.gridH }
+  const save = {
+    intent: 'save' as const,
+    render: () => gridToPng({ ...dims, grid: e.grid }),
+    filename: drawingFilename(roomCode, e.name),
+    label: `Save ${e.name}'s drawing`,
+    subject: `${e.name}'s drawing`,
+  }
+  const target = props.targetGrid
+  if (!target)
+    return [save]
+  return [save, {
+    intent: 'share' as const,
+    render: () => shareCardPng({ ...dims, target, drawing: e.grid, player: { name: e.name, seat: withSeat(e).seat } }),
+    filename: drawingFilename(roomCode, e.name, 'card'),
+    label: `Share ${e.name}'s card`,
+    subject: `${e.name}'s card`,
+  }]
 }
 
 // Slot key for the target image's hero canvas; never collides with a submissionId.
@@ -326,16 +344,9 @@ const { setSlot } = useReadonlyCanvases(
                   <p class="results__winner-votes">
                     {{ w.votes }} point{{ w.votes === 1 ? "" : "s" }}
                   </p>
-                  <SaveDrawingButton
-                    class="results__save"
-                    icon
-                    size="x-small"
-                    variant="subtle"
-                    :drawing="exportOf(w)"
-                    :filename="drawingFilename(roomCode, w.name)"
-                    :label="`Save ${w.name}'s drawing`"
-                    :announcement="`Saved ${w.name}'s drawing`"
-                  />
+                  <div class="results__exports">
+                    <ExportButton v-for="b in exportsFor(w)" :key="b.intent" v-bind="b" icon size="x-small" variant="subtle" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -370,16 +381,9 @@ const { setSlot } = useReadonlyCanvases(
                       <p class="results__award-votes">
                         {{ it.count }} {{ a.cat === "funniest" ? "funny" : "best" }} vote{{ it.count === 1 ? "" : "s" }}
                       </p>
-                      <SaveDrawingButton
-                        class="results__save"
-                        icon
-                        size="x-small"
-                        variant="subtle"
-                        :drawing="exportOf(it.entry)"
-                        :filename="drawingFilename(roomCode, it.entry.name)"
-                        :label="`Save ${it.entry.name}'s drawing`"
-                        :announcement="`Saved ${it.entry.name}'s drawing`"
-                      />
+                      <div class="results__exports">
+                        <ExportButton v-for="b in exportsFor(it.entry)" :key="b.intent" v-bind="b" icon size="x-small" variant="subtle" />
+                      </div>
                     </div>
                   </template>
                   <p v-else class="results__award-mention">
@@ -423,16 +427,9 @@ const { setSlot } = useReadonlyCanvases(
             <p class="results__item-votes">
               {{ entry.votes }} pt{{ entry.votes === 1 ? "" : "s" }}
             </p>
-            <SaveDrawingButton
-              class="results__save"
-              icon
-              size="x-small"
-              variant="subtle"
-              :drawing="exportOf(entry)"
-              :filename="drawingFilename(roomCode, entry.name)"
-              :label="`Save ${entry.name}'s drawing`"
-              :announcement="`Saved ${entry.name}'s drawing`"
-            />
+            <div class="results__exports">
+              <ExportButton v-for="b in exportsFor(entry)" :key="b.intent" v-bind="b" icon size="x-small" variant="subtle" />
+            </div>
           </div>
         </div>
 

@@ -20,23 +20,27 @@ export function paperColour(): string {
   return getComputedStyle(document.documentElement).getPropertyValue('--paper').trim()
 }
 
-export function renderExportCanvas(src: ExportGrid, paper: string, scale = exportScale(src.gridW, src.gridH)): HTMLCanvasElement {
+// Paints a grid onto paper at (left, top), each cell a scale × scale square.
+export function paintGrid(ctx: CanvasRenderingContext2D, src: ExportGrid, paper: string, scale: number, left = 0, top = 0): void {
   const { grid, palette, gridW, gridH } = src
-  const canvas = document.createElement('canvas')
-  canvas.width = gridW * scale
-  canvas.height = gridH * scale
-  const ctx = canvas.getContext('2d')!
   ctx.fillStyle = paper
-  ctx.fillRect(0, 0, canvas.width, canvas.height)
+  ctx.fillRect(left, top, gridW * scale, gridH * scale)
   for (let y = 0; y < gridH; y++) {
     for (let x = 0; x < gridW; x++) {
       const idx = grid[y * gridW + x] ?? -1
       if (idx < 0)
         continue
       ctx.fillStyle = palette[idx] ?? paper
-      ctx.fillRect(x * scale, y * scale, scale, scale)
+      ctx.fillRect(left + x * scale, top + y * scale, scale, scale)
     }
   }
+}
+
+export function renderExportCanvas(src: ExportGrid, paper: string, scale = exportScale(src.gridW, src.gridH)): HTMLCanvasElement {
+  const canvas = document.createElement('canvas')
+  canvas.width = src.gridW * scale
+  canvas.height = src.gridH * scale
+  paintGrid(canvas.getContext('2d')!, src, paper, scale)
   return canvas
 }
 

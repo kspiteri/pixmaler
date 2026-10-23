@@ -33,7 +33,8 @@ src/
 │   ├── canvas/                # pixel.ts (PixelCanvas) · grid.ts (cell geometry) · tools.ts (swatch/brush DOM)
 │   │                          # pipeline.ts · palette.ts (colour science) · aspect.ts (ratios, crop, orientation)
 │   │   └── quantisers/        # median (Bold) · wu (Balanced) · kmeans (Faithful) + registry; metrics.ts dev-only, not re-exported
-│   ├── export/                # png.ts (grid → paper-flattened PNG) · deliver.ts (share sheet vs download) · filename.ts
+│   ├── export/                # png.ts (grid → paper-flattened PNG) · card.ts (share card layout + render)
+│   │                          # deliver.ts (share sheet vs download) · filename.ts; chip.ts (seat chip on a canvas) internal, not in the barrel
 │   ├── composables/
 │   │   ├── useRoom/           # index.ts (socket, name gate, provide) · messages.ts (reducer) · gate.ts (existence probe, tab lock)
 │   │   ├── useDrawSubmit.ts   # DRAWING auto-submit, deadline submit, rAF countdown
@@ -44,7 +45,7 @@ src/
 │   │   ├── countdown.ts       # milestone-only countdown announcements
 │   │   └── useCanvasShortcuts.ts · useOrientation.ts · useDraggable.ts
 │   ├── prefs/                 # theme · textScale · motion · touch · shortcuts · palette · paintSession
-│   ├── player/                # identity (identity keys, clearAllData) · seats (seatFor) · face (DiceBear mask)
+│   ├── player/                # identity (identity keys, clearAllData) · seats (seatFor) · face (DiceBear: chip mask + share card data URI)
 │   └── content/               # words (codes, isRoomCode, formatRoomInput) · taglines · music (manifest + credits) · samples (artwork manifest) · heroArt
 ├── assets/fonts/              # self-hosted woff2
 ├── components/
@@ -69,15 +70,15 @@ src/
 │   │   ├── PhaseBoundary.vue  # error boundary for the phase views
 │   │   ├── SettingsMenu.vue   # header gear + settings dropdown
 │   │   └── RoomInterstitial.vue # shell for every off-game room screen
-│   └── game/                  # index.ts barrel: DrawBoard · GmControls · ImagePicker · MusicWidget
-│       │                      #   PixelThumb · SaveDrawingButton · PlayerList · SalonWall · VotingCloseup
+│   └── game/                  # index.ts barrel: DrawBoard · ExportButton · GmControls · ImagePicker · MusicWidget
+│       │                      #   PixelThumb · PlayerList · SalonWall · VotingCloseup
 │       ├── image/ImagePicker.vue # picker orchestrator (lobby + /paint)
 │       ├── image/picker/      # SourcePicker · TargetPreview · CropWidget · DetailControl · PixelationStyleControl
 │       │                      # ColourControl · AlphaControl · TimerControl · MusicControl · stops.ts
 │       ├── canvas/            # DrawBoard.vue (target + editable pair) · PaletteTools.vue (tools panel, internal)
 │       │   └── palette/       # Header · PlacementControl · SizeControl · Shortcuts
 │       ├── lobby/             # GmControls.vue (picker + Start gate) · PlayerList.vue (roster, Make GM, Remove)
-│       ├── shared/            # GameIcon.vue (award SVGs) · MusicWidget.vue (header transport) · PixelThumb.vue · SaveDrawingButton.vue (PNG export + tick)
+│       ├── shared/            # GameIcon.vue (award SVGs) · MusicWidget.vue (header transport) · PixelThumb.vue · ExportButton.vue (Save / Share + tick)
 │       └── voting/            # SalonWall.vue · VotingCloseup.vue (awards cast here) · SalonFrame.vue (internal)
 ├── views/
 │   ├── Entry.vue              # landing: Start / join by code / Free mode
@@ -221,7 +222,7 @@ centres of colour — the subtlest, richest result, so it merges least (8 units)
 - **`seatFor(seat, player)`** (`lib/player/seats.ts`) is the only way to make a chip (colour var, initial, face seed, shape, lean). It takes the player, not loose fields, so nobody passes a `RankedResult` (a name but no shape). `Results.vue` takes `:players` only to resolve seats.
 - **Avatar shape is client-chosen, server-validated.** Stored per browser, sent with `join` and `shape`, echoed on `Player.shape`. `normaliseShape()` (`src/lib/protocol/types.ts`) is the single validator — run by `parseClientMsg`, `getShape()` and again in `seatFor`, since inbound `state` is assigned verbatim and the deploy targets can be out of step.
 - **Shape and name lock outside LOBBY** so the RESULTS reveal stays honest. The shape lock needs `handleShape`'s phase gate **and** `handleJoin`'s, because `join` re-reads localStorage on every reconnect and would otherwise walk past it.
-- **Face:** DiceBear `notionists-neutral`, rendered locally by `lib/player/face.ts`, seeded by `clientId`, memoised per seed. The first `Avatar` lazy-loads `@dicebear/core` + the style (pre-bundled via `optimizeDeps` so Vite doesn't re-optimise mid-session); until then, or on failure, the chip shows the initial. **Never call DiceBear's HTTP API** — it would ship identifiers to a third party. The `clientId` seed survives renames and needs no protocol change; the trade is no re-roll, and a new device or Clear means a new face. Mask rendering is in [`design-system.md`](./design-system.md).
+- **Face:** DiceBear `notionists-neutral`, rendered locally by `lib/player/face.ts`, seeded by `clientId`, memoised per seed. The first `Avatar` lazy-loads `@dicebear/core` + the style (pre-bundled via `optimizeDeps` so Vite doesn't re-optimise mid-session), and Paint loads it on open for its share card; until then, or on failure, the chip shows the initial. The share card never loads it itself, so a click is never held up. **Never call DiceBear's HTTP API** — it would ship identifiers to a third party. The `clientId` seed survives renames and needs no protocol change; the trade is no re-roll, and a new device or Clear means a new face. Mask rendering is in [`design-system.md`](./design-system.md).
 
 ## Rooms: creation and refusals
 
