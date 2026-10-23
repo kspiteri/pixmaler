@@ -33,6 +33,7 @@ src/
 │   ├── canvas/                # pixel.ts (PixelCanvas) · grid.ts (cell geometry) · tools.ts (swatch/brush DOM)
 │   │                          # pipeline.ts · palette.ts (colour science) · aspect.ts (ratios, crop, orientation)
 │   │   └── quantisers/        # median (Bold) · wu (Balanced) · kmeans (Faithful) + registry; metrics.ts dev-only, not re-exported
+│   ├── export/                # png.ts (grid → paper-flattened PNG) · deliver.ts (share sheet vs download) · filename.ts
 │   ├── composables/
 │   │   ├── useRoom/           # index.ts (socket, name gate, provide) · messages.ts (reducer) · gate.ts (existence probe, tab lock)
 │   │   ├── useDrawSubmit.ts   # DRAWING auto-submit, deadline submit, rAF countdown
@@ -69,14 +70,14 @@ src/
 │   │   ├── SettingsMenu.vue   # header gear + settings dropdown
 │   │   └── RoomInterstitial.vue # shell for every off-game room screen
 │   └── game/                  # index.ts barrel: DrawBoard · GmControls · ImagePicker · MusicWidget
-│       │                      #   PixelThumb · PlayerList · SalonWall · VotingCloseup
+│       │                      #   PixelThumb · SaveDrawingButton · PlayerList · SalonWall · VotingCloseup
 │       ├── image/ImagePicker.vue # picker orchestrator (lobby + /paint)
 │       ├── image/picker/      # SourcePicker · TargetPreview · CropWidget · DetailControl · PixelationStyleControl
 │       │                      # ColourControl · AlphaControl · TimerControl · MusicControl · stops.ts
 │       ├── canvas/            # DrawBoard.vue (target + editable pair) · PaletteTools.vue (tools panel, internal)
 │       │   └── palette/       # Header · PlacementControl · SizeControl · Shortcuts
 │       ├── lobby/             # GmControls.vue (picker + Start gate) · PlayerList.vue (roster, Make GM, Remove)
-│       ├── shared/            # GameIcon.vue (award SVGs) · MusicWidget.vue (header transport) · PixelThumb.vue
+│       ├── shared/            # GameIcon.vue (award SVGs) · MusicWidget.vue (header transport) · PixelThumb.vue · SaveDrawingButton.vue (PNG export + tick)
 │       └── voting/            # SalonWall.vue · VotingCloseup.vue (awards cast here) · SalonFrame.vue (internal)
 ├── views/
 │   ├── Entry.vue              # landing: Start / join by code / Free mode

@@ -259,6 +259,10 @@
     color: $muted;
     font-size: $fs-xs;
   }
+  // The card's Save control, under the name and points.
+  &__save {
+    margin-top: $gap-2;
+  }
 
   // The "you" marker — lime fill (what you earned), its own ink for contrast on either theme.
   &__you {
