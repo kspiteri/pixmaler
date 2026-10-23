@@ -107,7 +107,7 @@ The full rules, with their reasons, are in [`docs/design-system.md`](./docs/desi
 Full picture in [`docs/architecture.md`](./docs/architecture.md); server internals in [`party/README.md`](./party/README.md).
 
 ```
-src/lib/          domain modules behind the @/lib barrel: protocol/ canvas/ composables/ prefs/ player/ content/
+src/lib/          domain modules behind the @/lib barrel: protocol/ canvas/ composables/ prefs/ player/ content/ export/
 src/components/   elements/ · layout/ · game/ (behind the @/components/game barrel)
 src/views/        Entry, Paint, dev pages, phases/ (the four game screens), rooms/ (name gate + refusals)
 src/styles/       foundation/ · mixins/ · base/ · components/ · screens/ + main.scss

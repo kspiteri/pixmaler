@@ -25,6 +25,7 @@ Rooms are named with a memorable word-pair, like `feral-crayon`. Share the code 
 - **Any raster upload, handled gracefully.** Transparency is flattened onto a background colour you choose. No image to hand? Pick from 25 public-domain paintings, then crop in on the part you want painted.
 - **Music that doubles as the clock.** The GM picks a per-round, royalty-free soundtrack; by default it's timed so the song finishes right as the round ends — a countdown you can hear — with a calm ambient loop covering any gap and the gallery. Music and sound effects are independent per-device toggles.
 - **Solo paint sandbox.** The [`/paint`] route is a single-player canvas; for warming up, testing palettes, or just goofing around. No timer and your progress gets saved on your device.
+- **Keep any drawing.** Every drawing on the results screen, and your canvas in `/paint`, saves as a crisp, full-size PNG; on a phone it opens the share sheet, so it can go straight to your photos.
 
 ## Stack
 

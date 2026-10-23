@@ -9,9 +9,9 @@ import { ChevronDown, ChevronUp, Eraser, Palette } from '@lucide/vue'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import Tagline from '@/components/elements/Tagline.vue'
-import { DrawBoard, ImagePicker } from '@/components/game'
+import { DrawBoard, ImagePicker, SaveDrawingButton } from '@/components/game'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
-import { appHref, askConfirm, keepsDrawing, loadPaintSession, playMusic, savePaintSession, stopMusic, useOrientation } from '@/lib'
+import { appHref, askConfirm, keepsDrawing, loadPaintSession, paintFilename, playMusic, savePaintSession, stopMusic, useOrientation } from '@/lib'
 
 const result = ref<PipelineResult | null>(null)
 const meta = ref<PickerMeta | null>(null)
@@ -154,6 +154,19 @@ const summary = computed(() => {
         </template>
         Clear drawing
       </Button>
+      <SaveDrawingButton
+        v-if="result && !settingsOpen"
+        variant="tertiary"
+        size="small"
+        collapse
+        :disabled="!hasDrawing"
+        :drawing="{ grid: currentGrid, palette: result.palette, gridW: result.gridW, gridH: result.gridH }"
+        :filename="paintFilename(meta)"
+        label="Save image"
+        announcement="Saved your drawing"
+      >
+        Save image
+      </SaveDrawingButton>
     </template>
 
     <div class="paint__row">
