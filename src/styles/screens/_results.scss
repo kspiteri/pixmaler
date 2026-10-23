@@ -259,9 +259,16 @@
     color: $muted;
     font-size: $fs-xs;
   }
-  // The card's Save control, under the name and points.
-  &__save {
+  // A drawing's Save and Share controls, under its name and points.
+  &__exports {
+    display: flex;
+    justify-content: center;
+    gap: $gap-2;
     margin-top: $gap-2;
+  }
+  // Award items read left to right, so their row starts at the text, not the middle.
+  &__award-meta &__exports {
+    justify-content: flex-start;
   }
 
   // The "you" marker — lime fill (what you earned), its own ink for contrast on either theme.

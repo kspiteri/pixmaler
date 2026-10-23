@@ -25,8 +25,8 @@ How Pixmaler looks and reads: copy voice, feedback, controls, colour and theme, 
   - A condition that clears itself is not a dialog.
 - **A notice's `variant` sets ink and politeness together:** only `error` interrupts (`role="alert"`, `$danger-ink`); `warn` (`$warn-ink`) and `info` use `role="status"`. `info` takes a neutral `$border` edge. There's no `success` variant or green token.
 - **In-place regions that annotate visible text keep their own `role="status"`** — the countdowns ([`countdown.ts`](../src/lib/composables/countdown.ts)), the Voting tally, the Drawing done-count, the picker size warning, the Lobby start hint, the Paint empty state; SettingsMenu's text-size readout is `aria-live="polite"`.
-- **A one-off message with no visible home uses [`announce()`](../src/lib/announce.ts)** (e.g. the room-link copy and a drawing's Save, both only an icon swap): one polite and one assertive `sr-only` region mounted once in `App.vue`. A live region must exist before its text changes, and `announce` clears then re-sets on the next frame so a repeat still speaks.
-- **An action that finishes off-screen swaps its icon to a tick for 2 s** (`Check`, as on the room-link copy and [`SaveDrawingButton`](../src/components/game/shared/SaveDrawingButton.vue)), with the `aria-label` flipped and an `announce()`. A download can't report that it finished, so the wording says what happened, never where it landed: "Saved <name>'s drawing", not "Saved to Photos". A cancelled share sheet gets no tick.
+- **A one-off message with no visible home uses [`announce()`](../src/lib/announce.ts)** (e.g. the room-link copy and a drawing's Save or Share, all only an icon swap): one polite and one assertive `sr-only` region mounted once in `App.vue`. A live region must exist before its text changes, and `announce` clears then re-sets on the next frame so a repeat still speaks.
+- **An action that finishes off-screen swaps its icon to a tick for 2 s** (`Check`, as on the room-link copy and [`ExportButton`](../src/components/game/shared/ExportButton.vue)), with the `aria-label` flipped and an `announce()`. The wording follows what happened, never where it landed: "Shared <name>'s card" after the share sheet, "Saved <name>'s drawing" after a download (a download can't report that it finished), never "Saved to Photos". A cancelled share sheet gets no tick.
 - **`AlertDialog` is not a live region** — a modal announces by taking focus with `role="alertdialog"` + `aria-describedby`. Don't add aria-live.
 
 ## Controls and the press
@@ -35,7 +35,7 @@ How Pixmaler looks and reads: copy voice, feedback, controls, colour and theme, 
   - `tertiary` is the quiet *filled* key — neutral fill, bevel, primary's typography — so a vote button can swap primary ⇄ tertiary without reflowing. `subtle` is the ghost: transparent, body voice, no bevel.
 - **Every control presses.** One rule in [`_buttons.scss`](../src/styles/components/_buttons.scss) (`.btn, .pressable`) rests the element on a hard offset shadow and travels it down on `:active`. Variants tune custom properties, never add a rule: `--press` (travel, default 2 px; primary 4 px), `--press-colour` (default `$shadow-press`), and for a *filled* variant `--bevel` / `--bevel-pressed` — a zero-blur 2 px lit top edge and shaded bottom edge (`$bevel-fill`), the pixel-art half of the look. `.no-shadow` keeps the travel without the shadow.
 - **A non-`Button` control opts in with `.pressable`** — the toggle switch, avatar-picker cells, picker samples and Browse, the room-code chip, `/paint`'s settings toggle. Miss it and the control is dead to the touch, with nothing to flag it.
-- **A drawing's own controls sit under its name and points, never over the art.** On RESULTS that's the Save button: an icon-only `x-small` `subtle` `Button` (`.results__save`) whose `aria-label` names the player ("Save <name>'s drawing"). In Paint the same control is a labelled `tertiary` `collapse` button beside Clear drawing.
+- **A drawing's own controls sit under its name and points, never over the art.** On RESULTS that's a row (`.results__exports`) of icon-only `x-small` `subtle` `Button`s, Save (`Download`) then Share (`Share2`), each `aria-label` naming the player ("Save <name>'s drawing", "Share <name>'s card"). In Paint they're labelled `tertiary` `collapse` buttons beside Clear drawing.
 - **One exemption: `.segmented__item`.** `.segmented` is `overflow: hidden` with flush joins, so a travel would clip; its focus ring is inset for the same reason.
 - **The press owns `transform`.** Anything else that moves a pressable uses standalone `rotate` / `translate` / `scale`.
 - **Reduced motion drops the easing, never the travel** — on touch the movement is the only feedback.
@@ -61,7 +61,7 @@ How Pixmaler looks and reads: copy voice, feedback, controls, colour and theme, 
 
 ### Lime means "go" and "chosen"
 
-- It fills the primary CTA and marks what the player has picked or earned: the selected segment, swatch and sample, a switch that's on, the slider's filled track, text selection, their awards, the **"yours" mark on the Results reveal** (a `__you` chip and a ring on your own card), the winner's frame. The wordmark is brand lime (a logotype is exempt). **Nothing else is lime.**
+- It fills the primary CTA and marks what the player has picked or earned: the selected segment, swatch and sample, a switch that's on, the slider's filled track, text selection, their awards, the **"yours" mark on the Results reveal** (a `__you` chip and a ring on your own card), the winner's frame. The wordmark is brand lime (a logotype is exempt), and so is the seat chip on a share card made in Paint, which has no seat: an exported image, not UI, so nothing there reads as selected. **Nothing else is lime.**
 - **Focus is page ink** — a 2 px `$fg` `:focus-visible` ring app-wide, inputs included. Room codes, `/paint`'s open settings toggle, the music widget (and its playing pulse), spinners and links are page ink too.
 - A slider whose value isn't a choice (music volume) takes **`.slider--neutral`** (`--slider-fill: $fg-60`).
 - **Purple means the GM and the secondary button**, never "selected".
@@ -111,7 +111,7 @@ If a colour sits on something other than the page, it belongs here:
 - **`wonk()` in [`_wonk.scss`](../src/styles/mixins/_wonk.scss)** tilts a card by alternating `:nth-child` (`$wonk-chrome`, 0.6°) and counter-tilts any `.art-frame` inside (`$wonk-art`, 1.5°). It straightens with a lift on `:hover` / `:focus-within`, halves under `$bp-mobile` (that rule must stay above the straighten rule, or mobile cards never level) and under reduced motion drops only the transition. `$art: null` for a card with no drawing.
 - **Deterministic, never random** — the server re-pushes state on every join, vote and submission, which would re-roll a random angle.
 - **Standalone `rotate` / `translate`, never `transform`** — the press owns `transform`.
-- **The avatar lean:** `$wonk-avatar` (4° — 0.6° is invisible at 24–28 px) leans the chip inside `PlayerTag`. Direction comes from the player's **initial** via `LEANS` in [`seats.ts`](../src/lib/player/seats.ts) (`±1`, `±0.55`), not seat parity — rows already alternate by seat, so the letter adds an independent signal and a player leans the same everywhere. Only the multiplier crosses into TypeScript (`--seat-lean`).
+- **The avatar lean:** `$wonk-avatar` (4° — 0.6° is invisible at 24–28 px) leans the chip inside `PlayerTag`. Direction comes from the player's **initial** via `LEANS` in [`seats.ts`](../src/lib/player/seats.ts) (`±1`, `±0.55`), not seat parity — rows already alternate by seat, so the letter adds an independent signal and a player leans the same everywhere. Only the multiplier crosses into TypeScript (`--seat-lean`). Exported images carry no wonk: the share card draws its chip upright.
 - The lean is scoped to `.player-tag .avatar`, so the shape picker stays square (leaning swatches read as broken). Hover straightens it after 250 ms, with the delay on `:hover` only so leaving flops it back instantly.
 
 ## Backdrop
@@ -124,7 +124,7 @@ If a colour sits on something other than the page, it belongs here:
 ### Seat colour
 
 - **A player's colour is their seat.** `seatFor(seat, player)` in [`seats.ts`](../src/lib/player/seats.ts) is the only way to turn a player into a chip (colour, initial, face seed, shape, lean). What a seat is and why it's stable: [`architecture.md`](./architecture.md).
-- **No colour hex in TypeScript.** `$player-colours` (in `_tokens.scss`) is emitted by a loop in `main.scss` as `--player-colour-N`; a `Seat` holds only the `var()` reference.
+- **No colour hex in TypeScript.** `$player-colours` (in `_tokens.scss`) is emitted by a loop in `main.scss` as `--player-colour-N`, and `$accent` / `$ink-on-colour` as `--accent` / `--ink-on-colour` for the share card's canvas; a `Seat` holds only the `var()` reference.
 - **`$player-colours` is generated:** 21 hues at uniform OKLCH L = 0.72, chroma ≤ 0.20, in **golden-angle order** so consecutive seats sit ~137° apart. **Sorting it by hue ruins that.** It reuses no accent (lime = chosen, purple = GM, orange = warn, red = error).
 - **Retune only at uniform lightness** — that's what gives every seat ≥ 7:1 against `$ink-on-colour` (white fails all 21) and keeps lime and the reds distinct from any seat.
 
@@ -132,17 +132,24 @@ If a colour sits on something other than the page, it belongs here:
 
 - **[`Avatar.vue`](../src/components/elements/Avatar.vue) is the only writer of `.avatar` markup** (used by `PlayerTag`, `AvatarPicker` and `NameField`'s preview). Always `aria-hidden` — a name or control label is always beside it.
 - **Size:** 28 px; `--sm` 24 px. **`--sm` carries no `border-radius`** — it would tie with every shape at one class, so reordering [`_avatar.scss`](../src/styles/components/_avatar.scss) would flatten them; `.avatar--sm.avatar--rounded` scales the radius at two classes. **No margin** — spacing is `PlayerTag`'s `gap`.
-- **Twelve silhouettes** (two even rows in the six-column picker): `--rounded` (also the fallback), `--square`, `--circle`, `--hexagon`, `--octagon`, `--leaf`, `--pixel`, `--ticket`, `--pebble`, `--blob`, `--shield`, `--stamp`. **Only shapes that hold a centred face at 24 px** — a diamond or star crushes it.
-- **No seat yet → `$avatar-blank`** (themed). It must edge against `$surface` at 3:1 — the silhouette is all that tells picker options apart — and carry the dark face. Never lime (reads as selected), never `$paper` (too close to the light surface). **Ink is `$ink-on-colour`, never white.**
+- **Twelve silhouettes** (two even rows in the six-column picker): `--rounded` (also the fallback), `--square`, `--circle`, `--hexagon`, `--octagon`, `--leaf`, `--pixel`, `--ticket`, `--pebble`, `--blob`, `--shield`, `--stamp`. **Only shapes that hold a centred face at 24 px** — a diamond or star crushes it. **Trap:** [`chip.ts`](../src/lib/export/chip.ts) redraws them for the share card's canvas, so a silhouette changed or added here must change there too.
+- **No seat yet → `$avatar-blank`** (themed). It must edge against `$surface` at 3:1 — the silhouette is all that tells picker options apart — and carry the dark face. Never lime (reads as selected), never `$paper` (too close to the light surface); the one lime chip is on a Paint share card, outside the UI. **Ink is `$ink-on-colour`, never white.**
 - **The face is a CSS mask:** `mask-image` on a box filled with `currentColor`, so the lines take the chip's ink and follow the theme. That's why [`face.ts`](../src/lib/player/face.ts) renders with a transparent background and paper — anything opaque floods the chip (`test/face.test.ts` guards it). Until it loads, or if it fails, the chip shows the initial. Generation and seeding: [`architecture.md`](./architecture.md).
 
 ### `PlayerTag`
 
-- **Every chip-beside-a-name is [`PlayerTag.vue`](../src/components/elements/PlayerTag.vue)** — lobby roster, "waiting for …" line, Results hero, the Best/Funniest awards, gallery and no-show list. Never hand-roll the pair.
+- **Every chip-beside-a-name is [`PlayerTag.vue`](../src/components/elements/PlayerTag.vue)** — lobby roster, "waiting for …" line, Results hero, the Best/Funniest awards, gallery and no-show list. Never hand-roll the pair. The one exception is the share card, which can't mount a component and draws the same pair on its canvas.
 - **Its invariant:** the chip is `aria-hidden` because a name is always beside it. Don't add a chip-only flag.
 - It owns the chip, gap and name font-family; the host sets size and weight. `size` sets only the chip: `row` (28 px) or `inline` (24 px, default). `--inline` centres the chip while the name keeps the baseline.
 - **Traps:** `<PlayerTag>` without an import renders nothing and neither `vue-tsc` nor ESLint notices. `--truncate` needs `max-width: 100%` — an `inline-flex` box is shrink-to-fit and ignores its container.
 - **Never render an avatar in VOTING** — that gallery is deliberately anonymous.
+
+## Exports
+
+- **The share card follows the viewer's theme** ([`card.ts`](../src/lib/export/card.ts)): `--bg` behind, `--fg` / `--fg-60` text, both panels on `--paper`, the wordmark in brand lime with the light theme's olive drop. Landscape grids stack, square and portrait ones sit side by side, target first; the panel scale is the largest integer that keeps the long edge within 1600 px.
+- **The footer carries the player's tag as `PlayerTag` draws it**, upright: the seat chip ([`chip.ts`](../src/lib/export/chip.ts): the same 12 silhouettes, the face in `--ink-on-colour`) beside the name. Paint has no seat, so its chip is brand lime.
+- **The share click never waits on loading.** The chip uses the face only if the generator has already loaded (RESULTS always has it; Paint warms it on open), otherwise the initial. Canvas text waits for `document.fonts.load`, but a font that fails to load leaves the card in a system face rather than failing it.
+- **Names are cut to the card's width** with an ellipsis, only between whole visible characters, so a joined emoji (👨‍👩‍👧, 👍🏽) never breaks.
 
 ## Shared components
 
