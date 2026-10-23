@@ -70,7 +70,7 @@ src/
 │   │   ├── SettingsMenu.vue   # header gear + settings dropdown
 │   │   └── RoomInterstitial.vue # shell for every off-game room screen
 │   └── game/                  # index.ts barrel: DrawBoard · GmControls · ImagePicker · MusicWidget
-│       │                      #   PixelThumb · PlayerList · SalonWall · VotingCloseup
+│       │                      #   PixelThumb · SaveDrawingButton · PlayerList · SalonWall · VotingCloseup
 │       ├── image/ImagePicker.vue # picker orchestrator (lobby + /paint)
 │       ├── image/picker/      # SourcePicker · TargetPreview · CropWidget · DetailControl · PixelationStyleControl
 │       │                      # ColourControl · AlphaControl · TimerControl · MusicControl · stops.ts

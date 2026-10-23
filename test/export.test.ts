@@ -26,6 +26,12 @@ describe('isHandheld', () => {
     expect(isHandheld(device({ uaMobile: false, uaPlatform: 'Android' }))).toBe(true)
   })
 
+  it('counts Chrome desktop mode on an Android tablet as handheld only by its touch screen', () => {
+    // Desktop mode reports Linux; a Linux laptop with a touchpad must still download.
+    expect(isHandheld(device({ uaMobile: false, uaPlatform: 'Linux', coarsePointer: true }))).toBe(true)
+    expect(isHandheld(device({ uaMobile: false, uaPlatform: 'Linux', coarsePointer: false }))).toBe(false)
+  })
+
   it('recognises iOS, including iPadOS behind its desktop-mode Mac UA', () => {
     expect(isHandheld(device({ userAgent: IPHONE_UA }))).toBe(true)
     expect(isHandheld(device({ userAgent: MAC_UA, maxTouchPoints: 5 }))).toBe(true)

@@ -16,9 +16,13 @@ export interface DeviceSignals {
 
 // Platform signals first; the coarse-pointer media query only decides when they can't.
 export function isHandheld(s: DeviceSignals): boolean {
-  // Android tablets report `mobile: false` (no "Mobile" UA token) but still want the share sheet.
-  if (s.uaMobile !== undefined)
-    return s.uaMobile || s.uaPlatform === 'Android'
+  if (s.uaMobile !== undefined) {
+    // Android tablets report `mobile: false` (no "Mobile" UA token) but still want the share sheet.
+    if (s.uaMobile || s.uaPlatform === 'Android')
+      return true
+    // Chrome's desktop mode (default on large Android tablets) reports Linux; only touch gives it away.
+    return s.uaPlatform === 'Linux' && s.coarsePointer
+  }
   if (/iPhone|iPad|iPod/.test(s.userAgent))
     return true
   // iPadOS asks for the desktop site by default and reports a Mac UA; only touch gives it away.

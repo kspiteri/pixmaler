@@ -6,9 +6,9 @@ import { deliverFile } from '@/lib'
 
 const blob = new Blob(['x'], { type: 'image/png' })
 
-function stubShare(err: DOMException) {
+function stubShare(share: () => Promise<void>) {
   Object.defineProperty(navigator, 'canShare', { configurable: true, value: () => true })
-  Object.defineProperty(navigator, 'share', { configurable: true, value: () => Promise.reject(err) })
+  Object.defineProperty(navigator, 'share', { configurable: true, value: share })
   return vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
 }
 
@@ -19,14 +19,20 @@ afterEach(() => {
 })
 
 describe('deliverFile', () => {
+  it('reports a completed share and downloads nothing on top of it', async () => {
+    const click = stubShare(() => Promise.resolve())
+    expect(await deliverFile(blob, 'a.png', 'share')).toBe('shared')
+    expect(click).not.toHaveBeenCalled()
+  })
+
   it('treats a dismissed share sheet as cancelled and downloads nothing', async () => {
-    const click = stubShare(new DOMException('dismissed', 'AbortError'))
+    const click = stubShare(() => Promise.reject(new DOMException('dismissed', 'AbortError')))
     expect(await deliverFile(blob, 'a.png', 'share')).toBe('cancelled')
     expect(click).not.toHaveBeenCalled()
   })
 
   it('falls back to a download when sharing fails for any other reason', async () => {
-    const click = stubShare(new DOMException('no activation', 'NotAllowedError'))
+    const click = stubShare(() => Promise.reject(new DOMException('no activation', 'NotAllowedError')))
     expect(await deliverFile(blob, 'a.png', 'share')).toBe('downloaded')
     expect(click).toHaveBeenCalledOnce()
     expect((click.mock.contexts[0] as HTMLAnchorElement).download).toBe('a.png')

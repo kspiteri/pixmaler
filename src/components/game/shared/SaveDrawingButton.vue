@@ -21,6 +21,8 @@ const props = defineProps<{
 const saved = ref(false)
 const busy = ref(false)
 let savedTimer: ReturnType<typeof setTimeout> | null = null
+// A share sheet can outlive the screen (Play again while it's open); no tick or announcement then.
+let mounted = true
 
 async function save() {
   if (busy.value)
@@ -28,7 +30,7 @@ async function save() {
   busy.value = true
   try {
     const blob = await gridToPng(props.drawing)
-    if (await deliverFile(blob, props.filename, 'save') === 'cancelled')
+    if (await deliverFile(blob, props.filename, 'save') === 'cancelled' || !mounted)
       return
     saved.value = true
     announce(props.announcement)
@@ -45,6 +47,7 @@ async function save() {
 }
 
 onBeforeUnmount(() => {
+  mounted = false
   if (savedTimer)
     clearTimeout(savedTimer)
 })
