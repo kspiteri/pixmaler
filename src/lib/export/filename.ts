@@ -78,13 +78,16 @@ export function exportSlug(text: string): string {
 // Raster image extensions the picker can be handed; anything else after a dot is part of the name.
 const IMAGE_EXT_RE = /\.(?:png|jpe?g|jfif|gif|webp|avif|hei[cf]|bmp|tiff?|ico)$/i
 
-export function drawingFilename(room: string, name: string): string {
-  const parts = ['pixmaler', exportSlug(room), exportSlug(name) || FALLBACK].filter(Boolean)
+// `card` names the share card beside the plain drawing: `…-card.png`.
+export type ExportKind = 'drawing' | 'card'
+
+export function drawingFilename(room: string, name: string, kind: ExportKind = 'drawing'): string {
+  const parts = ['pixmaler', exportSlug(room), exportSlug(name) || FALLBACK, kind === 'card' ? 'card' : ''].filter(Boolean)
   return `${parts.join('-')}.png`
 }
 
 // A sample's manifest id, else the uploaded file's name without its image extension.
-export function paintFilename(source: { sample?: string | null, source: string } | null): string {
+export function paintFilename(source: { sample?: string | null, source: string } | null, kind: ExportKind = 'drawing'): string {
   const raw = source?.sample ?? source?.source.replace(IMAGE_EXT_RE, '') ?? ''
-  return `pixmaler-paint-${exportSlug(raw) || FALLBACK}.png`
+  return `pixmaler-paint-${exportSlug(raw) || FALLBACK}${kind === 'card' ? '-card' : ''}.png`
 }

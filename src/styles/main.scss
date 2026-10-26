@@ -85,6 +85,11 @@
   @for $i from 1 through list.length($player-colours) {
     --player-colour-#{$i - 1}: #{list.nth($player-colours, $i)};
   }
+
+  // Canvas-drawn exports (the share card) can't read Sass tokens: brand lime for the wordmark and
+  // Paint's chip, and the ink every seat chip carries.
+  --accent: #{$accent};
+  --ink-on-colour: #{$ink-on-colour};
 }
 
 // Page-wide — per-component styles live in each .vue file's <style scoped>. The

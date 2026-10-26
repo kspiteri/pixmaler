@@ -7,9 +7,14 @@
   // A `.phase--fixed` variant — the shell, bar and fixed sizing come from `_phase.scss`.
   // Only the body-centring and the open settings panel's scroll are Paint's own.
 
-  // <Tagline> in the status cluster; the bar's flex gap owns the spacing.
+  // <Tagline> in the status cluster; the bar's flex gap owns the spacing. Decoration only, so it
+  // gives its room to Clear / Save / Share on a phone, where the bar can't wrap.
   &__sub {
     font-size: $fs-xs;
+
+    @media (max-width: $bp-mobile) {
+      display: none;
+    }
   }
 
   // Centres and pads like `.drawing__body`, and fills the phase body so the canvas pair

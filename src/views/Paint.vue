@@ -9,9 +9,9 @@ import { ChevronDown, ChevronUp, Eraser, Palette } from '@lucide/vue'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import Tagline from '@/components/elements/Tagline.vue'
-import { DrawBoard, ImagePicker, SaveDrawingButton } from '@/components/game'
+import { DrawBoard, ExportButton, ImagePicker } from '@/components/game'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
-import { appHref, askConfirm, keepsDrawing, loadPaintSession, paintFilename, playMusic, savePaintSession, stopMusic, useOrientation } from '@/lib'
+import { appHref, askConfirm, getClientId, getName, getShape, gridToPng, keepsDrawing, loadFaces, loadPaintSession, paintFilename, playMusic, savePaintSession, seatFor, shareCardPng, stopMusic, useOrientation } from '@/lib'
 
 const result = ref<PipelineResult | null>(null)
 const meta = ref<PickerMeta | null>(null)
@@ -51,6 +51,25 @@ const backHref = appHref()
 const orientation = useOrientation(() => result.value?.gridW, () => result.value?.gridH)
 
 const hasDrawing = computed(() => currentGrid.value.some(cell => cell !== -1))
+
+// Paint has no seat: the card's chip is brand lime with the player's own shape and face.
+const storedName = getName()
+const cardPlayer = storedName
+  ? { name: storedName, seat: { ...seatFor(0, { clientId: getClientId(), name: storedName, shape: getShape() })!, colour: 'var(--accent)' } }
+  : null
+// The share click never waits on the face generator, so warm it now while there's a card to draw.
+if (cardPlayer)
+  void loadFaces()
+
+function renderDrawing() {
+  const { palette, gridW, gridH } = result.value!
+  return gridToPng({ grid: currentGrid.value, palette, gridW, gridH })
+}
+
+function renderCard() {
+  const { palette, gridW, gridH, targetGrid } = result.value!
+  return shareCardPng({ palette, gridW, gridH, target: targetGrid, drawing: currentGrid.value, player: cardPlayer })
+}
 
 // Persist the drawing off the hot path — a stroke fires this often, so coalesce the writes.
 let saveTimer: ReturnType<typeof setTimeout> | null = null
@@ -154,19 +173,33 @@ const summary = computed(() => {
         </template>
         Clear drawing
       </Button>
-      <SaveDrawingButton
+      <ExportButton
         v-if="result && !settingsOpen"
+        intent="save"
         variant="tertiary"
         size="small"
         collapse
         :disabled="!hasDrawing"
-        :drawing="{ grid: currentGrid, palette: result.palette, gridW: result.gridW, gridH: result.gridH }"
+        :render="renderDrawing"
         :filename="paintFilename(meta)"
         label="Save image"
-        announcement="Saved your drawing"
+        subject="your drawing"
       >
         Save image
-      </SaveDrawingButton>
+      </ExportButton>
+      <ExportButton
+        v-if="result && !settingsOpen"
+        intent="share"
+        variant="tertiary"
+        size="small"
+        collapse
+        :render="renderCard"
+        :filename="paintFilename(meta, 'card')"
+        label="Share card"
+        subject="your card"
+      >
+        Share card
+      </ExportButton>
     </template>
 
     <div class="paint__row">
