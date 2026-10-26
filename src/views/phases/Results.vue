@@ -5,15 +5,16 @@
 // ranked gallery, each drawing once. The awards fade in just after the gallery so the reveal
 // travels bottom→top. The GM gets "Play again" in the status bar and, full size, under the reveal.
 
-import type { Player, RankedResult, ServerMsg, VoteCategory } from '@/lib'
+import type { ExportGrid, Player, RankedResult, ServerMsg, VoteCategory } from '@/lib'
 import { Power, RotateCcw } from '@lucide/vue'
 import { computed, inject, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import PlayerTag from '@/components/elements/PlayerTag.vue'
 import Tagline from '@/components/elements/Tagline.vue'
+import { SaveDrawingButton } from '@/components/game'
 import GameIcon from '@/components/game/shared/GameIcon.vue'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
-import { artRatio as artRatioFor, clientIdKey, prefersReducedMotion, seatFor, socketKey, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '@/lib'
+import { artRatio as artRatioFor, clientIdKey, drawingFilename, prefersReducedMotion, seatFor, socketKey, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '@/lib'
 
 const props = defineProps<{
   results: Results | null
@@ -173,6 +174,13 @@ function rankLabel(r: { rank: number, shared: boolean }): string {
   return (r.shared ? '=' : '') + ordinal(r.rank)
 }
 
+const roomCode = new URLSearchParams(location.search).get('room') ?? ''
+
+function exportOf(e: Entry): ExportGrid {
+  const r = props.results!
+  return { grid: e.grid, palette: r.palette, gridW: r.gridW, gridH: r.gridH }
+}
+
 // Slot key for the target image's hero canvas; never collides with a submissionId.
 const TARGET_SLOT = '__target__'
 
@@ -318,6 +326,16 @@ const { setSlot } = useReadonlyCanvases(
                   <p class="results__winner-votes">
                     {{ w.votes }} point{{ w.votes === 1 ? "" : "s" }}
                   </p>
+                  <SaveDrawingButton
+                    class="results__save"
+                    icon
+                    size="x-small"
+                    variant="subtle"
+                    :drawing="exportOf(w)"
+                    :filename="drawingFilename(roomCode, w.name)"
+                    :label="`Save ${w.name}'s drawing`"
+                    :announcement="`Saved ${w.name}'s drawing`"
+                  />
                 </div>
               </div>
             </div>
@@ -352,6 +370,16 @@ const { setSlot } = useReadonlyCanvases(
                       <p class="results__award-votes">
                         {{ it.count }} {{ a.cat === "funniest" ? "funny" : "best" }} vote{{ it.count === 1 ? "" : "s" }}
                       </p>
+                      <SaveDrawingButton
+                        class="results__save"
+                        icon
+                        size="x-small"
+                        variant="subtle"
+                        :drawing="exportOf(it.entry)"
+                        :filename="drawingFilename(roomCode, it.entry.name)"
+                        :label="`Save ${it.entry.name}'s drawing`"
+                        :announcement="`Saved ${it.entry.name}'s drawing`"
+                      />
                     </div>
                   </template>
                   <p v-else class="results__award-mention">
@@ -395,6 +423,16 @@ const { setSlot } = useReadonlyCanvases(
             <p class="results__item-votes">
               {{ entry.votes }} pt{{ entry.votes === 1 ? "" : "s" }}
             </p>
+            <SaveDrawingButton
+              class="results__save"
+              icon
+              size="x-small"
+              variant="subtle"
+              :drawing="exportOf(entry)"
+              :filename="drawingFilename(roomCode, entry.name)"
+              :label="`Save ${entry.name}'s drawing`"
+              :announcement="`Saved ${entry.name}'s drawing`"
+            />
           </div>
         </div>
 
