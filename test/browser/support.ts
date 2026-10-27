@@ -6,10 +6,18 @@ import { PixelCanvas } from '@/lib'
 
 export const palette = ['#101010', '#ff0000', '#00ff00', '#0000ff', '#ffff00']
 
+const mounted: PixelCanvas[] = []
+
 export function mountCanvas(gridW: number, gridH: number, opts: Partial<CanvasOptions> = {}): PixelCanvas {
   const pc = new PixelCanvas({ gridW, gridH, palette, editable: true, ...opts })
   document.body.append(pc.canvas)
+  mounted.push(pc)
   return pc
+}
+
+// Detaches every canvas mountCanvas created, so a held spray can't keep painting into later tests.
+export function destroyCanvases(): void {
+  mounted.splice(0).forEach(pc => pc.destroy())
 }
 
 export function cellPointer(pc: PixelCanvas, gridW: number, gridH: number) {

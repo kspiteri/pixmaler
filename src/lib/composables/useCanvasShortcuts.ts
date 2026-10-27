@@ -1,11 +1,11 @@
 // Keyboard and wheel shortcuts for the drawing surface, shared by DRAWING and /paint.
 // Behaviour only — the visible affordances (the ? panel, the swatch key badges) live in
 // the components. Window-level, so a shortcut fires whether or not the canvas holds focus;
-// the editing keys stand down while a form control (the brush slider) owns focus, so its
+// the editing keys stand down while a form control (the size slider) owns focus, so its
 // own arrow keys keep working.
 
 import type { PixelCanvas } from '../canvas/pixel'
-import type { BrushHandle, SwatchHandle } from '../canvas/tools'
+import type { SwatchHandle, ToolSizeHandle } from '../canvas/tools'
 import { onBeforeUnmount, onMounted } from 'vue'
 import { CANVAS_TOOLS } from '../canvas/pixel'
 import { shortcutsEnabled } from '../prefs/shortcuts'
@@ -13,8 +13,8 @@ import { shortcutsEnabled } from '../prefs/shortcuts'
 interface Refs {
   player: () => PixelCanvas | null
   swatch: () => SwatchHandle | null
-  brush: () => BrushHandle | null
-  // The editable canvas, so the scroll-wheel brush control only fires over it.
+  toolSize: () => ToolSizeHandle | null
+  // The editable canvas, so the scroll-wheel size control only fires over it.
   canvas: () => HTMLElement | null
 }
 
@@ -26,13 +26,13 @@ function inFormField(): boolean {
   return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable
 }
 
-export function useCanvasShortcuts({ player, swatch, brush, canvas }: Refs) {
-  function nudgeBrush(delta: number) {
+export function useCanvasShortcuts({ player, swatch, toolSize, canvas }: Refs) {
+  function nudgeToolSize(delta: number) {
     const pc = player()
     if (!pc)
       return
-    pc.setBrushSize(Math.min(pc.getBrushMax(), Math.max(1, pc.getBrushSize() + delta)))
-    brush()?.sync()
+    pc.setToolSize(pc.getToolSize() + delta)
+    toolSize()?.sync()
   }
 
   function onKeyDown(e: KeyboardEvent) {
@@ -71,8 +71,6 @@ export function useCanvasShortcuts({ player, swatch, brush, canvas }: Refs) {
       return
     }
 
-    const tools = CANVAS_TOOLS.length
-    const tool = CANVAS_TOOLS.indexOf(pc.getTool())
     switch (e.key) {
       case 'ArrowLeft':
         e.preventDefault()
@@ -83,13 +81,13 @@ export function useCanvasShortcuts({ player, swatch, brush, canvas }: Refs) {
         sw.select((sw.selectedIndex() + 1) % sw.count)
         break
       case 'ArrowUp':
+      case 'ArrowDown': {
         e.preventDefault()
-        pc.setTool(CANVAS_TOOLS[(tool - 1 + tools) % tools])
+        const n = CANVAS_TOOLS.length
+        const step = e.key === 'ArrowUp' ? -1 : 1
+        pc.setTool(CANVAS_TOOLS[(CANVAS_TOOLS.indexOf(pc.getTool()) + step + n) % n])
         break
-      case 'ArrowDown':
-        e.preventDefault()
-        pc.setTool(CANVAS_TOOLS[(tool + 1) % tools])
-        break
+      }
     }
   }
 
@@ -103,14 +101,14 @@ export function useCanvasShortcuts({ player, swatch, brush, canvas }: Refs) {
     swatch()?.showKeys(false)
   }
 
-  // Scroll over the canvas resizes the brush — up larger, down smaller. Non-passive so it
-  // can suppress the page scroll while the pointer is on the canvas.
+  // Scroll over the canvas resizes the active tool (up larger, down smaller; nothing on Fill).
+  // Non-passive so it can suppress the page scroll while the pointer is on the canvas.
   function onWheel(e: WheelEvent) {
     const c = canvas()
     if (!shortcutsEnabled.value || !c || !(e.target instanceof Node) || !c.contains(e.target))
       return
     e.preventDefault()
-    nudgeBrush(e.deltaY < 0 ? 1 : -1)
+    nudgeToolSize(e.deltaY < 0 ? 1 : -1)
   }
 
   onMounted(() => {

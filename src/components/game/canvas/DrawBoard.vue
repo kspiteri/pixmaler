@@ -3,9 +3,9 @@
 // phase and the /paint sandbox. `PixelCanvas` is imperative: it owns its
 // `<canvas>` and pixels, Vue only owns the surrounding layout.
 
-import type { BrushHandle, CanvasTool, SwatchHandle } from '@/lib'
+import type { CanvasTool, SwatchHandle, ToolSizeHandle } from '@/lib'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
-import { buildBrushControls, buildSwatch, PixelCanvas, shortcutsEnabled, useAppLayout, useCanvasShortcuts } from '@/lib'
+import { buildSwatch, buildToolSizeControls, PixelCanvas, shortcutsEnabled, useAppLayout, useCanvasShortcuts } from '@/lib'
 import PaletteTools from './PaletteTools.vue'
 
 interface Props {
@@ -49,20 +49,20 @@ const drawSlot = useTemplateRef<HTMLDivElement>('drawSlot')
 let target: PixelCanvas | null = null
 const playerRef = shallowRef<PixelCanvas | null>(null)
 
-// The swatch and brush handles, kept so the keyboard shortcuts can drive them; the
+// The swatch and tool-size handles, kept so the keyboard shortcuts can drive them; the
 // getters below stay valid because both are assigned in onMounted before any keypress.
 let swatchHandle: SwatchHandle | null = null
-let brushHandle: BrushHandle | null = null
+let toolSizeHandle: ToolSizeHandle | null = null
 useCanvasShortcuts({
   player: () => playerRef.value,
   swatch: () => swatchHandle,
-  brush: () => brushHandle,
+  toolSize: () => toolSizeHandle,
   canvas: () => playerRef.value?.canvas ?? null,
 })
 
-// Imperative palette + brush DOM handed to <PaletteTools>; shallowRef, not reactive data.
+// Imperative palette + size-slider DOM handed to <PaletteTools>; shallowRef, not reactive data.
 const swatchEl = shallowRef<HTMLElement | null>(null)
-const brushEl = shallowRef<HTMLElement | null>(null)
+const toolSizeEl = shallowRef<HTMLElement | null>(null)
 
 // Mirrors `player.canUndo()` for the Undo button; refreshed from `onUpdate`.
 const canUndo = ref(false)
@@ -141,18 +141,18 @@ onMounted(() => {
     },
     onToolChange: (next) => {
       tool.value = next
-      brushHandle?.sync()
+      toolSizeHandle?.sync()
     },
   })
   player.canvas.classList.add('canvas-pair__draw-canvas')
   drawSlot.value!.appendChild(player.canvas)
 
   // Publish what the panel needs. Order matters: `player` before the imperative controls,
-  // so a subscriber watching it reads valid swatchEl/brushEl.
+  // so a subscriber watching it reads valid swatchEl/toolSizeEl.
   playerRef.value = player
   swatchEl.value = swatch.element
-  brushHandle = buildBrushControls(player)
-  brushEl.value = brushHandle.element
+  toolSizeHandle = buildToolSizeControls(player)
+  toolSizeEl.value = toolSizeHandle.element
   // The reference now lives in the palette panel (docked on every viewport), so anchor
   // the panel's default position to the top-left of the editable canvas area.
   anchorEl.value = drawSlot.value
@@ -197,9 +197,9 @@ onBeforeUnmount(() => {
   playerRef.value?.destroy()
   playerRef.value = null
   swatchEl.value = null
-  brushEl.value = null
+  toolSizeEl.value = null
   swatchHandle = null
-  brushHandle = null
+  toolSizeHandle = null
 })
 </script>
 
@@ -212,7 +212,7 @@ onBeforeUnmount(() => {
     <PaletteTools
       :player="playerRef"
       :swatch-el="swatchEl"
-      :brush-el="brushEl"
+      :tool-size-el="toolSizeEl"
       :variant="variant"
       :anchor="anchorEl"
       :flagged-done="flaggedDone"

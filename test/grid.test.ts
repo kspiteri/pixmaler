@@ -199,12 +199,17 @@ describe('spraySample', () => {
     }
   })
 
+  it('sprinkles: one burst paints well under a tenth of the disc', () => {
+    const disc = discFootprint(10, 7, 15, 30, 20)
+    expect(spraySample(10, 7, 15, 30, 20, sequence(0.5)).length).toBeLessThan(disc.length / 10)
+  })
+
   it('keeps to the same checker whichever cell the disc is centred on', () => {
     // An odd-sum centre: the plus at size 3 has its four arms on the checker, not the centre.
     const arms = shape(spraySample(5, 4, 3, 20, 20, sequence(0, 0.3, 0.6, 0.9)), 20)
-    for (const cell of arms)
-      expect(['4,4', '5,3', '5,5', '6,4']).toContain(cell)
-    expect(shape(spraySample(5, 5, 3, 20, 20, Math.random), 20)).toEqual(['5,5'])
+    expect(arms).toHaveLength(1)
+    expect(['4,4', '5,3', '5,5', '6,4']).toContain(arms[0])
+    expect(shape(spraySample(5, 5, 3, 20, 20, sequence(0.5)), 20)).toEqual(['5,5'])
   })
 })
 

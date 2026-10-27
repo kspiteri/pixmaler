@@ -1,6 +1,6 @@
 // The editable drawing surface: cell rendering, hover preview, the read-only crosshair
 // marker, undo, the drawing tools, and unified pointer input. Geometry lives in `./grid`,
-// the swatch and brush widgets in `./tools`.
+// the swatch and size-slider widgets in `./tools`.
 
 import type { Cell } from './grid'
 import { brushMaxFor, defaultBrushFor } from './aspect'
@@ -8,6 +8,7 @@ import { brushFootprint, cellAt, discFootprint, floodFill, indexOf, linePath, sp
 
 export const CANVAS_TOOLS = ['pencil', 'brush', 'fill', 'spray'] as const
 export type CanvasTool = typeof CANVAS_TOOLS[number]
+export const TOOL_LABELS: Record<CanvasTool, string> = { pencil: 'Pencil', brush: 'Brush', fill: 'Fill', spray: 'Spray' }
 type SizedTool = Exclude<CanvasTool, 'fill'>
 
 // A 2-wide disc is just Pencil's 2×2 square.
@@ -40,8 +41,8 @@ const CELL_SIZE = 14 // px per grid cell at 1× scale — scales up on large scr
 const EMPTY_LIGHT = '#ffffff'
 const EMPTY_DARK = '#f1f1f4'
 
-// Brush sizing (see `./aspect`) scales with grid resolution so the brush stays proportional:
-// small grids get a 1-cell brush, large ones a chunkier one.
+// Tool sizes (see `./aspect`) scale with grid resolution so strokes stay proportional:
+// small grids start at a 1-cell pencil, large ones a chunkier one.
 
 export class PixelCanvas {
   readonly canvas: HTMLCanvasElement
@@ -50,15 +51,17 @@ export class PixelCanvas {
   private opts: CanvasOptions
   private selectedColor = 0
   private tool: CanvasTool = 'pencil'
+  // Fixed at pointerdown, so a tool switch mid-stroke applies to the next press.
+  private strokeTool: CanvasTool = 'pencil'
   private sizes: Record<SizedTool, number>
-  private brushMax = 8
+  private sizeMax = 8
   private painting = false
   private locked = false
   private lastCell = -1
   private lastCx = -1
   private lastCy = -1
-  // Where the cursor currently sits (for refreshing the hover preview when
-  // brush size changes mid-hover). Null when the cursor is off-canvas.
+  // Where the cursor currently sits: where Spray's loop lands, and what the hover preview
+  // redraws when the tool or its size changes. Null when the cursor is off-canvas.
   private cursorCell: { x: number, y: number } | null = null
   // Cells currently shown as a hover preview, keyed by `y * gridW + x` → original
   // palette index. We restore these when the hover moves or the cursor leaves.
@@ -93,13 +96,13 @@ export class PixelCanvas {
   constructor(opts: CanvasOptions) {
     this.opts = opts
     this.cellPx = opts.cellPx ?? CELL_SIZE
-    this.brushMax = brushMaxFor(opts.gridW, opts.gridH)
+    this.sizeMax = brushMaxFor(opts.gridW, opts.gridH)
     const start = defaultBrushFor(opts.gridW, opts.gridH)
     this.sizes = {
       pencil: start,
       brush: Math.max(TOOL_MIN.brush, start),
       // A small spray covers too few checker cells to read as texture.
-      spray: Math.max(TOOL_MIN.spray, Math.round(this.brushMax * 0.75)),
+      spray: Math.max(TOOL_MIN.spray, Math.round(this.sizeMax * 0.75)),
     }
     // Read-only canvases render `targetGrid`; editable ones start blank (-1 = untouched,
     // rendered transparent) unless `initialGrid` restores a drawing in progress.
@@ -182,25 +185,24 @@ export class PixelCanvas {
   }
 
   // A no-op on Fill.
-  setBrushSize(size: number) {
+  setToolSize(size: number) {
     if (this.tool === 'fill')
       return
-    this.sizes[this.tool] = Math.max(TOOL_MIN[this.tool], Math.min(this.brushMax, size))
+    this.sizes[this.tool] = Math.max(TOOL_MIN[this.tool], Math.min(this.sizeMax, size))
     this.refreshHover()
   }
 
-  getBrushSize(): number {
+  // 0 on Fill, which has no size.
+  getToolSize(): number {
     return this.tool === 'fill' ? 0 : this.sizes[this.tool]
   }
 
-  // 0 on Fill, as is getBrushSize.
-  getBrushMin(): number {
+  getToolSizeMin(): number {
     return this.tool === 'fill' ? 0 : TOOL_MIN[this.tool]
   }
 
-  // Max brush for this grid (drives the slider's upper bound).
-  getBrushMax(): number {
-    return this.brushMax
+  getToolSizeMax(): number {
+    return this.sizeMax
   }
 
   lock() {
@@ -374,9 +376,9 @@ export class PixelCanvas {
       this.showHover(this.cursorCell.x, this.cursorCell.y)
   }
 
-  private footprint(cx: number, cy: number): number[] {
+  private footprint(cx: number, cy: number, tool: CanvasTool): number[] {
     const { gridW, gridH } = this.opts
-    switch (this.tool) {
+    switch (tool) {
       case 'pencil':
         return brushFootprint(cx, cy, this.sizes.pencil, gridW, gridH)
       case 'brush':
@@ -396,7 +398,7 @@ export class PixelCanvas {
     const { gridW, palette } = this.opts
     const next = new Map<number, number>()
 
-    let cells = this.footprint(cx, cy)
+    let cells = this.footprint(cx, cy, this.tool)
     if (this.tool === 'spray') {
       // Outline only: a solid preview would overstate what a burst covers.
       const disc = new Set(cells)
@@ -462,6 +464,9 @@ export class PixelCanvas {
           this.pickAt(e.clientX, e.clientY)
         return
       }
+      // A second finger mustn't restart the stroke or start a second spray loop.
+      if (this.painting)
+        return
       if (this.tool === 'fill') {
         this.fillAt(e.clientX, e.clientY)
         return
@@ -473,8 +478,9 @@ export class PixelCanvas {
       this.pendingSnapshot = [...this.grid]
       this.strokeCommitted = false
       this.painting = true
+      this.strokeTool = this.tool
       this.resetStroke()
-      if (this.tool === 'spray') {
+      if (this.strokeTool === 'spray') {
         // The outline preview isn't paint, so restore it rather than promote it.
         this.clearHover()
         const { x, y } = this.eventCell(e.clientX, e.clientY)
@@ -499,7 +505,7 @@ export class PixelCanvas {
       if (this.painting) {
         if (inBounds) {
           // Spray's frame loop reads `cursorCell` rather than painting on move.
-          if (this.tool !== 'spray')
+          if (this.strokeTool !== 'spray')
             this.paintAt(e.clientX, e.clientY)
           this.cursorCell = { x, y }
           this.opts.onHover?.(this.cursorCell)
@@ -536,6 +542,8 @@ export class PixelCanvas {
     }
     el.addEventListener('pointerup', endStroke, { signal })
     el.addEventListener('pointercancel', endStroke, { signal })
+    // Capture ends with the pointer even when its pointerup never reaches us, so a stroke can't stay stuck.
+    el.addEventListener('lostpointercapture', endStroke, { signal })
 
     // Hides the hover preview only. An in-progress stroke is NOT ended — capture keeps
     // delivering moves so a drag can come back in.
@@ -621,7 +629,7 @@ export class PixelCanvas {
       return
     this.lastCell = cell
 
-    if (this.recolour(this.footprint(cx, cy)))
+    if (this.recolour(this.footprint(cx, cy, this.strokeTool)))
       this.strokeChanged()
   }
 

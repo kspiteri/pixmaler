@@ -1,7 +1,7 @@
 <script setup lang="ts">
-// Palette tools panel — swatch + brush + undo/clear, teleported to <body> so it can be
-// dragged (desktop) or dock full-width to the bottom (mobile). The swatch and brush are
-// imperative DOM built by the parent; we only mount them in slots.
+// Palette tools panel — swatch, tool switcher, size slider and undo/clear, teleported to <body>
+// so it can be dragged (desktop) or dock full-width to the bottom (mobile). The swatch and size
+// slider are imperative DOM built by the parent; we only mount them in slots.
 
 import type { CanvasTool, PixelCanvas } from '@/lib'
 import { Check, ChevronDown, ChevronUp, Image as ImageIcon, Trash2, Undo2 } from '@lucide/vue'
@@ -15,9 +15,9 @@ import ToolPicker from './palette/ToolPicker.vue'
 interface Props {
   // The editable PixelCanvas the buttons drive; null for one tick while the parent mounts it.
   player: PixelCanvas | null
-  // Pre-built imperative DOM for the palette + brush slider; the parent owns their lifecycle.
+  // Pre-built imperative DOM for the palette + size slider; the parent owns their lifecycle.
   swatchEl: HTMLElement | null
-  brushEl: HTMLElement | null
+  toolSizeEl: HTMLElement | null
   // "paint" → show Clear (sandbox). "drawing" → show Done (Ready) instead.
   variant: 'drawing' | 'paint'
   // Element to anchor the panel's default position under; falls back to (16, 16).
@@ -40,7 +40,7 @@ const emit = defineEmits<{
 }>()
 
 const swatchSlot = useTemplateRef<HTMLDivElement>('swatchSlot')
-const brushSlot = useTemplateRef<HTMLDivElement>('brushSlot')
+const toolSizeSlot = useTemplateRef<HTMLDivElement>('toolSizeSlot')
 const panelEl = useTemplateRef<HTMLDivElement>('panelEl')
 const dockTargetSlot = useTemplateRef<HTMLDivElement>('dockTargetSlot')
 
@@ -155,18 +155,18 @@ function schedulePublishDockHeight() {
   requestAnimationFrame(() => requestAnimationFrame(publishDockHeight))
 }
 
-// Mount the parent's imperative swatch/brush DOM into our slots. `watch`, not onMounted:
+// Mount the parent's imperative swatch/size-slider DOM into our slots. `watch`, not onMounted:
 // the parent builds them in its own onMounted, after we've mounted.
 watch(
-  () => [props.swatchEl, props.brushEl] as const,
+  () => [props.swatchEl, props.toolSizeEl] as const,
   async ([sw, br]) => {
     if (!sw || !br)
       return
     await nextTick()
     if (swatchSlot.value && !swatchSlot.value.contains(sw))
       swatchSlot.value.appendChild(sw)
-    if (brushSlot.value && !brushSlot.value.contains(br))
-      brushSlot.value.appendChild(br)
+    if (toolSizeSlot.value && !toolSizeSlot.value.contains(br))
+      toolSizeSlot.value.appendChild(br)
     snapToDefault()
     panelVisible.value = true
     placeTarget()
@@ -283,7 +283,7 @@ function clear() {
           <div ref="swatchSlot" />
           <div class="tools-panel__size">
             <ToolPicker :model-value="tool" @update:model-value="player?.setTool($event)" />
-            <div ref="brushSlot" class="tools-panel__brush" />
+            <div ref="toolSizeSlot" class="tools-panel__slider" />
           </div>
           <div class="tools-panel__row">
             <div class="tools-panel__actions">

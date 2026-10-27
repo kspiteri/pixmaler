@@ -1,10 +1,10 @@
 // BS — palette and shortcuts: the swatch widget, the keyboard/wheel shortcuts and the
 // eyedropper-to-swatch wiring, all of which need a real DOM and window events.
 
-import type { BrushHandle, SwatchHandle } from '@/lib'
+import type { SwatchHandle, ToolSizeHandle } from '@/lib'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createApp, defineComponent, h } from 'vue'
-import { buildBrushControls, buildSwatch, PixelCanvas, shortcutsEnabled, useCanvasShortcuts } from '@/lib'
+import { buildSwatch, buildToolSizeControls, PixelCanvas, shortcutsEnabled, useCanvasShortcuts } from '@/lib'
 import { cellPointer, palette, pointer } from './support'
 
 const unmounts: Array<() => void> = []
@@ -22,16 +22,16 @@ function mountShortcuts(refs: Parameters<typeof useCanvasShortcuts>[0]) {
   unmounts.push(() => app.unmount())
 }
 
-// A canvas + swatch + brush wired together as DrawBoard wires them, with the shortcuts live.
+// A canvas + swatch + size slider wired together as DrawBoard wires them, with the shortcuts live.
 function wired(gridW = 8, gridH = 8) {
-  let brush: BrushHandle | null = null
-  const pc = new PixelCanvas({ gridW, gridH, palette, editable: true, onToolChange: () => brush?.sync() })
+  let toolSize: ToolSizeHandle | null = null
+  const pc = new PixelCanvas({ gridW, gridH, palette, editable: true, onToolChange: () => toolSize?.sync() })
   const sw = buildSwatch(palette, i => pc.selectColor(i))
-  brush = buildBrushControls(pc)
-  document.body.append(pc.canvas, sw.element, brush.element)
-  mountShortcuts({ player: () => pc, swatch: () => sw, brush: () => brush, canvas: () => pc.canvas })
-  const slider = brush.element.querySelector('input')!
-  return { pc, sw, brush, slider }
+  toolSize = buildToolSizeControls(pc)
+  document.body.append(pc.canvas, sw.element, toolSize.element)
+  mountShortcuts({ player: () => pc, swatch: () => sw, toolSize: () => toolSize, canvas: () => pc.canvas })
+  const slider = toolSize.element.querySelector('input')!
+  return { pc, sw, toolSize, slider }
 }
 
 function wheel(pc: PixelCanvas, deltaY: number) {
@@ -96,7 +96,7 @@ describe('palette & shortcuts (browser)', () => {
     expect(refs.swatch.selectedIndex()).toBe(1) // gated off → no pick
   })
 
-  it('arrow keys step through the swatch, wrapping', () => {
+  it('left/right step through the swatch, wrapping', () => {
     const { sw } = wired()
     sw.select(0)
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }))
@@ -114,6 +114,8 @@ describe('palette & shortcuts (browser)', () => {
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))
     expect(pc.getTool()).toBe('spray') // wrapped past pencil
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    expect(pc.getTool()).toBe('pencil') // and back round
     expect(sw.selectedIndex()).toBe(2)
   })
 
@@ -127,13 +129,13 @@ describe('palette & shortcuts (browser)', () => {
     expect(sw.element.classList.contains('swatch--keys')).toBe(false)
   })
 
-  it('the scroll wheel over the canvas resizes the brush', () => {
+  it('the scroll wheel over the canvas resizes the active tool', () => {
     const { pc } = wired()
-    pc.setBrushSize(3)
+    pc.setToolSize(3)
     wheel(pc, -1)
-    expect(pc.getBrushSize()).toBe(4)
+    expect(pc.getToolSize()).toBe(4)
     wheel(pc, 1)
-    expect(pc.getBrushSize()).toBe(3)
+    expect(pc.getToolSize()).toBe(3)
   })
 
   it('the size slider follows the active tool, each keeping its own size', () => {
@@ -144,21 +146,37 @@ describe('palette & shortcuts (browser)', () => {
     slider.value = '6'
     slider.dispatchEvent(new Event('input'))
     pc.setTool('pencil')
-    pc.setBrushSize(2)
-    expect(slider.value).not.toBe('6')
+    expect(slider.value).toBe('1') // Pencil's own size on an 8×8 grid
     pc.setTool('brush')
     expect(slider.value).toBe('6')
-    expect(pc.getBrushSize()).toBe(6)
+    expect(pc.getToolSize()).toBe(6)
   })
 
-  it('fill has no size: the slider is disabled and the wheel does nothing', () => {
+  it('brush and spray never shrink below 3, whatever drives the size', () => {
+    const { pc } = wired()
+    for (const tool of ['brush', 'spray'] as const) {
+      pc.setTool(tool)
+      pc.setToolSize(3)
+      wheel(pc, 1)
+      expect(pc.getToolSize()).toBe(3)
+      pc.setToolSize(1)
+      expect(pc.getToolSize()).toBe(3)
+    }
+  })
+
+  it('fill has no size: the slider rests at its start, says so, and the wheel does nothing', () => {
     const { pc, slider } = wired()
-    pc.setBrushSize(2)
+    wheel(pc, -1) // Pencil 1 → 2, through the shortcut that re-syncs the slider
+    expect(slider.value).toBe('2')
     pc.setTool('fill')
     expect(slider.disabled).toBe(true)
+    expect(slider.value).toBe(slider.min)
+    expect(slider.getAttribute('aria-valuetext')).toBe('Fill has no size')
     wheel(pc, -1)
     pc.setTool('pencil')
     expect(slider.disabled).toBe(false)
-    expect(pc.getBrushSize()).toBe(2)
+    expect(slider.hasAttribute('aria-valuetext')).toBe(false)
+    expect(slider.value).toBe('2')
+    expect(pc.getToolSize()).toBe(2)
   })
 })

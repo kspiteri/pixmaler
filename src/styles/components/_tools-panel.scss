@@ -1,5 +1,5 @@
 // Static layout for DrawBoard.vue — the canvas-pair flex row and the floating tools
-// panel chrome. The swatch/brush DOM is built imperatively by `lib/canvas/tools.ts` and
+// panel chrome. The swatch/size-slider DOM is built imperatively by `lib/canvas/tools.ts` and
 // styled here as descendants (see the foot of this file), so the component has no scoped block.
 
 @use 'tokens' as *;
@@ -125,7 +125,7 @@
     gap: var(--panel-gap);
   }
 
-  // Wraps swatch + brush + actions so the mobile docked bar can sit the target
+  // Wraps swatch + tools + size slider + actions so the mobile docked bar can sit the target
   // reference beside the whole block; elsewhere it's the only body child.
   &__controls {
     display: flex;
@@ -143,6 +143,7 @@
 
   &__tools .segmented__item {
     flex: 1;
+    padding-block: var(--btn-pad);
   }
 
   // Reference disclosure — full-width in the desktop panel with a collapse toggle that
@@ -267,16 +268,20 @@
       gap: var(--panel-gap);
     }
 
-    // One line with the slider where it fits; a narrow phone wraps it rather than crushing it.
+    // One line with the slider while it keeps a usable track; a phone wraps it under the tools,
+    // which then stretch across their own line.
     .tools-panel__size {
       flex-direction: row;
       flex-wrap: wrap;
       align-items: center;
     }
+    .tools-panel__tools {
+      flex: 1 0 auto;
+    }
     // `min-width: 0`: a range input's ~129px intrinsic width still counts toward the slot's
     // min-content, so without it the slider pushes the label past the column.
-    .tools-panel__brush {
-      flex: 1 1 8rem;
+    .tools-panel__slider {
+      flex: 1 1 12rem;
       min-width: 0;
     }
 
@@ -382,7 +387,7 @@
     }
   }
 
-  // ── The imperative swatch + brush DOM (built by lib/canvas/tools.ts) ─────────
+  // ── The imperative swatch + size-slider DOM (built by lib/canvas/tools.ts) ───
   // Styled as descendants, not in a scoped `:deep()` block: the classes are unique to the
   // palette, so `.tools-panel .swatch*` reaches the injected DOM with no scope-id. `--sw*`
   // (above) drive the cell size the S / M / L control sets.
@@ -437,7 +442,7 @@
     display: flex;
   }
 
-  .brush {
+  .tool-size {
     display: flex;
     align-items: center;
     gap: $gap-2;
@@ -446,7 +451,7 @@
     color: $muted;
   }
 
-  .brush__label {
+  .tool-size__label {
     min-width: 56px;
     flex-shrink: 0;
     white-space: nowrap;

@@ -1,9 +1,10 @@
-// DOM tool widgets for a `PixelCanvas`: the colour swatch and the brush-size slider.
+// DOM tool widgets for a `PixelCanvas`: the colour swatch and the tool-size slider.
 // Behaviour only — appearance lives in the consuming component's CSS, which is why these
 // build bare elements with class names rather than carrying any styling of their own.
 
-import type { CanvasTool, PixelCanvas } from './pixel'
+import type { PixelCanvas } from './pixel'
 import { colorName } from './palette'
+import { TOOL_LABELS } from './pixel'
 
 // ── Swatch ────────────────────────────────────────────────────────────────────
 
@@ -139,58 +140,62 @@ export function buildSwatch(
   }
 }
 
-// ── Brush size ────────────────────────────────────────────────────────────────
+// ── Tool size ─────────────────────────────────────────────────────────────────
 
-export interface BrushHandle {
+export interface ToolSizeHandle {
   element: HTMLElement
   // Re-read the active tool's range and size into the slider and label, after a tool
   // change or a shortcut changed it without going through the slider's own input event.
   sync: () => void
 }
 
-const TOOL_LABEL: Record<CanvasTool, string> = { pencil: 'Pencil', brush: 'Brush', fill: 'Fill', spray: 'Spray' }
-
 // Disabled, not hidden, on Fill so the docked panel doesn't reflow on a tool switch.
-export function buildBrushControls(pc: PixelCanvas): BrushHandle {
+export function buildToolSizeControls(pc: PixelCanvas): ToolSizeHandle {
   const wrap = document.createElement('div')
-  wrap.className = 'brush'
+  wrap.className = 'tool-size'
 
   const slider = document.createElement('input')
   slider.className = 'slider'
   slider.type = 'range'
 
   const label = document.createElement('span')
-  label.className = 'brush__label'
+  label.className = 'tool-size__label'
   // The slider already speaks its value, so the visible copy is decoration to AT.
   label.setAttribute('aria-hidden', 'true')
 
   function render() {
-    const name = TOOL_LABEL[pc.getTool()]
-    const size = pc.getBrushSize()
-    const min = pc.getBrushMin()
-    const max = pc.getBrushMax()
-    label.textContent = size ? `${name} ${size}` : name
+    const tool = pc.getTool()
+    const size = pc.getToolSize()
+    const min = pc.getToolSizeMin()
+    const max = pc.getToolSizeMax()
+    label.textContent = tool === 'fill' ? TOOL_LABELS[tool] : `${TOOL_LABELS[tool]} ${size}`
     // 0–1 thumb position for the track fill (see _slider.scss).
-    slider.style.setProperty('--fill', String(size && max > min ? (size - min) / (max - min) : 0))
+    slider.style.setProperty('--fill', String(tool !== 'fill' && max > min ? (size - min) / (max - min) : 0))
   }
 
   function sync() {
     const tool = pc.getTool()
     // Native range announces min/max/value; it only lacked a name.
-    slider.setAttribute('aria-label', `${TOOL_LABEL[tool]} size`)
-    slider.disabled = pc.getBrushSize() === 0
-    if (!slider.disabled) {
+    slider.setAttribute('aria-label', `${TOOL_LABELS[tool]} size`)
+    slider.disabled = tool === 'fill'
+    if (slider.disabled) {
+      // At its start the thumb hides the empty track fill, and the old size isn't announced.
+      slider.value = slider.min
+      slider.setAttribute('aria-valuetext', `${TOOL_LABELS[tool]} has no size`)
+    }
+    else {
+      slider.removeAttribute('aria-valuetext')
       // Range before value, or the old range clamps the new value.
-      slider.min = String(pc.getBrushMin())
-      slider.max = String(pc.getBrushMax())
-      slider.value = String(pc.getBrushSize())
+      slider.min = String(pc.getToolSizeMin())
+      slider.max = String(pc.getToolSizeMax())
+      slider.value = String(pc.getToolSize())
     }
     render()
   }
   sync()
 
   slider.addEventListener('input', () => {
-    pc.setBrushSize(Number.parseInt(slider.value, 10))
+    pc.setToolSize(Number.parseInt(slider.value, 10))
     render()
   })
 
