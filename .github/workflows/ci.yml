@@ -54,8 +54,8 @@ jobs:
       # deriving `isGm` rather than trusting it, spectators excluded from progress.
       # They are only a safety net if they run without being remembered.
       #
-      # `test:unit` is the Node suite only: the browser-mode smoke needs a Chromium
-      # download and runs on a developer's `pnpm test`, deliberately not in CI.
+      # `test:unit` is the Node suite only: the browser suites need the Chromium, Firefox and
+      # WebKit engines and run on a developer's `pnpm test`, deliberately not in CI.
       - name: Test
         run: pnpm test:unit
 

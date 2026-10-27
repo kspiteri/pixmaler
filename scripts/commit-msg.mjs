@@ -16,17 +16,17 @@
 import { readFileSync } from 'node:fs'
 
 // What each type means here. The version column is release-please's behaviour, not a
-// convention we invented — `feat` -> minor, `fix` -> patch, everything else -> no bump
-// but it still appears in the notes.
+// convention we invented — `feat` -> minor, `fix`/`perf` -> patch, and the other types
+// release-please-config.json shows in the notes cut a patch on their own; hidden ones never do.
 const TYPES = {
   feat: ['a new capability a player can notice', 'minor'],
   fix: ['a defect repaired', 'patch'],
   perf: ['faster or lighter, same behaviour', 'patch'],
-  refactor: ['same behaviour, better shape', '—'],
+  refactor: ['same behaviour, better shape', 'patch on its own'],
   docs: ['documentation only', '—'],
   test: ['tests only', '—'],
-  build: ['build, deps or tooling', '—'],
-  ci: ['workflows and automation', '—'],
+  build: ['build, deps or tooling', 'patch on its own'],
+  ci: ['workflows and automation', 'patch on its own'],
   chore: ['housekeeping that fits nowhere else', '—'],
   style: ['formatting only, no code change', '—'],
   revert: ['undoes an earlier commit', '—'],
@@ -34,7 +34,7 @@ const TYPES = {
 
 // Optional, but they group the release notes usefully — deliberately mirroring the
 // `area:*` labels on the issue tracker so a note and an issue describe the same place.
-const SCOPES = ['lobby', 'drawing', 'voting', 'results', 'server', 'pipeline', 'a11y', 'canvas', 'audio', 'deps', 'ci']
+const SCOPES = ['lobby', 'drawing', 'voting', 'results', 'server', 'pipeline', 'a11y', 'canvas', 'audio', 'deps', 'ci', 'releasing']
 
 const path = process.argv[2]
 if (!path) {

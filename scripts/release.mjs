@@ -73,9 +73,11 @@ async function main() {
   run('pnpm', ['exec', 'wrangler', 'deploy', '--dry-run'])
 
   // 2. Deploy the Worker first — but only if it actually changed since the last tag, because a
-  // deploy ends every live game.
+  // deploy ends every live game. These are everything the Worker bundle reads; keep in step with
+  // party/'s imports.
   const lastTag = capture('git', ['describe', '--tags', '--abbrev=0'])
-  const serverDiff = capture('git', ['diff', '--name-only', `${lastTag}..HEAD`, '--', 'party', 'src/lib/protocol'])
+  const workerPaths = ['party', 'src/lib/protocol', 'src/lib/content/words.ts', 'wrangler.jsonc']
+  const serverDiff = capture('git', ['diff', '--name-only', `${lastTag}..HEAD`, '--', ...workerPaths])
   if (serverDiff) {
     console.log(`\n\u25B6 the Worker changed since ${lastTag}:\n${serverDiff}`)
     if (!(await confirm('Deploy the Worker now? This ENDS every live game.')))

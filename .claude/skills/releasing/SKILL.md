@@ -29,9 +29,9 @@ pnpm release --theme "Two Words"  # preset the release name (else you're asked)
 
 1. **Preflight** — must be on a clean `main`, `git pull --ff-only`.
 2. **Gates** — `lint`, `lint:css`, `typecheck`, `test`, `build`, then `wrangler deploy --dry-run`.
-3. **Worker deploy — only if it changed.** Diffs `party/` and `src/lib/protocol/` since the last tag;
-   if non-empty, prompts, then `pnpm wr:deploy`. **Server before merge** — an updated server tolerates
-   older clients while the reverse breaks live rooms.
+3. **Worker deploy — only if it changed.** Diffs `party/`, `src/lib/protocol/`, `src/lib/content/words.ts`
+   and `wrangler.jsonc` since the last tag; if non-empty, prompts, then `pnpm wr:deploy`. **Server before
+   merge** — an updated server tolerates older clients while the reverse breaks live rooms.
 4. **Merge the Release PR** (`gh pr merge --squash`) — this tags, publishes the GitHub release, and
    triggers the Pages deploy.
 5. **Watch the run** (`gh run watch <id> --exit-status`).
@@ -80,5 +80,6 @@ successful `release` job's outputs so `pages` runs again).
 - Tags are **unprefixed** (`0.16.0`); release **titles** carry the `v` (`v0.16.0 …`). `gh release edit`
   takes the tag.
 - Pre-1.0: a `feat` bumps the **minor**, `!`/`BREAKING CHANGE` never forces 1.0 (`bump-minor-pre-major`).
-- `refactor`/`build`/`ci` show in the notes without bumping; `docs`/`test`/`chore`/`style` are hidden.
+- `refactor`/`build`/`ci` appear under *Under the hood* and, on their own, cut a patch release;
+  `docs`/`test`/`chore`/`style` are hidden and never trigger one.
 - After releasing, **close the milestone** it completes, if any.
