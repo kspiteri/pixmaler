@@ -69,16 +69,17 @@ function download(blob: Blob, filename: string): void {
   setTimeout(URL.revokeObjectURL, REVOKE_AFTER_MS, url)
 }
 
-export async function deliverFile(blob: Blob, filename: string, intent: DeliverIntent): Promise<DeliverOutcome> {
+export async function deliverFile(blob: Blob, filename: string, intent: DeliverIntent, title: string): Promise<DeliverOutcome> {
   const file = new File([blob], filename, { type: blob.type })
   if (prefersShareSheet(intent, canShareFile(file), deviceSignals())) {
     try {
       // Files plus a title only: some share targets drop the file when a URL rides along.
-      await navigator.share({ files: [file], title: filename })
+      await navigator.share({ files: [file], title })
       return 'shared'
     }
     catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError')
+      // InvalidStateError: a sheet is already open; a surprise download on top would be worse.
+      if (err instanceof DOMException && (err.name === 'AbortError' || err.name === 'InvalidStateError'))
         return 'cancelled'
       // Anything else (lost user activation, a target refusing the file) falls back to a download.
     }

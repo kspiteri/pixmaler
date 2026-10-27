@@ -39,6 +39,7 @@ describe('isHandheld', () => {
     expect(isHandheld(device({ userAgent: IPHONE_UA }))).toBe(true)
     expect(isHandheld(device({ userAgent: MAC_UA, maxTouchPoints: 5 }))).toBe(true)
     expect(isHandheld(device({ userAgent: MAC_UA, maxTouchPoints: 0 }))).toBe(false)
+    expect(isHandheld(device({ userAgent: MAC_UA, maxTouchPoints: 1 }))).toBe(false)
   })
 
   it('falls back to the coarse pointer only when no platform signal decides', () => {
@@ -123,7 +124,7 @@ describe('export filenames', () => {
 describe('cardLayout', () => {
   const LONG_EDGE = 1600
   // Real grid shapes: the 3:2 / 1:1 / 2:3 ratios at small, typical and the largest detail.
-  const GRIDS: Array<[number, number]> = [[61, 41], [41, 61], [32, 32], [12, 8], [384, 256], [256, 384], [300, 300]]
+  const GRIDS: Array<[number, number]> = [[61, 41], [41, 61], [32, 32], [12, 8], [384, 256], [256, 384], [300, 300], [512, 512], [512, 341], [341, 512]]
 
   function panelsOverlap(l: CardLayout): boolean {
     const a = l.target

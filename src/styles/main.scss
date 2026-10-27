@@ -88,7 +88,7 @@
 
   // Canvas-drawn exports (the share card) can't read Sass tokens: brand lime for the wordmark and
   // Paint's chip, and the ink every seat chip carries.
-  --accent: #{$accent};
+  --accent-fill: #{$accent};
   --ink-on-colour: #{$ink-on-colour};
 }
 

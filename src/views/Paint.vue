@@ -55,7 +55,7 @@ const hasDrawing = computed(() => currentGrid.value.some(cell => cell !== -1))
 // Paint has no seat: the card's chip is brand lime with the player's own shape and face.
 const storedName = getName()
 const cardPlayer = storedName
-  ? { name: storedName, seat: { ...seatFor(0, { clientId: getClientId(), name: storedName, shape: getShape() })!, colour: 'var(--accent)' } }
+  ? { name: storedName, seat: { ...seatFor(0, { clientId: getClientId(), name: storedName, shape: getShape() })!, colour: 'var(--accent-fill)' } }
   : null
 // The share click never waits on the face generator, so warm it now while there's a card to draw.
 if (cardPlayer)
@@ -183,7 +183,8 @@ const summary = computed(() => {
         :render="renderDrawing"
         :filename="paintFilename(meta)"
         label="Save image"
-        subject="your drawing"
+        subject="your image"
+        share-title="My drawing on Pixmaler"
       >
         Save image
       </ExportButton>
@@ -193,10 +194,12 @@ const summary = computed(() => {
         variant="tertiary"
         size="small"
         collapse
+        :disabled="!hasDrawing"
         :render="renderCard"
         :filename="paintFilename(meta, 'card')"
         label="Share card"
         subject="your card"
+        share-title="My drawing on Pixmaler"
       >
         Share card
       </ExportButton>

@@ -1,4 +1,4 @@
-// The share card: logo, then the round's target beside or above the drawing, then the player's
+// The share card: logo (wordmark, then the mark), then the round's target beside or above the drawing, then the player's
 // tag (seat chip and name, as `PlayerTag` shows it) and the site URL. Landscape grids stack;
 // square and portrait ones sit side by side. Colours come from the viewer's theme at export time.
 
@@ -46,6 +46,8 @@ export interface CardTheme {
   muted: string
   paper: string
   accent: string
+  // The panels' 1px outline, as the canvases on screen have.
+  edge: string
   // Chip ink: the face and initial on any seat colour.
   ink: string
   // The wordmark's drop on the light theme (`--logo-shadow`); null where the theme has none.
@@ -56,12 +58,18 @@ export interface CardTheme {
 const CARD_LONG_EDGE = 1600
 const PAD = 64
 const HEADER = 120
-const FOOTER = 100
+const FOOTER_GAP = 32
+const FOOTER = 120
 const GAP = 48
 
-const MARK_PX = 56
+const MARK_PX = 22
+// Between the wordmark and the mark, as `.wordmark`'s gap.
+const MARK_GAP = 12
 const WORDMARK_PX = 56
 const NAME_PX = 44
+// Baselines, from the footer's top.
+const NAME_Y = 58
+const URL_Y = 108
 const URL_PX = 26
 const CHIP_PX = 56
 const CHIP_GAP = 16
@@ -70,19 +78,20 @@ const BODY_FONT = '"Plus Jakarta Sans", sans-serif'
 
 export function cardLayout(gridW: number, gridH: number): CardLayout {
   const stacked = gridW > gridH
+  const below = FOOTER_GAP + FOOTER
   const fit = stacked
-    ? Math.min((CARD_LONG_EDGE - 2 * PAD - HEADER - FOOTER - GAP) / (2 * gridH), (CARD_LONG_EDGE - 2 * PAD) / gridW)
-    : Math.min((CARD_LONG_EDGE - 2 * PAD - GAP) / (2 * gridW), (CARD_LONG_EDGE - 2 * PAD - HEADER - FOOTER) / gridH)
+    ? Math.min((CARD_LONG_EDGE - 2 * PAD - HEADER - below - GAP) / (2 * gridH), (CARD_LONG_EDGE - 2 * PAD) / gridW)
+    : Math.min((CARD_LONG_EDGE - 2 * PAD - GAP) / (2 * gridW), (CARD_LONG_EDGE - 2 * PAD - HEADER - below) / gridH)
   const scale = Math.max(1, Math.floor(fit))
   const panelW = gridW * scale
   const panelH = gridH * scale
   const artW = stacked ? panelW : 2 * panelW + GAP
   const artH = stacked ? 2 * panelH + GAP : panelH
   const artTop = PAD + HEADER
-  const footerTop = artTop + artH
+  const footerTop = artTop + artH + FOOTER_GAP
   return {
     width: 2 * PAD + artW,
-    height: 2 * PAD + HEADER + artH + FOOTER,
+    height: 2 * PAD + HEADER + artH + below,
     scale,
     stacked,
     header: { x: PAD, y: PAD, w: artW, h: HEADER },
@@ -91,7 +100,7 @@ export function cardLayout(gridW: number, gridH: number): CardLayout {
       ? { x: PAD, y: artTop + panelH + GAP, w: panelW, h: panelH }
       : { x: PAD + panelW + GAP, y: artTop, w: panelW, h: panelH },
     footer: { x: PAD, y: footerTop, w: artW, h: FOOTER },
-    // Centred on the name's capitals, which sit on a baseline 58px into the footer.
+    // Centred on the name's capitals, which sit on the name's baseline.
     chip: { x: PAD, y: footerTop + 14, w: CHIP_PX, h: CHIP_PX },
   }
 }
@@ -104,7 +113,8 @@ export function cardTheme(): CardTheme {
     fg: token('--fg'),
     muted: token('--fg-60'),
     paper: token('--paper'),
-    accent: token('--accent'),
+    accent: token('--accent-fill'),
+    edge: token('--canvas-edge'),
     ink: token('--ink-on-colour'),
     accentDrop: token('--logo-shadow') === 'none' ? null : token('--accent-ink'),
   }
@@ -145,11 +155,9 @@ export function renderShareCard(card: ShareCard, url: string, theme: CardTheme, 
 
   const { header, footer, chip } = layout
   const midY = header.y + header.h / 2
-  ctx.imageSmoothingEnabled = false
-  ctx.drawImage(mark, header.x, midY - MARK_PX / 2, MARK_PX, MARK_PX)
   ctx.font = `700 ${WORDMARK_PX}px ${DISPLAY_FONT}`
   ctx.textBaseline = 'middle'
-  const wordX = header.x + MARK_PX + 20
+  const wordX = header.x
   if (theme.accentDrop) {
     ctx.shadowColor = theme.accentDrop
     ctx.shadowOffsetX = 1
@@ -160,11 +168,18 @@ export function renderShareCard(card: ShareCard, url: string, theme: CardTheme, 
   ctx.fillText('PIX', wordX, midY)
   ctx.shadowColor = 'transparent'
   ctx.fillStyle = theme.fg
-  ctx.fillText('MALER', wordX + ctx.measureText('PIX').width, midY)
+  const pixW = ctx.measureText('PIX').width
+  ctx.fillText('MALER', wordX + pixW, midY)
+  ctx.imageSmoothingEnabled = false
+  ctx.drawImage(mark, wordX + pixW + ctx.measureText('MALER').width + MARK_GAP, midY - MARK_PX / 2, MARK_PX, MARK_PX)
 
   const dims = { palette: card.palette, gridW: card.gridW, gridH: card.gridH }
   paintGrid(ctx, { ...dims, grid: card.target }, theme.paper, layout.scale, layout.target.x, layout.target.y)
   paintGrid(ctx, { ...dims, grid: card.drawing }, theme.paper, layout.scale, layout.drawing.x, layout.drawing.y)
+  ctx.strokeStyle = theme.edge
+  ctx.lineWidth = 1
+  for (const p of [layout.target, layout.drawing])
+    ctx.strokeRect(p.x - 0.5, p.y - 0.5, p.w + 1, p.h + 1)
 
   ctx.textBaseline = 'alphabetic'
   const { player } = card
@@ -178,11 +193,11 @@ export function renderShareCard(card: ShareCard, url: string, theme: CardTheme, 
     }
     ctx.font = `700 ${NAME_PX}px ${DISPLAY_FONT}`
     ctx.fillStyle = theme.fg
-    ctx.fillText(fitText(ctx, player.name, footer.x + footer.w - nameX), nameX, footer.y + 58)
+    ctx.fillText(fitText(ctx, player.name, footer.x + footer.w - nameX), nameX, footer.y + NAME_Y)
   }
   ctx.font = `500 ${URL_PX}px ${BODY_FONT}`
   ctx.fillStyle = theme.muted
-  ctx.fillText(fitText(ctx, url, footer.w), footer.x, footer.y + (player ? 96 : 60))
+  ctx.fillText(fitText(ctx, url, footer.w), footer.x, footer.y + (player ? URL_Y : NAME_Y))
   return canvas
 }
 
@@ -193,15 +208,6 @@ async function loadImage(src: string): Promise<HTMLImageElement> {
   return img
 }
 
-// The face SVG has only a viewBox; Firefox won't draw an SVG with no intrinsic size onto a canvas.
-function withIntrinsicSize(uri: string): string {
-  const comma = uri.indexOf(',')
-  const svg = decodeURIComponent(uri.slice(comma + 1))
-  if (/^<svg[^>]*\swidth=/.test(svg))
-    return uri
-  return uri.slice(0, comma + 1) + encodeURIComponent(svg.replace('<svg ', '<svg width="256" height="256" '))
-}
-
 // Only a face the generator has already made: the share click never waits on loading DiceBear
 // (Paint warms it on open). Null, or a face that fails to decode, falls back to the initial.
 async function loadFace(seed: string): Promise<HTMLImageElement | null> {
@@ -209,7 +215,7 @@ async function loadFace(seed: string): Promise<HTMLImageElement | null> {
   if (!uri)
     return null
   try {
-    return await loadImage(withIntrinsicSize(uri))
+    return await loadImage(uri)
   }
   catch {
     return null

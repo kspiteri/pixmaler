@@ -1,8 +1,8 @@
 // PNG export renderer — needs a real canvas: the pixels must match the drawing on screen, with
 // untouched (-1) cells flattened onto paper rather than exported as transparent holes.
 
-import { describe, expect, it } from 'vitest'
-import { canvasToPng, renderExportCanvas } from '@/lib'
+import { afterEach, describe, expect, it } from 'vitest'
+import { canvasToPng, gridToPng, renderExportCanvas } from '@/lib'
 
 const PAPER = '#ffffff'
 const palette = ['#ff0000', '#0000ff']
@@ -34,5 +34,25 @@ describe('renderExportCanvas', () => {
     expect(blob.type).toBe('image/png')
     const bitmap = await createImageBitmap(blob)
     expect([bitmap.width, bitmap.height]).toEqual([12, 8])
+  })
+})
+
+describe('gridToPng', () => {
+  afterEach(() => document.documentElement.style.removeProperty('--paper'))
+
+  it('exports at the scale that first reaches 1024 px, on the theme\'s paper', async () => {
+    document.documentElement.style.setProperty('--paper', '#fafaf0')
+    const grid = Array.from<number>({ length: 61 * 41 }).fill(0)
+    grid[61 + 1] = -1
+    const bitmap = await createImageBitmap(await gridToPng({ grid, palette, gridW: 61, gridH: 41 }))
+    // ceil(1024 / 61) = 17 px per cell.
+    expect([bitmap.width, bitmap.height]).toEqual([1037, 697])
+    const canvas = document.createElement('canvas')
+    canvas.width = bitmap.width
+    canvas.height = bitmap.height
+    canvas.getContext('2d')!.drawImage(bitmap, 0, 0)
+    // The untouched cell at (1, 1) spans 17..33 on both axes.
+    expect(pixel(canvas, 25, 25)).toEqual([0xFA, 0xFA, 0xF0, 255])
+    expect(pixel(canvas, 8, 8)).toEqual([255, 0, 0, 255])
   })
 })
