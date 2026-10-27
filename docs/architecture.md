@@ -190,13 +190,24 @@ centres of colour — the subtlest, richest result, so it merges least (8 units)
 
 ## Drawing tools
 
-`PixelCanvas` owns the active tool (`CANVAS_TOOLS`: Pencil, Brush, Fill, Spray) and one size per sized tool; the geometry is pure functions in `grid.ts`. Everything a tool paints is a palette index on the grid, so nothing about tools crosses the wire.
+`PixelCanvas` owns the active tool (`CANVAS_TOOLS` with `TOOL_LABELS`: Pencil, Brush, Fill, Spray, the one source for the switcher, the ↑/↓ order and the slider label) and one size per sized tool; the geometry is pure functions in `grid.ts`. Everything a tool paints is a palette index on the grid, so nothing about tools crosses the wire.
 
 - **Pencil** stamps the square `brushFootprint`; **Brush** the round `discFootprint` (min size 3, since a 2-wide disc is Pencil's square).
 - **Fill** is a 4-connected `floodFill` on press, with untouched paper (`-1`) a region like any colour. One undo step and an immediate `onUpdate`, not a stroke.
 - **Spray** runs a per-frame loop while held: each frame `spraySample` paints random disc cells where `(x + y)` is even across the grid, so a held spray caps at a 50% dither and overlapping sprays share one checker. The whole hold is one undo step.
+- **A stroke keeps the tool it started with.** The tool is latched at pointerdown, so a click or ↑/↓ mid-stroke applies to the next press; a second pointer during a stroke is ignored, and losing pointer capture ends the stroke.
 - **`onToolChange`** is how the controls follow a tool change from a click or ↑/↓: `DrawBoard` mirrors it into `ToolPicker`'s prop and re-syncs the size slider, which is disabled (not hidden) on Fill so the docked panel never reflows.
 - **Each DRAWING starts on Pencil** because the phase screen mounts a fresh `PixelCanvas`; nothing persists the tool.
+
+## Exports
+
+RESULTS and Paint keep a drawing two ways through [`ExportButton`](../src/components/game/shared/ExportButton.vue): *Save* renders the plain PNG (`lib/export/png.ts`), *Share* the share card beside the target (`card.ts`), and both hand the blob to `deliverFile` (`deliver.ts`).
+
+- **Render from data, never the screen.** Exports draw from the grid and `results.palette`/`gridW`/`gridH` (Paint: the live grid), at the integer scale `exportScale` picks (long edge ≥ 1024), and flatten `-1` onto `--paper`, unlike the transparent read-only renderers.
+- **Share sheet or download.** `share` uses the OS sheet wherever `navigator.canShare` accepts the file; `save` only on a phone or tablet (`isHandheld`: platform signals first, the coarse-pointer query only when they can't decide), so desktop Save always downloads. The payload is `{ files, title }` and nothing else; the caller supplies the title ("Chloé's drawing on Pixmaler", Paint "My drawing on Pixmaler"). `AbortError` and `InvalidStateError` (a sheet already open) count as cancelled; any other share failure falls back to a download.
+- **Feedback follows the outcome.** A tick and "Saved"/"Shared" for what actually happened (a share that downloads says "Saved"), a warning for 2 s plus an assertive announcement and `console.error` when rendering or delivery throws, and nothing on cancel or after unmount. Busy is `aria-disabled` so keyboard focus stays put.
+- **RESULTS builds its buttons once** per `submissionId` (`exportsById`), your own entry reading "Save your drawing" / "Share your card". **Paint** disables both buttons until something is drawn.
+- **Filenames** come from `filename.ts`: `pixmaler-<room>-<name>[-card].png`, Paint `pixmaler-paint-<source>[-card].png`.
 
 ## Phases and deadlines
 

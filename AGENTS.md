@@ -29,7 +29,7 @@ pnpm typecheck    # client + worker (vue-tsc --noEmit && tsc --noEmit -p tsconfi
 pnpm lint         # ESLint (@antfu/eslint-config)
 pnpm lint:fix     # ESLint with --fix
 pnpm lint:css     # Stylelint, the colour-literal guard
-pnpm test         # Vitest: Node suites + browser-mode canvas smoke
+pnpm test         # Vitest: Node suites + browser suites (Chromium, Firefox, WebKit)
 pnpm test:unit    # Node suites only (what CI runs; no browser)
 pnpm wr:deploy    # deploy the Worker (ends every live game, see Deployment)
 pnpm release      # gate, deploy-if-changed, merge the Release PR, name it (prompts)
@@ -51,7 +51,7 @@ pnpm bots         # fill a local room with test players (--room=<code> --count=5
 - **The pre-commit hook** (`simple-git-hooks` + `lint-staged`) runs `eslint --fix` on staged files and Stylelint on staged `.scss`/`.vue`, and aborts the commit on any error.
 - **Commits are [Conventional Commits](https://www.conventionalcommits.org)**, enforced by `scripts/commit-msg.mjs`. release-please derives the version and changelog from the types, so an unparseable message drops out of both.
 - **Any change under `party/`** (a handler, a phase transition, the tally, the state shape) must run `test/smoke.test.ts`, and update it only when the path's shape genuinely changes, never to pin broken behaviour.
-- **The Node suite is DOM-free**, verified without a browser; browser-mode suites (`test/browser/`, run across Chromium/Firefox/WebKit) cover the canvas, the image pipeline's browser half and the pointer/keyboard widgets. Full-screen component flows and anything spanning the server are still verified by driving the app in a browser. Anything stateful also needs both servers and a real reconnect (reload mid-game, including during RESULTS).
+- **The Node suite is DOM-free**, verified without a browser; browser-mode suites (`test/browser/`, run across Chromium/Firefox/WebKit) cover the canvas and its tools, the image pipeline's browser half, the pointer/keyboard widgets and the PNG/share-card exports. Full-screen component flows and anything spanning the server are still verified by driving the app in a browser. Anything stateful also needs both servers and a real reconnect (reload mid-game, including during RESULTS).
 
 ## Code rules
 
@@ -72,7 +72,7 @@ pnpm bots         # fill a local room with test players (--room=<code> --count=5
 - **Replaced-wholesale state is a `shallowRef`.** `state`, `gallery`, `results`, `voteState`, `drawState` and `targetGrid` are swapped whole on each server message, so nothing deep-watches them.
 - **`PixelCanvas` is imperative.** Instantiate it in `onMounted` or a watcher and append its `<canvas>` into a template ref; never drive it through reactivity.
 - **Trap: function-form `:ref` timing.** To read DOM that a `v-for` with `:ref="el => setSlot(id, el)"` just rendered, `await nextTick()` twice rather than relying on `flush: 'post'`; Vue doesn't order those callbacks against post-flush watchers.
-- **Submitted grids keep `-1` for untouched cells.** Read-only renderers draw `-1` as transparent so the paper shows through; don't coerce it to palette index 0.
+- **Submitted grids keep `-1` for untouched cells.** Read-only renderers draw `-1` as transparent so the paper shows through; don't coerce it to palette index 0. Exports (`lib/export/png.ts`, the share card) deliberately flatten `-1` onto `--paper`.
 - **The deadline can change mid-phase** (the GM's +15s). Anything that reads `state.deadline` must react to it changing, not snapshot it.
 - **Broadcast the payload before the phase flip.** `endDrawing` sends `gallery` then `phase`, `endVoting` sends `results` then `phase`; flipping first mounts the next screen against the previous round's payload. A new data-carrying phase follows the same order.
 - **Per-round client state is cleared when DRAWING starts**, in the `phase` handler of `lib/composables/useRoom/messages.ts`. Anything new you cache from a server message belongs in that reset.
