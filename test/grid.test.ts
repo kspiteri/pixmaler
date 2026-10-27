@@ -1,10 +1,10 @@
-// Pure cell geometry extracted from `PixelCanvas` (#30). These are the behaviours the
-// canvas depends on and that a careless tidy-up would silently change: even brushes are
+// Pure cell geometry extracted from `PixelCanvas`. These are the behaviours the canvas
+// depends on and that a careless tidy-up would silently change: even brushes are
 // asymmetric, footprints clip rather than clamp, and `cellAt` is allowed to return cells
 // outside the grid because the input path uses that to detect the pen leaving the canvas.
 
 import { describe, expect, it } from 'vitest'
-import { brushFootprint, cellAt, indexOf, linePath, xyOf } from '../src/lib/canvas/grid'
+import { brushFootprint, cellAt, discFootprint, floodFill, indexOf, linePath, spraySample, xyOf } from '../src/lib/canvas/grid'
 
 function rect(over: Partial<{ left: number, top: number, width: number, height: number }> = {}) {
   return { left: 0, top: 0, width: 200, height: 200, ...over }
@@ -121,6 +121,90 @@ describe('brushFootprint', () => {
         }
       }
     }
+  })
+})
+
+// Footprint as sorted `x,y` strings, so a test reads the shape rather than raw indices.
+function shape(cells: number[], gridW: number): string[] {
+  return cells.map(i => xyOf(i, gridW)).map(({ x, y }) => `${x},${y}`).sort()
+}
+
+describe('discFootprint', () => {
+  it('is a plus at size 3, so Brush differs from the Pencil square', () => {
+    expect(shape(discFootprint(5, 5, 3, 20, 20), 20)).toEqual(['4,5', '5,4', '5,5', '5,6', '6,5'])
+  })
+
+  it('drops only the four corners at size 5', () => {
+    const cells = shape(discFootprint(5, 5, 5, 20, 20), 20)
+    expect(cells).toHaveLength(21)
+    for (const corner of ['3,3', '7,3', '3,7', '7,7'])
+      expect(cells).not.toContain(corner)
+  })
+
+  it('keeps the square brush\'s up-left bias at even sizes', () => {
+    // Size 4 spans x-2..x+1 like brushFootprint, minus the corners.
+    const expected = ['3,4', '3,5', '4,3', '4,4', '4,5', '4,6', '5,3', '5,4', '5,5', '5,6', '6,4', '6,5']
+    expect(shape(discFootprint(5, 5, 4, 20, 20), 20)).toEqual(expected)
+  })
+
+  it('clips at an edge rather than clamping onto it', () => {
+    expect(shape(discFootprint(0, 0, 3, 20, 20), 20)).toEqual(['0,0', '0,1', '1,0'])
+  })
+})
+
+// A 5×5 grid of untouched paper (-1) with a colour-1 diagonal from the top-left corner.
+function diagonalWall(): number[] {
+  const grid = Array.from<number>({ length: 25 }).fill(-1)
+  for (let i = 0; i < 5; i++)
+    grid[indexOf(i, i, 5)] = 1
+  return grid
+}
+
+describe('floodFill', () => {
+  it('fills the paper region 4-connected, so a diagonal wall holds', () => {
+    const filled = shape(floodFill(diagonalWall(), 5, 5, 4, 0, 2), 5)
+    expect(filled).toEqual(['1,0', '2,0', '2,1', '3,0', '3,1', '3,2', '4,0', '4,1', '4,2', '4,3'])
+  })
+
+  it('recolours a painted region and leaves neighbouring colours and paper alone', () => {
+    const grid = [1, 1, 2, 1, 2, 2, -1, -1, 2] // 3×3, row-major
+    expect(shape(floodFill(grid, 3, 3, 0, 0, 3), 3)).toEqual(['0,0', '0,1', '1,0'])
+  })
+
+  it('returns nothing when the region already has the colour, or the cell is off-grid', () => {
+    expect(floodFill(diagonalWall(), 5, 5, 4, 0, -1)).toEqual([])
+    expect(floodFill(diagonalWall(), 5, 5, 5, 0, 2)).toEqual([])
+    expect(floodFill(diagonalWall(), 5, 5, -1, 2, 2)).toEqual([])
+  })
+})
+
+// A repeatable stand-in for Math.random: walks a fixed cycle of values in [0, 1).
+function sequence(...values: number[]): () => number {
+  let i = 0
+  return () => values[i++ % values.length]
+}
+
+describe('spraySample', () => {
+  it('lands only inside the disc and on the global (x + y) even checker', () => {
+    const disc = new Set(discFootprint(10, 7, 15, 30, 20))
+    const random = sequence(0, 0.13, 0.5, 0.77, 0.99, 0.31)
+    for (let burst = 0; burst < 20; burst++) {
+      const cells = spraySample(10, 7, 15, 30, 20, random)
+      expect(cells.length).toBeGreaterThan(0)
+      for (const i of cells) {
+        const { x, y } = xyOf(i, 30)
+        expect(disc.has(i)).toBe(true)
+        expect((x + y) % 2).toBe(0)
+      }
+    }
+  })
+
+  it('keeps to the same checker whichever cell the disc is centred on', () => {
+    // An odd-sum centre: the plus at size 3 has its four arms on the checker, not the centre.
+    const arms = shape(spraySample(5, 4, 3, 20, 20, sequence(0, 0.3, 0.6, 0.9)), 20)
+    for (const cell of arms)
+      expect(['4,4', '5,3', '5,5', '6,4']).toContain(cell)
+    expect(shape(spraySample(5, 5, 3, 20, 20, Math.random), 20)).toEqual(['5,5'])
   })
 })
 

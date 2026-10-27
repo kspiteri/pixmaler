@@ -4,7 +4,7 @@
 // `.tools-panel__shortcuts*` chrome lives in `_tools-panel.scss` (this renders inside the panel).
 
 import type { Component } from 'vue'
-import { ArrowBigUp, ArrowLeft, ArrowRight, Keyboard, Mouse } from '@lucide/vue'
+import { ArrowBigUp, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Keyboard, Mouse } from '@lucide/vue'
 import { markRaw } from 'vue'
 import Disclosure from '@/components/elements/Disclosure.vue'
 import { isTouch, shortcutsEnabled } from '@/lib'
@@ -22,8 +22,9 @@ interface Shortcut {
 
 const SHORTCUTS: Shortcut[] = [
   { key: 'hold Shift', shortcut: ['hold', markRaw(ArrowBigUp)], desc: 'show colour map, tap to switch' },
-  { key: 'arrow keys', shortcut: [markRaw(ArrowLeft), markRaw(ArrowRight)], desc: 'change colour' },
-  { key: 'scroll wheel', shortcut: [markRaw(Mouse), 'scroll'], desc: 'change brush size' },
+  { key: 'left and right arrows', shortcut: [markRaw(ArrowLeft), markRaw(ArrowRight)], desc: 'change colour' },
+  { key: 'up and down arrows', shortcut: [markRaw(ArrowUp), markRaw(ArrowDown)], desc: 'change tool' },
+  { key: 'scroll wheel', shortcut: [markRaw(Mouse), 'scroll'], desc: 'change tool size' },
   { key: 'right-click', shortcut: [markRaw(Mouse), 'right'], desc: 'pick a colour (eyedropper)' },
   { key: '⌘/Ctrl+Z', aria: 'Command or Control plus Z', desc: 'undo' },
 ]

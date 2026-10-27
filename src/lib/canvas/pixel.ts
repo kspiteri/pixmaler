@@ -1,10 +1,17 @@
 // The editable drawing surface: cell rendering, hover preview, the read-only crosshair
-// marker, undo, and unified pointer input. Geometry lives in `./grid`, the swatch and
-// brush widgets in `./tools`.
+// marker, undo, the drawing tools, and unified pointer input. Geometry lives in `./grid`,
+// the swatch and brush widgets in `./tools`.
 
 import type { Cell } from './grid'
 import { brushMaxFor, defaultBrushFor } from './aspect'
-import { brushFootprint, cellAt, indexOf, linePath, xyOf } from './grid'
+import { brushFootprint, cellAt, discFootprint, floodFill, indexOf, linePath, spraySample, xyOf } from './grid'
+
+export const CANVAS_TOOLS = ['pencil', 'brush', 'fill', 'spray'] as const
+export type CanvasTool = typeof CANVAS_TOOLS[number]
+type SizedTool = Exclude<CanvasTool, 'fill'>
+
+// A 2-wide disc is just Pencil's 2×2 square.
+const TOOL_MIN: Record<SizedTool, number> = { pencil: 1, brush: 3, spray: 3 }
 
 export interface CanvasOptions {
   gridW: number
@@ -20,6 +27,7 @@ export interface CanvasOptions {
   onHover?: (cell: { x: number, y: number } | null) => void
   // Right-click eyedropper: the palette index sampled from the cell under the cursor.
   onPick?: (index: number) => void
+  onToolChange?: (tool: CanvasTool) => void
   // Device px per cell in the backing store. Defaults to CELL_SIZE; read-only thumbnails pass
   // 1 to render at native grid resolution and let `image-rendering: pixelated` scale them up.
   cellPx?: number
@@ -41,7 +49,8 @@ export class PixelCanvas {
   private grid: number[]
   private opts: CanvasOptions
   private selectedColor = 0
-  private brushSize = 1
+  private tool: CanvasTool = 'pencil'
+  private sizes: Record<SizedTool, number>
   private brushMax = 8
   private painting = false
   private locked = false
@@ -68,6 +77,7 @@ export class PixelCanvas {
   // actually changes a cell, so a no-op click adds no undo step.
   private pendingSnapshot: number[] | null = null
   private strokeCommitted = false
+  private sprayHandle: number | null = null
 
   // One controller for every DOM listener attached below; `destroy()` aborts it to detach them.
   private readonly listeners = new AbortController()
@@ -84,7 +94,13 @@ export class PixelCanvas {
     this.opts = opts
     this.cellPx = opts.cellPx ?? CELL_SIZE
     this.brushMax = brushMaxFor(opts.gridW, opts.gridH)
-    this.brushSize = defaultBrushFor(opts.gridW, opts.gridH)
+    const start = defaultBrushFor(opts.gridW, opts.gridH)
+    this.sizes = {
+      pencil: start,
+      brush: Math.max(TOOL_MIN.brush, start),
+      // A small spray covers too few checker cells to read as texture.
+      spray: Math.max(TOOL_MIN.spray, Math.round(this.brushMax * 0.75)),
+    }
     // Read-only canvases render `targetGrid`; editable ones start blank (-1 = untouched,
     // rendered transparent) unless `initialGrid` restores a drawing in progress.
     const seed = opts.targetGrid ?? opts.initialGrid
@@ -116,6 +132,7 @@ export class PixelCanvas {
   // Detaches every DOM listener this instance attached. Call when replacing or discarding a
   // canvas (e.g. a fresh PixelThumb per grid change) so nothing outlives its element.
   destroy(): void {
+    this.stopSpray()
     this.discardPendingUpdate()
     this.listeners.abort()
   }
@@ -152,17 +169,33 @@ export class PixelCanvas {
     this.selectedColor = index
   }
 
+  setTool(tool: CanvasTool) {
+    if (tool === this.tool)
+      return
+    this.tool = tool
+    this.refreshHover()
+    this.opts.onToolChange?.(tool)
+  }
+
+  getTool(): CanvasTool {
+    return this.tool
+  }
+
+  // A no-op on Fill.
   setBrushSize(size: number) {
-    this.brushSize = Math.max(1, Math.min(this.brushMax, size))
-    // Refresh the hover footprint immediately so the new size is visible
-    // without requiring a mouse move.
-    if (this.cursorCell && !this.painting) {
-      this.showHover(this.cursorCell.x, this.cursorCell.y)
-    }
+    if (this.tool === 'fill')
+      return
+    this.sizes[this.tool] = Math.max(TOOL_MIN[this.tool], Math.min(this.brushMax, size))
+    this.refreshHover()
   }
 
   getBrushSize(): number {
-    return this.brushSize
+    return this.tool === 'fill' ? 0 : this.sizes[this.tool]
+  }
+
+  // 0 on Fill, as is getBrushSize.
+  getBrushMin(): number {
+    return this.tool === 'fill' ? 0 : TOOL_MIN[this.tool]
   }
 
   // Max brush for this grid (drives the slider's upper bound).
@@ -173,6 +206,7 @@ export class PixelCanvas {
   lock() {
     this.locked = true
     this.painting = false
+    this.stopSpray()
     this.canvas.style.cursor = 'default'
     this.clearHover()
   }
@@ -335,15 +369,43 @@ export class PixelCanvas {
 
   // ── Hover preview ──────────────────────────────────────────────────────────
 
-  // Show the brush footprint at (cx, cy) in the currently-selected colour.
+  private refreshHover() {
+    if (this.cursorCell && !this.painting)
+      this.showHover(this.cursorCell.x, this.cursorCell.y)
+  }
+
+  private footprint(cx: number, cy: number): number[] {
+    const { gridW, gridH } = this.opts
+    switch (this.tool) {
+      case 'pencil':
+        return brushFootprint(cx, cy, this.sizes.pencil, gridW, gridH)
+      case 'brush':
+        return discFootprint(cx, cy, this.sizes.brush, gridW, gridH)
+      case 'spray':
+        return discFootprint(cx, cy, this.sizes.spray, gridW, gridH)
+      case 'fill':
+        return brushFootprint(cx, cy, 1, gridW, gridH)
+    }
+  }
+
+  // Show the active tool's footprint at (cx, cy) in the currently-selected colour.
   // Stores the original cell indices so we can restore them on the next move.
   private showHover(cx: number, cy: number) {
     if (this.locked)
       return
-    const { gridW, gridH, palette } = this.opts
+    const { gridW, palette } = this.opts
     const next = new Map<number, number>()
 
-    for (const key of brushFootprint(cx, cy, this.brushSize, gridW, gridH)) {
+    let cells = this.footprint(cx, cy)
+    if (this.tool === 'spray') {
+      // Outline only: a solid preview would overstate what a burst covers.
+      const disc = new Set(cells)
+      cells = cells.filter((i) => {
+        const x = i % gridW
+        return x === 0 || x === gridW - 1 || !disc.has(i - 1) || !disc.has(i + 1) || !disc.has(i - gridW) || !disc.has(i + gridW)
+      })
+    }
+    for (const key of cells) {
       // Capture original colour from the *grid* (not the canvas), so we
       // never accidentally remember a previously-painted hover preview.
       next.set(key, this.grid[key] ?? 0)
@@ -400,6 +462,10 @@ export class PixelCanvas {
           this.pickAt(e.clientX, e.clientY)
         return
       }
+      if (this.tool === 'fill') {
+        this.fillAt(e.clientX, e.clientY)
+        return
+      }
       try { el.setPointerCapture(e.pointerId) }
       catch { /* capture is best-effort; painting still works without it */ }
       // Snapshot the pre-stroke grid, but defer pushing it until a cell actually changes
@@ -408,9 +474,19 @@ export class PixelCanvas {
       this.strokeCommitted = false
       this.painting = true
       this.resetStroke()
-      // Promote the hover preview into a real paint at the same cell.
-      this.hoverCells.clear()
-      this.paintAt(e.clientX, e.clientY)
+      if (this.tool === 'spray') {
+        // The outline preview isn't paint, so restore it rather than promote it.
+        this.clearHover()
+        const { x, y } = this.eventCell(e.clientX, e.clientY)
+        const { gridW, gridH } = this.opts
+        this.cursorCell = x >= 0 && y >= 0 && x < gridW && y < gridH ? { x, y } : null
+        this.startSpray()
+      }
+      else {
+        // Promote the hover preview into a real paint at the same cell.
+        this.hoverCells.clear()
+        this.paintAt(e.clientX, e.clientY)
+      }
     }, { signal })
 
     el.addEventListener('pointermove', (e) => {
@@ -422,8 +498,9 @@ export class PixelCanvas {
 
       if (this.painting) {
         if (inBounds) {
-          // Painting inside the canvas — draw, mirror the cursor for the marker.
-          this.paintAt(e.clientX, e.clientY)
+          // Spray's frame loop reads `cursorCell` rather than painting on move.
+          if (this.tool !== 'spray')
+            this.paintAt(e.clientX, e.clientY)
           this.cursorCell = { x, y }
           this.opts.onHover?.(this.cursorCell)
         }
@@ -449,6 +526,7 @@ export class PixelCanvas {
       if (!this.painting)
         return
       this.painting = false
+      this.stopSpray()
       this.pendingSnapshot = null
       this.resetStroke()
       // Deliver the final grid immediately, bypassing the per-frame coalesce.
@@ -538,30 +616,66 @@ export class PixelCanvas {
   }
 
   private paintCell(cx: number, cy: number) {
-    const { gridW, gridH, palette } = this.opts
-    const cell = indexOf(cx, cy, gridW)
+    const cell = indexOf(cx, cy, this.opts.gridW)
     if (cell === this.lastCell)
       return
     this.lastCell = cell
 
+    if (this.recolour(this.footprint(cx, cy)))
+      this.strokeChanged()
+  }
+
+  // Lazily record the pre-stroke snapshot the first time this stroke changes a cell.
+  private strokeChanged() {
+    if (this.pendingSnapshot && !this.strokeCommitted) {
+      this.commitSnapshot(this.pendingSnapshot)
+      this.strokeCommitted = true
+    }
+    this.scheduleUpdate()
+  }
+
+  private startSpray() {
+    const tick = () => {
+      const c = this.cursorCell
+      if (c && this.recolour(spraySample(c.x, c.y, this.sizes.spray, this.opts.gridW, this.opts.gridH)))
+        this.strokeChanged()
+      this.sprayHandle = requestAnimationFrame(tick)
+    }
+    tick()
+  }
+
+  private stopSpray() {
+    if (this.sprayHandle !== null)
+      cancelAnimationFrame(this.sprayHandle)
+    this.sprayHandle = null
+  }
+
+  private fillAt(clientX: number, clientY: number) {
+    const { gridW, gridH } = this.opts
+    const { x, y } = this.eventCell(clientX, clientY)
+    const cells = floodFill(this.grid, gridW, gridH, x, y, this.selectedColor)
+    if (cells.length === 0)
+      return
+    this.commitSnapshot([...this.grid])
+    this.hoverCells.clear()
+    this.recolour(cells)
+    this.pendingUpdate = true
+    this.flushUpdate()
+  }
+
+  private recolour(cells: number[]): boolean {
+    const { gridW, palette } = this.opts
     let changed = false
-    for (const i of brushFootprint(cx, cy, this.brushSize, gridW, gridH)) {
-      if (this.grid[i] !== this.selectedColor) {
-        this.grid[i] = this.selectedColor
-        const { x, y } = xyOf(i, gridW)
-        this.ctx.fillStyle = palette[this.selectedColor]
-        this.ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-        changed = true
-      }
+    this.ctx.fillStyle = palette[this.selectedColor]
+    for (const i of cells) {
+      if (this.grid[i] === this.selectedColor)
+        continue
+      this.grid[i] = this.selectedColor
+      const { x, y } = xyOf(i, gridW)
+      this.ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+      changed = true
     }
-    if (changed) {
-      // Lazily record the pre-stroke snapshot the first time this stroke changes a cell.
-      if (this.pendingSnapshot && !this.strokeCommitted) {
-        this.commitSnapshot(this.pendingSnapshot)
-        this.strokeCommitted = true
-      }
-      this.scheduleUpdate()
-    }
+    return changed
   }
 
   // Mark the grid dirty and schedule a single `onUpdate` for the next frame, so a drag firing

@@ -135,6 +135,16 @@
     min-width: 0;
   }
 
+  &__size {
+    display: flex;
+    flex-direction: column;
+    gap: var(--panel-gap-inner);
+  }
+
+  &__tools .segmented__item {
+    flex: 1;
+  }
+
   // Reference disclosure — full-width in the desktop panel with a collapse toggle that
   // mirrors the shortcuts below. On the mobile dock it's a compact thumbnail beside the
   // controls, always shown. Global partial, so no `:deep()`.
@@ -255,6 +265,19 @@
       flex-direction: row;
       align-items: flex-start;
       gap: var(--panel-gap);
+    }
+
+    // One line with the slider where it fits; a narrow phone wraps it rather than crushing it.
+    .tools-panel__size {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    // `min-width: 0`: a range input's ~129px intrinsic width still counts toward the slot's
+    // min-content, so without it the slider pushes the label past the column.
+    .tools-panel__brush {
+      flex: 1 1 8rem;
+      min-width: 0;
     }
 
     // The disclosure gets its own right-hand column here instead of stacking under the

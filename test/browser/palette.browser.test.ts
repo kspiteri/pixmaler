@@ -1,7 +1,7 @@
 // BS — palette and shortcuts: the swatch widget, the keyboard/wheel shortcuts and the
 // eyedropper-to-swatch wiring, all of which need a real DOM and window events.
 
-import type { SwatchHandle } from '@/lib'
+import type { BrushHandle, SwatchHandle } from '@/lib'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createApp, defineComponent, h } from 'vue'
 import { buildBrushControls, buildSwatch, PixelCanvas, shortcutsEnabled, useCanvasShortcuts } from '@/lib'
@@ -24,12 +24,18 @@ function mountShortcuts(refs: Parameters<typeof useCanvasShortcuts>[0]) {
 
 // A canvas + swatch + brush wired together as DrawBoard wires them, with the shortcuts live.
 function wired(gridW = 8, gridH = 8) {
-  const pc = new PixelCanvas({ gridW, gridH, palette, editable: true })
+  let brush: BrushHandle | null = null
+  const pc = new PixelCanvas({ gridW, gridH, palette, editable: true, onToolChange: () => brush?.sync() })
   const sw = buildSwatch(palette, i => pc.selectColor(i))
-  const brush = buildBrushControls(pc)
+  brush = buildBrushControls(pc)
   document.body.append(pc.canvas, sw.element, brush.element)
   mountShortcuts({ player: () => pc, swatch: () => sw, brush: () => brush, canvas: () => pc.canvas })
-  return { pc, sw, brush }
+  const slider = brush.element.querySelector('input')!
+  return { pc, sw, brush, slider }
+}
+
+function wheel(pc: PixelCanvas, deltaY: number) {
+  pc.canvas.dispatchEvent(new WheelEvent('wheel', { deltaY, bubbles: true, cancelable: true }))
 }
 
 beforeEach(() => {
@@ -100,6 +106,17 @@ describe('palette & shortcuts (browser)', () => {
     expect(sw.selectedIndex()).toBe(palette.length - 1) // wrapped past 0
   })
 
+  it('up/down cycle the tools, wrapping, and leave the colour alone', () => {
+    const { pc, sw } = wired()
+    sw.select(2)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }))
+    expect(pc.getTool()).toBe('brush')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }))
+    expect(pc.getTool()).toBe('spray') // wrapped past pencil
+    expect(sw.selectedIndex()).toBe(2)
+  })
+
   it('hold Shift shows the key overlay and Shift+key picks that colour', () => {
     const { sw } = wired()
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Shift' }))
@@ -113,9 +130,35 @@ describe('palette & shortcuts (browser)', () => {
   it('the scroll wheel over the canvas resizes the brush', () => {
     const { pc } = wired()
     pc.setBrushSize(3)
-    pc.canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: -1, bubbles: true, cancelable: true }))
+    wheel(pc, -1)
     expect(pc.getBrushSize()).toBe(4)
-    pc.canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, bubbles: true, cancelable: true }))
+    wheel(pc, 1)
     expect(pc.getBrushSize()).toBe(3)
+  })
+
+  it('the size slider follows the active tool, each keeping its own size', () => {
+    const { pc, slider } = wired()
+    expect(slider.min).toBe('1')
+    pc.setTool('brush')
+    expect(slider.min).toBe('3') // a 2-wide disc is the pencil's square
+    slider.value = '6'
+    slider.dispatchEvent(new Event('input'))
+    pc.setTool('pencil')
+    pc.setBrushSize(2)
+    expect(slider.value).not.toBe('6')
+    pc.setTool('brush')
+    expect(slider.value).toBe('6')
+    expect(pc.getBrushSize()).toBe(6)
+  })
+
+  it('fill has no size: the slider is disabled and the wheel does nothing', () => {
+    const { pc, slider } = wired()
+    pc.setBrushSize(2)
+    pc.setTool('fill')
+    expect(slider.disabled).toBe(true)
+    wheel(pc, -1)
+    pc.setTool('pencil')
+    expect(slider.disabled).toBe(false)
+    expect(pc.getBrushSize()).toBe(2)
   })
 })

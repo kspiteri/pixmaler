@@ -3,13 +3,14 @@
 // dragged (desktop) or dock full-width to the bottom (mobile). The swatch and brush are
 // imperative DOM built by the parent; we only mount them in slots.
 
-import type { PixelCanvas } from '@/lib'
+import type { CanvasTool, PixelCanvas } from '@/lib'
 import { Check, ChevronDown, ChevronUp, Image as ImageIcon, Trash2, Undo2 } from '@lucide/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import { isTouch, palettePlacement, paletteSize, setPaletteHeight, useAppLayout, useDraggable } from '@/lib'
 import Header from './palette/Header.vue'
 import Shortcuts from './palette/Shortcuts.vue'
+import ToolPicker from './palette/ToolPicker.vue'
 
 interface Props {
   // The editable PixelCanvas the buttons drive; null for one tick while the parent mounts it.
@@ -25,6 +26,7 @@ interface Props {
   flaggedDone?: boolean
   // Whether the canvas has anything on its undo stack — parent-supplied (canUndo is imperative).
   canUndo?: boolean
+  tool: CanvasTool
   // The target reference and its home slot; relocated into the panel's dock on every viewport.
   targetEl?: HTMLElement | null
   targetHome?: HTMLElement | null
@@ -279,7 +281,10 @@ function clear() {
         </div>
         <div class="tools-panel__controls">
           <div ref="swatchSlot" />
-          <div ref="brushSlot" class="tools-panel__brush" />
+          <div class="tools-panel__size">
+            <ToolPicker :model-value="tool" @update:model-value="player?.setTool($event)" />
+            <div ref="brushSlot" class="tools-panel__brush" />
+          </div>
           <div class="tools-panel__row">
             <div class="tools-panel__actions">
               <Button

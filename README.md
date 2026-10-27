@@ -10,7 +10,7 @@ Grab a code, share it with your friends or colleagues, and go. Three players nee
 ## How a round goes
 
 1. **GM picks an image.** It's quantised in the browser into chunky, limited-palette pixel art; the **target**.
-2. **Everyone races the clock.** Redraw the target by hand on a matching pixel canvas, using only the swatch of allowed colours.
+2. **Everyone races the clock.** Redraw the target by hand on a matching pixel canvas, using only the swatch of allowed colours, with a pencil, a round brush, a fill bucket and a dithering spray.
 3. **The room votes, blind.** When the timer runs out, every drawing goes up side-by-side and **anonymous**. Vote in two categories: **funniest** and **best**.
 4. **The chaotic reveal.** Someone gets to win, or more than one does!
 

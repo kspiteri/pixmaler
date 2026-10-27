@@ -7,6 +7,7 @@
 import type { PixelCanvas } from '../canvas/pixel'
 import type { BrushHandle, SwatchHandle } from '../canvas/tools'
 import { onBeforeUnmount, onMounted } from 'vue'
+import { CANVAS_TOOLS } from '../canvas/pixel'
 import { shortcutsEnabled } from '../prefs/shortcuts'
 
 interface Refs {
@@ -70,17 +71,24 @@ export function useCanvasShortcuts({ player, swatch, brush, canvas }: Refs) {
       return
     }
 
-    // Arrow keys step through the swatch, wrapping — previous colour left/up, next right/down.
+    const tools = CANVAS_TOOLS.length
+    const tool = CANVAS_TOOLS.indexOf(pc.getTool())
     switch (e.key) {
       case 'ArrowLeft':
-      case 'ArrowUp':
         e.preventDefault()
         sw.select((sw.selectedIndex() - 1 + sw.count) % sw.count)
         break
       case 'ArrowRight':
-      case 'ArrowDown':
         e.preventDefault()
         sw.select((sw.selectedIndex() + 1) % sw.count)
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        pc.setTool(CANVAS_TOOLS[(tool - 1 + tools) % tools])
+        break
+      case 'ArrowDown':
+        e.preventDefault()
+        pc.setTool(CANVAS_TOOLS[(tool + 1) % tools])
         break
     }
   }

@@ -30,7 +30,7 @@ src/
 │   ├── audio.gate.ts          # pure shouldPlay: channel gate + repeat throttle
 │   ├── confetti.ts            # winner-reveal burst (#43): emoji-blast wrapper, lazy-loaded, not in the barrel
 │   ├── protocol/              # types.ts (wire types + validators) · protocol.ts (parseClientMsg) · index.ts (DOM-free Worker barrel)
-│   ├── canvas/                # pixel.ts (PixelCanvas) · grid.ts (cell geometry) · tools.ts (swatch/brush DOM)
+│   ├── canvas/                # pixel.ts (PixelCanvas, the four tools) · grid.ts (footprints, flood fill, spray) · tools.ts (swatch/size slider DOM)
 │   │                          # pipeline.ts · palette.ts (colour science) · aspect.ts (ratios, crop, orientation)
 │   │   └── quantisers/        # median (Bold) · wu (Balanced) · kmeans (Faithful) + registry; metrics.ts dev-only, not re-exported
 │   ├── export/                # png.ts (grid → paper-flattened PNG) · card.ts (share card layout + render)
@@ -76,7 +76,7 @@ src/
 │       ├── image/picker/      # SourcePicker · TargetPreview · CropWidget · DetailControl · PixelationStyleControl
 │       │                      # ColourControl · AlphaControl · TimerControl · MusicControl · stops.ts
 │       ├── canvas/            # DrawBoard.vue (target + editable pair) · PaletteTools.vue (tools panel, internal)
-│       │   └── palette/       # Header · PlacementControl · SizeControl · Shortcuts
+│       │   └── palette/       # Header · PlacementControl · SizeControl · ToolPicker · Shortcuts
 │       ├── lobby/             # GmControls.vue (picker + Start gate) · PlayerList.vue (roster, Make GM, Remove)
 │       ├── shared/            # GameIcon.vue (award SVGs) · MusicWidget.vue (header transport) · PixelThumb.vue · ExportButton.vue (Save / Share + tick)
 │       └── voting/            # SalonWall.vue · VotingCloseup.vue (awards cast here) · SalonFrame.vue (internal)
@@ -187,6 +187,16 @@ centres of colour — the subtlest, richest result, so it merges least (8 units)
 - **Trap: the canvas pair unmounts while Settings is open** and remounts from `seedGrid`. Paint refreshes `seedGrid` from the live drawing when the panel opens and on every accepted result; seeding from the load-time grid silently discards every stroke since the last reload.
 - Free mode's music comes from the picker's Music step and isn't persisted.
 - **Samples** come from [`lib/content/samples.ts`](../src/lib/content/samples.ts): id → title, artist, year, origin, category, Commons `credit`, pixel `dims`. `SourcePicker` groups them by category, shows the ~240 px WebP thumbnails (lazy, sized from `dims` before they load), and the picker `fetch`es the full `<id>.webp` only on selection. `PickerMeta.sample` stores the id, and everything else is looked up with `sampleById`, so a stored session never carries stale metadata. A fresh `/paint` opens on the picker with no image.
+
+## Drawing tools
+
+`PixelCanvas` owns the active tool (`CANVAS_TOOLS`: Pencil, Brush, Fill, Spray) and one size per sized tool; the geometry is pure functions in `grid.ts`. Everything a tool paints is a palette index on the grid, so nothing about tools crosses the wire.
+
+- **Pencil** stamps the square `brushFootprint`; **Brush** the round `discFootprint` (min size 3, since a 2-wide disc is Pencil's square).
+- **Fill** is a 4-connected `floodFill` on press, with untouched paper (`-1`) a region like any colour. One undo step and an immediate `onUpdate`, not a stroke.
+- **Spray** runs a per-frame loop while held: each frame `spraySample` paints random disc cells where `(x + y)` is even across the grid, so a held spray caps at a 50% dither and overlapping sprays share one checker. The whole hold is one undo step.
+- **`onToolChange`** is how the controls follow a tool change from a click or ↑/↓: `DrawBoard` mirrors it into `ToolPicker`'s prop and re-syncs the size slider, which is disabled (not hidden) on Fill so the docked panel never reflows.
+- **Each DRAWING starts on Pencil** because the phase screen mounts a fresh `PixelCanvas`; nothing persists the tool.
 
 ## Phases and deadlines
 

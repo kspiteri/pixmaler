@@ -3,7 +3,7 @@
 // phase and the /paint sandbox. `PixelCanvas` is imperative: it owns its
 // `<canvas>` and pixels, Vue only owns the surrounding layout.
 
-import type { BrushHandle, SwatchHandle } from '@/lib'
+import type { BrushHandle, CanvasTool, SwatchHandle } from '@/lib'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue'
 import { buildBrushControls, buildSwatch, PixelCanvas, shortcutsEnabled, useAppLayout, useCanvasShortcuts } from '@/lib'
 import PaletteTools from './PaletteTools.vue'
@@ -66,6 +66,8 @@ const brushEl = shallowRef<HTMLElement | null>(null)
 
 // Mirrors `player.canUndo()` for the Undo button; refreshed from `onUpdate`.
 const canUndo = ref(false)
+
+const tool = ref<CanvasTool>('pencil')
 
 // Anchor for the panel's default position — targetWrap's DOM element.
 const anchorEl = ref<HTMLElement | null>(null)
@@ -136,6 +138,10 @@ onMounted(() => {
       // Right-click eyedropper, gated on the shortcuts preference.
       if (shortcutsEnabled.value)
         swatch.select(index)
+    },
+    onToolChange: (next) => {
+      tool.value = next
+      brushHandle?.sync()
     },
   })
   player.canvas.classList.add('canvas-pair__draw-canvas')
@@ -211,6 +217,7 @@ onBeforeUnmount(() => {
       :anchor="anchorEl"
       :flagged-done="flaggedDone"
       :can-undo="canUndo"
+      :tool="tool"
       :target-el="targetEl"
       :target-home="targetHomeEl"
       @done="emit('done')"
