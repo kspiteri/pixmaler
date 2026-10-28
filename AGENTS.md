@@ -13,6 +13,7 @@ Guidance for coding agents (and humans) working in this repository. This file ho
 | [`docs/design-system.md`](./docs/design-system.md) | How it looks and reads: copy voice, feedback, controls, colour, theme, type, surfaces, tilt, avatars, styling mechanics |
 | [`party/README.md`](./party/README.md) | The realtime server: module map, wire protocol, alarm lifecycle, guards, configuration |
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Workflow: setup, tooling, the test suite, commits, releases and deploys, licences |
+| [`GLOSSARY.md`](./GLOSSARY.md) | Domain language: the canonical term for each concept and the words to avoid |
 | [GitHub Issues](https://github.com/kspiteri/pixmaler/issues) | Open work and the reasoning behind decisions |
 
 Read the deep doc for the area you're changing before you change it.
@@ -140,4 +141,15 @@ Update the docs a change touches in the same batch; it's part of done, not a fol
 - **party/README.md** — anything under `party/` or the wire protocol.
 - **CONTRIBUTING.md** — the test suite table and counts, a new tool or workflow step, the licences list.
 - **README.md** — a player-facing capability or a stack entry.
+- **GLOSSARY.md** — a domain term settled or renamed.
 - **LICENSE.md** — any bundled third-party asset, and whether it needs a visible in-app credit.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `kspiteri/pixmaler`, via the `gh` CLI; no triage labels, existing issues are updated in place. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context: one root `GLOSSARY.md` plus `docs/adr/`, created when needed. See `docs/agents/domain.md`.
