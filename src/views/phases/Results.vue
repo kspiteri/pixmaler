@@ -11,7 +11,7 @@ import { computed, inject, onBeforeUnmount, onMounted, ref, useTemplateRef } fro
 import Button from '@/components/elements/Button.vue'
 import PlayerTag from '@/components/elements/PlayerTag.vue'
 import Tagline from '@/components/elements/Tagline.vue'
-import { ExportButton } from '@/components/game'
+import { ExportButton, LikenessMeter } from '@/components/game'
 import GameIcon from '@/components/game/shared/GameIcon.vue'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
 import { artRatio as artRatioFor, clientIdKey, drawingFilename, gridToPng, prefersReducedMotion, seatFor, shareCardPng, socketKey, useGmActions, useReadonlyCanvases, VOTE_CATEGORIES } from '@/lib'
@@ -365,6 +365,7 @@ const { setSlot } = useReadonlyCanvases(
                   <p class="results__winner-votes">
                     {{ w.votes }} point{{ w.votes === 1 ? "" : "s" }}
                   </p>
+                  <LikenessMeter :likeness="w.likeness" />
                   <div class="results__exports">
                     <ExportButton v-for="b in exportsById.get(w.submissionId)" :key="b.intent" v-bind="b" icon size="x-small" variant="subtle" />
                   </div>
@@ -402,6 +403,7 @@ const { setSlot } = useReadonlyCanvases(
                       <p class="results__award-votes">
                         {{ it.count }} {{ a.cat === "funniest" ? "funny" : "best" }} vote{{ it.count === 1 ? "" : "s" }}
                       </p>
+                      <LikenessMeter :likeness="it.entry.likeness" />
                       <div class="results__exports">
                         <ExportButton v-for="b in exportsById.get(it.entry.submissionId)" :key="b.intent" v-bind="b" icon size="x-small" variant="subtle" />
                       </div>
@@ -448,9 +450,7 @@ const { setSlot } = useReadonlyCanvases(
             <p class="results__item-votes">
               {{ entry.votes }} pt{{ entry.votes === 1 ? "" : "s" }}
             </p>
-            <p v-if="entry.likeness !== null" class="results__item-likeness">
-              likeness {{ entry.likeness }}%
-            </p>
+            <LikenessMeter :likeness="entry.likeness" />
             <div class="results__exports">
               <ExportButton v-for="b in exportsById.get(entry.submissionId)" :key="b.intent" v-bind="b" icon size="x-small" variant="subtle" />
             </div>

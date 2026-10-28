@@ -1,0 +1,51 @@
+@use 'tokens' as *;
+
+// `LikenessMeter.vue` — a drawing's likeness as a number over a thin meter. Global, not scoped:
+// static chrome. Shrink-wraps its content and sets no margin, so the host owns placement; the
+// track is a fixed width so bars compare across the hero, awards and gallery.
+
+.likeness-meter {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: top;
+
+  &__value {
+    margin: 0;
+    font-family: $font-body;
+    font-size: $fs-xs;
+    font-weight: $fw-regular;
+    color: $fg;
+  }
+
+  &__label {
+    color: $muted;
+  }
+
+  &__track {
+    width: 8rem;
+    max-width: 100%;
+    height: $track-h;
+    margin-top: 0.125rem;
+    border-radius: $radius-sm;
+    background: $fg-20;
+    overflow: hidden;
+  }
+
+  &__fill {
+    display: block;
+    width: var(--likeness);
+    height: 100%;
+    background: color-mix(in oklab, $accent-ink var(--likeness), $muted);
+  }
+
+  // Backgrounds vanish under forced colours; draw the bar in system ink instead.
+  @media (forced-colors: active) {
+    &__track {
+      border: 1px solid CanvasText;
+    }
+
+    &__fill {
+      background: CanvasText;
+    }
+  }
+}

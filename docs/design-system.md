@@ -35,7 +35,7 @@ How Pixmaler looks and reads: copy voice, feedback, controls, colour and theme, 
   - `tertiary` is the quiet *filled* key — neutral fill, bevel, primary's typography — so a vote button can swap primary ⇄ tertiary without reflowing. `subtle` is the ghost: transparent, body voice, no bevel.
 - **Every control presses.** One rule in [`_buttons.scss`](../src/styles/components/_buttons.scss) (`.btn, .pressable`) rests the element on a hard offset shadow and travels it down on `:active`. Variants tune custom properties, never add a rule: `--press` (travel, default 2 px; primary 4 px), `--press-colour` (default `$shadow-press`), and for a *filled* variant `--bevel` / `--bevel-pressed` — a zero-blur 2 px lit top edge and shaded bottom edge (`$bevel-fill`), the pixel-art half of the look. `.no-shadow` keeps the travel without the shadow.
 - **A non-`Button` control opts in with `.pressable`** — the toggle switch, avatar-picker cells, picker samples and Browse, the room-code chip, `/paint`'s settings toggle. Miss it and the control is dead to the touch, with nothing to flag it.
-- **A drawing's own controls sit under its name and points, never over the art.** On RESULTS that's a row (`.results__exports`) of icon-only `x-small` `subtle` `Button`s with 14px icons, Save (`Download`) then Share (`Share2`), each `aria-label` naming the player ("Save <name>'s drawing", "Share <name>'s card"; your own entry "Save your drawing" / "Share your card"); under a coarse pointer each gets a 40px hit area without growing. In Paint they're labelled `tertiary` `collapse` buttons with 16px icons beside Clear drawing, both disabled until something is drawn.
+- **A drawing's own controls sit under its name, points and likeness, never over the art.** On RESULTS that's a row (`.results__exports`) of icon-only `x-small` `subtle` `Button`s with 14px icons, Save (`Download`) then Share (`Share2`), each `aria-label` naming the player ("Save <name>'s drawing", "Share <name>'s card"; your own entry "Save your drawing" / "Share your card"); under a coarse pointer each gets a 40px hit area without growing. In Paint they're labelled `tertiary` `collapse` buttons with 16px icons beside Clear drawing, both disabled until something is drawn.
 - **One exemption: `.segmented__item`.** `.segmented` is `overflow: hidden` with flush joins, so a travel would clip; its focus ring is inset for the same reason.
 - **Icon-only segmented groups** (the palette's placement control and the drawing-tool row) give every item an `aria-label` and a matching `title`. A size slider is disabled, never hidden, on a tool without a size (Fill): its thumb rests at the start and it reads "Fill has no size", and the dock never reflows on a tool switch.
 - **The press owns `transform`.** Anything else that moves a pressable uses standalone `rotate` / `translate` / `scale`.
@@ -57,16 +57,16 @@ How Pixmaler looks and reads: copy voice, feedback, controls, colour and theme, 
 
 - **The test: does the colour bring its own background?** `$accent` (lime) and `$primary` (purple) are fills carrying their own ink (`$accent-fg` on lime is 16.3:1), so they never change.
 - **As text or a line, use the themed ink:** `$accent-ink`, `$primary-ink`, `$warn-ink`, `$danger-ink`. Bright lime is 1.16:1 on the light page (failing even the 3:1 non-text floor) and plain `$primary` 3.18:1. `.btn--secondary` shows the split: `$primary-ink` outline and label, `$primary` hover fill.
-- **A frame or a bar on a track is ink, not fill:** the winner's frame reads against the card (`--frame-winner-*` is themed) and the timer ribbon against its `$surface` track (`--timer-*` is themed).
+- **A frame or a bar on a track is ink, not fill:** the winner's frame reads against the card (`--frame-winner-*` is themed), the timer ribbon against its `$surface` track (`--timer-*` is themed), and the likeness meter's fill against its track (`$accent-ink`).
 - **Text ramp:** `$fg-80` … `$fg-20`; `$fg-35` and below are non-text only. Quiet copy is `$muted`.
 
 ### Lime means "go" and "chosen"
 
-- It fills the primary CTA and marks what the player has picked or earned: the selected segment, swatch and sample, a switch that's on, the slider's filled track, text selection, their awards, the **"yours" mark on the Results reveal** (a `__you` chip and a ring on your own card), the winner's frame. The wordmark is brand lime (a logotype is exempt), and so is the seat chip on a share card made in Paint, which has no seat: an exported image, not UI, so nothing there reads as selected. **Nothing else is lime.**
+- It fills the primary CTA and marks what the player has picked or earned: the selected segment, swatch and sample, a switch that's on, the slider's filled track, text selection, their awards, the **"yours" mark on the Results reveal** (a `__you` chip and a ring on your own card), the winner's frame, and the **likeness meter**, which turns lime as a drawing's likeness nears 100. The wordmark is brand lime (a logotype is exempt), and so is the seat chip on a share card made in Paint, which has no seat: an exported image, not UI, so nothing there reads as selected. **Nothing else is lime.**
 - **Focus is page ink** — a 2 px `$fg` `:focus-visible` ring app-wide, inputs included. Room codes, `/paint`'s open settings toggle, the music widget (and its playing pulse), spinners and links are page ink too.
 - A slider whose value isn't a choice (music volume) takes **`.slider--neutral`** (`--slider-fill: $fg-60`).
 - **Purple means the GM and the secondary button**, never "selected".
-- If a new mark shows state, focus or emphasis rather than a choice, it isn't lime.
+- If a new mark shows state, focus or emphasis rather than a choice or something earned, it isn't lime.
 
 ### Colours that don't follow the page
 
@@ -80,7 +80,7 @@ If a colour sits on something other than the page, it belongs here:
 ### The literal guard
 
 - **No literal palette hex;** reference the semantically right token (`$paper`, not `$fg`, for the drawing).
-- **`color-mix()` takes a token to an alpha.** No Sass colour functions: deep shades are static tokens, and no mixin computes a colour.
+- **`color-mix()` takes a token to an alpha, or blends two tokens by a ratio** (the likeness meter, `$muted` → `$accent-ink`). No Sass colour functions: deep shades are static tokens, and no mixin computes a colour.
 - **[`.stylelintrc.json`](../.stylelintrc.json) fails** any hex, or `rgb()`/`hsl()` in `color` / `background*` / `border*` / `fill` / `stroke` / `outline*`, outside `_theme.scss` and `_tokens.scss`. Shadows, filters and gradients keep the black-alpha idiom. Runs in pre-commit and `pnpm lint:css`.
 
 ## Theme switch
@@ -171,6 +171,13 @@ If a colour sits on something other than the page, it belongs here:
 - [`SettingsMenu.vue`](../src/components/layout/SettingsMenu.vue) is the one gear: in `PhaseLayout`'s bar (room phases, `/paint`) and as `settings-menu--corner` on Entry. A disclosure, not `role="menu"`: outside pointer or Escape closes it; Escape returns focus to the gear.
 - **Flat dropdown:** Theme, then two `<section>`s with an `h2` each — **Accessibility** (text size, touch mode, keyboard shortcuts — hidden in touch mode) and **Sound** (music, sound effects). Rows are a Sentence-case label (`$fg-80`, never an uppercase eyebrow) and a control; a setting whose name doesn't explain itself gets a one-line `__hint` wired via `ToggleSwitch`'s `describedby`.
 - Footer: text links **Privacy** and **Credits** (the global `InfoModal`), **Clear my data**, and the client version.
+
+### `LikenessMeter`
+
+- **Every likeness on screen is [`LikenessMeter.vue`](../src/components/game/shared/LikenessMeter.vue)**, so players can compare drawings at a glance: information, never a score or an award. Results mounts it on the hero, the Best and Funniest award drawings and the gallery (never the target or "didn't finish"); it renders nothing for a `null` likeness (a wiped canvas, an older Worker), so a missing value never shows as 0%.
+- **The number carries the value:** "likeness 64%", lowercase like the points beside it, the label in `$muted` and the number in `$fg` at a set regular weight in the body face, so it reads on both themes however low it is. On the hero and awards it never outranks the bold lime points; in the gallery, where the points are muted, it sits a step above them. The meter under it is decoration (`aria-hidden`), so it needs no contrast floor.
+- **The colour rule:** the fill's width is the likeness, and its colour is `color-mix(in oklab, $accent-ink <likeness>%, $muted)`: grey for a poor copy, full lime ink for a near-perfect one, on a `$fg-20` track the slider's height (`$track-h`). Ink, not the bright fill (see "Fills vs ink"). A likeness is earned, so lime is allowed (see above). Under forced colours the track gets a `CanvasText` border and the fill `CanvasText`, since backgrounds vanish there.
+- **Placement belongs to the host.** The component is `inline-block`, shrink-wraps its content and sets no margin: a centred host centres it, a left-aligned one (the award items) starts it at the text, and the host sets the spacing above it. Only the track has a fixed width (`8rem`, `max-width: 100%`), so bars compare across the hero, awards and gallery whatever sits beside them, and the text can grow past it under larger text or spacing overrides. No grow animation, so reduced motion has nothing to stop.
 
 ### Picker field recipe
 

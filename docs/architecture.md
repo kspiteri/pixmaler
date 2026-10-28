@@ -70,15 +70,15 @@ src/
 │   │   ├── PhaseBoundary.vue  # error boundary for the phase views
 │   │   ├── SettingsMenu.vue   # header gear + settings dropdown
 │   │   └── RoomInterstitial.vue # shell for every off-game room screen
-│   └── game/                  # index.ts barrel: DrawBoard · ExportButton · GmControls · ImagePicker · MusicWidget
-│       │                      #   PixelThumb · PlayerList · SalonWall · VotingCloseup
+│   └── game/                  # index.ts barrel: DrawBoard · ExportButton · GmControls · ImagePicker · LikenessMeter
+│       │                      #   MusicWidget · PixelThumb · PlayerList · SalonWall · VotingCloseup
 │       ├── image/ImagePicker.vue # picker orchestrator (lobby + /paint)
 │       ├── image/picker/      # SourcePicker · TargetPreview · CropWidget · DetailControl · PixelationStyleControl
 │       │                      # ColourControl · AlphaControl · TimerControl · MusicControl · stops.ts
 │       ├── canvas/            # DrawBoard.vue (target + editable pair) · PaletteTools.vue (tools panel, internal)
 │       │   └── palette/       # Header · PlacementControl · SizeControl · ToolPicker · Shortcuts
 │       ├── lobby/             # GmControls.vue (picker + Start gate) · PlayerList.vue (roster, Make GM, Remove)
-│       ├── shared/            # GameIcon.vue (award SVGs) · MusicWidget.vue (header transport) · PixelThumb.vue · ExportButton.vue (Save / Share + tick)
+│       ├── shared/            # GameIcon.vue (award SVGs) · MusicWidget.vue (header transport) · PixelThumb.vue · ExportButton.vue (Save / Share + tick) · LikenessMeter.vue (number + lime meter)
 │       └── voting/            # SalonWall.vue · VotingCloseup.vue (awards cast here) · SalonFrame.vue (internal)
 ├── views/
 │   ├── Entry.vue              # landing: Start / join by code / Free mode
