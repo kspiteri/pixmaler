@@ -5,7 +5,7 @@
 // folded in as assertions. No Vue, no sockets, no DO runtime; `playFullRound` lives in
 // `support/round.ts` so other suites can reuse it to fast-forward to any phase.
 
-import type { ClientMsg, GalleryMsg, Phase, StateMsg } from '../src/lib/protocol/types'
+import type { ClientMsg, GalleryMsg, Phase, ResultsMsg, StateMsg } from '../src/lib/protocol/types'
 import type { Harness } from './support/room'
 import { describe, expect, it } from 'vitest'
 import { handleClose, handleJoin } from '../party/connection'
@@ -54,6 +54,9 @@ describe('f1 · canonical round', () => {
     expect(ranked![0].clientId).toBe('gm')
     expect(ranked![0].votes).toBeGreaterThan(ranked![1].votes)
     expect(ranked![0].breakdown).toEqual({ funniest: 2, best: 2 })
+    // Every drawer painted the target exactly, and the broadcast reveal carries it.
+    const results = h.broadcasts.find(m => m.type === 'results') as ResultsMsg
+    expect(results.ranked.map(r => r.likeness)).toEqual([100, 100, 100])
   })
 
   it('broadcasts an anonymous gallery — grid and opaque id only', () => {
@@ -247,6 +250,28 @@ describe('leaf values', () => {
     // A vote for the wiped canvas is refused, so it can't be waited on or win.
     voteBoth(h, 'gm', p1Sub)
     expect(h.state.votes.size).toBe(0)
+  })
+
+  it('reveals a wiped canvas with no likeness, without disturbing the vote order', () => {
+    const h = lobby()
+    configure(h)
+    start(h)
+    submit(h, 'p1') // first in, so the gm/p1 vote tie keeps p1 ahead despite its lower likeness
+    submit(h, 'p1', BLANK)
+    submit(h, 'gm')
+    done(h, 'gm')
+    submit(h, 'p2', [0, 0, 0, 0]) // half the target's cells
+    done(h, 'p2')
+    endDrawing(h.ctx)
+    voteBoth(h, 'p1', submissionIdOf(h, 'p2')!)
+    voteBoth(h, 'gm', submissionIdOf(h, 'p2')!)
+    handleStopVoting(h.ctx, conn(h, 'gm'))
+
+    const byClient = Object.fromEntries(h.state.ranked!.map(r => [r.clientId, r]))
+    expect(h.state.ranked!.map(r => r.clientId)).toEqual(['p2', 'p1', 'gm']) // votes, not likeness
+    expect(byClient.p1.likeness).toBeNull()
+    expect(byClient.gm.likeness).toBe(100)
+    expect(byClient.p2.likeness).toBe(0) // no better than a one-colour bucket fill
   })
 
   it('ranks a tie as joint top', () => {

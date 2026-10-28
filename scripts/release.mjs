@@ -76,7 +76,7 @@ async function main() {
   // deploy ends every live game. These are everything the Worker bundle reads; keep in step with
   // party/'s imports.
   const lastTag = capture('git', ['describe', '--tags', '--abbrev=0'])
-  const workerPaths = ['party', 'src/lib/protocol', 'src/lib/content/words.ts', 'wrangler.jsonc']
+  const workerPaths = ['party', 'src/lib/protocol', 'src/lib/content/words.ts', 'src/lib/canvas/palette.ts', 'wrangler.jsonc']
   const serverDiff = capture('git', ['diff', '--name-only', `${lastTag}..HEAD`, '--', ...workerPaths])
   if (serverDiff) {
     console.log(`\n\u25B6 the Worker changed since ${lastTag}:\n${serverDiff}`)

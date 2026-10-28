@@ -12,7 +12,7 @@
 import type { ClientMsg } from '../src/lib/protocol/types'
 import { describe, expect, it } from 'vitest'
 import { GRID_MAX_SIDE, PALETTE_MAX_LEN, parseClientMsg } from '../src/lib/protocol/protocol'
-import { AVATAR_SHAPES, clampDrawSeconds, clampName, DEFAULT_AVATAR_SHAPE, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN, NAME_MAX_LEN, normaliseShape, sanitiseName, VOTE_CATEGORIES } from '../src/lib/protocol/types'
+import { AVATAR_SHAPES, clampDrawSeconds, clampName, DEFAULT_AVATAR_SHAPE, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN, NAME_MAX_LEN, normaliseLikeness, normaliseShape, sanitiseName, VOTE_CATEGORIES } from '../src/lib/protocol/types'
 
 // Every assertion parses a raw frame; the short name keeps them readable.
 const parse = parseClientMsg
@@ -46,6 +46,18 @@ describe('normaliseShape', () => {
     // must not survive the check just because it exists on Object.prototype.
     for (const key of ['__proto__', 'constructor', 'toString', 'hasOwnProperty'])
       expect(normaliseShape(key)).toBe(DEFAULT_AVATAR_SHAPE)
+  })
+})
+
+describe('normaliseLikeness', () => {
+  it('passes through a whole number from 0 to 100, zero included', () => {
+    for (const ok of [0, 1, 64, 99, 100])
+      expect(normaliseLikeness(ok)).toBe(ok)
+  })
+
+  it('reads anything else, including a field an older Worker never sent, as no likeness', () => {
+    for (const bad of [undefined, null, -1, 101, 64.5, Number.NaN, '64', {}, true])
+      expect(normaliseLikeness(bad)).toBeNull()
   })
 })
 

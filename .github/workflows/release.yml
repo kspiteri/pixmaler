@@ -99,8 +99,8 @@ jobs:
             echo "### Pages is live at \`${{ needs.release.outputs.tag }}\`"
             echo
             echo "The **Worker is not deployed by CI** — and it only needs deploying when"
-            echo "the server changed, i.e. \`party/\`, \`src/lib/protocol/\`, \`src/lib/content/words.ts\`"
-            echo "or \`wrangler.jsonc\`. A Worker deploy **ends every game in progress**, so skip it"
+            echo "the server changed, i.e. \`party/\`, \`src/lib/protocol/\`, \`src/lib/content/words.ts\`,"
+            echo "\`src/lib/canvas/palette.ts\` or \`wrangler.jsonc\`. A Worker deploy **ends every game in progress**, so skip it"
             echo "when nothing there moved:"
             echo
             echo '```bash'

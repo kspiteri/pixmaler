@@ -1,6 +1,7 @@
 // Colour science for the image pipeline: hex conversion, RGB distance, median-cut palette
 // derivation, near-duplicate merging, and the swatch's display order. Nothing here knows
 // about canvases, grids or cells, which is what makes it testable without a DOM.
+// Trap: the Worker bundles this file (party/likeness.ts), so keep it import-free and DOM-free.
 
 // 0-255 per channel, no alpha — a target is fully opaque.
 export type Rgb = [number, number, number]

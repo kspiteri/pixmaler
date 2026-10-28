@@ -1,6 +1,6 @@
 # party/ — the realtime server
 
-The game server: a [PartyServer](https://github.com/cloudflare/partyserver) Durable Object on Cloudflare Workers, deployed with `wrangler`. One room = one DO instance, keyed by a memorable `{word}-{word}` code. The server is authoritative for phase, timer, submissions and vote tallying — the client is a view of its truth.
+The game server: a [PartyServer](https://github.com/cloudflare/partyserver) Durable Object on Cloudflare Workers, deployed with `wrangler`. One room = one DO instance, keyed by a memorable `{word}-{word}` code. The server is authoritative for phase, timer, submissions, vote tallying and likeness — the client is a view of its truth.
 
 > **It is not PartyKit.** There is no `partykit` dependency and no `partykit.json` — the managed PartyKit host was blocked by a shared-zone cap and the server was ported to PartyServer + `wrangler` (`wrangler.jsonc`). `VITE_PARTYKIT_HOST` and `routePartykitRequest` keep their historical names; nothing else of PartyKit remains. See [`docs/.plans/archive/07-partyserver-port.md`](../docs/.plans/archive/07-partyserver-port.md).
 
@@ -25,11 +25,12 @@ To populate a round without friends: `node scripts/testbots.mjs --room=<code> --
 | `ctx.ts` | `RoomCtx` / `RoomConn` — the seam between the DO and the handlers, and the reason every handler is testable without one |
 | `state.ts` | `RoomState` and the pure derivations over it: `buildState`, `buildVoteState`, progress counts, GM auto-promotion |
 | `connection.ts` | `join` / reconnect / `rename` / `shape` / close — most rules exist because partysocket reconnects unprompted |
-| `phases.ts` | `LOBBY → DRAWING → VOTING → RESULTS` and the way back; statement order inside `endDrawing` is load-bearing |
+| `phases.ts` | `LOBBY → DRAWING → VOTING → RESULTS` and the way back; statement order inside `endDrawing` and `endVoting` is load-bearing |
 | `drawing.ts` | `draw:submit` (the hot path — broadcasts nothing) and `draw:done` |
 | `voting.ts` | Vote casting + the GM's stop; guards ignore rather than answer, so a prober learns nothing |
 | `gm.ts` | GM-only controls — every handler proves sender-is-GM, then phase-allows-it, then acts |
 | `tally.ts` | Who wins and what a player ends up called — pure functions, no DO required |
+| `likeness.ts` | How close each drawing came to the target — pure, built once per round from the target and palette |
 | `alarm.ts` | Which deadline the single alarm wakes for and what to do when it fires — pure over an injected clock |
 | `rateLimit.ts` | The per-connection token bucket (#75) — pure arithmetic, caller owns the buckets |
 
@@ -43,6 +44,8 @@ Lives in **`src/lib/protocol/`**, not here, because both deploy targets need it:
 
 **`musicFit` rides the same plumbing** — a second `RoundConfig` field (`finale` default, else `loop`/`once`), validated by `normaliseMusicFit` against `MUSIC_FITS`. It decides how a chosen song fills the round; the server only stores and echoes it, while the client (`useMusic` + the pure `musicPlan`) does all the timing. `finale` ends the song on the deadline, so the music is the countdown. Same deploy note as above.
 
+**Likeness rides `results`.** Each `RankedResult` carries `likeness`: 0 to 100, how close the drawing came to the target, or `null` when there is nothing to score (a wiped or wrong-size grid). `endVoting` builds one scorer per round with `likenessScorer` (`likeness.ts`) from the frozen config's target and palette, scores every tallied entry before mutating state, and leaves the vote order untouched. Only an exact copy shows 100 (anything else caps at 99); a one-colour palette scores any painted drawing 100, and a target one bucket fill reproduces scores everyone 0. It is a protocol change, so it ships on the next Worker deploy; the client reads `likeness` through `normaliseLikeness`, so an older Worker's missing field is no likeness.
+
 ## Phases, deadlines and the one alarm
 
 `LOBBY → DRAWING → VOTING → RESULTS`, timer transitions deadline-driven: the server broadcasts a deadline timestamp, clients tick locally, and a **single DO alarm** (never `setTimeout`) wakes for whichever deadline is nearest — draw deadline, VOTING backstop, empty-room grace or idle wipe. `onMessage` re-arms it after every message, which is also what lets the GM's "+15s" (`gm:extendTime`, capped at `MAX_EXTENSIONS`) simply bump `state.deadline` and work. See [`docs/.plans/archive/10-room-lifecycle.md`](../docs/.plans/archive/10-room-lifecycle.md).
@@ -52,7 +55,7 @@ Every `state` and `phase` also carries a **`serverNow`** — the DO's wall clock
 Two orderings are load-bearing, pinned by `test/phases.test.ts`:
 
 - **Payload before phase flip** — `endDrawing` broadcasts `gallery` then `phase`; `endVoting` broadcasts `results` then `phase`. Flipping first mounts the incoming screen against the previous round's payload.
-- `endDrawing` computes its gallery **before** mutating state; the nobody-drew path sets `phase = 'VOTING'` before delegating to `endVoting`.
+- `endDrawing` computes its gallery and `endVoting` its ranking **before** mutating state, so a throw leaves the phase for the alarm retry; the nobody-drew path sets `phase = 'VOTING'` before delegating to `endVoting`.
 
 ## State: in memory, on purpose (for now)
 
@@ -97,8 +100,8 @@ All read per-call from `this.env` — `wrangler dev` picks up a `.dev.vars` chan
 
 ## Testing
 
-Every handler runs against a fake `RoomCtx` (`test/support/room.ts`) — no DO, no socket, no browser. The pure seams (`alarm.ts`, `tally.ts`, `rateLimit.ts`, `state.ts`) are unit-tested directly; `test/smoke.test.ts` walks the full loop through the real handlers. **Any change under `party/` must run the smoke suite** — and update it when the path shape genuinely changes, never re-pin it to broken behaviour. The suite table is in [`CONTRIBUTING.md`](../CONTRIBUTING.md#code-quality).
+Every handler runs against a fake `RoomCtx` (`test/support/room.ts`) — no DO, no socket, no browser. The pure seams (`alarm.ts`, `tally.ts`, `likeness.ts`, `rateLimit.ts`, `state.ts`) are unit-tested directly; `test/smoke.test.ts` walks the full loop through the real handlers. **Any change under `party/` must run the smoke suite** — and update it when the path shape genuinely changes, never re-pin it to broken behaviour. The suite table is in [`CONTRIBUTING.md`](../CONTRIBUTING.md#code-quality).
 
 ## Deploying
 
-**By hand, `pnpm wr:deploy`, before merging the Release PR** — full reasoning in [`CONTRIBUTING.md`](../CONTRIBUTING.md#deploy), but the short version: no Cloudflare credential in CI, a deploy ends every game in progress (see State above), and a newer server tolerates older clients while the reverse does not. Only deploy when the server actually changed: `git diff <last-tag>..HEAD -- party/ src/lib/protocol/`.
+**By hand, `pnpm wr:deploy`, before merging the Release PR** — full reasoning in [`CONTRIBUTING.md`](../CONTRIBUTING.md#deploy), but the short version: no Cloudflare credential in CI, a deploy ends every game in progress (see State above), and a newer server tolerates older clients while the reverse does not. Only deploy when the server actually changed: `git diff <last-tag>..HEAD -- party/ src/lib/protocol/ src/lib/content/words.ts src/lib/canvas/palette.ts wrangler.jsonc`.

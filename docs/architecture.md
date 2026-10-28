@@ -5,7 +5,7 @@ How Pixmaler works: the stack, the source tree, how room state reaches the scree
 ## Stack
 
 - **Frontend:** Vite + Vue 3 (`<script setup>`) + TypeScript + SCSS, a static build on GitHub Pages under `base: '/pixmaler/'` ([`vite.config.ts`](../vite.config.ts)).
-- **Realtime backend:** a PartyServer Durable Object on Cloudflare Workers ([`wrangler.jsonc`](../wrangler.jsonc)). One room = one DO instance, keyed by a `{word}-{word}` code. The server is authoritative for phase, timer, submissions and the tally; deadlines and the room lifecycle run off a **single DO alarm**, never `setTimeout`.
+- **Realtime backend:** a PartyServer Durable Object on Cloudflare Workers ([`wrangler.jsonc`](../wrangler.jsonc)). One room = one DO instance, keyed by a `{word}-{word}` code. The server is authoritative for phase, timer, submissions, the tally and each drawing's likeness; deadlines and the room lifecycle run off a **single DO alarm**, never `setTimeout`.
 - **Transport:** `partysocket` (auto-reconnect). Players are keyed by a localStorage `clientId`; a reconnect reclaims its seat by echoing the per-room seat secret the server issued on first join.
 - **No server image processing.** The GM's browser pixelates; only the grid and palette cross the wire.
 

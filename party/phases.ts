@@ -4,6 +4,7 @@
 
 import type { ServerMsg, Submission } from '../src/lib/protocol'
 import type { RoomConn, RoomCtx } from './ctx'
+import { likenessScorer } from './likeness'
 import { buildVoteState, isGm } from './state'
 import { tallyVotes } from './tally'
 
@@ -118,11 +119,15 @@ export function endVoting(ctx: RoomCtx) {
   const { state } = ctx
   if (state.phase !== 'VOTING')
     return
-  state.phase = 'RESULTS'
-  state.deadline = null
   const cfg = state.config!
 
+  // Scored before any mutation, so a throw leaves the room in VOTING for the retry.
+  const likenessOf = likenessScorer(cfg.targetGrid, cfg.palette)
   const ranked = tallyVotes(state.gallery ?? [], state.votes, state.players, state.submissionOwners)
+    .map(entry => ({ ...entry, likeness: likenessOf(entry.grid) }))
+
+  state.phase = 'RESULTS'
+  state.deadline = null
 
   // `results` before `phase`: the other way round, Results mounts against the payload
   // the client still holds — the previous round's — and flashes last round's winner.

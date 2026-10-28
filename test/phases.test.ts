@@ -269,6 +269,34 @@ describe('endVoting', () => {
     endVoting(h.ctx)
     expect(h.state.ranked).not.toBeNull()
   })
+
+  // Booby-trap one property so the named step throws.
+  function trap<T extends object>(target: T, key: PropertyKey): T {
+    return new Proxy(target, {
+      get(t, prop, recv) {
+        if (prop === key)
+          throw new Error('boom')
+        return Reflect.get(t, prop, recv)
+      },
+    })
+  }
+
+  it.each([
+    ['tallying', (s: RoomState) => { s.players = trap(s.players, 'get') }],
+    ['scoring likeness', (s: RoomState) => { s.config = { ...s.config!, palette: trap(s.config!.palette, 'map') } }],
+  ] as const)('ranks before mutating state, so a throw while %s leaves the room in VOTING', (_, arm) => {
+    // Same hazard as endDrawing: a throw after the phase flip strands the room in RESULTS
+    // with no ranking, and the alarm retry then fails the VOTING guard.
+    const deadline = Date.now() + 60_000
+    const h = room([player('a')], { phase: 'VOTING', config, deadline, gallery: [{ submissionId: 'a', grid: [0] }] })
+    arm(h.state)
+
+    expect(() => endVoting(h.ctx)).toThrow('boom')
+    expect(h.state.phase).toBe('VOTING')
+    expect(h.state.deadline).toBe(deadline)
+    expect(h.state.ranked).toBeNull()
+    expect(h.broadcasts).toEqual([])
+  })
 })
 
 describe('resetToLobby', () => {

@@ -399,7 +399,7 @@ describe('handleJoin — targeted re-sends', () => {
   it('replays the retained ranking mid-RESULTS', () => {
     // `results` is broadcast exactly once, so without this a rejoining client sits
     // on "counting the damage…" and a rejoining GM cannot restart the room.
-    const ranked = [{ submissionId: 'a', clientId: 'a', name: 'A', votes: 1, breakdown: { funniest: 1, best: 0 }, grid: [0] }]
+    const ranked = [{ submissionId: 'a', clientId: 'a', name: 'A', votes: 1, breakdown: { funniest: 1, best: 0 }, grid: [0], likeness: 64 }]
     const h = harness([player('a')], { phase: 'RESULTS', config, ranked })
     handleJoin(h.ctx, h.conn('conn-a'), join('a'))
     expect(h.sent.find(s => s.msg.type === 'results')!.msg as ResultsMsg).toMatchObject({ ranked })
