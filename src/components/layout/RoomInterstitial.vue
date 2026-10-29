@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// The shared shell for every "you are not in a game" room screen: the name gate before
+// The shared shell for every "you are not in the room" screen: the name gate before
 // joining, and the three terminal refusals (room full, no such room, wiped). It renders the
 // wordmark, an eyebrow, and the room code off the URL, then a slot for the screen's own body
 // — a note plus an action, or the name form.

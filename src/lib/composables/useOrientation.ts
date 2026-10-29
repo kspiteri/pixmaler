@@ -1,5 +1,5 @@
 // Ratio-aware layout for the two-pane canvas: track the viewport and derive whether the
-// reference/canvas pair sits in a row or a column so the editable canvas claims the most
+// original/canvas pair sits in a row or a column so the editable canvas claims the most
 // area. Owns the resize listener. Falls back to 'row' until grid dimensions are known.
 
 import type { ComputedRef } from 'vue'

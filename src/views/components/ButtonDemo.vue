@@ -104,11 +104,11 @@ const backHref = appHref()
           </template>
           Block primary
         </Button>
-        <Button variant="subtle" size="x-small" block aria-label="Reference image">
+        <Button variant="subtle" size="x-small" block aria-label="Original image">
           <template #icon>
             <ImageIcon :size="14" aria-hidden="true" />
           </template>
-          reference
+          original
           <template #trailing>
             <ChevronDown :size="14" />
           </template>

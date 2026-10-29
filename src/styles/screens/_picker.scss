@@ -2,7 +2,7 @@
 @use 'chrome' as *;
 
 // ImagePicker — a persistent target preview + a single-open accordion of steps (Image →
-// Adjust target → Game settings), shared by the Lobby's GM controls and the /paint sandbox. Static
+// Adjust target → Round settings), shared by the Lobby's GM controls and Free mode. Static
 // and unscoped, so the preview reaches its imperatively-appended canvas with plain selectors.
 
 // The shared width every slider and select is capped to; segmented groups keep their own.

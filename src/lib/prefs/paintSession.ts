@@ -3,9 +3,9 @@ import { TARGET_RATIOS } from '../canvas/aspect'
 import { PIXELATION_STYLES } from '../canvas/quantisers'
 import { readStored, removeStored, writeStored } from '../storage'
 
-// The /paint sandbox remembers the chosen image, its settings and the canvas progress across
+// Free mode remembers the chosen image, its settings and the canvas progress across
 // reloads — it's solo practice with no server to hold them. One JSON blob per browser,
-// module-level like the other prefs. An absent key means a fresh sandbox, which opens on the
+// module-level like the other prefs. An absent key means a fresh Free mode, which opens on the
 // picker with no image. `clearAllData` wipes it with every other `pixmaler:*` key.
 
 const KEY = 'pixmaler:paintSession'

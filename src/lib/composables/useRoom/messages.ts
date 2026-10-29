@@ -67,7 +67,7 @@ export function applyServerMessage(msg: ServerMsg, refs: RoomRefs, socket: Party
       // resurrects it. A mid-round rejoin arrives as `state`, so restores survive. Nothing
       // else ever clears the last four:
       //   drawState — else the last drawing reappears on the new canvas
-      //   results   — else RESULTS flashes the previous winner before the reveal
+      //   results   — else RESULTS flashes the previous winner before the new results
       //   gallery   — else a stale gallery is voted on
       //   voteState — else round 1's picks pre-fill round 2's vote UI
       if (msg.phase === 'DRAWING') {

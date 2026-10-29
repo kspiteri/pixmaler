@@ -96,7 +96,7 @@ const countdownAnnounce = useCountdownAnnounce(secondsLeft, [60, 30, 10, 5, 4, 3
 // and dividing by the config would pin the bar at 100%.
 const totalSeconds = computed(() => props.state.roundSeconds || config.value.drawSeconds)
 
-// Ratio-aware layout: the fixed shell flips the reference/canvas pair between row and column.
+// Ratio-aware layout: the fixed shell flips the original/canvas pair between row and column.
 const orientation = useOrientation(() => config.value.gridW, () => config.value.gridH)
 
 // "Done" is a purely social signal. Local optimistic flag for instant click feedback,
@@ -192,7 +192,7 @@ onBeforeUnmount(() => {
       </Button>
     </template>
 
-    <!-- Spectators get the reference and the room's progress, but no canvas: they joined
+    <!-- Spectators get the original and the room's progress, but no canvas: they joined
          after this round started. The target is safe to show — a new image next round. -->
     <div v-if="spectating" class="drawing__body drawing__body--watching">
       <p class="drawing__watching-note">

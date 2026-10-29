@@ -1,4 +1,4 @@
-// The /paint sandbox's stored session and the "does this new target clear the drawing" check.
+// Free mode's saved progress and the "does this new target clear the drawing" check.
 // A session outlives code changes, so an older blob must still restore the player's drawing,
 // and a bad picker field must cost the picker hydration, never the drawing.
 

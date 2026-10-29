@@ -25,8 +25,8 @@ export interface PixelationStyleMeta {
 // Balanced = Wu, Faithful = k-means; the GM picks by the live preview, not the algorithm.
 export const PIXELATION_STYLES: PixelationStyleMeta[] = [
   { id: 'bold', label: 'Bold', blurb: 'Fewer, stronger colours and big flat areas, the easiest to copy.', quantise: medianCutQuantiser, mergeUnit: 16 },
-  { id: 'balanced', label: 'Balanced', blurb: 'Fuller mix of colours. Good all-rounder for most pictures.', quantise: wuQuantiser, mergeUnit: 12 },
-  { id: 'faithful', label: 'Faithful', blurb: 'Closest to the original, softer and subtle shades. Hardest to copy.', quantise: kmeansQuantiser, mergeUnit: 8 },
+  { id: 'balanced', label: 'Balanced', blurb: 'Fuller mix of colours. Good all-rounder for most images.', quantise: wuQuantiser, mergeUnit: 12 },
+  { id: 'faithful', label: 'Faithful', blurb: 'Closest to your source image, softer and subtle shades. Hardest to copy.', quantise: kmeansQuantiser, mergeUnit: 8 },
 ]
 
 export const DEFAULT_PIXELATION_STYLE: PixelationStyle = 'balanced'

@@ -1,4 +1,4 @@
-// BM — hover-marker mirror: the read-only reference canvas's crosshair, drawn and then
+// BM — hover-marker mirror: the read-only original's crosshair, drawn and then
 // restored pixel-for-pixel. Needs a real canvas to read back, so out of the Node suite.
 
 import { afterEach, describe, expect, it } from 'vitest'
@@ -7,7 +7,7 @@ import { palette } from './support'
 
 const W = 10
 const H = 10
-const RED = 1 // palette index painted across the whole reference image
+const RED = 1 // palette index painted across the whole original
 
 afterEach(() => {
   document.body.replaceChildren()

@@ -32,7 +32,7 @@ pnpm lint:fix     # ESLint with --fix
 pnpm lint:css     # Stylelint, the colour-literal guard
 pnpm test         # Vitest: Node suites + browser suites (Chromium, Firefox, WebKit)
 pnpm test:unit    # Node suites only (what CI runs; no browser)
-pnpm wr:deploy    # deploy the Worker (ends every live game, see Deployment)
+pnpm wr:deploy    # deploy the Worker (ends every live room, see Deployment)
 pnpm release      # gate, deploy-if-changed, merge the Release PR, name it (prompts)
 pnpm bots         # fill a local room with test players (--room=<code> --count=5)
 ```
@@ -52,7 +52,7 @@ pnpm bots         # fill a local room with test players (--room=<code> --count=5
 - **The pre-commit hook** (`simple-git-hooks` + `lint-staged`) runs `eslint --fix` on staged files and Stylelint on staged `.scss`/`.vue`, and aborts the commit on any error.
 - **Commits are [Conventional Commits](https://www.conventionalcommits.org)**, enforced by `scripts/commit-msg.mjs`. release-please derives the version and changelog from the types, so an unparseable message drops out of both.
 - **Any change under `party/`** (a handler, a phase transition, the tally, the state shape) must run `test/smoke.test.ts`, and update it only when the path's shape genuinely changes, never to pin broken behaviour.
-- **The Node suite is DOM-free**, verified without a browser; browser-mode suites (`test/browser/`, run across Chromium/Firefox/WebKit) cover the canvas and its tools, the image pipeline's browser half, the pointer/keyboard widgets, the PNG/share-card exports and the likeness meter. Full-screen component flows and anything spanning the server are still verified by driving the app in a browser. Anything stateful also needs both servers and a real reconnect (reload mid-game, including during RESULTS).
+- **The Node suite is DOM-free**, verified without a browser; browser-mode suites (`test/browser/`, run across Chromium/Firefox/WebKit) cover the canvas and its tools, the image pipeline's browser half, the pointer/keyboard widgets, the PNG/share-card exports and the likeness meter. Full-screen component flows and anything spanning the server are still verified by driving the app in a browser. Anything stateful also needs both servers and a real reconnect (reload mid-round, including during RESULTS).
 
 ## Code rules
 
@@ -69,7 +69,7 @@ pnpm bots         # fill a local room with test players (--room=<code> --count=5
 ### State and the server
 
 - **The server is authoritative** for phase, timer, submissions and votes. Client state is a view of the latest server message; don't hold local state that can drift from it.
-- **Inject infrastructure, prop data.** The socket (a `ShallowRef<PartySocket | null>`) and `clientId` are `provide`d by `useRoom` (keys in `lib/keys.ts`); reactive game state flows down from `App.vue` as props.
+- **Inject infrastructure, prop data.** The socket (a `ShallowRef<PartySocket | null>`) and `clientId` are `provide`d by `useRoom` (keys in `lib/keys.ts`); reactive room state flows down from `App.vue` as props.
 - **Replaced-wholesale state is a `shallowRef`.** `state`, `gallery`, `results`, `voteState`, `drawState` and `targetGrid` are swapped whole on each server message, so nothing deep-watches them.
 - **`PixelCanvas` is imperative.** Instantiate it in `onMounted` or a watcher and append its `<canvas>` into a template ref; never drive it through reactivity.
 - **Trap: function-form `:ref` timing.** To read DOM that a `v-for` with `:ref="el => setSlot(id, el)"` just rendered, `await nextTick()` twice rather than relying on `flush: 'post'`; Vue doesn't order those callbacks against post-flush watchers.
@@ -93,7 +93,7 @@ The full rules, with their reasons, are in [`docs/design-system.md`](./docs/desi
 - **Copy sits in three bands.** *Flavour* (the game's voice: lowercase, dry) for idle, empty, waiting and roll-call states. *Explanatory* (clear, light touch) for status lines and spectator notes. *Direct* (plain, Sentence case) for instructions, labels, errors, GM controls, Settings and dialogs; instructions never joke. In player-facing copy: no em-dashes, and no exclamation marks except `ready!`. Status lines are fixed strings; a `Tagline` picks at most one line per mount and never rotates.
 - **A confirm names its action** ("End voting" / "Keep voting"), never OK/Cancel. A condition that clears itself is a notice (`AlertNotice`), not a dialog.
 - **Every button is `Button.vue`.** A control that isn't a `Button` (switch, segmented radio, selection grid) opts into the press with `.pressable`, or it is dead to the touch with nothing to flag it.
-- **Use the shared component, never hand-roll its markup:** `PlayerTag` for a chip beside a name, `Avatar` for any `.avatar`, `NameField` for any display-name input, `RoomInterstitial` for any off-game room screen, `ToggleSwitch` for on/off, `Slider` for ranges, `LikenessMeter` for a drawing's likeness, `AlertNotice` / `AlertDialog` for feedback.
+- **Use the shared component, never hand-roll its markup:** `PlayerTag` for a chip beside a name, `Avatar` for any `.avatar`, `NameField` for any display-name input, `RoomInterstitial` for any off-room screen, `ToggleSwitch` for on/off, `Slider` for ranges, `LikenessMeter` for a drawing's likeness, `AlertNotice` / `AlertDialog` for feedback.
 - **Colour values live in two files only.** `src/styles/foundation/_theme.scss` writes the theme-varying values; `_tokens.scss` names them and holds the few fixed literals (the lime and purple fills, their deep shades, the seat ramp). Everywhere else references a token: Stylelint fails the build on a literal. Derive an alpha with `color-mix()` on a token, or blend two tokens by a ratio; no Sass colour functions.
 - **Lime means "go" or "chosen"** (the primary CTA; what a player picked or earned) and nothing else; the wordmark and the seat chip on a Paint share card are brand lime, not UI. Purple means the GM or the secondary button. Lime or purple as text or a line uses the `-ink` token (`$accent-ink`, `$primary-ink`), because the bright fills fail contrast on the light theme.
 - **Font sizes go through `$fs-*` tokens** (or `fs()`), never a literal `rem`, so they follow the text-size setting.
@@ -110,7 +110,7 @@ Full picture in [`docs/architecture.md`](./docs/architecture.md); server interna
 ```
 src/lib/          domain modules behind the @/lib barrel: protocol/ canvas/ composables/ prefs/ player/ content/ export/
 src/components/   elements/ · layout/ · game/ (behind the @/components/game barrel)
-src/views/        Entry, Paint, dev pages, phases/ (the four game screens), rooms/ (name gate + refusals)
+src/views/        Entry, Paint (Free mode), dev pages, phases/ (the four phase screens), rooms/ (name gate + refusals)
 src/styles/       foundation/ · mixins/ · base/ · components/ · screens/ + main.scss
 party/            the PartyServer Durable Object (config in wrangler.jsonc)
 test/             Vitest suites; the fake room context lives in test/support/
@@ -124,7 +124,7 @@ test/             Vitest suites; the fake room context lives in test/support/
 ## Deployment
 
 - **Pages deploys itself; the Worker is deployed by hand.** release-please keeps a Release PR open; merging it tags, publishes and deploys Pages only. The Worker ships with `pnpm wr:deploy` from the maintainer's machine.
-- **A Worker deploy ends every game in progress**: room state is in memory, and Durable Object storage holds only the alarm.
+- **A Worker deploy ends every live room**: room state is in memory, and Durable Object storage holds only the alarm.
 - **Deploy the Worker before merging the Release PR.** The frontend inlines `VITE_PARTYKIT_HOST` at build time, and a newer server tolerates older clients while the reverse doesn't.
 - **`pnpm release` automates the flow:** gates (incl. build + worker dry-run), then the Worker deploy *only if it changed*, the Release PR merge, watching the run, naming the release, and finally a fast-forward `git pull` so local main picks up the bot's version bump — prompting before each destructive step (`--yes` skips; `--theme "…"` presets the name).
 - **GitHub Pages is static-only** and serves the app under `base: '/pixmaler/'`.

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Terminal screen for a room the server has wiped: either the GM ended the session, or it sat
+// Terminal screen for a room the server has wiped: either the GM closed it, or it sat
 // idle. The server sends which; an older Worker sends none, so that case keeps neutral copy.
 
 import type { SessionClosedReason } from '@/lib'
@@ -24,13 +24,13 @@ function reopen(code: string) {
   <RoomInterstitial v-slot="{ code }" eyebrow="room closed">
     <p class="room-screen__note">
       <template v-if="reason === 'ended'">
-        the GM ended the session, so the exhibition came down
+        the GM closed the room, so the exhibition came down
       </template>
       <template v-else-if="reason === 'idle'">
         the room sat idle, so we packed up while nobody was looking
       </template>
       <template v-else>
-        the session has been closed down
+        this code is free to use again
       </template>
     </p>
     <Button variant="primary" @click="reopen(code)">

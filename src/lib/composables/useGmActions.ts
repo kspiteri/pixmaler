@@ -17,8 +17,9 @@ export function useGmActions(socket: PartySocket) {
     send({ type: 'gm:cancelRound' })
   }
 
+  // `gm:endSession` is the wire name; renaming it is a protocol change (the Worker deploys first).
   async function endSession() {
-    if (!await askConfirm('End the session for everyone? The room closes and this code is released.', { confirm: 'End session', cancel: 'Keep the room' }))
+    if (!await askConfirm('Close this room? Everyone leaves and this code is released.', { confirm: 'Close room', cancel: 'Keep it open' }))
       return
     send({ type: 'gm:endSession' })
   }

@@ -18,13 +18,13 @@ export interface CanvasOptions {
   gridW: number
   gridH: number
   palette: string[]
-  targetGrid?: number[] // if provided, renders as the reference image
+  targetGrid?: number[] // if provided, renders as the original
   // Editable canvases only: seed with a drawing already in progress (rejoin mid-DRAWING).
   // Ignored when `targetGrid` is set.
   initialGrid?: number[]
   editable?: boolean // if false, read-only display (used for gallery/results)
   onUpdate?: (grid: number[]) => void
-  // Fires when the cursor moves to a different cell (null on leave), to mirror it to a reference canvas.
+  // Fires when the cursor moves to a different cell (null on leave), to mirror it to the original's canvas.
   onHover?: (cell: { x: number, y: number } | null) => void
   // Right-click eyedropper: the palette index sampled from the cell under the cursor.
   onPick?: (index: number) => void
@@ -340,14 +340,14 @@ export class PixelCanvas {
   }
 
   // A crosshair through the cell spanning both axes, driven by the editable canvas's hover.
-  // Not a box: a `strokeRect` inflated to stay visible on a shrunken reference canvas clipped
+  // Not a box: a `strokeRect` inflated to stay visible on a shrunken original canvas clipped
   // and pointed up to 6 cells off near the edges.
   private drawMarkerAt(cx: number, cy: number) {
     const ctx = this.ctx
     const cxPx = cx * CELL_SIZE + CELL_SIZE / 2
     const cyPx = cy * CELL_SIZE + CELL_SIZE / 2
 
-    // The reference canvas is CSS-scaled down hard, so a fixed *apparent* thickness must be
+    // The original's canvas is CSS-scaled down hard, so a fixed *apparent* thickness must be
     // expressed in canvas px. 1:1 before first layout, when the rect is still 0.
     const displayW = this.canvas.getBoundingClientRect().width
     const ratio = displayW ? this.canvas.width / displayW : 1

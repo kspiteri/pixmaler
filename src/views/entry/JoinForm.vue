@@ -76,7 +76,7 @@ async function submit() {
   const exists = await roomExists(room)
   checking.value = false
   if (!exists) {
-    fail(`No room called ${room.replace('-', '\u2011')}. Check the code with whoever started the game.`)
+    fail(`No room called ${room.replace('-', '\u2011')}. Check the code with whoever opened the room.`)
     return
   }
   emit('join', room, since)

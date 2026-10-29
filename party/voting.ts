@@ -16,7 +16,7 @@ export function handleVote(
 ) {
   const { state } = ctx
   const voter = playerByConn(state, conn.id)
-  // A spectator watches the reveal but does not judge it, and was never counted in
+  // A spectator watches the gallery but does not judge it, and was never counted in
   // the denominator, so they cannot be waited on.
   if (!voter || voter.spectating || state.phase !== 'VOTING')
     return
@@ -33,7 +33,7 @@ export function handleVote(
   const target = state.gallery?.find(s => s.submissionId === msg.submissionId)
   if (!target)
     return
-  // A wiped canvas is in the gallery so it shows on the reveal, but it carries no
+  // A wiped canvas is in the gallery so it shows in RESULTS, but it carries no
   // drawing to judge. This is what keeps it out of the tally.
   if (target.grid.every(cell => cell === -1))
     return

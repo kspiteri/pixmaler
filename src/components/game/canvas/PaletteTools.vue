@@ -18,7 +18,7 @@ interface Props {
   // Pre-built imperative DOM for the palette + size slider; the parent owns their lifecycle.
   swatchEl: HTMLElement | null
   toolSizeEl: HTMLElement | null
-  // "paint" → show Clear (sandbox). "drawing" → show Done (Ready) instead.
+  // "paint" → show Clear (Free mode). "drawing" → show Done (Ready) instead.
   variant: 'drawing' | 'paint'
   // Element to anchor the panel's default position under; falls back to (16, 16).
   anchor?: HTMLElement | null
@@ -255,7 +255,7 @@ function clear() {
       <Header :is-mobile="isMobile" :can-drag="canDrag" @handle-down="onHandlePointerDown" />
 
       <div class="tools-panel__body">
-        <!-- Reference: full-width in the desktop panel with a collapse toggle (like the
+        <!-- The original: full-width in the desktop panel with a collapse toggle (like the
              shortcuts); on the mobile dock it's a compact thumbnail beside the controls. -->
         <div class="tools-panel__reference">
           <Button
@@ -263,7 +263,7 @@ function clear() {
             variant="subtle"
             size="x-small"
             block
-            aria-label="Reference image"
+            aria-label="Original image"
             :aria-expanded="referenceOpen"
             @pointerdown.stop
             @click="referenceOpen = !referenceOpen"
@@ -271,7 +271,7 @@ function clear() {
             <template #icon>
               <ImageIcon :size="14" />
             </template>
-            Reference
+            Original
             <template #trailing>
               <ChevronUp v-if="referenceOpen" :size="14" />
               <ChevronDown v-else :size="14" />

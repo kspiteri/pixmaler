@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Entry screen — pre-room landing: a framed Mona Lisa beside a player's attempt at it, then
-// start a game, join one by code, or open the paint sandbox. It asks no name; the room route's
+// open a room, join one by code, or go to Free mode. It asks no name; the room route's
 // NameGate does when none is stored. Owns the one in-flight navigation, so only one action can
 // confirm at a time; its parts live in `entry/`.
 
@@ -92,10 +92,10 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
       <div class="entry__actions">
         <!-- `create=1` lets the room route open a room that doesn't exist yet. -->
         <Door
-          title="Start a new game"
-          sub="you're the GM, friends join with your code"
+          title="Open a room"
+          sub="play as GM, friends join with your code"
           :busy="confirming === 'create'"
-          :aria-label="confirming === 'create' ? 'Creating room' : undefined"
+          :aria-label="confirming === 'create' ? 'Opening room' : undefined"
           @click="confirmNavigate('create', roomHref(wordPair(), { create: true }))"
         >
           <template #icon>

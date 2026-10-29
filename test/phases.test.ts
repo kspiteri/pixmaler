@@ -256,7 +256,7 @@ describe('endVoting', () => {
 
   it('broadcasts results before the phase', () => {
     // Otherwise Results mounts against the PREVIOUS round's ranking and flashes
-    // last round's winner for a frame, spoiling the reveal.
+    // last round's winner for a frame, spoiling RESULTS.
     const h = room([player('a')], { phase: 'VOTING', config, gallery: [{ submissionId: 'a', grid: [0] }] })
     endVoting(h.ctx)
     const types = h.broadcasts.map(m => m.type)

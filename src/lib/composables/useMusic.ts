@@ -33,7 +33,7 @@ export function useMusic(state: ShallowRef<StateMsg | null>, closed: Ref<boolean
 
   function replan(): void {
     clearStartTimer()
-    // A closed session can still hold a non-LOBBY phase; a visibilitychange replan would then
+    // A closed room can still hold a non-LOBBY phase; a visibilitychange replan would then
     // restart music on the terminal screen, which has no widget to stop it.
     if (closed.value) {
       stopMusic()

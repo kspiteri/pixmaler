@@ -57,9 +57,9 @@ export function handleJoin(
   state.connMap.set(conn.id, msg.clientId)
   if (existing) {
     existing.connected = true
-    // Only the lobby may apply a stored shape. `handleShape` refuses mid-game
+    // Only the lobby may apply a stored shape. `handleShape` refuses mid-round
     // messages, but `storedShape()` is re-read on every socket open, so without this
-    // a plain reconnect walked past that lock and repainted a RESULTS chip mid-reveal.
+    // a plain reconnect walked past that lock and repainted a RESULTS chip.
     if (state.phase === 'LOBBY')
       existing.shape = normaliseShape(msg.shape)
     // Reclaims from a caretaker that an auto-promote installed while they were gone.
@@ -150,7 +150,7 @@ export function handleJoin(
   ctx.broadcastState()
 }
 
-// LOBBY-only: names are revealed in RESULTS, so locking them keeps the reveal honest.
+// LOBBY-only: names are revealed in RESULTS, so locking them keeps RESULTS honest.
 export function handleRename(
   ctx: RoomCtx,
   conn: RoomConn,

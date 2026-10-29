@@ -106,7 +106,7 @@ describe('export filenames', () => {
   })
 
   it('keeps dots that are part of a title, not an image extension', () => {
-    // Paint sessions saved before sample ids existed restore with only the title.
+    // Free mode progress saved before sample ids existed restore with only the title.
     expect(paintFilename({ sample: null, source: 'Malta. Presa dal Levante' })).toBe('pixmaler-paint-malta-presa-dal-levante.png')
     expect(paintFilename({ sample: null, source: 'Dr. Who' })).toBe('pixmaler-paint-dr-who.png')
   })

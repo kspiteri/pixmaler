@@ -1,4 +1,4 @@
-// Winner confetti for the RESULTS reveal (#43). A thin wrapper over emoji-blast that owns an
+// Winner confetti for RESULTS (#43). A thin wrapper over emoji-blast that owns an
 // aria-hidden / inert / pointer-events:none layer, renders our own square confetti (seat-colour
 // tokens) and award icons instead of native emoji, caps the whole effect at 5s and tears the layer
 // down on demand. Lazy-loaded (dynamic import from RESULTS and the dev gallery) so emoji-blast

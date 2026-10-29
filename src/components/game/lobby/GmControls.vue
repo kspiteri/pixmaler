@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // The GM's lobby controls: the image picker, the start button and its gate hint. Sends
 // gm:configure on each picker result and gm:start on click. The roster, name and shape
-// controls stay in the lobby; this is only the game-setup column.
+// controls stay in the lobby; this is only the round-setup column.
 
 import type { ClientMsg, GmConfigureMsg, PipelineResult, Player, RoundConfig } from '@/lib'
 import { Play } from '@lucide/vue'
@@ -95,7 +95,7 @@ function clearImage() {
 
 <template>
   <p class="label label--eyebrow">
-    game setup
+    round setup
   </p>
   <ImagePicker
     ref="picker"
@@ -119,7 +119,7 @@ function clearImage() {
       <template #icon>
         <Play :size="18" aria-hidden="true" />
       </template>
-      Start game
+      Start round
     </Button>
     <p v-if="startHint" id="lobby-start-hint" class="lobby__start-hint" role="status">
       {{ startHint }}

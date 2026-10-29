@@ -5,7 +5,7 @@ Then voting on whose attempt was the best or just went gloriously wrong.
 
 ## → [Play it](https://kspiteri.github.io/pixmaler/)
 
-Grab a code, share it with your friends or colleagues, and go. Three players needed for a game.
+Grab a code, share it with your friends or colleagues, and go. Three players needed for a round.
 
 ## How a round goes
 
@@ -25,7 +25,7 @@ Rooms are named with a memorable word-pair, like `feral-crayon`. Share the code 
 - **Palettes you can actually match.** Ask for 24 colours and the room paints with exactly 24, from a palette derived from the image itself.
 - **Any raster upload, handled gracefully.** Transparency is flattened onto a background colour you choose. No image to hand? Pick from 25 public-domain paintings, then crop in on the part you want painted.
 - **Music that doubles as the clock.** The GM picks a per-round, royalty-free soundtrack; by default it's timed so the song finishes right as the round ends — a countdown you can hear — with a calm ambient loop covering any gap and the gallery. Music and sound effects are independent per-device toggles.
-- **Solo paint sandbox.** The [`/paint`] route is a single-player canvas; for warming up, testing palettes, or just goofing around. No timer and your progress gets saved on your device.
+- **Free mode.** A single-player canvas at [`/paint`]; for warming up, testing palettes, or just goofing around. No timer and your progress gets saved on your device.
 - **Keep any drawing.** Every drawing on the results screen, and your canvas in `/paint`, saves as a crisp, full-size PNG, or as a share card that sets it beside the original under the Pixmaler logo; on a phone either goes through the share sheet, straight to your photos or a group chat.
 
 ## Stack

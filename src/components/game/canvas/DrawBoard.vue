@@ -1,6 +1,6 @@
 <script setup lang="ts">
-// Pixel canvas pair — target reference + editable canvas, shared by the DRAWING
-// phase and the /paint sandbox. `PixelCanvas` is imperative: it owns its
+// Pixel canvas pair — the original + editable canvas, shared by the DRAWING
+// phase and Free mode. `PixelCanvas` is imperative: it owns its
 // `<canvas>` and pixels, Vue only owns the surrounding layout.
 
 import type { CanvasTool, SwatchHandle, ToolSizeHandle } from '@/lib'
@@ -14,7 +14,7 @@ interface Props {
   palette: string[]
   targetGrid: number[]
   // "drawing" → wider editable canvas, no Clear button (committed strokes only).
-  // "paint"   → narrower target reference, Clear button included (sandbox toy).
+  // "paint"   → narrower original, Clear button included (Free mode).
   variant: 'drawing' | 'paint'
   // Layout direction for the drawing shell: `'row'` side by side, `'column'`
   // stacked. Only the "drawing" variant consumes it.

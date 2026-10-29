@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Paint sandbox — solo canvas, no lobby/socket/timer. Picker left, canvas pair right;
+// Free mode — solo canvas, no lobby/socket/timer. Picker left, canvas pair right;
 // the pair re-mounts on each new picker result so PixelCanvas instances tear down cleanly.
 // The chosen image, its settings and the canvas progress persist across reloads (lib/paintSession);
 // a result that would clear a drawing is confirmed first.
@@ -26,7 +26,7 @@ function onMusic(track: MusicTrackId | null) {
     stopMusic()
 }
 
-// Restore a previous session up front. `seedGrid` is what the canvas pair mounts with, refreshed
+// Restore saved progress up front. `seedGrid` is what the canvas pair mounts with, refreshed
 // before every remount; `currentGrid` tracks the live drawing for Clear, the guard and the save.
 const saved = loadPaintSession()
 const seedGrid = ref<number[] | null>(saved?.grid ?? null)
@@ -35,8 +35,8 @@ const currentGrid = ref<number[]>(saved?.grid ?? [])
 const boardRev = ref(0)
 const restore = saved ? { result: saved.result, meta: saved.meta } : null
 
-// Settings start open on the picker; they collapse once the first image loads. A restored
-// session opens collapsed.
+// Settings start open on the picker; they collapse once the first image loads. Restored
+// progress opens collapsed.
 const settingsOpen = ref(!saved)
 let collapsedOnce = Boolean(saved)
 
@@ -157,7 +157,7 @@ const summary = computed(() => {
     :class="{ 'paint--settings-open': settingsOpen }"
   >
     <template #status>
-      <Tagline class="paint__sub" seed="solo sandbox, no lobby, no timer" />
+      <Tagline class="paint__sub" seed="solo, no lobby, no timer" />
       <Button
         v-if="result && !settingsOpen"
         variant="tertiary"

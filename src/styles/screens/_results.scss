@@ -16,7 +16,7 @@
   }
 
   // ── Awards block reveal ──────────────────────────────────────────────────────
-  // The gallery is on screen at mount; this block (hero + awards) fades in just after, so the
+  // The ranking is on screen at mount; this block (hero + awards) fades in just after, so the
   // reveal travels bottom→top. Only opacity/translate move, so the art canvases inside stay put.
   &__podium {
     opacity: 0;
@@ -199,8 +199,8 @@
     font-size: $fs-xs;
   }
 
-  // ── Lines around the reveal ──────────────────────────────────────────────────
-  // The flavour line at the foot of the reveal, one per mount.
+  // ── Lines around the podium ──────────────────────────────────────────────────
+  // The flavour line at the foot of RESULTS, one per mount.
   &__tagline {
     text-align: center;
     margin: $gap-4 0;
@@ -216,10 +216,10 @@
     font-size: $fs-sm;
   }
 
-  // ── Gallery (the rest) ───────────────────────────────────────────────────────
+  // ── Ranking (the rest) ───────────────────────────────────────────────────────
   &__gallery {
     display: grid;
-    // Capped track (not `1fr`) + centring so a lone runner-up (a 2-player reveal) stays a sane
+    // Capped track (not `1fr`) + centring so a lone runner-up (a 2-player round) stays a sane
     // size beside the hero, instead of `auto-fit` stretching it to full width.
     grid-template-columns: repeat(auto-fit, minmax(140px, 200px));
     justify-content: center;

@@ -33,12 +33,12 @@ export interface RoomState {
   votes: Map<string, string> // `${voterClientId}:${category}` → submissionId
   // Frozen at endDrawing so rejoins and results read a consistent set.
   gallery: Submission[] | null
-  // Retained so a client joining during RESULTS can be sent the reveal it missed —
+  // Retained so a client joining during RESULTS can be sent the results it missed —
   // `results` is broadcast exactly once. Cleared on every path out of RESULTS.
   ranked: RankedResult[] | null
   // submissionId → clientId for the frozen gallery (#73). The gallery ships opaque ids so a
   // drawing can't be mapped to a name mid-VOTING; this server-only reverse resolves self-votes,
-  // the reveal's real identities, and each drawer's own card. Frozen with `gallery`.
+  // RESULTS' real identities, and each drawer's own card. Frozen with `gallery`.
   submissionOwners: Map<string, string>
 }
 

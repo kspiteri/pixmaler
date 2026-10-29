@@ -42,7 +42,7 @@ describe('likeness', () => {
   })
 
   it('scores random noise 0 on a realistic 16 x 16 target', () => {
-    // Blocky 4 x 4 regions, as a quantised picture has; noise is seeded so the test is stable.
+    // Blocky 4 x 4 regions, as a quantised image has; noise is seeded so the test is stable.
     const target = Array.from({ length: 256 }, (_, i) => (Math.floor(i / 64) + Math.floor((i % 16) / 4)) % RGBW.length)
     const score = likenessScorer(target, RGBW)
     let seed = 7
