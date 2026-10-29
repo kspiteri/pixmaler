@@ -1,8 +1,8 @@
 <script setup lang="ts">
-// RESULTS phase — the reveal. The overall winner(s) take the hero; Best and Funniest are awarded
+// RESULTS phase. The overall winner(s) take the hero; Best and Funniest are awarded
 // beneath it. A category the overall winner also took is named there, never redrawn; a distinct
-// champion shows their drawing in the award and is not repeated below. Everyone else falls into a
-// ranked gallery, each drawing once. The awards fade in just after the gallery so the reveal
+// champion shows their drawing in the award and is not repeated below. Everyone else falls into the
+// ranking, each drawing once. The awards fade in just after the ranking so the reveal
 // travels bottom→top. The GM gets "Play again" in the status bar and, full size, under the reveal.
 
 import type { DeliverIntent, Player, RankedResult, ServerMsg, VoteCategory } from '@/lib'
@@ -100,7 +100,7 @@ interface Award { cat: VoteCategory, label: string, max: number, items: AwardIte
 // Best, then Funniest. A champion who also won overall is named, never redrawn. A drawing that
 // takes both categories (but not overall) shows its art under Best and is named under Funniest —
 // the processing order below decides that. `shownArt` collects every drawing shown in an award
-// so the gallery can exclude it (a distinct champion lives in its award only).
+// so the ranking can exclude it (a distinct champion lives in its award only).
 const awards = computed(() => {
   const shownArt = new Set<string>()
   const oIds = overallIds.value
@@ -225,7 +225,7 @@ const exportsById = computed(() => {
 // Slot key for the target image's hero canvas; never collides with a submissionId.
 const TARGET_SLOT = '__target__'
 
-// The reveal travels bottom→top: the gallery is on screen at mount, the awards block fades in just
+// The reveal travels bottom→top: the ranking is on screen at mount, the awards block fades in just
 // after. The art canvases stay mounted throughout (the block only animates opacity and translate),
 // so a faded-in award already has its drawing. Reduced motion shows the block at once and skips the
 // burst. The confetti wrapper is dynamic-imported on this route only (#43), so emoji-blast stays off
@@ -309,13 +309,13 @@ const { setSlot } = useReadonlyCanvases(
         size="small"
         collapse
         title="Close the room for everyone and release this code"
-        aria-label="End session"
+        aria-label="Close room"
         @click="endSession"
       >
         <template #icon>
           <Power :size="16" aria-hidden="true" />
         </template>
-        End session
+        Close room
       </Button>
       <span v-if="!isGm" class="results__hint">waiting for the GM…</span>
     </template>
@@ -327,7 +327,7 @@ const { setSlot } = useReadonlyCanvases(
 
       <template v-else>
         <!-- Awards block — on screen but faded until just after mount, so the reveal lands
-             bottom→top (the gallery first, these after). -->
+             bottom→top (the ranking first, these after). -->
         <div class="results__podium" :class="{ 'results__podium--in': revealed }">
           <!-- Hero: overall winner(s), or the target image when nobody voted. -->
           <div ref="hero" class="results__hero">
@@ -428,7 +428,7 @@ const { setSlot } = useReadonlyCanvases(
           </div>
         </div>
 
-        <!-- Outside the gallery, which is empty whenever every drawing is on the podium. -->
+        <!-- Outside the ranking, which is empty whenever every drawing is on the podium. -->
         <p v-if="showsLikeness" class="results__likeness-note">
           likeness is how close each drawing came to the original. unpainted cells count against it.
         </p>

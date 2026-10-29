@@ -183,7 +183,7 @@ function bot(i) {
         break
       case 'room-full': log(`${name}: room is full`); break
       case 'session-closed':
-        log(`${name}: session closed — the room is gone, exiting`)
+        log(`${name}: room closed — exiting`)
         process.exit(0)
         break
       case 'state':

@@ -28,7 +28,7 @@ src/
 │   ├── storage.ts             # guarded localStorage; not in the barrel, lib modules import it directly
 │   ├── audio.ts               # Howler engine: sfx sprite, music channel + transport, toggles, error/widget state
 │   ├── audio.gate.ts          # pure shouldPlay: channel gate + repeat throttle
-│   ├── confetti.ts            # winner-reveal burst (#43): emoji-blast wrapper, lazy-loaded, not in the barrel
+│   ├── confetti.ts            # winner burst in RESULTS (#43): emoji-blast wrapper, lazy-loaded, not in the barrel
 │   ├── protocol/              # types.ts (wire types + validators) · protocol.ts (parseClientMsg) · index.ts (DOM-free Worker barrel)
 │   ├── canvas/                # pixel.ts (PixelCanvas, the four tools) · grid.ts (footprints, flood fill, spray) · tools.ts (swatch/size slider DOM)
 │   │                          # pipeline.ts · palette.ts (colour science) · aspect.ts (ratios, crop, orientation)
@@ -69,7 +69,7 @@ src/
 │   │   ├── PhaseLayout.vue    # in-room shell: status bar, progress bar, body
 │   │   ├── PhaseBoundary.vue  # error boundary for the phase views
 │   │   ├── SettingsMenu.vue   # header gear + settings dropdown
-│   │   └── RoomInterstitial.vue # shell for every off-game room screen
+│   │   └── RoomInterstitial.vue # shell for every off-room screen
 │   └── game/                  # index.ts barrel: DrawBoard · ExportButton · GmControls · ImagePicker · LikenessMeter
 │       │                      #   MusicWidget · PixelThumb · PlayerList · SalonWall · VotingCloseup
 │       ├── image/ImagePicker.vue # picker orchestrator (lobby + /paint)
@@ -83,7 +83,7 @@ src/
 ├── views/
 │   ├── Entry.vue              # landing: Start / join by code / Free mode
 │   ├── entry/                 # Door.vue · JoinForm.vue (code field + existence probe)
-│   ├── Paint.vue              # /paint sandbox
+│   ├── Paint.vue              # Free mode (/paint)
 │   ├── Taglines.vue           # /taglines, hidden
 │   ├── Components.vue         # /components, dev-only gallery; demos in components/
 │   ├── Quantise.vue           # /quantise, dev-only quantiser comparison
@@ -183,10 +183,10 @@ centres of colour — the subtlest, richest result, so it merges least (8 units)
 `ImagePicker` tracks the **committed inputs** — source, sample and settings behind its last emitted result — and reprocesses only when the inputs differ, so re-clicking the loaded sample or nudging a control back emits nothing. Two props are Paint-only:
 
 - **`confirmResult`** is awaited before emitting; `false` reverts the picker to the committed inputs, so picker and canvas never disagree. Paint asks only when the player has painted and `keepsDrawing` (same grid size, identical palette) is false.
-- **`restore`** rebuilds the picker around a stored result without emitting. `prefs/paintSession.ts` persists result, `PickerMeta` (`sample`, `settings`) and drawing in `pixmaler:paintSession`; a session lacking meta still restores the drawing. A sample is re-fetched on restore; an upload can't be, so it must be re-chosen to adjust.
+- **`restore`** rebuilds the picker around a stored result without emitting. `prefs/paintSession.ts` persists result, `PickerMeta` (`sample`, `settings`) and drawing in `pixmaler:paintSession`; saved progress lacking meta still restores the drawing. A sample is re-fetched on restore; an upload can't be, so it must be re-chosen to adjust.
 - **Trap: the canvas pair unmounts while Settings is open** and remounts from `seedGrid`. Paint refreshes `seedGrid` from the live drawing when the panel opens and on every accepted result; seeding from the load-time grid silently discards every stroke since the last reload.
 - Free mode's music comes from the picker's Music step and isn't persisted.
-- **Samples** come from [`lib/content/samples.ts`](../src/lib/content/samples.ts): id → title, artist, year, origin, category, Commons `credit`, pixel `dims`. `SourcePicker` groups them by category, shows the ~240 px WebP thumbnails (lazy, sized from `dims` before they load), and the picker `fetch`es the full `<id>.webp` only on selection. `PickerMeta.sample` stores the id, and everything else is looked up with `sampleById`, so a stored session never carries stale metadata. A fresh `/paint` opens on the picker with no image.
+- **Samples** come from [`lib/content/samples.ts`](../src/lib/content/samples.ts): id → title, artist, year, origin, category, Commons `credit`, pixel `dims`. `SourcePicker` groups them by category, shows the ~240 px WebP thumbnails (lazy, sized from `dims` before they load), and the picker `fetch`es the full `<id>.webp` only on selection. `PickerMeta.sample` stores the id, and everything else is looked up with `sampleById`, so saved progress never carries stale metadata. A fresh `/paint` opens on the picker with no image.
 
 ## Drawing tools
 
@@ -256,7 +256,7 @@ A worked cell, with a red target (`#dc2828`) and the palette's other colours:
 - **SFX:** one preloaded sprite, `public/assets/audio/sfx.wav`, holding only `click` (120 ms mono 48 kHz, lead-in trimmed so the press sounds at once). Keep clips WAV — MP3 encoder padding delays the onset. `SfxKey` types the whole shot list; `playSfx` no-ops on a key with no clip yet. Howler's `autoUnlock` is the autoplay gate.
 - **`Button`** plays `click` on a primary press; `sfx` overrides the key (any variant), `silent` mutes that instance.
 - **Three per-device toggles**, `music` · `sfx` · `ticktock`, in `pixmaler:audio`. Settings shows Music and Sound effects; the ticktock switch stays commented out until `tick`/`tock` clips exist. [`audio.gate.ts`](../src/lib/audio.gate.ts) routes `tick`/`tock` to `ticktock`, the rest to `sfx`, with a 150 ms per-key throttle, and tests without Howler.
-- **Music is a round setting:** `musicTrack` on `RoundConfig`, picked in the Game-settings step (`MusicControl`, None by default), sent with `gm:configure`, and validated by `normaliseMusicTrack` against the DOM-free `MUSIC_TRACK_IDS` on both sides. `useMusic` plays it when the room leaves LOBBY (including for a mid-round joiner), carries it through VOTING and RESULTS without restarting, and stops on LOBBY and on session close. Tracks stream (`html5: true`), loop and fade in over 2 s.
+- **Music is a round setting:** `musicTrack` on `RoundConfig`, picked in the Round-settings step (`MusicControl`, None by default), sent with `gm:configure`, and validated by `normaliseMusicTrack` against the DOM-free `MUSIC_TRACK_IDS` on both sides. `useMusic` plays it when the room leaves LOBBY (including for a mid-round joiner), carries it through VOTING and RESULTS without restarting, and stops on LOBBY and when the room closes. Tracks stream (`html5: true`), loop and fade in over 2 s.
 - **Manifest:** [`lib/content/music.ts`](../src/lib/content/music.ts) maps id → label, category, credit. Category is the dropdown group and, lowercased, the subfolder under `public/assets/audio/music/` (`upbeat`, `classical`; webm/Opus). **Trap:** `trackSrc` must lowercase it — a miscased path gets `index.html` from both the dev server and Pages and plays as silence with no error. `test/music.test.ts` checks every track against the real files case-sensitively.
 - **Credits** ride the manifest (`MUSIC_CREDIT_GROUPS`) into [`LICENSE.md`](../LICENSE.md) and the Credits modal: Kevin MacLeod (CC BY 4.0) for upbeat; Gregor Quendel for classical via classicals.de (CC BY-NC 4.0) and Pixabay (Pixabay Content License). CC BY and BY-NC need a visible credit; the NonCommercial tracks keep the bundle non-commercial.
 - **`lib/infoModal.ts` + `InfoModal.vue`** are the one Credits/Privacy modal: `openCredits()` / `openPrivacy()` set `activeInfo`, and `App.vue` mounts it with `v-if` outside the phase chain.
@@ -267,11 +267,11 @@ A worked cell, with a red target (`#dc2828`) and the palette's other colours:
 
 - **`lib/player/identity.ts` owns the identity keys:** `pixmaler:clientId`, `pixmaler:name`, `pixmaler:shape`, `pixmaler:secrets` (seat secrets per room, pruned after 48 h). `getName()` never mints, so loading a room URL can't create a player.
 - **`clientId` is minted only on the room route** (in `useRoom`), so an Entry or Paint visit creates no device id and Clear isn't undone by a fresh one.
-- **Clear my data** `askConfirm`s (warning that it leaves a live game when in a room), runs `clearAllData()` over every `pixmaler:*` key — identity and preferences — and navigates to Entry, closing any socket. `AlertDialog` is mounted at `App.vue`'s root on every route so this works anywhere.
+- **Clear my data** `askConfirm`s (warning that it leaves the room when in one), runs `clearAllData()` over every `pixmaler:*` key — identity and preferences — and navigates to Entry, closing any socket. `AlertDialog` is mounted at `App.vue`'s root on every route so this works anywhere.
 - **A seat is the player's index in `state.players`**, which is join order and stable: a close only flips `connected` (the `[offline]` row), and the sole removal is `handleRemove` — GM, offline player, LOBBY-only — because a splice re-colours every seat below the gap. So **shape and name, not colour, are the identity that follows a player**. Don't key seats on a `clientId` hash (adjacent players would collide on similar colours); `buildState` must not sort `players`, and callers take the index before sorting for display.
 - **`seatFor(seat, player)`** (`lib/player/seats.ts`) is the only way to make a chip (colour var, initial, face seed, shape, lean). It takes the player, not loose fields, so nobody passes a `RankedResult` (a name but no shape). `Results.vue` takes `:players` only to resolve seats.
 - **Avatar shape is client-chosen, server-validated.** Stored per browser, sent with `join` and `shape`, echoed on `Player.shape`. `normaliseShape()` (`src/lib/protocol/types.ts`) is the single validator — run by `parseClientMsg`, `getShape()` and again in `seatFor`, since inbound `state` is assigned verbatim and the deploy targets can be out of step.
-- **Shape and name lock outside LOBBY** so the RESULTS reveal stays honest. The shape lock needs `handleShape`'s phase gate **and** `handleJoin`'s, because `join` re-reads localStorage on every reconnect and would otherwise walk past it.
+- **Shape and name lock outside LOBBY** so RESULTS stays honest. The shape lock needs `handleShape`'s phase gate **and** `handleJoin`'s, because `join` re-reads localStorage on every reconnect and would otherwise walk past it.
 - **Face:** DiceBear `notionists-neutral`, rendered locally by `lib/player/face.ts`, seeded by `clientId`, memoised per seed. The first `Avatar` lazy-loads `@dicebear/core` + the style (pre-bundled via `optimizeDeps` so Vite doesn't re-optimise mid-session), and Paint loads it on open for its share card; until then, or on failure, the chip shows the initial. The share card never loads it itself, so a click is never held up. **Never call DiceBear's HTTP API** — it would ship identifiers to a third party. The `clientId` seed survives renames and needs no protocol change; the trade is no re-roll, and a new device or Clear means a new face. Mask rendering is in [`design-system.md`](./design-system.md).
 
 ## Rooms: creation and refusals

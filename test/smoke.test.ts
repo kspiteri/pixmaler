@@ -54,7 +54,7 @@ describe('f1 · canonical round', () => {
     expect(ranked![0].clientId).toBe('gm')
     expect(ranked![0].votes).toBeGreaterThan(ranked![1].votes)
     expect(ranked![0].breakdown).toEqual({ funniest: 2, best: 2 })
-    // Every drawer painted the target exactly, and the broadcast reveal carries it.
+    // Every drawer painted the target exactly, and the broadcast results carry it.
     const results = h.broadcasts.find(m => m.type === 'results') as ResultsMsg
     expect(results.ranked.map(r => r.likeness)).toEqual([100, 100, 100])
   })

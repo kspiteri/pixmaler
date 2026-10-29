@@ -10,7 +10,7 @@ name: Release
 #   - No Cloudflare credential ever leaves the laptop. `wrangler` locally uses the OAuth
 #     token from `wrangler login`, so CI needs no API token and there is no secret to
 #     scope, rotate or leak.
-#   - A Worker deploy **ends every game in progress** — RoomState is entirely in memory
+#   - A Worker deploy **ends every live room** — RoomState is entirely in memory
 #     (`ctx.storage` holds alarms and nothing else). Choosing the moment by hand beats
 #     hoping a workflow picked a good one.
 #   - One maintainer. Remembering one command is cheaper than verifying a pipeline ran.
@@ -100,7 +100,7 @@ jobs:
             echo
             echo "The **Worker is not deployed by CI** — and it only needs deploying when"
             echo "the server changed, i.e. \`party/\`, \`src/lib/protocol/\`, \`src/lib/content/words.ts\`,"
-            echo "\`src/lib/canvas/palette.ts\` or \`wrangler.jsonc\`. A Worker deploy **ends every game in progress**, so skip it"
+            echo "\`src/lib/canvas/palette.ts\` or \`wrangler.jsonc\`. A Worker deploy **ends every live room**, so skip it"
             echo "when nothing there moved:"
             echo
             echo '```bash'

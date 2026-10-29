@@ -334,7 +334,7 @@ export class PixmalerServer extends Server<Env> {
   }
 
   // Reset the room to a pristine LOBBY (as if the code were never used) and
-  // cancel any pending alarm. Used by the GM's end-session and both wipe alarms.
+  // cancel any pending alarm. Used by the GM's Close room and both wipe alarms.
   private wipeState(reason: SessionClosedReason): void {
     // Tell anyone still watching before we forget they exist: the idle path can fire with
     // live connections, and every field their client depends on is about to be cleared,
@@ -391,13 +391,13 @@ export class PixmalerServer extends Server<Env> {
   }
 
   // Every connected socket, joined or not. Only lifecycle signals (session-closed) use this;
-  // game and roster payloads go to members via broadcastMembers.
+  // round and roster payloads go to members via broadcastMembers.
   private broadcastAll(msg: ServerMsg) {
     this.broadcast(JSON.stringify(msg))
   }
 
   // Only sockets that have joined (are in connMap). A socket that connects but never joins
-  // must not receive the roster or any game payload.
+  // must not receive the roster or any round payload.
   private broadcastMembers(msg: ServerMsg) {
     const data = JSON.stringify(msg)
     for (const conn of this.getConnections()) {

@@ -153,13 +153,13 @@ onBeforeUnmount(() => {
         collapse
         size="small"
         title="Close the room for everyone and release this code"
-        aria-label="End session"
+        aria-label="Close room"
         @click="endSession"
       >
         <template #icon>
           <Power :size="16" aria-hidden="true" />
         </template>
-        End session
+        Close room
       </Button>
     </template>
 
@@ -213,10 +213,10 @@ onBeforeUnmount(() => {
                  waiting rather than broken. -->
             <p class="lobby__preview-label">
               <template v-if="state.config">
-                Target image ({{ state.config.gridW }}×{{ state.config.gridH }}):
+                The original ({{ state.config.gridW }}×{{ state.config.gridH }}):
               </template>
               <template v-else>
-                the target image will appear here
+                the original will appear here
               </template>
             </p>
             <PixelThumb

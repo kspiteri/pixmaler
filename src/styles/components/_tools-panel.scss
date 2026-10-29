@@ -21,7 +21,7 @@
     gap: $gap-4;
   }
 
-  // The in-flow reference column is always empty now: PaletteTools docks the reference into
+  // The in-flow original column is always empty now: PaletteTools docks the original into
   // the panel on every viewport. Kept only as the canvas's teardown home.
   &__target {
     display: none;
@@ -126,7 +126,7 @@
   }
 
   // Wraps swatch + tools + size slider + actions so the mobile docked bar can sit the target
-  // reference beside the whole block; elsewhere it's the only body child.
+  // original beside the whole block; elsewhere it's the only body child.
   &__controls {
     display: flex;
     flex-direction: column;
@@ -146,7 +146,7 @@
     padding-block: var(--btn-pad);
   }
 
-  // Reference disclosure — full-width in the desktop panel with a collapse toggle that
+  // Original disclosure — full-width in the desktop panel with a collapse toggle that
   // mirrors the shortcuts below. On the mobile dock it's a compact thumbnail beside the
   // controls, always shown. Global partial, so no `:deep()`.
   &__reference {
@@ -258,7 +258,7 @@
     border-bottom: none;
     box-shadow: $shadow-2-up;
 
-    // Sit the relocated reference beside the controls; the canvas keeps the space above.
+    // Sit the relocated original beside the controls; the canvas keeps the space above.
     .tools-panel__body {
       flex: 1;
       min-height: 0;
@@ -333,7 +333,7 @@
     box-shadow: $shadow-2;
     // `transform` for movement is faster than animating left/top.
     will-change: transform;
-    // Bound the height so a tall panel (reference + shortcuts open) scrolls inside itself
+    // Bound the height so a tall panel (original + shortcuts open) scrolls inside itself
     // rather than running off the viewport; base `overflow: hidden` covers the x axis.
     max-height: calc(100dvh - 2rem);
     overflow-y: auto;

@@ -79,7 +79,7 @@ useMusic(state, sessionClosed)
   <Quantise v-else-if="route === 'quantise'" />
 
   <template v-else-if="route === 'room'">
-    <!-- Session closed by the GM or by sitting idle; the reason picks the copy. -->
+    <!-- Room closed by the GM or by sitting idle; the reason picks the copy. -->
     <SessionClosed v-if="sessionClosed" :reason="sessionClosedReason" />
 
     <!-- Refused: the room is at MAX_PLAYERS. Terminal, like session-closed. -->

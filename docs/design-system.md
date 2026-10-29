@@ -11,7 +11,7 @@ How Pixmaler looks and reads: copy voice, feedback, controls, colour and theme, 
   - **Direct** — instructions, form labels, errors, GM controls, Settings, confirm dialogs, the connection banner: plain, Sentence case. **Instructions never joke** — a joke on a control is ambiguity.
 - **Voice on completion lines, not counts:** "the votes are in…" carries it; the live tally beside it ("3 of 5 voted") stays plain.
 - **No em-dashes in player-facing copy** (comma, colon or full stop); comments and docs keep them. **No exclamation marks** except the earned `ready!`.
-- **Lowercase eyebrows are a style** ("game setup", "room full") and stay lowercase; a real **form label** is Sentence case ("Your name"). Initialisms keep their capitals (`GM`, `GitHub`).
+- **Lowercase eyebrows are a style** ("round setup", "room full") and stay lowercase; a real **form label** is Sentence case ("Your name"). Initialisms keep their capitals (`GM`, `GitHub`).
 - **Copy never rotates while a screen is up.** Status lines are fixed per site; [`Tagline.vue`](../src/components/elements/Tagline.vue) shows one line per mount (a `seed`, else one random tagline) and never changes it — rotating copy on a waiting screen reads as a bug.
 
 ## Feedback and announcements
@@ -40,7 +40,7 @@ How Pixmaler looks and reads: copy voice, feedback, controls, colour and theme, 
 - **Icon-only segmented groups** (the palette's placement control and the drawing-tool row) give every item an `aria-label` and a matching `title`. A size slider is disabled, never hidden, on a tool without a size (Fill): its thumb rests at the start and it reads "Fill has no size", and the dock never reflows on a tool switch.
 - **The press owns `transform`.** Anything else that moves a pressable uses standalone `rotate` / `translate` / `scale`.
 - **Reduced motion drops the easing, never the travel** — on touch the movement is the only feedback.
-- **The winner confetti is pure decoration, so reduced motion drops it entirely** (unlike a press, where the travel stays). The RESULTS-reveal burst goes through [`lib/confetti.ts`](../src/lib/confetti.ts) (#43): an `aria-hidden` / `inert` / `pointer-events:none` layer, square confetti in the seat-colour tokens plus the award icons (**never native emoji** — OS fonts break the pixel look), gone within 5 s, lazy-loaded on RESULTS (and the dev `/components` demo).
+- **The winner confetti is pure decoration, so reduced motion drops it entirely** (unlike a press, where the travel stays). The RESULTS burst goes through [`lib/confetti.ts`](../src/lib/confetti.ts) (#43): an `aria-hidden` / `inert` / `pointer-events:none` layer, square confetti in the seat-colour tokens plus the award icons (**never native emoji** — OS fonts break the pixel look), gone within 5 s, lazy-loaded on RESULTS (and the dev `/components` demo).
 - **Every on/off control is [`ToggleSwitch.vue`](../src/components/elements/ToggleSwitch.vue)** (`v-model`, `label`, `describedby`, `#off`/`#on` slots, `role="switch"`). Off: empty track, grey knob; on: lime track, dark knob — state reads from colour, not only position.
 - **Text links take no press** (SettingsMenu's footer, Entry's Free mode link).
 
@@ -62,7 +62,7 @@ How Pixmaler looks and reads: copy voice, feedback, controls, colour and theme, 
 
 ### Lime means "go" and "chosen"
 
-- It fills the primary CTA and marks what the player has picked or earned: the selected segment, swatch and sample, a switch that's on, the slider's filled track, text selection, their awards, the **"yours" mark on the Results reveal** (a `__you` chip and a ring on your own card), the winner's frame, and the **likeness meter**, which turns lime as a drawing's likeness nears 100. The wordmark is brand lime (a logotype is exempt), and so is the seat chip on a share card made in Paint, which has no seat: an exported image, not UI, so nothing there reads as selected. **Nothing else is lime.**
+- It fills the primary CTA and marks what the player has picked or earned: the selected segment, swatch and sample, a switch that's on, the slider's filled track, text selection, their awards, the **"yours" mark in RESULTS** (a `__you` chip and a ring on your own card), the winner's frame, and the **likeness meter**, which turns lime as a drawing's likeness nears 100. The wordmark is brand lime (a logotype is exempt), and so is the seat chip on a share card made in Paint, which has no seat: an exported image, not UI, so nothing there reads as selected. **Nothing else is lime.**
 - **Focus is page ink** — a 2 px `$fg` `:focus-visible` ring app-wide, inputs included. Room codes, `/paint`'s open settings toggle, the music widget (and its playing pulse), spinners and links are page ink too.
 - A slider whose value isn't a choice (music volume) takes **`.slider--neutral`** (`--slider-fill: $fg-60`).
 - **Purple means the GM and the secondary button**, never "selected".
@@ -75,7 +75,7 @@ If a colour sits on something other than the page, it belongs here:
 - **`$paper`** (`#ffffff` in both themes) — the drawing is paper and untouched `-1` cells land on it; `PixelCanvas` reads `var(--paper)`.
 - **`$ink-on-colour`** — chip letters and faces sit on a seat colour; following `$bg` would break all 21 seats.
 - **`$scrim`** — darkens either way. Use it for backdrops even though `$accent-fg` shares the hex.
-- **The reference crosshair's `#000` / `#0ff`** in [`pixel.ts`](../src/lib/canvas/pixel.ts) — it sits on the artwork.
+- **The original's crosshair `#000` / `#0ff`** in [`pixel.ts`](../src/lib/canvas/pixel.ts) — it sits on the drawing.
 
 ### The literal guard
 
@@ -139,7 +139,7 @@ If a colour sits on something other than the page, it belongs here:
 
 ### `PlayerTag`
 
-- **Every chip-beside-a-name is [`PlayerTag.vue`](../src/components/elements/PlayerTag.vue)** — lobby roster, "waiting for …" line, Results hero, the Best/Funniest awards, gallery and no-show list. Never hand-roll the pair. The one exception is the share card, which can't mount a component and draws the same pair on its canvas.
+- **Every chip-beside-a-name is [`PlayerTag.vue`](../src/components/elements/PlayerTag.vue)** — lobby roster, "waiting for …" line, Results hero, the Best/Funniest awards, the ranking and the no-show list. Never hand-roll the pair. The one exception is the share card, which can't mount a component and draws the same pair on its canvas.
 - **Its invariant:** the chip is `aria-hidden` because a name is always beside it. Don't add a chip-only flag.
 - It owns the chip, gap and name font-family; the host sets size and weight. `size` sets only the chip: `row` (28 px) or `inline` (24 px, default). `--inline` centres the chip while the name keeps the baseline.
 - **Traps:** `<PlayerTag>` without an import renders nothing and neither `vue-tsc` nor ESLint notices. `--truncate` needs `max-width: 100%` — an `inline-flex` box is shrink-to-fit and ignores its container.
@@ -174,15 +174,15 @@ If a colour sits on something other than the page, it belongs here:
 
 ### `LikenessMeter`
 
-- **Every likeness on screen is [`LikenessMeter.vue`](../src/components/game/shared/LikenessMeter.vue)**, so players can compare drawings at a glance: information, never a score or an award. Results mounts it on the hero, the Best and Funniest award drawings and the gallery (never the target or "didn't finish"); it renders nothing for a `null` likeness (a wiped canvas, an older Worker), so a missing value never shows as 0%.
-- **The number carries the value:** "likeness 64%", lowercase like the points beside it, the label in `$muted` and the number in `$fg` at a set regular weight in the body face, so it reads on both themes however low it is. On the hero and awards it never outranks the bold lime points; in the gallery, where the points are muted, it sits a step above them. The meter under it is decoration (`aria-hidden`), so it needs no contrast floor.
+- **Every likeness on screen is [`LikenessMeter.vue`](../src/components/game/shared/LikenessMeter.vue)**, so players can compare drawings at a glance: information, never a score or an award. Results mounts it on the hero, the Best and Funniest award drawings and the ranking (never the original or "didn't finish"); it renders nothing for a `null` likeness (a wiped canvas, an older Worker), so a missing value never shows as 0%.
+- **The number carries the value:** "likeness 64%", lowercase like the points beside it, the label in `$muted` and the number in `$fg` at a set regular weight in the body face, so it reads on both themes however low it is. On the hero and awards it never outranks the bold lime points; in the ranking, where the points are muted, it sits a step above them. The meter under it is decoration (`aria-hidden`), so it needs no contrast floor.
 - **The colour rule:** the fill's width is the likeness, and its colour is `color-mix(in oklab, $accent-ink <likeness>%, $muted)`: grey for a poor copy, full lime ink for a near-perfect one, on a `$fg-20` track the slider's height (`$track-h`). Ink, not the bright fill (see "Fills vs ink"). A likeness is earned, so lime is allowed (see above). Under forced colours the track gets a `CanvasText` border and the fill `CanvasText`, since backgrounds vanish there.
 - **Placement belongs to the host.** The component is `inline-block`, shrink-wraps its content and sets no margin: a centred host centres it, a left-aligned one (the award items) starts it at the text, and the host sets the spacing above it. Only the track has a fixed width (`8rem`, `max-width: 100%`), so bars compare across the hero, awards and gallery whatever sits beside them, and the text can grow past it under larger text or spacing overrides. No grow animation, so reduced motion has nothing to stop.
 
 ### Picker field recipe
 
 - `ImagePicker`'s **Adjust target** step has two groups — **Framing** (shape, crop frame, crop size) and **Look** (style, detail, colours, alpha) — each `<section class="picker__group">` with an `h3.picker__group-title` under the accordion's `h2`.
-- **Every control is a `.picker__field`:** `__field-head` (`__field-label` left, optional `__field-value` right in `$muted`), the control (sliders and selects take `__field-control`, capped at `$measure`, 20rem; segmented groups keep their width), optional `__field-hint`. Game settings (Draw time, Music) uses it too.
+- **Every control is a `.picker__field`:** `__field-head` (`__field-label` left, optional `__field-value` right in `$muted`), the control (sliders and selects take `__field-control`, capped at `$measure`, 20rem; segmented groups keep their width), optional `__field-hint`. Round settings (Draw time, Music) uses it too.
 - **The Image step's samples** scroll in one bordered box (`__sample-scroll`, 20rem cap), grouped under lowercase category eyebrows (`__sample-group-title`). Tiles are thumbnail-only (the `alt` is the title); the info line below (`__sample-info`, two lines reserved so hovering doesn't shift the layout) names the hovered, focused or selected work as title, then `artist · year · origin · Source`. The same label (`SampleCaption`) sits under the crop frame in Adjust target while a sample is loaded; an upload gets none.
 - **Spacing tiers:** 8 px within a field, 16 px between fields, 32 px between groups with a `$border-soft` hairline.
 - Under `$bp-mobile` a `compact` `TargetPreview` sits by the Look heading — the hosts' `overflow: auto` wrappers defeat the sticky desktop preview. The crop hint follows touch mode; style help is a `Disclosure variant="link"`.

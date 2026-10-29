@@ -59,7 +59,7 @@
     gap: $gap-4;
   }
 
-  // The /paint sandbox turns the logo into a way home; in a room it stays a plain <Logo>.
+  // Free mode turns the logo into a way home; in a room it stays a plain <Logo>.
   &__home {
     display: inline-flex;
     border-radius: $radius-sm;

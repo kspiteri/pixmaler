@@ -41,7 +41,7 @@ export function handleTransfer(
   const { state } = ctx
   if (!isGm(state, conn.id))
     return
-  // LOBBY only — mid-game transfers complicate the FSM with no clear payoff.
+  // LOBBY only — mid-round transfers complicate the FSM with no clear payoff.
   // Answered rather than ignored: the GM pressed a real button.
   if (state.phase !== 'LOBBY') {
     ctx.send(conn, { type: 'error', message: 'GM transfer is only allowed in the lobby.' })

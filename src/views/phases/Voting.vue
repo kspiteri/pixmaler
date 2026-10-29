@@ -102,7 +102,7 @@ function awardsOn(submissionId: string) {
   return VOTE_CATEGORIES.filter(c => myVotes.value[c.id] === submissionId)
 }
 
-// A wiped canvas rides along so the reveal can acknowledge its author, but it's not a candidate.
+// A wiped canvas rides along so RESULTS can acknowledge its author, but it's not a candidate.
 function isBlank(sub: Submission): boolean {
   return sub.grid.every(cell => cell === -1)
 }

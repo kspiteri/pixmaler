@@ -51,12 +51,12 @@ onBeforeUnmount(() => {
 })
 
 // Clear my data: wipe every pixmaler:* key and reload to Entry (the reload closes any
-// socket). Copy is context-aware: only rooms have a game to leave.
+// socket). Copy is context-aware: only a room has something to leave.
 async function clearData() {
   open.value = false
   const inRoom = new URLSearchParams(location.search).has('room')
   const message = inRoom
-    ? 'Clear your saved name and preferences, and leave the current game?'
+    ? 'Clear your saved name and preferences, and leave this room?'
     : 'Clear your saved name and preferences?'
   if (!await askConfirm(message, { confirm: inRoom ? 'Clear and leave' : 'Clear my data' }))
     return

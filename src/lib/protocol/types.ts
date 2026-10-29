@@ -124,7 +124,7 @@ export interface RoundConfig {
   gridH: number
   palette: string[] // hex colours
   drawSeconds: number
-  // Background music the GM picks in the Game settings step; `null` = no music (opt-in).
+  // Background music the GM picks in the Round settings step; `null` = no music (opt-in).
   musicTrack: MusicTrackId | null
   // How the track fills the round (default `finale` — ends on the deadline). See MUSIC_FITS.
   musicFit: MusicFit
@@ -361,7 +361,7 @@ export interface VoteStateMsg {
 
 // Sent to a single player when they (re)join mid-DRAWING, echoing back their
 // OWN latest auto-submitted grid so a page reload restores their drawing.
-// Only their own — never anyone else's (the blind reveal depends on it).
+// Only their own — never anyone else's (the anonymous gallery depends on it).
 export interface DrawStateMsg {
   type: 'draw-state'
   grid: number[] // palette indices; -1 = untouched
@@ -402,7 +402,7 @@ export interface NoSuchRoomMsg {
   type: 'no-such-room'
 }
 
-// Broadcast right after `resetToLobby` when the GM abandoned a round mid-game.
+// Broadcast right after `resetToLobby` when the GM abandoned a round mid-way.
 export interface RoundCancelledMsg {
   type: 'round-cancelled'
 }

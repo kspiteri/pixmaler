@@ -50,7 +50,7 @@
     z-index: 1;
   }
 
-  // Spectator view: the reference and a line of copy, centred in the space the
+  // Spectator view: the original and a line of copy, centred in the space the
   // canvas pair would have filled. No `phase--fixed` fight — there is nothing to
   // scroll, so this just centres.
   &__body--watching {

@@ -266,7 +266,7 @@ describe('handleCancelRound', () => {
 })
 
 describe('handleEndSession', () => {
-  it('tears the room down between rounds, as a session the GM ended', () => {
+  it('tears the room down between rounds, as a room the GM closed', () => {
     for (const phase of ['LOBBY', 'RESULTS'] as const) {
       const h = harness([], { phase })
       handleEndSession(h.ctx, h.conn('conn-gm'))

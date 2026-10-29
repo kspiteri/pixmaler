@@ -68,10 +68,10 @@ export function endDrawing(ctx: RoomCtx) {
   // the VOTING branch and discarded every submission.
   // Opaque ids, not the drawer's clientId (#73): the gallery is broadcast to everyone, so a
   // clientId here would map each drawing to a name and defeat the blind vote. The owner is
-  // kept server-side in `owners` to resolve self-votes, the reveal and each drawer's own card.
+  // kept server-side in `owners` to resolve self-votes, RESULTS and each drawer's own card.
   // Anonymity here is Classic's contract, not the app's: #80 gates wire-identity on the mode's
   // `anonymousJudging`, so identity-aware modes (Puzzle) include the owner on the wire (gallery
-  // + vote-state). The opaque ids and owners map stay regardless — self-votes and the reveal
+  // + vote-state). The opaque ids and owners map stay regardless — self-votes and RESULTS
   // need them in every mode; only whether identity reaches the wire is per-mode.
   const owners = new Map<string, string>()
   const gallery = [...state.submissions.entries()]

@@ -41,7 +41,7 @@ const labelId = useId()
       </template>
       <div class="picker__style-help">
         <p class="picker__style-note">
-          Try each one on your picture: a style that suits one image can flatten another.
+          Try each one on your source image: a style that suits one image can flatten another.
         </p>
         <ul>
           <li v-for="opt in PIXELATION_STYLES" :key="opt.id">

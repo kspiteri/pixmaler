@@ -111,7 +111,7 @@ onBeforeUnmount(() => {
     class="salon-wall"
     :class="{ 'is-dragging': dragging }"
     role="list"
-    aria-label="Exhibition wall"
+    aria-label="Gallery"
     @pointerdown="onWallPointerDown"
   >
     <template v-for="item in items" :key="item.key">

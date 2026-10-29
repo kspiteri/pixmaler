@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // One cosmetic tagline per mount: the `seed` line if given, otherwise a random one. It stays
 // put for the life of the page, since rotating copy on a waiting screen reads as a glitch.
-// Used on the waiting screens (Entry, Lobby, Results) and the Paint sandbox, not on Drawing/Voting.
+// Used on the waiting screens (Entry, Lobby, Results) and Free mode, not on Drawing/Voting.
 
 import { randomTagline } from '@/lib'
 

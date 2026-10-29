@@ -128,7 +128,7 @@ describe('tallyVotes', () => {
   })
 
   it('resolves clientId from the owners map, not the opaque submissionId (#73)', () => {
-    // The reveal needs the real author; the gallery id is deliberately not it.
+    // RESULTS needs the real author; the gallery id is deliberately not it.
     const ranked = tallyVotes(gallery('opaque-1'), new Map(), room([['ann-id', 'Ann']]), new Map([['opaque-1', 'ann-id']]))
     expect(ranked[0].submissionId).toBe('opaque-1')
     expect(ranked[0].clientId).toBe('ann-id')
@@ -152,7 +152,7 @@ describe('uniqueName', () => {
   })
 
   it('treats case and surrounding whitespace as the same name', () => {
-    // The room ends in a one-shot name reveal, so `keith` and `Keith ` colliding
+    // The round ends in a one-shot name reveal, so `keith` and `Keith ` colliding
     // is a gameplay problem, not just a cosmetic one.
     for (const taken of ['KEITH', 'Keith', ' keith '])
       expect(uniqueName('keith', 'me', players([['other', taken]]))).not.toBe('keith')

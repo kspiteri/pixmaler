@@ -11,7 +11,7 @@ const failed = ref(false)
 onErrorCaptured((err, _instance, info) => {
   failed.value = true
 
-  // Returning false suppresses Vue's own console logging, so log here or a mid-game crash
+  // Returning false suppresses Vue's own console logging, so log here or a mid-round crash
   // leaves no trace. `info` names the hook that threw.
   console.error(`[phase] error in ${info}`, err)
   return false

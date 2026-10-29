@@ -1,7 +1,7 @@
 @use 'tokens' as *;
 @use 'chrome' as *;
 
-// Paint sandbox — solo canvas page. Picker left, canvas pair right.
+// Free mode — solo canvas page. Picker left, canvas pair right.
 
 .paint {
   // A `.phase--fixed` variant — the shell, bar and fixed sizing come from `_phase.scss`.

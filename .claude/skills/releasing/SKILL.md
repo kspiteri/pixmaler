@@ -15,7 +15,7 @@ the rules that bite, and the recovery steps for the failure modes that actually 
   with the next version written into `package.json` + `CHANGELOG.md`. **Merging that PR is the release.**
 - **Pages (frontend) deploys itself** on merge, via `.github/workflows/release.yml`.
 - **The Worker (realtime server) is deployed by hand** — `pnpm wr:deploy` — and only when it changed.
-  A Worker deploy **ends every game in progress** (room state is in memory), so it's never a ritual.
+  A Worker deploy **ends every live room** (room state is in memory), so it's never a ritual.
 
 ## The one command
 

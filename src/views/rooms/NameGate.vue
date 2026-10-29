@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Shown on the room route when no name is stored, whether joining or creating the room.
+// Shown on the room route when no name is stored, whether joining or opening the room.
 // The word-pair is the placeholder, not pre-filled, so an empty submission accepts it, and typing replaces it.
 
 import { LogIn } from '@lucide/vue'
@@ -41,7 +41,7 @@ function submitName() {
           <LogIn :size="18" aria-hidden="true" />
         </template>
         <template v-if="creating">
-          {{ nameInput.trim() ? "Create room" : `Create as ${randomName}` }}
+          {{ nameInput.trim() ? "Open room" : `Open as ${randomName}` }}
         </template>
         <template v-else>
           {{ nameInput.trim() ? "Join" : `Join as ${randomName}` }}

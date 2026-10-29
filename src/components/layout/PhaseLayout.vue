@@ -14,8 +14,8 @@ withDefaults(defineProps<{
   progressColour?: string
   // Pulse the progress fill's luminance to flag an urgent state without relying on colour.
   pulse?: boolean
-  // When set, the logo becomes a link to this href (the /paint sandbox's way home).
-  // In a room the logo is inert — you don't leave a game by clicking it.
+  // When set, the logo becomes a link to this href (Free mode's way home).
+  // In a room the logo is inert — you don't leave a room by clicking it.
   home?: string
 }>(), { progress: null, progressColour: 'var(--timer-ok)', pulse: false, home: undefined })
 </script>

@@ -1,7 +1,7 @@
 // Connection lifecycle. The reconnect rules are the substance here: partysocket
 // reconnects unprompted, so anything `handleJoin` re-applies fires on every network
 // blip — which is how a phone waking a suspended tab used to repaint its own avatar
-// mid-reveal, and how a flaky connection could ratchet a name forever.
+// in RESULTS, and how a flaky connection could ratchet a name forever.
 
 import type { RoomPlayer, RoomState } from '../party/state'
 import type { ClientMsg, GalleryMsg, GmConfigureMsg, ResultsMsg } from '../src/lib/protocol/types'

@@ -27,7 +27,7 @@ type Voter = Pick<Player, 'name' | 'connected'>
 // Counted from the gallery, not `submissions`, so a non-drawer cannot appear. Votes from
 // disconnected players are skipped, keeping the tally on the same population as the "N of M
 // voted" readout the GM decided on. Unknown submissionIds are ignored. `owners` (submissionId
-// → clientId) turns each opaque gallery id back into the real player for the reveal (#73).
+// → clientId) turns each opaque gallery id back into the real player for RESULTS (#73).
 export function tallyVotes(
   gallery: Submission[],
   votes: Map<string, string>,
