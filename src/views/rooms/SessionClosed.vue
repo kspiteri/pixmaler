@@ -1,14 +1,14 @@
 <script setup lang="ts">
-// Terminal screen for a room when the server has been wiped, either: by being idle,
-// or by the GM's own "End session".
-//
-// The copy names no cause on purpose: `wipeState` is one funnel for both events and the
-// message carries no reason, so anything cause-specific here would be wrong half the time.
+// Terminal screen for a room the server has wiped: either the GM ended the session, or it sat
+// idle. The server sends which; an older Worker sends none, so that case keeps neutral copy.
 
+import type { SessionClosedReason } from '@/lib'
 import { RotateCcw } from '@lucide/vue'
 import Button from '@/components/elements/Button.vue'
 import RoomInterstitial from '@/components/layout/RoomInterstitial.vue'
 import { appHref, roomHref } from '@/lib'
+
+defineProps<{ reason: SessionClosedReason | null }>()
 
 const baseUrl = appHref()
 
@@ -23,7 +23,15 @@ function reopen(code: string) {
 <template>
   <RoomInterstitial v-slot="{ code }" eyebrow="room closed">
     <p class="room-screen__note">
-      the session has been closed down
+      <template v-if="reason === 'ended'">
+        the GM ended the session, so the exhibition came down
+      </template>
+      <template v-else-if="reason === 'idle'">
+        the room sat idle, so we packed up while nobody was looking
+      </template>
+      <template v-else>
+        the session has been closed down
+      </template>
     </p>
     <Button variant="primary" @click="reopen(code)">
       <template #icon>

@@ -1,5 +1,5 @@
 import type { Connection, ConnectionContext } from 'partyserver'
-import type { ServerMsg } from '../src/lib/protocol'
+import type { ServerMsg, SessionClosedReason } from '../src/lib/protocol'
 import type { LifecycleClock } from './alarm'
 import type { RoomCtx } from './ctx'
 import type { Bucket, RateLimit } from './rateLimit'
@@ -323,9 +323,10 @@ export class PixmalerServer extends Server<Env> {
         endVoting(this.ctxFor())
         this.armAlarm()
         return
+      // `wipe-empty` has nobody to tell; both are a room nobody chose to close.
       case 'wipe-empty':
       case 'wipe-idle':
-        this.wipeState()
+        this.wipeState('idle')
         return
       case 're-arm':
         this.armAlarm()
@@ -333,12 +334,12 @@ export class PixmalerServer extends Server<Env> {
   }
 
   // Reset the room to a pristine LOBBY (as if the code were never used) and
-  // cancel any pending alarm. Used by both wipe paths.
-  private wipeState(): void {
+  // cancel any pending alarm. Used by the GM's end-session and both wipe alarms.
+  private wipeState(reason: SessionClosedReason): void {
     // Tell anyone still watching before we forget they exist: the idle path can fire with
     // live connections, and every field their client depends on is about to be cleared,
     // after which their messages are silently dropped. A no-op on the empty path.
-    this.broadcastAll({ type: 'session-closed' } satisfies ServerMsg)
+    this.broadcastAll({ type: 'session-closed', reason } satisfies ServerMsg)
     // Then drop them. The client closes its own socket on `session-closed`, but the room
     // must not depend on client cooperation — an old bundle would otherwise re-join a
     // pristine room and silently become its GM.
@@ -385,7 +386,7 @@ export class PixmalerServer extends Server<Env> {
       votingMs: this.votingMs,
       markEmpty: () => { this.emptySince = Date.now() },
       markOccupied: () => { this.emptySince = null },
-      wipeState: () => this.wipeState(),
+      wipeState: reason => this.wipeState(reason),
     }
   }
 

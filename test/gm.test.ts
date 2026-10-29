@@ -266,11 +266,11 @@ describe('handleCancelRound', () => {
 })
 
 describe('handleEndSession', () => {
-  it('tears the room down between rounds', () => {
+  it('tears the room down between rounds, as a session the GM ended', () => {
     for (const phase of ['LOBBY', 'RESULTS'] as const) {
       const h = harness([], { phase })
       handleEndSession(h.ctx, h.conn('conn-gm'))
-      expect(h.wipeCalls()).toBe(1)
+      expect(h.wipeReasons()).toEqual(['ended'])
     }
   })
 

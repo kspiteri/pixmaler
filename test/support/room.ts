@@ -6,7 +6,7 @@
 
 import type { RoomConn, RoomCtx } from '../../party/ctx'
 import type { RoomPlayer, RoomState } from '../../party/state'
-import type { ServerMsg } from '../../src/lib/protocol/types'
+import type { ServerMsg, SessionClosedReason } from '../../src/lib/protocol/types'
 import { buildState, drawProgress, freshRoomState } from '../../party/state'
 
 export function player(clientId: string, over: Partial<RoomPlayer> = {}): RoomPlayer {
@@ -41,6 +41,8 @@ export interface Harness {
   doneStatusBroadcasts: () => number
   /** How many times a room teardown was requested. */
   wipeCalls: () => number
+  /** Why each teardown was requested, in order. */
+  wipeReasons: () => SessionClosedReason[]
   /** Whether the empty-room grace clock is running (null = not started). */
   emptySince: () => number | null
 }
@@ -72,7 +74,7 @@ export function harness(
   const broadcasts: ServerMsg[] = []
   let states = 0
   let doneStatus = 0
-  let wipes = 0
+  const wipes: SessionClosedReason[] = []
   let empty: number | null = null
 
   const ctx: RoomCtx = {
@@ -99,7 +101,7 @@ export function harness(
     votingMs: opts.votingMs ?? 300_000,
     markEmpty: () => { empty = Date.now() },
     markOccupied: () => { empty = null },
-    wipeState: () => { wipes++ },
+    wipeState: (reason) => { wipes.push(reason) },
   }
 
   return {
@@ -110,7 +112,8 @@ export function harness(
     broadcasts,
     stateBroadcasts: () => states,
     doneStatusBroadcasts: () => doneStatus,
-    wipeCalls: () => wipes,
+    wipeCalls: () => wipes.length,
+    wipeReasons: () => [...wipes],
     emptySince: () => empty,
   }
 }

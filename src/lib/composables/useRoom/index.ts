@@ -6,7 +6,7 @@
 // during the owning component's setup. The message reducer lives in `./messages`, the
 // Vue-free pre-connect helpers (existence probe + single-tab lock) in `./gate`.
 
-import type { ClientMsg, ServerMsg } from '../../protocol/types'
+import type { ClientMsg, ServerMsg, SessionClosedReason } from '../../protocol/types'
 import type { DrawStateMsg, GalleryMsg, ResultsMsg, RoomRefs, StateMsg, VoteStateMsg } from './messages'
 import PartySocket from 'partysocket'
 import { computed, onMounted, provide, ref, shallowRef } from 'vue'
@@ -33,9 +33,10 @@ export function useRoom(roomCode: string | null, createIntent = false) {
   // The image players are copying, held across updates because `state` no longer carries it.
   // Arrives on configure and on join; cleared when `config` goes null.
   const targetGrid = shallowRef<number[] | null>(null)
-  // Terminal: the server wiped the room (idle timeout), so this client's slot is gone and
-  // reconnecting can't recover it. Stop trying and say so.
+  // Terminal: the server wiped the room, so this client's slot is gone and reconnecting can't
+  // recover it. Stop trying and say so; the reason picks the copy (null from an older Worker).
   const sessionClosed = ref(false)
+  const sessionClosedReason = ref<SessionClosedReason | null>(null)
   // Terminal: the room is at `MAX_PLAYERS`, so this client was refused a seat.
   const roomFull = ref(false)
   // Terminal: the room does not exist and we did not ask to create it (#66).
@@ -54,6 +55,7 @@ export function useRoom(roomCode: string | null, createIntent = false) {
     drawState,
     targetGrid,
     sessionClosed,
+    sessionClosedReason,
     roomFull,
     noSuchRoom,
     roundCancelled,
@@ -180,6 +182,7 @@ export function useRoom(roomCode: string | null, createIntent = false) {
     targetGrid,
     connectionStatus,
     sessionClosed,
+    sessionClosedReason,
     roomFull,
     noSuchRoom,
     duplicateTab,
