@@ -118,6 +118,8 @@ onMounted(() => {
   // Inline, not a partial: this must beat the class rules, and the constructor styles the
   // editable canvas only, so the read-only target needs its own border.
   target.canvas.style.border = '1px solid var(--canvas-edge)'
+  target.canvas.setAttribute('role', 'img')
+  target.canvas.setAttribute('aria-label', 'The original')
   targetSlot.value!.appendChild(target.canvas)
 
   const player = new PixelCanvas({

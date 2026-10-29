@@ -4,7 +4,7 @@
 // Esc and the top layer come from the platform. Don't call directly — go through lib/dialog.ts,
 // which owns the single instance.
 
-import { onMounted, useId, useTemplateRef } from 'vue'
+import { onBeforeUnmount, onMounted, useId, useTemplateRef } from 'vue'
 import Button from './Button.vue'
 
 const props = withDefaults(defineProps<{
@@ -23,6 +23,8 @@ const dialogEl = useTemplateRef<HTMLDialogElement>('dialogEl')
 const msgId = useId()
 
 onMounted(() => dialogEl.value?.showModal())
+// Trap: the platform only restores focus when the dialog is closed, not when it's removed.
+onBeforeUnmount(() => dialogEl.value?.close())
 
 // Esc fires native `cancel`, default-prevented so the element never closes itself: a
 // <dialog> that closed behind its own v-if would leave an invisible, un-reopenable modal.
@@ -39,7 +41,7 @@ function onEscape() {
     ref="dialogEl"
     class="alert-dialog"
     role="alertdialog"
-    :aria-describedby="msgId"
+    :aria-labelledby="msgId"
     @cancel.prevent="onEscape"
   >
     <p :id="msgId" class="alert-dialog__msg">

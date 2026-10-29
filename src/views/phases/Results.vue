@@ -296,6 +296,7 @@ const { setSlot } = useReadonlyCanvases(
         variant="primary"
         size="small"
         collapse
+        aria-label="Play again"
         @click="playAgain"
       >
         <template #icon>

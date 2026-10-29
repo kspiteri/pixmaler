@@ -91,4 +91,18 @@ describe('dialog focus & queue (browser)', () => {
     await Promise.all([first, second])
     expect(order).toEqual(['first:true', 'second:true'])
   })
+
+  it('answering a confirm puts focus back on the control that opened it', async () => {
+    mountHost()
+    const opener = document.createElement('button')
+    opener.textContent = 'Close room'
+    document.body.append(opener)
+    opener.focus()
+    const answer = askConfirm('Close this room?', { confirm: 'Close room', cancel: 'Keep it open' })
+    await nextTick()
+    buttonByText('Keep it open').click()
+    await answer
+    await nextTick()
+    expect(document.activeElement).toBe(opener)
+  })
 })

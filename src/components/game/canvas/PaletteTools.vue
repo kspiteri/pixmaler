@@ -5,7 +5,7 @@
 
 import type { CanvasTool, PixelCanvas } from '@/lib'
 import { Check, ChevronDown, ChevronUp, Image as ImageIcon, Trash2, Undo2 } from '@lucide/vue'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, useTemplateRef, watch } from 'vue'
 import Button from '@/components/elements/Button.vue'
 import { isTouch, palettePlacement, paletteSize, setPaletteHeight, useAppLayout, useDraggable } from '@/lib'
 import Header from './palette/Header.vue'
@@ -43,6 +43,7 @@ const swatchSlot = useTemplateRef<HTMLDivElement>('swatchSlot')
 const toolSizeSlot = useTemplateRef<HTMLDivElement>('toolSizeSlot')
 const panelEl = useTemplateRef<HTMLDivElement>('panelEl')
 const dockTargetSlot = useTemplateRef<HTMLDivElement>('dockTargetSlot')
+const dockTargetId = useId()
 
 const panelVisible = ref(false)
 
@@ -265,6 +266,7 @@ function clear() {
             block
             aria-label="Original image"
             :aria-expanded="referenceOpen"
+            :aria-controls="dockTargetId"
             @pointerdown.stop
             @click="referenceOpen = !referenceOpen"
           >
@@ -277,7 +279,7 @@ function clear() {
               <ChevronDown v-else :size="14" />
             </template>
           </Button>
-          <div v-show="horizontal || referenceOpen" ref="dockTargetSlot" class="tools-panel__target" />
+          <div v-show="horizontal || referenceOpen" :id="dockTargetId" ref="dockTargetSlot" class="tools-panel__target" />
         </div>
         <div class="tools-panel__controls">
           <div ref="swatchSlot" />
