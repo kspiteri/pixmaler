@@ -4,9 +4,9 @@
 
 import type PartySocket from 'partysocket'
 import type { Ref, ShallowRef } from 'vue'
-import type { ServerMsg } from '../../protocol/types'
+import type { ServerMsg, SessionClosedReason } from '../../protocol/types'
 import { askAlert } from '../../dialog'
-import { normaliseLikeness } from '../../protocol/types'
+import { normaliseClosedReason, normaliseLikeness } from '../../protocol/types'
 import { syncServerClock } from '../../serverClock'
 
 // `shallowRef` throughout: the whole object is replaced on each message, so no deep-watch.
@@ -27,6 +27,7 @@ export interface RoomRefs {
   drawState: ShallowRef<DrawStateMsg | null>
   targetGrid: ShallowRef<number[] | null>
   sessionClosed: Ref<boolean>
+  sessionClosedReason: Ref<SessionClosedReason | null>
   roomFull: Ref<boolean>
   noSuchRoom: Ref<boolean>
   roundCancelled: Ref<boolean>
@@ -85,6 +86,7 @@ export function applyServerMessage(msg: ServerMsg, refs: RoomRefs, socket: Party
       // Order matters: set the flag before closing so the `close` handler knows this teardown
       // was deliberate. Closing stops auto-reconnect, which would otherwise re-join us to a
       // pristine room as a new player and silently make us its GM.
+      refs.sessionClosedReason.value = normaliseClosedReason(msg.reason)
       refs.sessionClosed.value = true
       socket.close()
       break

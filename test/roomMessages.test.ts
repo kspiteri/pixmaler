@@ -1,9 +1,9 @@
-// The server-message reducer's read side for `results`: what a client renders is the
-// normalised payload, so an older Worker's missing `likeness` never reaches the screen.
+// The server-message reducer's read side: what a client renders is the normalised payload,
+// so an older Worker's missing field never reaches the screen.
 
 import type PartySocket from 'partysocket'
 import type { RoomRefs } from '../src/lib/composables/useRoom/messages'
-import type { RankedResult, ResultsMsg } from '../src/lib/protocol/types'
+import type { RankedResult, ResultsMsg, ServerMsg } from '../src/lib/protocol/types'
 import { describe, expect, it } from 'vitest'
 import { ref, shallowRef } from 'vue'
 import { applyServerMessage } from '../src/lib/composables/useRoom/messages'
@@ -17,6 +17,7 @@ function refs(): RoomRefs {
     drawState: shallowRef(null),
     targetGrid: shallowRef(null),
     sessionClosed: ref(false),
+    sessionClosedReason: ref(null),
     roomFull: ref(false),
     noSuchRoom: ref(false),
     roundCancelled: ref(false),
@@ -40,5 +41,23 @@ describe('results reducer', () => {
     } as ResultsMsg
     applyServerMessage(msg, r, {} as PartySocket)
     expect(r.results.value!.ranked.map(e => e.likeness)).toEqual([null, 64, 0, null])
+  })
+})
+
+describe('session-closed reducer', () => {
+  it('records why the room closed and stops the socket', () => {
+    const r = refs()
+    let closed = false
+    applyServerMessage({ type: 'session-closed', reason: 'idle' }, r, { close: () => { closed = true } } as PartySocket)
+    expect(r.sessionClosed.value).toBe(true)
+    expect(r.sessionClosedReason.value).toBe('idle')
+    expect(closed).toBe(true)
+  })
+
+  it('closes with no reason against an older Worker that sends none', () => {
+    const r = refs()
+    applyServerMessage({ type: 'session-closed' } as ServerMsg, r, { close: () => {} } as PartySocket)
+    expect(r.sessionClosed.value).toBe(true)
+    expect(r.sessionClosedReason.value).toBeNull()
   })
 })

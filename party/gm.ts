@@ -105,11 +105,11 @@ export function handleCancelRound(ctx: RoomCtx, conn: RoomConn) {
 
 // LOBBY and RESULTS only — between rounds, where "we're done" is a real intent.
 // Mid-round the equivalent is `gm:cancelRound`, which keeps the room usable.
-// `wipeState` is the whole teardown: it broadcasts `session-closed` and drops everyone.
+// `wipeState` is the whole teardown: it broadcasts `session-closed` (reason `ended`) and drops everyone.
 export function handleEndSession(ctx: RoomCtx, conn: RoomConn) {
   if (!isGm(ctx.state, conn.id))
     return
   if (ctx.state.phase !== 'LOBBY' && ctx.state.phase !== 'RESULTS')
     return
-  ctx.wipeState()
+  ctx.wipeState('ended')
 }

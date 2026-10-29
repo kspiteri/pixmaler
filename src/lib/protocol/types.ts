@@ -369,8 +369,16 @@ export interface DrawStateMsg {
 
 // Broadcast from `wipeState()` — this client's slot no longer exists, so it stops
 // reconnecting and shows the closed screen. The idle path can fire with live connections.
+// `reason` says which ending it was; an older Worker sends none.
+export type SessionClosedReason = 'ended' | 'idle'
 export interface SessionClosedMsg {
   type: 'session-closed'
+  reason?: SessionClosedReason
+}
+
+// The client's read side: anything but a known reason reads as unknown. Never throws.
+export function normaliseClosedReason(reason: unknown): SessionClosedReason | null {
+  return reason === 'ended' || reason === 'idle' ? reason : null
 }
 
 // Sent to a single connection the moment it claims a *new* seat (#72): the secret that

@@ -56,6 +56,7 @@ const {
   targetGrid,
   connectionStatus,
   sessionClosed,
+  sessionClosedReason,
   roomFull,
   noSuchRoom,
   duplicateTab,
@@ -78,8 +79,8 @@ useMusic(state, sessionClosed)
   <Quantise v-else-if="route === 'quantise'" />
 
   <template v-else-if="route === 'room'">
-    <!-- Session closed by a GM or timeout. -->
-    <SessionClosed v-if="sessionClosed" />
+    <!-- Session closed by the GM or by sitting idle; the reason picks the copy. -->
+    <SessionClosed v-if="sessionClosed" :reason="sessionClosedReason" />
 
     <!-- Refused: the room is at MAX_PLAYERS. Terminal, like session-closed. -->
     <RoomFull v-else-if="roomFull" />

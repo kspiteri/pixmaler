@@ -2,7 +2,7 @@
 // passes it to the handler modules, so they never touch the Durable Object,
 // `partyserver` types or the alarm directly. A test supplies a plain object.
 
-import type { ServerMsg } from '../src/lib/protocol'
+import type { ServerMsg, SessionClosedReason } from '../src/lib/protocol'
 import type { RoomState } from './state'
 
 // `partyserver`'s `Connection` satisfies this structurally.
@@ -34,5 +34,5 @@ export interface RoomCtx {
   // but must not clear its own bookkeeping.
   markEmpty: () => void
   markOccupied: () => void
-  wipeState: () => void
+  wipeState: (reason: SessionClosedReason) => void
 }

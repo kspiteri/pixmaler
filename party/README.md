@@ -46,6 +46,8 @@ Lives in **`src/lib/protocol/`**, not here, because both deploy targets need it:
 
 **Likeness rides `results`.** Each `RankedResult` carries `likeness`: 0 to 100, how close the drawing came to the target, or `null` when there is nothing to score (a wiped or wrong-size grid). `endVoting` builds one scorer per round with `likenessScorer` (`likeness.ts`) from the frozen config's target and palette, scores every tallied entry before mutating state, and leaves the vote order untouched. Only an exact copy shows 100 (anything else caps at 99); a one-colour palette scores any painted drawing 100, and a target one bucket fill reproduces scores everyone 0. It is a protocol change, so it ships on the next Worker deploy; the client reads `likeness` through `normaliseLikeness`, so an older Worker's missing field is no likeness.
 
+**`session-closed` says why.** `wipeState(reason)` broadcasts `{ type: 'session-closed', reason }` before dropping every connection: `ended` from the GM's `gm:endSession`, `idle` from the idle-wipe alarm (the empty-room wipe sends `idle` too, to nobody). The client reads it through `normaliseClosedReason` and `SessionClosed.vue` picks the copy; an older Worker sends no reason and the screen keeps its neutral line. Protocol change, same deploy note as above.
+
 ## Phases, deadlines and the one alarm
 
 `LOBBY → DRAWING → VOTING → RESULTS`, timer transitions deadline-driven: the server broadcasts a deadline timestamp, clients tick locally, and a **single DO alarm** (never `setTimeout`) wakes for whichever deadline is nearest — draw deadline, VOTING backstop, empty-room grace or idle wipe. `onMessage` re-arms it after every message, which is also what lets the GM's "+15s" (`gm:extendTime`, capped at `MAX_EXTENSIONS`) simply bump `state.deadline` and work. See [`docs/.plans/archive/10-room-lifecycle.md`](../docs/.plans/archive/10-room-lifecycle.md).
@@ -67,7 +69,7 @@ Roster rules that follow from the state shape:
 
 - A player's **seat is their index in `state.players`** — join order, stable for the room's life. `onClose` only flips `connected`; the sole removal site is `handleRemove` (GM removes an *offline* player, LOBBY-only, #68), because a splice re-colours every seat below the gap.
 - A room is created **only by explicit intent** (#66): a new player on an empty room needs `create: true` + a well-formed room code, or they get `no-such-room`. The client pre-flights the `onRequest` existence probe (`exists = players.size > 0`) before joining.
-- A room is cleared wholesale by `resetRoom()` via the alarm — the empty-room grace or the idle wipe.
+- A room is cleared wholesale by `wipeState(reason)`: the GM's end-session (`ended`), or the alarm's empty-room grace or idle wipe (`idle`).
 
 ## Guards
 

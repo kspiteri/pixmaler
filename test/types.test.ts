@@ -12,7 +12,7 @@
 import type { ClientMsg } from '../src/lib/protocol/types'
 import { describe, expect, it } from 'vitest'
 import { GRID_MAX_SIDE, PALETTE_MAX_LEN, parseClientMsg } from '../src/lib/protocol/protocol'
-import { AVATAR_SHAPES, clampDrawSeconds, clampName, DEFAULT_AVATAR_SHAPE, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN, NAME_MAX_LEN, normaliseLikeness, normaliseShape, sanitiseName, VOTE_CATEGORIES } from '../src/lib/protocol/types'
+import { AVATAR_SHAPES, clampDrawSeconds, clampName, DEFAULT_AVATAR_SHAPE, DRAW_SECONDS_MAX, DRAW_SECONDS_MIN, NAME_MAX_LEN, normaliseClosedReason, normaliseLikeness, normaliseShape, sanitiseName, VOTE_CATEGORIES } from '../src/lib/protocol/types'
 
 // Every assertion parses a raw frame; the short name keeps them readable.
 const parse = parseClientMsg
@@ -58,6 +58,18 @@ describe('normaliseLikeness', () => {
   it('reads anything else, including a field an older Worker never sent, as no likeness', () => {
     for (const bad of [undefined, null, -1, 101, 64.5, Number.NaN, '64', {}, true])
       expect(normaliseLikeness(bad)).toBeNull()
+  })
+})
+
+describe('normaliseClosedReason', () => {
+  it('passes through the two reasons the server sends', () => {
+    expect(normaliseClosedReason('ended')).toBe('ended')
+    expect(normaliseClosedReason('idle')).toBe('idle')
+  })
+
+  it('reads a missing or unknown reason, an older Worker\'s, as unknown', () => {
+    for (const bad of [undefined, null, '', 'closed', 'toString', 42, {}])
+      expect(normaliseClosedReason(bad)).toBeNull()
   })
 })
 
