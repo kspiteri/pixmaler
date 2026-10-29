@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.17.0](https://github.com/kspiteri/pixmaler/compare/0.16.0...0.17.0) (2026-10-29)
+
+
+### New
+
+* **canvas:** add brush, fill and spray drawing tools ([6b1bb73](https://github.com/kspiteri/pixmaler/commit/6b1bb739b681eff022daa23da317396239c9bc69)), closes [#138](https://github.com/kspiteri/pixmaler/issues/138)
+* **results:** explain likeness in RESULTS and the architecture doc ([#147](https://github.com/kspiteri/pixmaler/issues/147)) ([7e90b1d](https://github.com/kspiteri/pixmaler/commit/7e90b1d917854a31d17930ff6b1a4e50055e614c)), closes [#144](https://github.com/kspiteri/pixmaler/issues/144)
+* **results:** save any drawing as a PNG ([#135](https://github.com/kspiteri/pixmaler/issues/135)) ([3b04e1a](https://github.com/kspiteri/pixmaler/commit/3b04e1a0138307719801071158883ea1ab411c99)), closes [#41](https://github.com/kspiteri/pixmaler/issues/41)
+* **results:** share a drawing as a card beside the original ([#136](https://github.com/kspiteri/pixmaler/issues/136)) ([6290c76](https://github.com/kspiteri/pixmaler/commit/6290c76af2c52e82d0140efc40918e3bf8a1be23)), closes [#41](https://github.com/kspiteri/pixmaler/issues/41)
+* **results:** show a lime likeness meter on every finished drawing ([#146](https://github.com/kspiteri/pixmaler/issues/146)) ([116230a](https://github.com/kspiteri/pixmaler/commit/116230a222f028b760e398e4d5c28531d8d53318)), closes [#143](https://github.com/kspiteri/pixmaler/issues/143) [#70](https://github.com/kspiteri/pixmaler/issues/70)
+* **results:** show each drawing's likeness on the gallery cards ([#145](https://github.com/kspiteri/pixmaler/issues/145)) ([da11266](https://github.com/kspiteri/pixmaler/commit/da112668cb2f361f69bcfea69b41c740ab30ecbd)), closes [#142](https://github.com/kspiteri/pixmaler/issues/142) [#70](https://github.com/kspiteri/pixmaler/issues/70)
+* **server:** say whether the GM ended the room or it sat idle ([#149](https://github.com/kspiteri/pixmaler/issues/149)) ([f4c8f64](https://github.com/kspiteri/pixmaler/commit/f4c8f645ac763433fb4d78c445e13c4e7bbfe6de)), closes [#37](https://github.com/kspiteri/pixmaler/issues/37)
+
+
+### Fixes
+
+* **a11y:** restore focus after dialogs, name the original and Play again ([62b5543](https://github.com/kspiteri/pixmaler/commit/62b5543c7736e3e5471c6fbaaefff5de65a8733f)), closes [#151](https://github.com/kspiteri/pixmaler/issues/151)
+* **canvas:** keep each stroke's tool and stop stray spray loops ([d8d652d](https://github.com/kspiteri/pixmaler/commit/d8d652d1c6f369d64c28a77ee75e385f84c14d53))
+* **results:** export feedback, share titles and card layout ([640ce9f](https://github.com/kspiteri/pixmaler/commit/640ce9f3db629a1392c1317f9b3b9bd5284bb338))
+* use one set of words for rooms, rounds and the gallery ([#150](https://github.com/kspiteri/pixmaler/issues/150)) ([6ae02b5](https://github.com/kspiteri/pixmaler/commit/6ae02b557e85c75e4f8ecd902a8b34f3b23c1971))
+
 ## [0.16.0](https://github.com/kspiteri/pixmaler/compare/0.15.0...0.16.0) (2026-10-22)
 
 
