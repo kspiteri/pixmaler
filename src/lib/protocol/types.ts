@@ -314,6 +314,17 @@ export interface RankedResult {
   votes: number // overall = funniest + best
   breakdown: Record<VoteCategory, number>
   grid: number[]
+  // 0 to 100, how close the drawing came to the target; null when there is nothing to score
+  // (a wiped or wrong-size grid).
+  likeness: number | null
+}
+
+// The client's read side: an older Worker omits `likeness`, so anything but a whole number
+// from 0 to 100 reads as no likeness. Never throws.
+export function normaliseLikeness(likeness: unknown): number | null {
+  return Number.isInteger(likeness) && (likeness as number) >= 0 && (likeness as number) <= 100
+    ? likeness as number
+    : null
 }
 
 export interface ResultsMsg {

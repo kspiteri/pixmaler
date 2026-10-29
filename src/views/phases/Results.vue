@@ -448,6 +448,9 @@ const { setSlot } = useReadonlyCanvases(
             <p class="results__item-votes">
               {{ entry.votes }} pt{{ entry.votes === 1 ? "" : "s" }}
             </p>
+            <p v-if="entry.likeness !== null" class="results__item-likeness">
+              likeness {{ entry.likeness }}%
+            </p>
             <div class="results__exports">
               <ExportButton v-for="b in exportsById.get(entry.submissionId)" :key="b.intent" v-bind="b" icon size="x-small" variant="subtle" />
             </div>

@@ -29,9 +29,10 @@ pnpm release --theme "Two Words"  # preset the release name (else you're asked)
 
 1. **Preflight** — must be on a clean `main`, `git pull --ff-only`.
 2. **Gates** — `lint`, `lint:css`, `typecheck`, `test`, `build`, then `wrangler deploy --dry-run`.
-3. **Worker deploy — only if it changed.** Diffs `party/`, `src/lib/protocol/`, `src/lib/content/words.ts`
-   and `wrangler.jsonc` since the last tag; if non-empty, prompts, then `pnpm wr:deploy`. **Server before
-   merge** — an updated server tolerates older clients while the reverse breaks live rooms.
+3. **Worker deploy — only if it changed.** Diffs `party/`, `src/lib/protocol/`, `src/lib/content/words.ts`,
+   `src/lib/canvas/palette.ts` and `wrangler.jsonc` since the last tag; if non-empty, prompts, then
+   `pnpm wr:deploy`. **Server before merge** — an updated server tolerates older clients while the
+   reverse breaks live rooms.
 4. **Merge the Release PR** (`gh pr merge --squash`) — this tags, publishes the GitHub release, and
    triggers the Pages deploy.
 5. **Watch the run** (`gh run watch <id> --exit-status`).

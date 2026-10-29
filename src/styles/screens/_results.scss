@@ -254,12 +254,13 @@
     font-weight: 600;
     font-size: $fs-sm;
   }
-  &__item-votes {
+  &__item-votes,
+  &__item-likeness {
     margin: 0.125rem 0 0;
     color: $muted;
     font-size: $fs-xs;
   }
-  // A drawing's Save and Share controls, under its name and points.
+  // A drawing's Save and Share controls, under its details.
   &__exports {
     display: flex;
     justify-content: center;

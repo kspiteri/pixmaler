@@ -6,6 +6,7 @@ import type PartySocket from 'partysocket'
 import type { Ref, ShallowRef } from 'vue'
 import type { ServerMsg } from '../../protocol/types'
 import { askAlert } from '../../dialog'
+import { normaliseLikeness } from '../../protocol/types'
 import { syncServerClock } from '../../serverClock'
 
 // `shallowRef` throughout: the whole object is replaced on each message, so no deep-watch.
@@ -100,7 +101,7 @@ export function applyServerMessage(msg: ServerMsg, refs: RoomRefs, socket: Party
       refs.noSuchRoom.value = true
       socket.close()
       break
-    case 'results': refs.results.value = msg; break
+    case 'results': refs.results.value = { ...msg, ranked: msg.ranked.map(r => ({ ...r, likeness: normaliseLikeness(r.likeness) })) }; break
     case 'done-status':
       if (refs.state.value) {
         refs.state.value = {

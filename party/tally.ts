@@ -33,7 +33,7 @@ export function tallyVotes(
   votes: Map<string, string>,
   players: Map<string, Voter>,
   owners: Map<string, string>,
-): RankedResult[] {
+): Omit<RankedResult, 'likeness'>[] {
   const breakdowns = new Map<string, Record<VoteCategory, number>>()
   for (const sub of gallery)
     breakdowns.set(sub.submissionId, { funniest: 0, best: 0 })
