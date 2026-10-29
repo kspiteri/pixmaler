@@ -1,6 +1,6 @@
 # Architecture
 
-How Pixmaler works: the stack, the source tree, how room state reaches the screens, the image pipeline, Free mode, phases and deadlines, audio, identity and seats, and room creation. [`AGENTS.md`](../AGENTS.md) holds the short-form rules this expands on; how things look and read is in [`design-system.md`](./design-system.md), and the realtime server's internals in [`party/README.md`](../party/README.md).
+How Pixmaler works: the stack, the source tree, how room state reaches the screens, the image pipeline, Free mode, drawing tools, exports, phases and deadlines, likeness, audio, identity and seats, and room creation. [`AGENTS.md`](../AGENTS.md) holds the short-form rules this expands on; how things look and read is in [`design-system.md`](./design-system.md), and the realtime server's internals in [`party/README.md`](../party/README.md).
 
 ## Stack
 
@@ -219,6 +219,35 @@ RESULTS and Paint keep a drawing two ways through [`ExportButton`](../src/compon
 - **Progress divides by `roundSeconds`**, the current length; `config.drawSeconds` is only the configured start, and dividing by it pins the bar at 100 % after an extension. The timer flashes when `roundSeconds` grows, so the jump reads as a decision.
 - **DRAWING submits continuously:** a throttled, deduped `draw:submit` — a 500 ms trailing send, and at least once a second while the canvas keeps changing — plus one sent just before the deadline so it lands before the phase flips to VOTING. "Done" is a social signal, and the canvas is never locked client-side — only the server's move to VOTING ends the round.
 - **Countdown colour** goes `--timer-ok` → `--timer-warn` (≤40 s) → `--timer-danger` (≤20 s); the blank-canvas warning shows only in that last 20 s. Screen readers hear milestones (60/30/10/5…1), never every second.
+
+## Likeness
+
+The server scores each finished drawing when VOTING ends (`party/likeness.ts`), it rides `results`, and RESULTS shows it through `LikenessMeter` with one explanation line. Wire contract and edge cases: [`party/README.md`](../party/README.md); the meter's look: [`design-system.md`](./design-system.md).
+
+### How likeness works
+
+Likeness says how close a drawing came to the original, from 0% to 100%. It is information, never an award or points.
+
+Each cell earns credit for how close its colour is to the target's: full credit for the right colour, a little less for a near shade (the palette can hold shades that look almost alike, so these shouldn't cost much), and nothing for the palette colour furthest from the target's, or for an unpainted cell. The drawing's raw likeness is the average credit. That raw likeness is then measured against the best you could do by filling the whole picture with one colour: anything no better than a bucket fill shows 0%, so only real copying counts. Finally a square-root curve lifts the middle of the range, so an honest copy doesn't read as a failure, without ever changing who ranks above whom. Only an exact copy shows 100% (or, in the odd one-colour palette, any painted drawing).
+
+```mermaid
+flowchart TD
+  cells["Every cell<br/>credit = 1 − d ÷ d to the furthest colour<br/>unpainted = 0"] --> raw["Average<br/>raw 83%"]
+  raw --> rescale["Against the best bucket fill (71%)<br/>(83 − 71) ÷ 29 = 41%"]
+  rescale --> curve["Square-root curve<br/>√0.41 = 0.64"]
+  curve --> shown["Shown: likeness 64%"]
+```
+
+A worked cell, with a red target (`#dc2828`) and the palette's other colours:
+
+| Painted | Colour | Distance from red | Credit |
+|---|---|---|---|
+| Red | `#dc2828` | 0 | 100% |
+| Dark red (a near shade) | `#b41e1e` | 42 | 86% |
+| Near-black | `#141414` | 202 | 34% |
+| Blue | `#283cc8` | 242 | 21% |
+| White (furthest from red) | `#ffffff` | 306 | 0% |
+| Unpainted | – | – | 0% |
 
 ## Audio
 

@@ -9,7 +9,7 @@ Guidance for coding agents (and humans) working in this repository. This file ho
 | Doc | Owns |
 |---|---|
 | **AGENTS.md** (this file) | Commands, code rules, short-form UI rules, deploy order |
-| [`docs/architecture.md`](./docs/architecture.md) | How it works: source tree, state flow, image pipeline, phases and deadlines, audio, identity and seats, room lifecycle |
+| [`docs/architecture.md`](./docs/architecture.md) | How it works: source tree, state flow, image pipeline, drawing tools, exports, phases and deadlines, likeness, audio, identity and seats, room lifecycle |
 | [`docs/design-system.md`](./docs/design-system.md) | How it looks and reads: copy voice, feedback, controls, colour, theme, type, surfaces, tilt, avatars, styling mechanics |
 | [`party/README.md`](./party/README.md) | The realtime server: module map, wire protocol, alarm lifecycle, guards, configuration |
 | [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Workflow: setup, tooling, the test suite, commits, releases and deploys, licences |
