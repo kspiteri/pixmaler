@@ -8,7 +8,6 @@
 // `.slider--neutral` fills in neutral ink instead of lime, for a setting that isn't a choice.
 
 $thumb: 16px;
-$track-h: 6px;
 $fill-ink: var(--slider-fill, #{$accent-ink});
 $track-bg: $fg-20;
 // Where the thumb's centre sits: it travels from thumb/2 to 100% − thumb/2, not 0 → 100%.

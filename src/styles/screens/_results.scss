@@ -146,7 +146,7 @@
   }
   &__award-item {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: $gap-3;
 
     & + & {
@@ -254,8 +254,7 @@
     font-weight: 600;
     font-size: $fs-sm;
   }
-  &__item-votes,
-  &__item-likeness {
+  &__item-votes {
     margin: 0.125rem 0 0;
     color: $muted;
     font-size: $fs-xs;
@@ -282,6 +281,12 @@
   // Award items read left to right, so their row starts at the text, not the middle.
   &__award-meta &__exports {
     justify-content: flex-start;
+  }
+  // The meter sets no margin of its own; each host spaces it under the points.
+  &__winner-meta .likeness-meter,
+  &__award-meta .likeness-meter,
+  &__item .likeness-meter {
+    margin-top: $gap-1;
   }
 
   // The "you" marker — lime fill (what you earned), its own ink for contrast on either theme.
