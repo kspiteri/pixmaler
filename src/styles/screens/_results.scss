@@ -199,13 +199,24 @@
     font-size: $fs-xs;
   }
 
-  // ── Gallery (the rest) ───────────────────────────────────────────────────────
-  // Rotating flavour line between the hero and the gallery — fills the reveal lull.
+  // ── Lines around the reveal ──────────────────────────────────────────────────
+  // The flavour line at the foot of the reveal, one per mount.
   &__tagline {
     text-align: center;
     margin: $gap-4 0;
   }
 
+  // The one line saying what likeness means; it explains the podium's meters too.
+  &__likeness-note {
+    max-width: $col-mid;
+    margin: $gap-5 auto 0;
+    text-align: center;
+    text-wrap: balance;
+    color: $muted;
+    font-size: $fs-sm;
+  }
+
+  // ── Gallery (the rest) ───────────────────────────────────────────────────────
   &__gallery {
     display: grid;
     // Capped track (not `1fr`) + centring so a lone runner-up (a 2-player reveal) stays a sane
@@ -214,6 +225,9 @@
     justify-content: center;
     gap: $gap-4;
     margin-top: $gap-5;
+  }
+  &__likeness-note + &__gallery {
+    margin-top: $gap-3;
   }
   &__item {
     position: relative;
@@ -320,6 +334,10 @@
     flex-direction: column;
     gap: $gap-2;
     text-align: center;
+  }
+  // With no gallery, the note would read as this list's heading; push the list away from it.
+  &__likeness-note + &__nodraw {
+    margin-top: $gap-6;
   }
 
   &__nodraw-item {

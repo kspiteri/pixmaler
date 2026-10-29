@@ -70,6 +70,8 @@ const nobodyDrew = computed(() => ranked.value.length === 0)
 // No human winner — either nobody drew, or people drew and nobody voted. `ranked` is sorted
 // descending, so a zero at the top means a zero everywhere. Either way the target takes the hero.
 const noWinner = computed(() => nobodyDrew.value || ranked.value[0].votes === 0)
+// Every scored entry is drawn somewhere with a meter, so this is "a meter is on screen".
+const showsLikeness = computed(() => ranked.value.some(e => e.likeness !== null))
 
 // Top scorers (joint on a tie) become the hero.
 const winners = computed(() => {
@@ -425,6 +427,11 @@ const { setSlot } = useReadonlyCanvases(
             </div>
           </div>
         </div>
+
+        <!-- Outside the gallery, which is empty whenever every drawing is on the podium. -->
+        <p v-if="showsLikeness" class="results__likeness-note">
+          likeness is how close each drawing came to the original. unpainted cells count against it.
+        </p>
 
         <!-- Everyone else — ranked by overall points, on screen from load. -->
         <div v-if="gallery.length" class="results__gallery">

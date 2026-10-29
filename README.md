@@ -19,7 +19,8 @@ Rooms are named with a memorable word-pair, like `feral-crayon`. Share the code 
 ## Highlights
 
 - **Anonymous two-category voting.** The gallery is shuffled per player and nameless until the reveal, so you vote on the drawing, not the drawer. Nobody drew, or nobody voted? The original quietly takes the win.
-- **Server-authoritative, so no cheating.** Phase, timer, submissions, and the vote tally all live on the server. Drawings stay hidden until voting; you only ever see a live "X of Y finished" count during the round.
+- **See how close you came.** The reveal shows every finished drawing's likeness to the original as a percentage, over a meter that turns lime near a perfect copy. It decides nothing: the votes still pick the winners.
+- **Server-authoritative, so no cheating.** Phase, timer, submissions, the vote tally and likeness all live on the server. Drawings stay hidden until voting; you only ever see a live "X of Y finished" count during the round.
 - **Reconnect-safe.** Drop and rejoin. Your drawing, votes survive. The GM reclaims their role on reconnect, or hands it off; if they vanish, the longest-present player steps up.
 - **Palettes you can actually match.** Ask for 24 colours and the room paints with exactly 24, from a palette derived from the image itself.
 - **Any raster upload, handled gracefully.** Transparency is flattened onto a background colour you choose. No image to hand? Pick from 25 public-domain paintings, then crop in on the part you want painted.
