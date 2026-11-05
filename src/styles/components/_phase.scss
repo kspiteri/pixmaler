@@ -21,7 +21,10 @@
   }
 
   &__progress {
-    height: 5px;
+    // 8px, not a hairline: the countdown chip sits on this, and a 5px track under an 18px
+    // chip reads as a badge floating beside a line rather than one object.
+    position: relative;
+    height: 8px;
     background: $surface;
     flex-shrink: 0;
   }
@@ -37,6 +40,31 @@
     &--pulse {
       animation: phase-progress-pulse 1s ease-in-out infinite;
     }
+  }
+  // The remaining time, riding the leading edge of the drain. Its own background, because it
+  // crosses its own fill; its centre is clamped so it parks at either end instead of sliding
+  // off. Same 1s linear timing as the fill, so the two read as one object.
+  &__progress-chip {
+    position: absolute;
+    top: 50%;
+    // Clamped so a full or empty bar parks the chip at the edge instead of hanging it off:
+    // 22px is half the chip at its 4ch floor, plus a hair.
+    left: clamp(22px, var(--pct, 0%), calc(100% - 22px));
+    translate: -50% -50%;
+    transition:
+      left 1s linear,
+      color 0.4s,
+      border-color 0.4s;
+    padding: 0 $gap-1;
+    min-width: 4ch;
+    border: 1px solid currentcolor;
+    border-radius: $radius-sm;
+    background: $bg;
+    font-family: $font-alert;
+    font-size: $fs-2xs;
+    font-variant-numeric: tabular-nums;
+    line-height: 16px;
+    text-align: center;
   }
 
   &__bar {

@@ -59,6 +59,7 @@ How Pixmaler looks and reads: copy voice, feedback, controls, colour and theme, 
 - **As text or a line, use the themed ink:** `$accent-ink`, `$primary-ink`, `$warn-ink`, `$danger-ink`. Bright lime is 1.16:1 on the light page (failing even the 3:1 non-text floor) and plain `$primary` 3.18:1. `.btn--secondary` shows the split: `$primary-ink` outline and label, `$primary` hover fill.
 - **Small text on a purple fill takes `$primary-lift`:** `$ink-on-colour` on `$primary` is 4.432:1, a hair under the 4.5:1 body floor, so anything below large text (the VOTING salon's `original` tag) fills with the lifted purple instead, at 5.39:1. Lime needs no counterpart: `$accent-fg` on `$accent` is already 16.3:1.
 - **A frame or a bar on a track is ink, not fill:** the winner's frame reads against the card (`--frame-winner-*` is themed), the timer ribbon against its `$surface` track (`--timer-*` is themed), and the likeness meter's fill against its track (`$accent-ink`).
+- **The countdown chip carries its own background.** It rides the ribbon's leading edge in the live ramp colour on `$bg`, because it crosses its own fill: ink alone would vanish the moment the drain passed under it.
 - **Text ramp:** `$fg-80` … `$fg-20`; `$fg-35` and below are non-text only. Quiet copy is `$muted`.
 
 ### Lime means "go" and "chosen"
@@ -103,6 +104,7 @@ If a colour sits on something other than the page, it belongs here:
 
 - **Three surface roles:**
   - **Artefact** ([`_surfaces.scss`](../src/styles/components/_surfaces.scss)): `.art-surface` is `$paper` with square corners (a canvas has none), wrapped in `.art-frame` (bevelled `--frame-*` border, `$shadow-1`; `--winner` for the lime frame) once finished and on show. **Two elements, not one** — the canvas sizes off the surface's `aspect-ratio`, so a border on that box would crop it. `DrawBoard` has neither: the frame is earned when the drawing is done.
+  - **A drawing is never stretched to its container.** The art box carries the grid's own ratio and the frame wraps it; the VOTING wall's square cells only approximate the shape, and the ratio maths subtracts the `$frame-w` border first, or the frame's thickness skews it. A hung drawing has to be the one the room is judging.
   - **Chrome** — panels, inputs, settings: the `chrome()` mixin ([`_chrome.scss`](../src/styles/mixins/_chrome.scss)), container recipe by default; `$rung: $radius` for inputs and toggles. Don't hand-roll the triple.
   - **Person / choice** — lobby roster rows and Results cards: coloured or neutral card, generous radius, `wonk()` tilt.
 - **The radius rung says what a thing is:** `$radius-sm` inner/nested, `$radius` controls, `$radius-lg` containers, `$radius-xl` hero only — near-square even px (2 / 4 / 6 / 8) on the drawings' pixel grid. No pills, no circles on controls. Artwork takes none; avatar silhouettes use `$avatar-round` so `--rounded` stays distinct from `--square`.

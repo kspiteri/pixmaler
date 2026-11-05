@@ -219,6 +219,8 @@ RESULTS and Paint keep a drawing two ways through [`ExportButton`](../src/compon
 - **Progress divides by `roundSeconds`**, the current length; `config.drawSeconds` is only the configured start, and dividing by it pins the bar at 100 % after an extension. The timer flashes when `roundSeconds` grows, so the jump reads as a decision.
 - **DRAWING submits continuously:** a throttled, deduped `draw:submit` — a 500 ms trailing send, and at least once a second while the canvas keeps changing — plus one sent just before the deadline so it lands before the phase flips to VOTING. "Done" is a social signal, and the canvas is never locked client-side — only the server's move to VOTING ends the round.
 - **Countdown colour** goes `--timer-ok` → `--timer-warn` (≤40 s) → `--timer-danger` (≤20 s); the blank-canvas warning shows only in that last 20 s. Screen readers hear milestones (60/30/10/5…1), never every second.
+- **The number rides the ribbon.** `PhaseLayout`'s `progressLabel` pins a chip to the bar's leading edge, clamped so it parks at either end. It is a sibling of the fill, never a child: the fill animates `scale`, which would squash it. Below `$bp-mobile` the status-bar countdown drops and the chip is the only clock.
+- **A mid-round joiner sits the round out.** `spectating` swaps the canvas for the original hung in a `SalonFrame` at `min(85vw, max(260px, 42vw))`, the countdown, the round's palette as a colour key, and one line promising the *next* round — the target on screen is not the one they will draw.
 
 ## Likeness
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Shared shell for the in-room phases: a status bar (logo + left/right slots), then an optional
-// thin progress bar beneath it, above the body — via `progress`/`progressColour`.
+// thin progress bar beneath it, above the body — via `progress`/`progressColour`. The bar can
+// carry the remaining time as a chip riding its leading edge (`progressLabel`).
 
 import Logo from '@/components/elements/Logo.vue'
 import { MusicWidget } from '@/components/game'
@@ -14,10 +15,13 @@ withDefaults(defineProps<{
   progressColour?: string
   // Pulse the progress fill's luminance to flag an urgent state without relying on colour.
   pulse?: boolean
+  // Short label ("81s") pinned to the leading edge of the bar. A phone's status bar has no
+  // room for the countdown, so the bar is where the number lives.
+  progressLabel?: string | null
   // When set, the logo becomes a link to this href (Free mode's way home).
   // In a room the logo is inert — you don't leave a room by clicking it.
   home?: string
-}>(), { progress: null, progressColour: 'var(--timer-ok)', pulse: false, home: undefined })
+}>(), { progress: null, progressColour: 'var(--timer-ok)', pulse: false, progressLabel: null, home: undefined })
 </script>
 
 <template>
@@ -44,6 +48,13 @@ withDefaults(defineProps<{
         :class="{ 'phase__progress-fill--pulse': pulse }"
         :style="{ scale: `${progress / 100} 1`, background: progressColour }"
       />
+      <!-- A sibling of the fill, never a child: the fill animates `scale`, which would squash
+           the chip to nothing as the time runs out. -->
+      <span
+        v-if="progressLabel"
+        class="phase__progress-chip"
+        :style="{ '--pct': `${progress}%`, 'color': progressColour, 'borderColor': progressColour }"
+      >{{ progressLabel }}</span>
     </div>
 
     <main class="phase__body">
