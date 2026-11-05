@@ -120,9 +120,10 @@ watch(() => props.gallery, () => {
 function castVote(category: VoteCategory, submissionId: string) {
   if (props.spectating || submissionId === mySubmissionId.value)
     return // spectators can't vote; a drawing can't award itself (mirrors the server)
-  if (myVotes.value[category] === submissionId)
-    return // movable but not withdrawable: re-click is a no-op
-  myVotes.value = { ...myVotes.value, [category]: submissionId }
+  // Re-clicking the award you already placed takes it back — the server reads the repeat the
+  // same way, so one message covers place, move and withdraw.
+  const withdrawing = myVotes.value[category] === submissionId
+  myVotes.value = { ...myVotes.value, [category]: withdrawing ? null : submissionId }
   const msg: ClientMsg = { type: 'vote:cast', category, submissionId }
   socket.send(JSON.stringify(msg))
 }
@@ -154,7 +155,7 @@ const promptText = computed(() => {
   if (props.spectating)
     return 'you joined mid-round, watch this one'
   if (VOTE_CATEGORIES.every(c => myVotes.value[c.id] !== null))
-    return 'both awards placed. click a drawing to move them, or take another look'
+    return 'both awards placed. click a drawing to move an award, or click it again to take it back'
   return 'vote for the funniest and the best. click a drawing to look closely and award it'
 })
 

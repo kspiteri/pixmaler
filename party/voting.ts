@@ -37,8 +37,14 @@ export function handleVote(
   // drawing to judge. This is what keeps it out of the tally.
   if (target.grid.every(cell => cell === -1))
     return
-  // `set` overwrites the previous pick in that category, so voters can change minds.
-  state.votes.set(voteKey(voter.clientId, msg.category), msg.submissionId)
+  // `set` overwrites the previous pick in that category, so voters can change minds, and
+  // re-casting the same drawing takes the award back — the only way to undo one. The tally
+  // can therefore count *down*; that is honest, and safe because nothing auto-ends VOTING.
+  const key = voteKey(voter.clientId, msg.category)
+  if (state.votes.get(key) === msg.submissionId)
+    state.votes.delete(key)
+  else
+    state.votes.set(key, msg.submissionId)
 
   // No auto-end: the GM watches the "X of Y voted" tally and decides. Only the count
   // is broadcast, never the targets, so running tallies cannot sway later voters.

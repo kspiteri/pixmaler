@@ -71,6 +71,10 @@ Roster rules that follow from the state shape:
 - A room is created **only by explicit intent** (#66): a new player on an empty room needs `create: true` + a well-formed room code, or they get `no-such-room`. The client pre-flights the `onRequest` existence probe (`exists = players.size > 0`) before joining.
 - A room is cleared wholesale by `wipeState(reason)`: the GM's Close room (`ended`), or the alarm's empty-room grace or idle wipe (`idle`).
 
+Vote rules that follow from it:
+
+- **`vote:cast` is place, move and withdraw in one message.** A different drawing moves the award; the *same* drawing again deletes the key. No new message type, so an old client and a new Worker never disagree about the shape — only about whether a repeat does anything. `votingProgress` counts keys, so a withdrawal drops the voter out of "X of Y voted": the tally can count down. That is safe because nothing auto-ends VOTING — the GM reads the count and decides.
+
 ## Guards
 
 Defence layers on the message path, in order:

@@ -7,6 +7,7 @@
 import type { RoomPlayer, RoomState } from '../party/state'
 import type { GmConfigureMsg, Submission } from '../src/lib/protocol/types'
 import { describe, expect, it } from 'vitest'
+import { votingProgress } from '../party/state'
 import { voteKey } from '../party/tally'
 import { handleStopVoting, handleVote } from '../party/voting'
 import { player, harness as room } from './support/room'
@@ -59,6 +60,32 @@ describe('handleVote', () => {
     handleVote(h.ctx, h.conn('conn-voter'), cast('other'))
     expect(h.state.votes.get(voteKey('voter', 'best'))).toBe('other')
     expect(h.state.votes.size).toBe(1)
+  })
+
+  it('takes the award back when the same drawing is cast again', () => {
+    const h = harness([player('voter'), player('artist')], [drawing])
+    handleVote(h.ctx, h.conn('conn-voter'), cast('artist'))
+    handleVote(h.ctx, h.conn('conn-voter'), cast('artist'))
+    expect(h.state.votes.size).toBe(0)
+    // The tally has to fall back with it, or the GM waits on a voter the count says is done.
+    expect(votingProgress(h.state).votedCount).toBe(0)
+  })
+
+  it('re-awards after a withdrawal', () => {
+    const h = harness([player('voter'), player('artist')], [drawing])
+    handleVote(h.ctx, h.conn('conn-voter'), cast('artist'))
+    handleVote(h.ctx, h.conn('conn-voter'), cast('artist'))
+    handleVote(h.ctx, h.conn('conn-voter'), cast('artist'))
+    expect(h.state.votes.get(voteKey('voter', 'best'))).toBe('artist')
+  })
+
+  it('withdraws one category without touching the other', () => {
+    const h = harness([player('voter'), player('artist')], [drawing])
+    handleVote(h.ctx, h.conn('conn-voter'), cast('artist', 'best'))
+    handleVote(h.ctx, h.conn('conn-voter'), cast('artist', 'funniest'))
+    handleVote(h.ctx, h.conn('conn-voter'), cast('artist', 'best'))
+    expect(h.state.votes.get(voteKey('voter', 'best'))).toBeUndefined()
+    expect(h.state.votes.get(voteKey('voter', 'funniest'))).toBe('artist')
   })
 
   it('keeps categories independent', () => {
