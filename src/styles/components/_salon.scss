@@ -37,6 +37,9 @@
   --dx: 0px;
   --dy: 0px;
   --rot: 0deg;
+  --rs: 1;
+  --cs: 1;
+  --ar: 1;
 
   // Tilts use standalone translate/rotate, never transform — the press rule owns transform.
   translate: var(--dx) var(--dy);
@@ -44,11 +47,24 @@
   transition:
     translate 0.25s cubic-bezier(0.22, 1, 0.36, 1),
     rotate 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  display: grid;
+  place-items: center;
 
-  // The frame fills its wall cell; the modal sizes it differently (see _voting.scss).
+  // The cell band is square-celled, so the block only approximates the drawing's shape. The
+  // art takes the exact ratio and the frame wraps it, centred in the block: stretching it
+  // would show the room something other than what was drawn and what the server scored.
+  // The maths runs on the art box, so the 6px frame is subtracted first, or the border's own
+  // thickness skews the ratio by a couple of percent. The modal sizes the same frame
+  // differently (see _voting.scss).
   .salon-frame {
-    width: 100%;
-    height: 100%;
+    --block-w: calc(var(--cell) * var(--cs) + var(--wall-gap) * (var(--cs) - 1) - 2 * #{$frame-w});
+    --block-h: calc(var(--cell) * var(--rs) + var(--wall-gap) * (var(--rs) - 1) - 2 * #{$frame-w});
+    width: fit-content;
+    height: fit-content;
+  }
+  .salon-frame__art {
+    width: min(var(--block-w), var(--block-h) * var(--ar));
+    height: min(var(--block-h), var(--block-w) / var(--ar));
   }
 
   &--piece {

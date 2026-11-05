@@ -60,12 +60,14 @@ function wobble(rng: () => number) {
   }
 }
 // Span keyed to aspect ratio, packed into the 3-row band: square is the 1×1 unit, landscape
-// widens (colSpan up to 3), portrait heightens (rowSpan up to 3). Cells are square, so the
-// block's aspect tracks the drawing's — 3:2 → 2×1, 2:3 → 1×2, 1:1 → 1×1.
+// widens (colSpan up to 3), portrait heightens (rowSpan up to 3). `ceil(r - 0.15)` rather than
+// `round(r)`: the quantiser's 3:2 is 61/41 = 1.4878, which rounds *down* to one square cell.
+// The block only approximates the ratio — the frame inside takes the drawing's exact one.
 function spanFor(ratio: number): { rowSpan: number, colSpan: number } {
+  const span = (r: number) => Math.min(3, Math.max(1, Math.ceil(r - 0.15)))
   return ratio >= 1
-    ? { rowSpan: 1, colSpan: Math.min(3, Math.max(1, Math.round(ratio))) }
-    : { rowSpan: Math.min(3, Math.max(1, Math.round(1 / ratio))), colSpan: 1 }
+    ? { rowSpan: 1, colSpan: span(ratio) }
+    : { rowSpan: span(1 / ratio), colSpan: 1 }
 }
 // Filler grid dims matching the frame's random shape, so the faded art isn't stretched.
 function fillerDims(rowSpan: number, colSpan: number): { gw: number, gh: number } {
@@ -104,11 +106,16 @@ function makeFillerGrid(seed: number, w: number, h: number, palette: string[]): 
   return grid
 }
 
-// The per-item inline style: grid span plus the CSS custom props the tilt/offset rule reads.
+// The per-item inline style: grid span plus the CSS custom props the tilt/offset and the
+// frame-fitting rules read. `--ar` is the drawing's own ratio, so the frame never stretches to
+// the cell; `--rs`/`--cs` let CSS rebuild the block's size from the row height and the gap.
 export function salonItemStyle(item: WallItem) {
   return {
     'gridRow': `span ${item.rowSpan}`,
     'gridColumn': `span ${item.colSpan}`,
+    '--rs': `${item.rowSpan}`,
+    '--cs': `${item.colSpan}`,
+    '--ar': `${(item.gw / item.gh).toFixed(4)}`,
     '--rot': `${item.rot}deg`,
     '--dx': `${item.dx}px`,
     '--dy': `${item.dy}px`,
