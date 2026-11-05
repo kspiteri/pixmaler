@@ -127,8 +127,11 @@
   // `<style>` block — so the previous `:deep(p)` / `:deep(canvas)` rules were never
   // valid selectors and never matched. The canvas was being sized by inline styles in
   // `renderPreview` instead; those are gone now, so this rule is load-bearing.
+  // `width`, not just a cap: `PixelThumb` renders one device pixel per cell, so a bare
+  // `max-width` left the 61×41 target at 61px.
   &__preview-canvas canvas {
     display: block;
+    width: 100%;
     max-width: 280px;
     height: auto;
     border-radius: $radius-sm;

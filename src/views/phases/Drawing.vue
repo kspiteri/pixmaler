@@ -21,7 +21,7 @@ import {
 } from 'vue'
 import AlertNotice from '@/components/elements/AlertNotice.vue'
 import Button from '@/components/elements/Button.vue'
-import { DrawBoard, PixelThumb } from '@/components/game'
+import { DrawBoard, SalonFrame } from '@/components/game'
 import PhaseLayout from '@/components/layout/PhaseLayout.vue'
 import { clientIdKey, socketKey, useCountdownAnnounce, useDrawSubmit, useGmActions, useOrientation } from '@/lib'
 
@@ -111,6 +111,11 @@ const flaggedDone = computed(() =>
 const timerText = computed(() =>
   secondsLeft.value === null ? 'drawing…' : `${secondsLeft.value}s left`,
 )
+// The same clock, short enough to ride the ribbon. Null before the first tick, which hides
+// the chip rather than parking an empty box at 100%.
+const chipText = computed(() =>
+  secondsLeft.value === null ? null : `${secondsLeft.value}s`,
+)
 const timerPct = computed(() => {
   if (secondsLeft.value === null || totalSeconds.value <= 0)
     return 100
@@ -154,7 +159,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <PhaseLayout heading="Drawing" class="phase--fixed" :progress="timerPct" :progress-colour="timerColour" :pulse="critical">
+  <PhaseLayout
+    heading="Drawing"
+    class="phase--fixed"
+    :progress="timerPct"
+    :progress-colour="timerColour"
+    :pulse="critical"
+    :progress-label="chipText"
+  >
     <template #status>
       <span
         class="drawing__timer"
@@ -192,20 +204,30 @@ onBeforeUnmount(() => {
       </Button>
     </template>
 
-    <!-- Spectators get the original and the room's progress, but no canvas: they joined
-         after this round started. The target is safe to show — a new image next round. -->
+    <!-- Spectators get the original hung at size, the clock and the room's palette, but no
+         canvas: they joined after this round started. The target is safe to show — a new
+         image next round, which is also why the copy promises the seat, not this drawing. -->
     <div v-if="spectating" class="drawing__body drawing__body--watching">
-      <p class="drawing__watching-note">
-        you joined mid-round, watching this one and drawing the next
-      </p>
-      <PixelThumb
+      <SalonFrame
         v-if="config"
         class="drawing__watching-target"
+        :style="{ '--ar': (config.gridW / config.gridH).toFixed(4) }"
         :grid-w="config.gridW"
         :grid-h="config.gridH"
         :palette="config.palette"
         :grid="targetGrid"
-      />
+      >
+        <span class="salon-frame__tag salon-frame__tag--original">original</span>
+      </SalonFrame>
+      <p class="drawing__watching-clock" :style="{ color: timerColour }">
+        {{ timerText }}
+      </p>
+      <ul v-if="config" class="drawing__watching-palette" aria-label="This round's colours">
+        <li v-for="(hex, i) in config.palette" :key="i" :style="{ background: hex }" />
+      </ul>
+      <p class="drawing__watching-note">
+        your seat's reserved. this round is a sit-out, the next one's yours
+      </p>
     </div>
 
     <div v-else class="drawing__body">

@@ -27,8 +27,9 @@
     font-size: $fs-sm;
   }
 
-  // Narrow screens: drop the numeric countdown — the colour-coded progress ribbon already
-  // shows time remaining and urgency. The "X of Y ready" tally stays, just smaller.
+  // Narrow screens: drop the status-bar countdown, which has no room beside the tally and the
+  // GM's controls. The number itself is not lost — it rides the progress ribbon as a chip
+  // (`.phase__progress-chip`), which is the only clock on a phone.
   @media (max-width: $bp-mobile) {
     &__timer {
       display: none;
@@ -50,15 +51,56 @@
     z-index: 1;
   }
 
-  // Spectator view: the original and a line of copy, centred in the space the
-  // canvas pair would have filled. No `phase--fixed` fight — there is nothing to
-  // scroll, so this just centres.
+  // Spectator view: the original hung at size, the clock, the round's palette and one line,
+  // centred in the space the canvas pair would have filled. No `phase--fixed` fight — there
+  // is nothing to scroll, so this just centres.
   &__body--watching {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: $gap-4;
+    gap: $gap-3;
+  }
+
+  // A cap alone never scales a canvas *up*: `PixelThumb` renders one device pixel per cell, so
+  // the 61×41 target came out 61px wide until this width existed. The ratio sits on the art,
+  // not the frame, so the 6px border doesn't skew it.
+  &__watching-target {
+    width: min(85vw, max(260px, 42vw));
+    box-shadow: $shadow-2;
+    rotate: -0.6deg;
+
+    .salon-frame__art {
+      width: 100%;
+      height: auto;
+      aspect-ratio: var(--ar, 1);
+    }
+  }
+
+  &__watching-clock {
+    margin: $gap-2 0 0;
+    font-family: $font-display;
+    font-size: $fs-xl;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  // The round's constraint, as a colour key. Decorative in the sense that the names are not
+  // read out, but it is the clearest statement of what the drawers are working with.
+  &__watching-palette {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      width: $gap-4;
+      height: $gap-3;
+      border-radius: $radius-sm;
+    }
   }
 
   &__watching-note {
@@ -68,15 +110,6 @@
     font-size: $fs-sm;
     letter-spacing: $ls-alert;
     text-align: center;
-  }
-
-  // Matches the lobby preview's cap so the target reads at the same size in both
-  // places a non-participant sees it.
-  // Plain descendant, not `:deep()` — this is a global partial, so there is no
-  // scope attribute to pierce. The canvas is appended imperatively by PixelCanvas.
-  &__watching-target canvas {
-    max-width: 280px;
-    height: auto;
   }
 
   // The canvas pair fills the shell and the editable canvas (`PixelCanvas.fitTo`) grows
