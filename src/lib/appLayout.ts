@@ -18,6 +18,12 @@ export const isMobile = ref(false)
 // subtract this from the shell to get the canvas area's allowed height.
 export const paletteHeight = ref(0)
 
+// How much height the canvas cannot use, in px: a drawing keeps its grid's ratio, so a
+// landscape target leaves the shell's remaining height empty however tall the dock is.
+// <DrawBoard> publishes it; the docked palette may grow into it at no cost to the drawing.
+// 0 means "unknown" — the palette falls back to its own cap.
+export const paletteBudget = ref(0)
+
 let mql: MediaQueryList | null = null
 
 function onMobileChange(e: MediaQueryListEvent | MediaQueryList) {
@@ -32,10 +38,15 @@ export function useAppLayout() {
     isMobile.value = mql.matches
     mql.addEventListener('change', onMobileChange)
   }
-  return { isMobile, paletteHeight, setPaletteHeight, MOBILE_BP }
+  return { isMobile, paletteHeight, paletteBudget, setPaletteHeight, setPaletteBudget, MOBILE_BP }
 }
 
 // Publish the docked palette height (px). Pass 0 to clear the reservation.
 export function setPaletteHeight(px: number) {
   paletteHeight.value = Math.max(0, Math.round(px))
+}
+
+// Publish the height the canvas cannot use (px). Pass 0 when it is unknown.
+export function setPaletteBudget(px: number) {
+  paletteBudget.value = Math.max(0, Math.round(px))
 }

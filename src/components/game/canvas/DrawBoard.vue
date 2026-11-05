@@ -35,7 +35,7 @@ const emit = defineEmits<{
 }>()
 
 // `paletteHeight` is the horizontal dock's measured height, published by <PaletteTools>
-const { paletteHeight } = useAppLayout()
+const { isMobile, paletteHeight, setPaletteBudget } = useAppLayout()
 
 // Space the bottom-docked palette needs below the canvas area.
 const reservedForPalette = computed(() => paletteHeight.value)
@@ -86,6 +86,20 @@ function fitDrawCanvas() {
   if (!slot || !player)
     return
   player.fitTo(slot.clientWidth, slot.clientHeight)
+  publishBudget(slot)
+}
+
+// The drawing keeps its grid's ratio, so a wide target cannot use the shell's full height:
+// `width / ratio` is as tall as it will ever be. Whatever is left over is dead space the
+// docked palette may take without costing the player a single pixel of canvas.
+function publishBudget(slot: HTMLElement) {
+  if (!isMobile.value) {
+    setPaletteBudget(0)
+    return
+  }
+  const shellHeight = slot.clientHeight + paletteHeight.value
+  const drawable = Math.min(shellHeight, slot.clientWidth / (props.gridW / props.gridH))
+  setPaletteBudget(shellHeight - drawable)
 }
 
 defineExpose({

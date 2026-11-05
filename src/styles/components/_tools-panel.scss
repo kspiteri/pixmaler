@@ -167,8 +167,7 @@
     }
   }
 
-  // Bottom dock (mobile or desktop): a compact thumbnail beside the controls, not full-width.
-  &--docked &__target,
+  // Desktop bottom bar: a compact thumbnail beside the controls, not full-width.
   &--dock-bottom &__target {
     flex: 0 0 auto;
     align-self: center;
@@ -180,10 +179,14 @@
     }
   }
 
-  // Mobile header strip — static stand-in for the drag handle; hosts swatch size.
+  // Mobile header strip — static stand-in for the drag handle; carries the original and
+  // the swatch size. The thumbnail lives here rather than in the body so the swatch grid
+  // gets the panel's full width; it also retires the "palette" label, which named a panel
+  // you are already looking at.
   &__mobile-head {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: $gap-2;
     padding: $gap-2 $gap-3;
     border-bottom: 1px solid $border-soft;
@@ -191,6 +194,13 @@
     font-size: $fs-2xs;
     text-transform: uppercase;
     letter-spacing: 0.15em;
+
+    .tools-panel__target .canvas-pair__target-canvas {
+      width: auto;
+      max-width: 6rem;
+      max-height: 2.25rem;
+      border: 1px solid $border;
+    }
   }
 
   &__row {
@@ -249,8 +259,9 @@
     // An entrance, not a transition: position/width don't interpolate. Safe to animate
     // `transform` — only the FLOATING panel carries an inline one.
     animation: tools-panel-dock-in 0.22s ease-out;
-    // Hard cap; the canvas reserves the measured height (via `paletteHeight`) so the
-    // drawing sits cleanly above the bar.
+    // The default cap; `PaletteTools` raises it inline to whatever height the drawing's own
+    // ratio leaves unusable. The canvas reserves the measured height (via `paletteHeight`)
+    // so the drawing sits cleanly above the bar either way.
     max-height: 50vh;
     display: flex;
     flex-direction: column;
@@ -258,7 +269,8 @@
     border-bottom: none;
     box-shadow: $shadow-2-up;
 
-    // Sit the relocated original beside the controls; the canvas keeps the space above.
+    // The original rides in the header here, so the body is the controls alone and the
+    // swatch grid gets the panel's full width.
     .tools-panel__body {
       flex: 1;
       min-height: 0;
@@ -304,6 +316,26 @@
     right: 0;
     left: 0;
     width: 100%;
+
+    // On the dock `--sw` is a *minimum* and the rungs are thumb-sized: S 32 / M 44 (Apple's
+    // default and WCAG 2.5.5) / L 56. A 26px swatch passed WCAG AA on size but sat under
+    // Apple's 28pt floor.
+    --sw: 44px;
+
+    &.tools-panel--sm {
+      --sw: 32px;
+    }
+    &.tools-panel--lg {
+      --sw: 56px;
+    }
+
+    // Cells touch, the way every touch drawing app draws a palette: the cell *is* the
+    // target, so a gap only spends width that could have been tap area. The track stretches
+    // from the minimum, so a row always divides the panel's width exactly.
+    .swatch {
+      grid-template-columns: repeat(auto-fill, minmax(var(--sw), 1fr));
+      gap: 1px;
+    }
   }
 
   // Desktop: a centred bar only as wide as its content, capped to the viewport.

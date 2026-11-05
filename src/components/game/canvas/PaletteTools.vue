@@ -59,7 +59,7 @@ const {
 } = useDraggable({ initialX: 16, initialY: 16, disabled: () => isTouch.value, element: () => panelEl.value })
 
 // Below $bp-mobile the panel docks full-width at the bottom and dragging is off.
-const { isMobile } = useAppLayout()
+const { isMobile, paletteBudget } = useAppLayout()
 
 // Desktop placement (persisted). `float` draggable over the canvas (default); `side` an
 // in-flow rail beside it (Teleport disabled); `bottom` a centred fixed bar under it.
@@ -73,6 +73,17 @@ const horizontal = computed(() => isMobile.value || dockBottom.value)
 // Draggable only when floating on a fine pointer: Touch mode (or a docked panel) turns the
 // handle into a static header, and useDraggable's `disabled` enforces the same at drag start.
 const canDrag = computed(() => floatingDesktop.value && !isTouch.value)
+
+// The dock may grow into height the drawing cannot use (`paletteBudget`), but never below
+// the 50vh cap it has always had — so a landscape round gets a roomier palette for free,
+// and a portrait one, where the canvas does want every pixel, is unchanged.
+const panelStyle = computed(() => {
+  if (floatingDesktop.value)
+    return { transform: `translate(${panelX.value}px, ${panelY.value}px)` }
+  if (isMobile.value && paletteBudget.value > 0)
+    return { maxHeight: `max(50vh, ${paletteBudget.value}px)` }
+  return undefined
+})
 
 // The docked/floating flip changes whether the reference belongs in the dock and how tall
 // the reserve is — re-run once the layout has settled.
@@ -251,14 +262,20 @@ function clear() {
       ref="panelEl"
       class="tools-panel"
       :class="[`tools-panel--${paletteSize}`, `tools-panel--${variant}`, { 'tools-panel--docked': isMobile, 'tools-panel--float': floatingDesktop, 'tools-panel--dock-side': inFlow, 'tools-panel--dock-bottom': dockBottom }]"
-      :style="floatingDesktop ? { transform: `translate(${panelX}px, ${panelY}px)` } : undefined"
+      :style="panelStyle"
     >
-      <Header :is-mobile="isMobile" :can-drag="canDrag" @handle-down="onHandlePointerDown" />
+      <Header :is-mobile="isMobile" :can-drag="canDrag" @handle-down="onHandlePointerDown">
+        <!-- On the dock the original rides in the header strip, where the swatch grid can
+             then have the body's full width. -->
+        <template #reference>
+          <div ref="dockTargetSlot" class="tools-panel__target" />
+        </template>
+      </Header>
 
       <div class="tools-panel__body">
-        <!-- The original: full-width in the desktop panel with a collapse toggle (like the
-             shortcuts); on the mobile dock it's a compact thumbnail beside the controls. -->
-        <div class="tools-panel__reference">
+        <!-- Desktop only: the original sits full-width in the panel behind a collapse
+             toggle, like the shortcuts disclosure. -->
+        <div v-if="!isMobile" class="tools-panel__reference">
           <Button
             v-if="!horizontal"
             variant="subtle"

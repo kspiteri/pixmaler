@@ -2,7 +2,8 @@
 // The tools-panel header strip. Desktop: a drag handle (grip shown when the panel floats)
 // carrying the size and placement (float / side / bottom) controls. The drag is owned by the parent
 // (useDraggable on the panel), so the handle only forwards pointerdown. Mobile: a static
-// header with the wordmark + size and no placement control (#59).
+// header holding the reference thumbnail and the size control (#59) — the thumbnail rides
+// here rather than in the body, where it cost the swatch grid a column of width.
 
 import { GripVertical } from '@lucide/vue'
 import PlacementControl from './PlacementControl.vue'
@@ -22,7 +23,7 @@ const emit = defineEmits<{
 
 <template>
   <div v-if="isMobile" class="tools-panel__mobile-head">
-    <span class="tools-panel__label">palette</span>
+    <slot name="reference" />
     <SizeControl />
   </div>
 

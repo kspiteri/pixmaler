@@ -23,7 +23,7 @@ src/
 │   ├── dialog.ts              # askAlert / askConfirm — the app-global modal queue
 │   ├── announce.ts            # polite + assertive sr-only regions for messages with no visible home
 │   ├── infoModal.ts           # Credits/Privacy modal state (activeInfo, openCredits, openPrivacy)
-│   ├── appLayout.ts           # shared viewport facts (isMobile, paletteHeight)
+│   ├── appLayout.ts           # shared viewport facts (isMobile, paletteHeight, paletteBudget)
 │   ├── assets.ts              # asset() / appHref() against Vite's base
 │   ├── storage.ts             # guarded localStorage; not in the barrel, lib modules import it directly
 │   ├── audio.ts               # Howler engine: sfx sprite, music channel + transport, toggles, error/widget state
@@ -199,6 +199,8 @@ centres of colour — the subtlest, richest result, so it merges least (8 units)
 - **`onToolChange`** is how the controls follow a tool change from a click or ↑/↓: `DrawBoard` mirrors it into `ToolPicker`'s prop and re-syncs the size slider, which is disabled (not hidden) on Fill so the docked panel never reflows.
 - **Each DRAWING starts on Pencil** because the phase screen mounts a fresh `PixelCanvas`; nothing persists the tool.
 - **The desktop panel defaults to the side rail**, not floating. A floating panel sits over the artboard, and the blank-canvas warning fires in the last 20 s for exactly the player least able to go looking for it — so the notice is centred over the artboard above the panel's `z-index: 100`, and the default keeps them apart anyway.
+- **The mobile dock takes the height the drawing cannot use.** A drawing keeps its grid's ratio, so a landscape target is width-bound and the rest of the shell is dead space: `DrawBoard` publishes that as `paletteBudget` and the dock raises its 50 vh cap to it. A landscape round gets a roomier palette at no cost to the canvas; a portrait one, where the canvas does want the height, is capped as before.
+- **Docked swatches are contiguous and thumb-sized.** The cell is the target, so the dock drops the gap to 1 px and treats `--sw` as a minimum (S 32 / M 44 / L 56) with `repeat(auto-fill, minmax(var(--sw), 1fr))` — a row always divides the panel's width exactly. The original rides in the dock's header strip, which is why the grid gets the full width.
 
 ## Exports
 
