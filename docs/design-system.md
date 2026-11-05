@@ -48,7 +48,7 @@ How Pixmaler looks and reads: copy voice, feedback, controls, colour and theme, 
 
 ### Names and values
 
-- **[`_theme.scss`](../src/styles/foundation/_theme.scss) writes every theme-varying value** (a `dark` and a `light` mixin, plus the constant `--paper`); **[`_tokens.scss`](../src/styles/foundation/_tokens.scss) names them** (`$bg: var(--bg)`), so a call site never changes with the theme. `_tokens.scss` also holds the theme-agnostic literals (`$accent`, `$accent-fg`, `$primary`, the `-deep` shades, `$ink-on-colour`, `$scrim`, `$bevel-fill`, `$player-colours`). Only these two files may contain a colour literal.
+- **[`_theme.scss`](../src/styles/foundation/_theme.scss) writes every theme-varying value** (a `dark` and a `light` mixin, plus the constant `--paper`); **[`_tokens.scss`](../src/styles/foundation/_tokens.scss) names them** (`$bg: var(--bg)`), so a call site never changes with the theme. `_tokens.scss` also holds the theme-agnostic literals (`$accent`, `$accent-fg`, `$primary`, `$primary-lift`, the `-deep` shades, `$ink-on-colour`, `$scrim`, `$bevel-fill`, `$player-colours`). Only these two files may contain a colour literal.
 - **Emission order is load-bearing:** `:root` (dark), then `@media (prefers-color-scheme: light)`, then `[data-theme='light' | 'dark']`. The attribute blocks tie with `:root` on specificity, so only source order lets an explicit choice beat the OS.
 - **`_tokens.scss` stays rule-free** — scoped `<style>` blocks `@use` it and Vue compiles each separately, so a rule would be emitted once per block, scope-attributed.
 - Palettes hang off `[data-theme]` selectors, so any element can carry one — the dev-only `/components` gallery renders dark and light panes side by side.
@@ -57,6 +57,7 @@ How Pixmaler looks and reads: copy voice, feedback, controls, colour and theme, 
 
 - **The test: does the colour bring its own background?** `$accent` (lime) and `$primary` (purple) are fills carrying their own ink (`$accent-fg` on lime is 16.3:1), so they never change.
 - **As text or a line, use the themed ink:** `$accent-ink`, `$primary-ink`, `$warn-ink`, `$danger-ink`. Bright lime is 1.16:1 on the light page (failing even the 3:1 non-text floor) and plain `$primary` 3.18:1. `.btn--secondary` shows the split: `$primary-ink` outline and label, `$primary` hover fill.
+- **Small text on a purple fill takes `$primary-lift`:** `$ink-on-colour` on `$primary` is 4.432:1, a hair under the 4.5:1 body floor, so anything below large text (the VOTING salon's `original` tag) fills with the lifted purple instead, at 5.39:1. Lime needs no counterpart: `$accent-fg` on `$accent` is already 16.3:1.
 - **A frame or a bar on a track is ink, not fill:** the winner's frame reads against the card (`--frame-winner-*` is themed), the timer ribbon against its `$surface` track (`--timer-*` is themed), and the likeness meter's fill against its track (`$accent-ink`).
 - **Text ramp:** `$fg-80` … `$fg-20`; `$fg-35` and below are non-text only. Quiet copy is `$muted`.
 

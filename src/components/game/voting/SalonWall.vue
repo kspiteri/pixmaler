@@ -115,7 +115,7 @@ onBeforeUnmount(() => {
     @pointerdown="onWallPointerDown"
   >
     <template v-for="item in items" :key="item.key">
-      <article
+      <div
         v-if="item.kind === 'piece'"
         :ref="el => setPieceEl(item.realIndex, el)"
         class="salon-wall__item salon-wall__item--piece"
@@ -133,7 +133,7 @@ onBeforeUnmount(() => {
             <GameIcon v-for="c in awardsOn(item.submissionId)" :key="c.id" :name="c.id" class="salon-frame__badge" />
           </div>
         </SalonFrame>
-      </article>
+      </div>
 
       <div
         v-else-if="item.kind === 'original'"

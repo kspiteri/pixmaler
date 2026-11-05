@@ -90,6 +90,8 @@ $border-soft: var(--border-soft);
 $accent: #c8ff2d; // lime — primary CTA fill
 $accent-fg: #0e0e12; // text on lime
 $primary: #7c5cff; // purple — secondary / GM
+// Purple under small ink-on-colour text: $primary itself is 4.432:1, just under 1.4.3's 4.5.
+$primary-lift: #8c70ff;
 
 // The same hues as *text or a line*, with the page behind them instead of a fill.
 // Bright lime is 1.16:1 on light grey and fails 1.4.11 even as a border.
