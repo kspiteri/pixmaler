@@ -18,12 +18,13 @@ export type PaletteSize = 'sm' | 'md' | 'lg'
 const SIZES: readonly PaletteSize[] = ['sm', 'md', 'lg']
 const DEFAULT_SIZE: PaletteSize = 'md'
 
-// Where the desktop palette sits. `float` draggable over the canvas (default), `side` an
-// in-flow rail beside it, `bottom` a centred bar under it. Mobile ignores this — it always
-// docks full-width at the bottom.
+// Where the desktop palette sits. `side` an in-flow rail beside the canvas (default), `float`
+// draggable over it, `bottom` a centred bar under it. Mobile ignores this — it always docks
+// full-width at the bottom. The default is docked, not floating: a floating panel covers the
+// artboard, and with it the blank-canvas warning that fires in the last 20 seconds.
 export type PalettePlacement = 'float' | 'side' | 'bottom'
 const PLACEMENTS: readonly PalettePlacement[] = ['float', 'side', 'bottom']
-const DEFAULT_PLACEMENT: PalettePlacement = 'float'
+const DEFAULT_PLACEMENT: PalettePlacement = 'side'
 
 function storedSize(): PaletteSize {
   const raw = readStored(SIZE_KEY) as PaletteSize | null

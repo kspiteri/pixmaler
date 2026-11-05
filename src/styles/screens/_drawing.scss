@@ -42,13 +42,17 @@
 
   // Placement only — the look is `.notice` in the alert register. Overlaid, not in flow,
   // because `.phase--fixed` has a hard height budget and an in-column element would shrink
-  // the drawing area for a message usually absent. Pinned to the top, where the eye goes
-  // for the clock and the free edge on mobile (the palette docks at the bottom).
+  // the drawing area for a message usually absent. Centred over the artboard and above the
+  // tools panel (`z-index: 100`): the panel is movable and this is not, and the one player
+  // who needs this message is the one who cannot find it behind a floating palette.
   &__blank-warn {
     position: absolute;
-    inset-inline: $gap-4;
+    inset-inline: 0;
     top: $gap-3;
-    z-index: 1;
+    z-index: 101;
+    width: fit-content;
+    max-width: calc(100% - 2 * #{$gap-4});
+    margin-inline: auto;
   }
 
   // Spectator view: the original hung at size, the clock, the round's palette and one line,

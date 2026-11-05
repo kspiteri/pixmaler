@@ -198,6 +198,7 @@ centres of colour — the subtlest, richest result, so it merges least (8 units)
 - **A stroke keeps the tool it started with.** The tool is latched at pointerdown, so a click or ↑/↓ mid-stroke applies to the next press; a second pointer during a stroke is ignored, and losing pointer capture ends the stroke.
 - **`onToolChange`** is how the controls follow a tool change from a click or ↑/↓: `DrawBoard` mirrors it into `ToolPicker`'s prop and re-syncs the size slider, which is disabled (not hidden) on Fill so the docked panel never reflows.
 - **Each DRAWING starts on Pencil** because the phase screen mounts a fresh `PixelCanvas`; nothing persists the tool.
+- **The desktop panel defaults to the side rail**, not floating. A floating panel sits over the artboard, and the blank-canvas warning fires in the last 20 s for exactly the player least able to go looking for it — so the notice is centred over the artboard above the panel's `z-index: 100`, and the default keeps them apart anyway.
 
 ## Exports
 
