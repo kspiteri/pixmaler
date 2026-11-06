@@ -1,25 +1,42 @@
 @use 'tokens' as *;
-@use 'wonk' as *;
 
 // Entry screen — the brand and actions on one side, a two-piece art wall on the other: the
-// pixelated original and a player's attempt hung crooked over it, which is the whole game in one
-// look. Stacks brand → wall → actions below `$bp-tablet`. The vignette is the app-wide backdrop.
+// pixelated original and a player's attempt at it, hung side by side, which is the whole game in
+// one look. Stacks brand → wall → actions on a narrow viewport (the `stacked` mixin below), and
+// nothing here may scroll down to 360×640: the wall gives up width against the viewport height
+// so the column always fits. The vignette is the app-wide backdrop.
 
 // The action column's width — the desktop grid track and its stacked cap in one place.
 $actions-w: 24rem;
 
+// What the wall may take once the brand, the actions and the padding have had their ~27.5rem,
+// turned into a width through the wall's own ratio (it is wider than it is tall).
+$wall-fit: calc((100svh - 27.5rem) * 1.05);
+
+// Stacked needs height as well as narrowness: a phone on its side has neither, so below
+// 40rem tall only a genuinely narrow viewport stacks and everything else keeps the split.
+@mixin stacked {
+  @media (max-width: $bp-tablet) and (min-height: 40rem), (max-width: $bp-mobile) {
+    @content;
+  }
+}
+
 .entry {
   position: relative;
-  min-height: 100vh;
-  // border-box so `padding` counts inside the 100vh, else it forces a scrollbar.
+  min-height: 100svh;
+  // border-box so `padding` counts inside the viewport height, else it forces a scrollbar.
   box-sizing: border-box;
   display: flex;
   align-items: center;
-  padding: clamp(1.5rem, 5vw, 4rem);
+  padding-inline: clamp(1.5rem, 5vw, 4rem);
+  padding-block: clamp(1rem, 4vh, 4rem);
+  // A swung piece reaches past the stage; clipping the axis it travels on keeps that from
+  // growing the page. `clip` leaves the block axis visible, so nothing can be cut off.
+  overflow-x: clip;
 
-  // Stacked, the column outgrows a phone and starts at the top, under the corner gear.
-  @media (max-width: $bp-mobile) {
-    padding-top: 4.5rem;
+  // Stacked, the column starts at the top, clear of the corner gear.
+  @include stacked {
+    padding-top: 3.5rem;
   }
 }
 
@@ -35,14 +52,14 @@ $actions-w: 24rem;
   column-gap: clamp(2rem, 6vw, 5rem);
   row-gap: $gap-5;
 
-  @media (max-width: $bp-tablet) {
+  @include stacked {
     grid-template-columns: minmax(0, $actions-w);
     grid-template-areas:
       'brand'
       'wall'
       'actions';
     justify-content: center;
-    row-gap: $gap-6;
+    row-gap: clamp($gap-4, 3vh, $gap-6);
 
     .entry__brand {
       text-align: center;
@@ -71,49 +88,70 @@ $actions-w: 24rem;
 }
 
 // ── The art wall ─────────────────────────────────────────────────────────────
-// Both pieces share one grid cell: the original on the left two-thirds, the attempt on the right
-// half, overlapping it and dropped below its foot. Fixed tilts, never random (a re-render would
-// re-roll them); they read as hung by hand rather than as a layout.
+// Two pieces hung side by side in one row, the original the larger of them, with a column of
+// wall between them and the attempt a little lower. The wall is capped against the viewport
+// height as well as its track, so the art is what gives way on a short screen rather than the
+// page growing a scrollbar.
 .entry__wall {
   grid-area: wall;
   align-self: center;
   justify-self: center;
-  width: min(100%, 26rem);
+  width: min(100%, 30rem, 54svh);
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
-  // Room for the attempt's drop and its placard, so it never sits on the actions below.
-  padding-bottom: 3.5rem;
 
-  @media (max-width: $bp-tablet) {
-    width: min(100%, 18rem);
+  // Stacked, the wall is the one thing that can give: `$wall-fit` is what the column leaves it.
+  @include stacked {
+    width: min(100%, 21rem, $wall-fit);
   }
   @media (max-width: $bp-mobile) {
-    width: min(100%, 15rem);
+    width: min(100%, 17rem, $wall-fit);
   }
 }
 
+// The placard stays level on the wall; only the frame above it hangs crooked. The tilt itself
+// is `entry/Hanging.vue`'s, not a rule here: a knock re-rolls it.
 .entry__piece {
   grid-row: 1;
+  align-self: start;
   margin: 0;
 
+  // Column 7 is left empty: the gap between the two is wall, not a gutter to tune.
   &--original {
-    grid-column: 1 / 9;
-    rotate: calc(-1 * #{$wonk-art});
-
-    // The attempt covers this piece's right quarter; the placard wraps rather than slide under it.
-    .entry__placard {
-      box-sizing: border-box;
-      max-width: 65%;
-    }
+    grid-column: 1 / 7;
   }
 
   &--attempt {
-    z-index: 1;
-    grid-column: 7 / 13;
-    align-self: end;
-    translate: 0 3.5rem;
-    rotate: calc(2 * #{$wonk-art});
+    grid-column: 8 / 13;
+    // Hung a little lower than the original, as a share of the wall's width so the stagger
+    // scales with it.
+    margin-top: 9%;
   }
+}
+
+// ── Hanging ──────────────────────────────────────────────────────────────────
+// A piece swings about an invisible nail at its top-centre. `--angle` is written per frame by
+// `entry/Hanging.vue` — the resting tilt and the swing in one number — so nothing here animates.
+.entry__hang {
+  position: relative;
+  transform-origin: 50% 0;
+  rotate: var(--angle, 0deg);
+  cursor: grab;
+  // The swing is a pointer gesture of its own; without this a touch drag scrolls instead.
+  touch-action: none;
+
+  &--held {
+    cursor: grabbing;
+    // Over its neighbour while held; nothing reserves room for the travel.
+    z-index: 2;
+  }
+}
+
+// Zero-sized, and on the rotation origin so its rect reads the nail at any angle.
+.entry__pivot {
+  position: absolute;
+  top: 0;
+  left: 50%;
 }
 
 // A gallery placard under each frame — the flavour voice, so lowercase.
@@ -133,7 +171,7 @@ $actions-w: 24rem;
   align-self: start;
   display: flex;
   flex-direction: column;
-  gap: $gap-5;
+  gap: clamp($gap-3, 2.5vh, $gap-5);
 }
 
 // The primary choice is two lines: the loud title, then a quiet body-voice line under it.
@@ -245,8 +283,12 @@ $actions-w: 24rem;
   }
 }
 
-// Reduced motion: no cross-fade or nudge, and the spinner pulses instead of turning.
+// Reduced motion: the pieces are inert and say so with the cursor (Hanging.vue refuses the
+// same query), no cross-fade or nudge, and the spinner pulses instead of turning.
 @media (prefers-reduced-motion: reduce) {
+  .entry__hang {
+    cursor: default;
+  }
   .entry__morph-text,
   .entry__morph-icon,
   .entry__free-arrow {

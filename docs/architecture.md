@@ -82,7 +82,7 @@ src/
 │       └── voting/            # SalonWall.vue · VotingCloseup.vue (awards cast here) · SalonFrame.vue (internal)
 ├── views/
 │   ├── Entry.vue              # landing: Start / join by code / Free mode
-│   ├── entry/                 # Door.vue · JoinForm.vue (code field + existence probe)
+│   ├── entry/                 # Door.vue · JoinForm.vue (code field + existence probe) · Hanging.vue + wall.ts (the art wall: one pendulum scene, frames knock each other)
 │   ├── Paint.vue              # Free mode (/paint)
 │   ├── Taglines.vue           # /taglines, hidden
 │   ├── Components.vue         # /components, dev-only gallery; demos in components/

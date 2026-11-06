@@ -8,7 +8,10 @@
   align-items: center;
   gap: $gap-3;
 
+  // A container so the logotype can be capped against its own track: at the large size the
+  // eight display characters are ~4.8× the font size wide, and that outgrew Entry's column.
   &--lg {
+    container-type: inline-size;
     justify-content: center;
   }
   &--sm {
@@ -22,6 +25,10 @@
   font-weight: 700;
   line-height: 1;
   font-size: clamp(3rem, 10vw, 5.5rem);
+
+  &--lg {
+    font-size: min(clamp(3rem, 10vw, 5.5rem), 18cqw);
+  }
 
   // Brand lime in both themes, not `$accent-ink` — a logotype is exempt from 1.4.3.
   // The light page is close to lime's lightness, so a hard olive drop carries the edge.

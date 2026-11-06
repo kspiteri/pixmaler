@@ -12,6 +12,7 @@ import { PixelThumb } from '@/components/game'
 import SettingsMenu from '@/components/layout/SettingsMenu.vue'
 import { appHref, HERO_ATTEMPT, HERO_ORIGINAL, roomHref, wordPair } from '@/lib'
 import Door from './entry/Door.vue'
+import Hanging from './entry/Hanging.vue'
 import JoinForm from './entry/JoinForm.vue'
 
 type Action = 'create' | 'join' | 'free'
@@ -72,17 +73,21 @@ onBeforeUnmount(() => window.removeEventListener('pageshow', onPageShow))
         :style="{ '--art-ratio': artRatio }"
       >
         <figure class="entry__piece entry__piece--original">
-          <div class="art-frame">
-            <PixelThumb class="art-surface" v-bind="HERO_ORIGINAL" />
-          </div>
+          <Hanging :tilt="-1" :range="1.8">
+            <div class="art-frame">
+              <PixelThumb class="art-surface" v-bind="HERO_ORIGINAL" />
+            </div>
+          </Hanging>
           <figcaption class="entry__placard">
             leonardo, four years
           </figcaption>
         </figure>
         <figure class="entry__piece entry__piece--attempt">
-          <div class="art-frame">
-            <PixelThumb class="art-surface" v-bind="HERO_ATTEMPT" />
-          </div>
+          <Hanging :tilt="2" :range="3">
+            <div class="art-frame">
+              <PixelThumb class="art-surface" v-bind="HERO_ATTEMPT" />
+            </div>
+          </Hanging>
           <figcaption class="entry__placard">
             probably yours, two minutes
           </figcaption>
