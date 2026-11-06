@@ -20,5 +20,9 @@ export default antfu({
     // alert() and confirm() both have an in-UI replacement (lib/dialog.ts), so
     // the rule stands with no exemptions.
     'no-alert': 'error',
+
+    // On by default from v10. It splits short ternaries and small object
+    // literals over a line each, against the grouping the rule above allows.
+    'antfu/reasonable-newline': 'off',
   },
 })
