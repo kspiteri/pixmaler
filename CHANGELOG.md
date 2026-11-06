@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.18.0](https://github.com/kspiteri/pixmaler/compare/0.17.0...0.18.0) (2026-11-06)
+
+
+### New
+
+* **entry:** swing the art wall's frames and let them knock each other ([8c6d2ee](https://github.com/kspiteri/pixmaler/commit/8c6d2eed7a0f56be157701d8854ecafb19c1f040))
+
+
+### Fixes
+
+* **drawing:** keep the blank-canvas warning clear of the palette ([cc6725d](https://github.com/kspiteri/pixmaler/commit/cc6725d8ac361d29d8f364834626f55879c4721c))
+* **voting:** correct salon tile role and original tag contrast ([7d612fa](https://github.com/kspiteri/pixmaler/commit/7d612fa97b0f9cdcf2b595198c941415d9462dc2))
+* **voting:** hang each drawing at its own aspect ratio ([ad8dc73](https://github.com/kspiteri/pixmaler/commit/ad8dc73aa6a1e0aa543e33cb1efb0081161f32dc))
+* **voting:** let a second click take an award back ([f5e2f5e](https://github.com/kspiteri/pixmaler/commit/f5e2f5ece2ca228166196abd1ef1050f0e2d81f3))
+
+
+### Under the hood
+
+* **deps:** bump @antfu/eslint-config from 9.5.1 to 10.0.0 ([#154](https://github.com/kspiteri/pixmaler/issues/154)) ([22f9355](https://github.com/kspiteri/pixmaler/commit/22f9355689910892ade40f33f09e767710bdcffb))
+* **deps:** bump the npm-minor-patch group with 7 updates ([#153](https://github.com/kspiteri/pixmaler/issues/153)) ([4a02a9c](https://github.com/kspiteri/pixmaler/commit/4a02a9c04bfb50a5b5f0f9787b8fc5411fb53cb1))
+
 ## [0.17.0](https://github.com/kspiteri/pixmaler/compare/0.16.0...0.17.0) (2026-10-29)
 
 
